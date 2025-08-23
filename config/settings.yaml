@@ -5,13 +5,13 @@ zeroai:
 
 model:
   name: "llama3.2:1b"
-  temperature: 0.7
-  max_tokens: 4096
+  temperature: 0.3
+  max_tokens: 256
   base_url: "http://localhost:11434"
 
 agents:
-  max_concurrent: 3
-  timeout: 300
+  max_concurrent: 1
+  timeout: 120
   verbose: true
 
 logging:

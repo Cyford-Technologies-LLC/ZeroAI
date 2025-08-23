@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from ai_crew import AICrewManager
+from cache_manager import cache
 from rich.console import Console
 
 console = Console()
@@ -40,8 +41,16 @@ def main():
         
         console.print(f"\n🔍 Researching topic: [bold green]{topic}[/bold green]")
         
-        # Execute the crew
-        result = manager.execute_crew(crew, {"topic": topic})
+        # Check cache first
+        cached_result = cache.get(topic, "crew_research")
+        if cached_result:
+            console.print("\n⚡ [bold yellow]Using cached result![/bold yellow]")
+            result = cached_result
+        else:
+            # Execute the crew
+            result = manager.execute_crew(crew, {"topic": topic})
+            # Cache the result
+            cache.set(topic, "crew_research", str(result))
         
         # Display results
         console.print("\n" + "=" * 60)
