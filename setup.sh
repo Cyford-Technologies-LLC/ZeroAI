@@ -31,7 +31,11 @@ echo "🐍 Python version: $PYTHON_VERSION"
 # Check pip
 if ! command -v pip3 &> /dev/null; then
     echo "📦 Installing pip..."
-    python3 -m ensurepip --upgrade
+    if [[ "$OS" == "linux" ]]; then
+        apt update && apt install -y python3-pip
+    else
+        python3 -m ensurepip --upgrade
+    fi
 fi
 
 # Install Ollama if not present
