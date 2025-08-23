@@ -11,12 +11,12 @@ fi
 
 # Start Ollama
 echo "🔄 Starting Ollama..."
-ollama serve --host 0.0.0.0 &
+ollama serve &
 sleep 5
 
 # Download model
 echo "📥 Downloading AI model..."
-ollama pull llama3.1:8b
+ollama pull llama3.2:1b
 
 # Install Python dependencies
 echo "📦 Installing dependencies..."
@@ -24,7 +24,15 @@ pip install fastapi uvicorn requests
 
 # Start GPU bridge
 echo "🌉 Starting ZeroAI GPU Bridge..."
-python gpu_bridge.py
+# Kill any existing processes
+pkill -f "gpu_bridge.py" 2>/dev/null || true
+pkill -f "uvicorn" 2>/dev/null || true
+sleep 1
 
-echo "✅ ZeroAI GPU Bridge is running on port 8001"
-echo "🔗 Test: curl http://localhost:8001/health"
+python gpu_bridge.py &
+sleep 3
+
+echo "✅ ZeroAI GPU Bridge is running on port 8080"
+echo "🔗 Test: curl http://localhost:8080/health"
+echo "🧪 Test GPU: curl -X POST http://localhost:8080/process -H 'Content-Type: application/json' -d '{\"task\": \"Hello GPU!\", \"model\": \"llama3.2:1b\"}'"
+echo "📊 Monitor: curl http://localhost:8080/health"
