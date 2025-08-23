@@ -1,7 +1,17 @@
 #!/bin/bash
 # Setup ZeroAI GPU Bridge on Prime Intellect instance
+# Auto-detects VM vs Pod environment
 
 echo "🚀 Setting up ZeroAI GPU Bridge..."
+
+# Detect environment
+if [ -f /.dockerenv ]; then
+    echo "📦 Detected: Container/Pod environment"
+    ENV_TYPE="container"
+else
+    echo "💻 Detected: VM environment"
+    ENV_TYPE="vm"
+fi
 
 # Install Ollama if not present
 if ! command -v ollama &> /dev/null; then

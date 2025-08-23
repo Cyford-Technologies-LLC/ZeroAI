@@ -6,9 +6,9 @@ Optional remote GPU integrations for ZeroAI users who want to use cloud GPU prov
 
 ### 🧠 Prime Intellect
 - **Path**: `Remote_GPU/primeintellect/`
-- **Purpose**: Deploy ZeroAI API server on Prime Intellect instances
+- **Purpose**: Deploy ZeroAI GPU Bridge on Prime Intellect instances
 - **Use Case**: Users who want to use Prime Intellect GPU instances with ZeroAI
-- **Setup**: Clone ZeroAI repo on your Prime Intellect instance and run the API server
+- **Setup**: Clone ZeroAI repo on your Prime Intellect instance and run setup script
 
 ## 🎯 When to Use Remote GPU
 
