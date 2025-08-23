@@ -6,10 +6,14 @@ from crewai import Agent, Task, Crew, LLM
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from .config import config
-from .agents.base_agents import create_researcher, create_writer, create_analyst
-from .tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
-from .providers.cloud_providers import CloudProviderManager
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from config import config
+from agents.base_agents import create_researcher, create_writer, create_analyst
+from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
+from providers.cloud_providers import CloudProviderManager
 
 console = Console()
 logger = logging.getLogger(__name__)
