@@ -11,7 +11,7 @@ fi
 
 # Start Ollama
 echo "🔄 Starting Ollama..."
-ollama serve &
+nohup ollama serve > /dev/null 2>&1 &
 sleep 5
 
 # Download model
@@ -29,7 +29,7 @@ pkill -f "gpu_bridge.py" 2>/dev/null || true
 pkill -f "uvicorn" 2>/dev/null || true
 sleep 1
 
-python gpu_bridge.py &
+nohup python gpu_bridge.py > gpu_bridge.log 2>&1 &
 sleep 3
 
 echo "✅ ZeroAI GPU Bridge is running on port 8080"
