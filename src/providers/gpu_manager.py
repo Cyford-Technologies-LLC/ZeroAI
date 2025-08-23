@@ -7,6 +7,7 @@ from rich.console import Console
 from ..env_loader import ENV
 from .thunder_provider import ThunderComputeProvider
 from .prime_provider import PrimeIntellectProvider
+from .runpod_provider import RunPodProvider
 
 console = Console()
 
@@ -17,6 +18,7 @@ class GPUProviderManager:
     def __init__(self):
         self.thunder = ThunderComputeProvider()
         self.prime = PrimeIntellectProvider()
+        self.runpod = RunPodProvider()
         self.active_provider = None
         
     def is_gpu_access_enabled(self) -> bool:
@@ -25,13 +27,16 @@ class GPUProviderManager:
     
     def get_provider_priority(self) -> List[str]:
         """Get GPU provider priority order from config."""
-        priority_str = ENV.get("GPU_PROVIDER_PRIORITY", "thunder,prime")
+        priority_str = ENV.get("GPU_PROVIDER_PRIORITY", "runpod,thunder,prime")
         return [p.strip() for p in priority_str.split(",")]
     
     def get_available_providers(self) -> List[str]:
         """Get list of available and enabled GPU providers."""
         available = []
         
+        if self.runpod.is_enabled() and self.runpod.is_available():
+            available.append("runpod")
+            
         if self.thunder.is_enabled() and self.thunder.is_available():
             available.append("thunder")
             
@@ -74,7 +79,9 @@ class GPUProviderManager:
         
         # Use preferred provider if specified and available
         if preferred_provider:
-            if preferred_provider == "thunder" and self.thunder.is_enabled():
+            if preferred_provider == "runpod" and self.runpod.is_enabled():
+                return self.runpod.create_runpod_llm(model, temperature, max_tokens)
+            elif preferred_provider == "thunder" and self.thunder.is_enabled():
                 return self.thunder.create_thunder_llm(model, temperature, max_tokens)
             elif preferred_provider == "prime" and self.prime.is_enabled():
                 return self.prime.create_prime_llm(model, temperature, max_tokens)
@@ -86,7 +93,9 @@ class GPUProviderManager:
         
         self.active_provider = provider
         
-        if provider == "thunder":
+        if provider == "runpod":
+            return self.runpod.create_runpod_llm(model, temperature, max_tokens)
+        elif provider == "thunder":
             return self.thunder.create_thunder_llm(model, temperature, max_tokens)
         elif provider == "prime":
             return self.prime.create_prime_llm(model, temperature, max_tokens)

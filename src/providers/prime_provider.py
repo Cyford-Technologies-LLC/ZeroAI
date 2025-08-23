@@ -11,11 +11,12 @@ console = Console()
 
 
 class PrimeIntellectProvider:
-    """Manages Prime Intellect GPU instances for AI processing."""
+    """Manages Prime Intellect GPU instances (powered by RunPod) for AI processing."""
     
     def __init__(self):
         self.api_key = ENV.get("PRIME_API_KEY")
         self.endpoint = ENV.get("PRIME_ENDPOINT", "https://api.primeintellect.ai/v1")
+        self.instance_id = ENV.get("PRIME_INSTANCE_ID")  # Your RunPod instance ID
         self.session_id = None
         
     def is_enabled(self) -> bool:
