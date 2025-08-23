@@ -36,7 +36,7 @@
 
 ```bash
 # Clone ZeroAI
-git clone https://github.com/yourusername/ZeroAI.git
+git clone https://github.com/Cyford-Technologies-LLC/ZeroAI.git
 cd ZeroAI
 
 # Install Ollama (choose your platform)
