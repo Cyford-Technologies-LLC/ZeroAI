@@ -14,6 +14,14 @@ class ModelConfig(BaseModel):
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4096, gt=0)
     base_url: str = Field(default_factory=lambda: ENV["OLLAMA_BASE_URL"])
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Override with .env values if present
+        if ENV.get("DEFAULT_MODEL"):
+            self.name = ENV["DEFAULT_MODEL"]
+        if ENV.get("OLLAMA_BASE_URL"):
+            self.base_url = ENV["OLLAMA_BASE_URL"]
 
 
 class AgentConfig(BaseModel):
@@ -21,6 +29,14 @@ class AgentConfig(BaseModel):
     max_concurrent: int = Field(default_factory=lambda: ENV["MAX_CONCURRENT_AGENTS"], gt=0)
     timeout: int = Field(default_factory=lambda: ENV["AGENT_TIMEOUT"], gt=0)
     verbose: bool = Field(default=True)
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Override with .env values if present
+        if ENV.get("MAX_CONCURRENT_AGENTS"):
+            self.max_concurrent = ENV["MAX_CONCURRENT_AGENTS"]
+        if ENV.get("AGENT_TIMEOUT"):
+            self.timeout = ENV["AGENT_TIMEOUT"]
 
 
 class LoggingConfig(BaseModel):
@@ -28,6 +44,12 @@ class LoggingConfig(BaseModel):
     level: str = Field(default_factory=lambda: ENV["LOG_LEVEL"])
     file: Optional[str] = Field(default="logs/ai_crew.log")
     format: str = Field(default="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Override with .env values if present
+        if ENV.get("LOG_LEVEL"):
+            self.level = ENV["LOG_LEVEL"]
 
 
 class CloudConfig(BaseModel):

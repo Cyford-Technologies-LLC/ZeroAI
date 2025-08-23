@@ -11,6 +11,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import config
+from smart_router import router
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
 from providers.cloud_providers import CloudProviderManager
@@ -32,13 +33,20 @@ class AICrewManager:
         """Setup LLM connection (local or cloud)."""
         try:
             if self.provider == "local":
+                # Use smart routing to choose optimal endpoint
+                base_url = router.get_optimal_base_url()
+                if base_url != config.model.base_url:
+                    console.print(f"⚡ Using GPU acceleration: {base_url}", style="yellow")
+                else:
+                    console.print(f"💻 Using local processing", style="blue")
+                    
                 llm = LLM(
                     model=f"ollama/{self.model_name}",
-                    base_url=config.model.base_url,
+                    base_url=base_url,
                     temperature=config.model.temperature,
                     max_tokens=config.model.max_tokens
                 )
-                console.print(f"✅ Connected to local {self.model_name}", style="green")
+                console.print(f"✅ Connected to {self.model_name}", style="green")
             elif self.provider == "openai":
                 llm = CloudProviderManager.create_openai_llm(
                     model=self.model_name,
