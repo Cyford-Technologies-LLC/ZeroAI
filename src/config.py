@@ -5,7 +5,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
-from .env_loader import ENV
+from env_loader import ENV
 
 
 class ModelConfig(BaseModel):

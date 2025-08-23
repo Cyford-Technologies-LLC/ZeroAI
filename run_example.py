@@ -78,10 +78,14 @@ def main():
     
     if choice == "1":
         console.print("\n🚀 Starting Basic Research Crew...")
-        subprocess.run([sys.executable, "examples/basic_crew.py"])
+        env = os.environ.copy()
+        env['PYTHONPATH'] = str(Path.cwd() / "src")
+        subprocess.run([sys.executable, "examples/basic_crew.py"], env=env)
     elif choice == "2":
         console.print("\n🚀 Starting Advanced Analysis Crew...")
-        subprocess.run([sys.executable, "examples/advanced_analysis.py"])
+        env = os.environ.copy()
+        env['PYTHONPATH'] = str(Path.cwd() / "src")
+        subprocess.run([sys.executable, "examples/advanced_analysis.py"], env=env)
     elif choice == "3":
         console.print("\n📖 Opening documentation...")
         console.print("📁 Check the docs/ folder for comprehensive guides:")
@@ -93,7 +97,9 @@ def main():
         console.print("📝 Edit this file to customize your AI setup")
     else:
         console.print("\n🔍 Running Basic Research Crew (default)...")
-        subprocess.run([sys.executable, "examples/basic_crew.py"])
+        env = os.environ.copy()
+        env['PYTHONPATH'] = str(Path.cwd() / "src")
+        subprocess.run([sys.executable, "examples/basic_crew.py"], env=env)
 
 
 if __name__ == "__main__":
