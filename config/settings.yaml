@@ -1,0 +1,37 @@
+zeroai:
+  mode: "smart"              # local, smart, or cloud
+  cost_optimization: true    # Minimize costs automatically
+  tagline: "Zero Cost. Zero Cloud. Zero Limits."
+
+model:
+  name: "llama3.1:8b"
+  temperature: 0.7
+  max_tokens: 4096
+  base_url: "http://localhost:11434"
+
+agents:
+  max_concurrent: 3
+  timeout: 300
+  verbose: true
+
+logging:
+  level: "INFO"
+  file: "logs/zeroai.log"
+  format: "%(asctime)s - ZeroAI - %(levelname)s - %(message)s"
+
+cloud:
+  provider: "local"  # Options: local, openai, anthropic, azure, google
+  # Set API keys in environment variables:
+  # OPENAI_API_KEY, ANTHROPIC_API_KEY, AZURE_OPENAI_API_KEY, GOOGLE_API_KEY
+
+thunder:
+  enabled: true                    # Enable/disable Thunder Compute
+  auto_start: true                # Auto-start for complex tasks
+  complexity_threshold: 7         # Complexity level (1-10) to trigger Thunder
+  api_key_env: "THUNDER_API_KEY"  # Environment variable for API key
+  instance_id_env: "THUNDER_INSTANCE_ID"  # Environment variable for instance ID
+
+smart_routing:
+  local_only_mode: false          # Force all tasks to local processing
+  fallback_provider: "openai"     # Fallback when Thunder fails
+  auto_shutdown_delay: 1800       # Auto-shutdown Thunder after 30 min idle
