@@ -29,7 +29,7 @@ def get_env_int(key: str, default: int = 0) -> int:
 ENV = {
     # Local AI
     "OLLAMA_BASE_URL": get_env("OLLAMA_BASE_URL", "http://localhost:11434"),
-    "DEFAULT_MODEL": get_env("DEFAULT_MODEL", "llama3.1:8b"),
+    "DEFAULT_MODEL": get_env("DEFAULT_MODEL", "llama3.2:1b"),
     
     # Cloud providers
     "OPENAI_API_KEY": get_env("OPENAI_API_KEY"),
