@@ -1,0 +1,46 @@
+Available on Ollama for resumes/documents:
+
+llama3.1:8b - Good for resume writing, formatting, content generation
+
+mistral - Excellent for professional writing, structured documents
+
+qwen2.5 - Strong at technical writing and formatting
+
+gemma2 - Good for creative content and professional text
+
+Missing ZeroAI Modules You Could Add:
+
+Document Generator - For resumes, cover letters, reports
+
+Text Analyzer - For grammar, style, optimization
+
+Template Engine - For structured document formats
+
+Content Optimizer - For keyword optimization, ATS compatibility
+
+For Resume Generation:
+
+# On GPU node, pull resume-optimized models:
+ollama pull mistral
+ollama pull qwen2.5:7b
+
+Copy
+bash
+Want me to create a resume generator module that uses your distributed network? It could:
+
+Generate resume content using mistral (better for professional writing)
+
+Format with templates
+
+Optimize for ATS systems
+
+Route to GPU node for faster processing
+
+Which type of document generation interests you most?
+
+well i wantit to be able to take a resume and improve it.. i think all is good,
+
+An error occurred while processing your request.
+Request aborted: AmazonQUsageLimitError: Monthly limit reached.
+
+Request ID: e6d71537-6389-4b1c-acb0-841b6fb5fae0
