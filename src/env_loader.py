@@ -5,8 +5,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-env_path = Path("/opt/ZeroAI/.env")
-load_dotenv(env_path)
+# Try multiple paths to find .env file
+env_paths = [
+    Path(".env"),  # Current directory
+    Path("../.env"),  # Parent directory
+    Path("/opt/ZeroAI/.env")  # Absolute path
+]
+
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
 
 # Environment variable getters with defaults
 def get_env(key: str, default: str = "") -> str:
