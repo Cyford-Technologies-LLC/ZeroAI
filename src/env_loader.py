@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-env_path = Path(__file__).parent.parent / ".env"
+env_path = Path("/opt/ZeroAI/.env")
 load_dotenv(env_path)
 
 # Environment variable getters with defaults
@@ -30,6 +30,11 @@ ENV = {
     # Local AI
     "OLLAMA_BASE_URL": get_env("OLLAMA_BASE_URL", "http://localhost:11434"),
     "DEFAULT_MODEL": get_env("DEFAULT_MODEL", "llama3.2:1b"),
+    
+    # GPU Cloud Providers
+    "GPU_ACCESS_ENABLED": get_env("GPU_ACCESS_ENABLED", "false"),
+    "PRIME_ENABLED": get_env("PRIME_ENABLED", "false"),
+    "PRIME_GPU_BRIDGE_URL": get_env("PRIME_GPU_BRIDGE_URL"),
     
     # Cloud providers
     "OPENAI_API_KEY": get_env("OPENAI_API_KEY"),
