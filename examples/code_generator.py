@@ -7,6 +7,7 @@ Direct code generation without research crew overhead.
 
 import sys
 import os
+import time
 from pathlib import Path
 
 # Add the src directory to the Python path
@@ -47,7 +48,13 @@ Code:"""
     
     try:
         # Use the correct LLM API method
+        start_time = time.time()
         result = llm.call(code_prompt)
+        end_time = time.time()
+        
+        generation_time = end_time - start_time
+        console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
+        
         return result
     except Exception as e:
         console.print(f"❌ Error: {e}", style="red")
