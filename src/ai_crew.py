@@ -11,7 +11,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import config
-from smart_router import router
+from distributed_router import distributed_router
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
 from providers.cloud_providers import CloudProviderManager
@@ -25,9 +25,14 @@ class AICrewManager:
     
     def __init__(self, model_name: Optional[str] = None, provider: str = "local", **kwargs):
         """Initialize the AI Crew Manager."""
-        # Use smart router to select optimal model if not specified
+        # Use distributed router to select optimal model if not specified
         if not model_name and 'task' in kwargs:
-            self.model_name = router.get_optimal_model(kwargs['task'])
+            # Simple model selection based on task
+            task = kwargs['task'].lower()
+            if any(word in task for word in ['code', 'php', 'python', 'javascript']):
+                self.model_name = 'codellama:13b'
+            else:
+                self.model_name = 'llama3.1:8b'
         else:
             self.model_name = model_name or config.model.name
         self.provider = provider
@@ -37,21 +42,9 @@ class AICrewManager:
         """Setup LLM connection (local or cloud)."""
         try:
             if self.provider == "local":
-                # Use smart routing to choose optimal endpoint
+                # Use distributed routing to find best peer
                 task_description = kwargs.get('task', '')
-                complexity = len(task_description) // 50 + 5  # Basic complexity estimation
-                
-                # Debug logging
-                print(f"DEBUG: task='{task_description}', complexity={complexity}")
-                print(f"DEBUG: gpu_enabled={router.gpu_enabled}, prime_enabled={router.prime_enabled}")
-                print(f"DEBUG: should_use_gpu={router.should_use_gpu(task_description, complexity)}")
-                
-                base_url = router.get_optimal_base_url(task_description, complexity)
-                
-                if router.should_use_gpu(task_description, complexity):
-                    console.print(f"🚀 Using GPU processing", style="yellow")
-                else:
-                    console.print(f"💻 Using local processing", style="blue")
+                base_url, peer_name = distributed_router.get_optimal_endpoint(task_description, self.model_name)
                     
                 llm = LLM(
                     model=f"ollama/{self.model_name}",

@@ -1,0 +1,18 @@
+{
+  "peers": [
+    {
+      "ip": "149.36.1.65",
+      "port": 8080,
+      "name": "gpu-node-1",
+      "capabilities": {
+        "cpu_cores": 4,
+        "memory_gb": 21.0,
+        "gpu_memory_gb": 0.0,
+        "models": ["llama3.1:8b", "codellama:13b"],
+        "load_avg": 0.0,
+        "available": true,
+        "last_seen": 0
+      }
+    }
+  ]
+}
