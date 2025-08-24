@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from crewai import LLM
 from config import config
-from smart_router import router
+from distributed_router import distributed_router
 from rich.console import Console
 
 console = Console()
@@ -24,13 +24,21 @@ def generate_code(prompt: str):
     """Generate code directly using the optimal model."""
     
     # Get optimal model for coding task
-    model_name = router.get_optimal_model(prompt)
+    coding_keywords = ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
+    if any(keyword in prompt.lower() for keyword in coding_keywords):
+        model_name = "codellama:13b"
+    else:
+        model_name = "llama3.1:8b"
+    
     console.print(f"🤖 Using model: {model_name}")
+    
+    # Get optimal endpoint from distributed router
+    base_url, peer_name = distributed_router.get_optimal_endpoint(prompt, model_name)
     
     # Setup LLM
     llm = LLM(
         model=f"ollama/{model_name}",
-        base_url="http://localhost:11434",
+        base_url=base_url,
         temperature=0.3,  # Lower temperature for more consistent code
         max_tokens=1024   # More tokens for complete code
     )
