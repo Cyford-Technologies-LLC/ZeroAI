@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from crewai import LLM
 from config import config
 from distributed_router import distributed_router
+from agent_communication import agent_comm
 from rich.console import Console
 
 console = Console()
@@ -32,40 +33,55 @@ def generate_code(prompt: str):
     
     console.print(f"🤖 Using model: {model_name}")
     
-    # Get optimal endpoint from distributed router
+    # Get optimal peer from distributed router
     base_url, peer_name = distributed_router.get_optimal_endpoint(prompt, model_name)
     
-    # Setup LLM
-    llm = LLM(
-        model=f"ollama/{model_name}",
-        base_url=base_url,
-        temperature=0.3,  # Lower temperature for more consistent code
-        max_tokens=1024   # More tokens for complete code
-    )
+    # Check if we should use a peer or process locally
+    if "149.36.1.65" in base_url:  # Using GPU peer
+        try:
+            start_time = time.time()
+            result = agent_comm.process_code_generation("149.36.1.65", prompt, model_name)
+            end_time = time.time()
+            
+            if result:
+                generation_time = end_time - start_time
+                console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
+                return result
+            else:
+                console.print("❌ Peer agent processing failed", style="red")
+                
+        except Exception as e:
+            console.print(f"❌ Error with peer agent: {e}", style="red")
     
-    # Create focused code generation prompt
-    code_prompt = f"""Generate working {prompt}. 
+    # Fallback to local processing
+    console.print("🔄 Falling back to local processing", style="yellow")
+    try:
+        llm = LLM(
+            model=f"ollama/llama3.2:1b",  # Use smaller model locally
+            base_url="http://localhost:11434",
+            temperature=0.3,
+            max_tokens=512  # Smaller tokens for local
+        )
+        
+        code_prompt = f"""Generate working {prompt}. 
 
 Requirements:
 - Provide ONLY the code, no explanations
 - Make it functional and complete
 - Use proper syntax and best practices
-- Include comments only where necessary
 
 Code:"""
-    
-    try:
-        # Use the correct LLM API method
+        
         start_time = time.time()
         result = llm.call(code_prompt)
         end_time = time.time()
         
         generation_time = end_time - start_time
         console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
-        
         return result
+        
     except Exception as e:
-        console.print(f"❌ Error: {e}", style="red")
+        console.print(f"❌ Local processing also failed: {e}", style="red")
         return None
 
 def main():
