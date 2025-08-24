@@ -17,8 +17,13 @@ class SmartRouter:
         if not self.gpu_enabled or not self.prime_enabled:
             return False
             
+        # Use GPU for coding tasks (PHP, Python, etc.)
+        coding_keywords = ['php', 'class', 'function', 'code', 'python', 'javascript', 'html', 'css']
+        if any(keyword in task.lower() for keyword in coding_keywords):
+            return True
+            
         # Use GPU for complex tasks or long prompts
-        if complexity >= 7 or len(task) > 200:
+        if complexity >= 6 or len(task) > 150:
             return True
             
         return False
