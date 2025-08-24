@@ -141,6 +141,10 @@ class PeerDiscovery:
         if not name:
             name = f"node-{ip}"
         
+        # Check if peer already exists
+        if ip in self.peers:
+            print(f"⚠️  Peer {ip} already exists, updating capabilities...")
+        
         try:
             response = requests.get(f"http://{ip}:{port}/capabilities", timeout=5)
             if response.status_code == 200:
