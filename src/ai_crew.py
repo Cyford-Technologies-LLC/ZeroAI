@@ -36,6 +36,12 @@ class AICrewManager:
                 # Use smart routing to choose optimal endpoint
                 task_description = kwargs.get('task', '')
                 complexity = len(task_description) // 50 + 5  # Basic complexity estimation
+                
+                # Debug logging
+                print(f"DEBUG: task='{task_description}', complexity={complexity}")
+                print(f"DEBUG: gpu_enabled={router.gpu_enabled}, prime_enabled={router.prime_enabled}")
+                print(f"DEBUG: should_use_gpu={router.should_use_gpu(task_description, complexity)}")
+                
                 base_url = router.get_optimal_base_url(task_description, complexity)
                 
                 if router.should_use_gpu(task_description, complexity):
