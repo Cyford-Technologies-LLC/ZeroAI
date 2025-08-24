@@ -12,6 +12,13 @@ class SmartRouter:
         self.prime_enabled = ENV.get("PRIME_ENABLED", "false").lower() == "true"
         self.prime_url = ENV.get("PRIME_GPU_BRIDGE_URL")
         
+    def get_optimal_model(self, task: str) -> str:
+        """Choose the best model for the task type."""
+        coding_keywords = ['php', 'class', 'function', 'code', 'python', 'javascript', 'html', 'css', 'sql']
+        if any(keyword in task.lower() for keyword in coding_keywords):
+            return "codellama:13b"  # Use CodeLlama for coding tasks
+        return ENV.get("DEFAULT_MODEL", "llama3.1:8b")  # Use general model for other tasks
+        
     def should_use_gpu(self, task: str, complexity: int = 5) -> bool:
         """Determine if task should use GPU based on complexity."""
         if not self.gpu_enabled or not self.prime_enabled:

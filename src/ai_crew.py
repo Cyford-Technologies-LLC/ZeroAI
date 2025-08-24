@@ -25,7 +25,11 @@ class AICrewManager:
     
     def __init__(self, model_name: Optional[str] = None, provider: str = "local", **kwargs):
         """Initialize the AI Crew Manager."""
-        self.model_name = model_name or config.model.name
+        # Use smart router to select optimal model if not specified
+        if not model_name and 'task' in kwargs:
+            self.model_name = router.get_optimal_model(kwargs['task'])
+        else:
+            self.model_name = model_name or config.model.name
         self.provider = provider
         self.llm = self._setup_llm(**kwargs)
         
