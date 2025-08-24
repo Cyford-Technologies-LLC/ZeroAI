@@ -46,7 +46,8 @@ Requirements:
 Code:"""
     
     try:
-        result = llm.invoke(code_prompt)
+        # Use the correct LLM API method
+        result = llm.call(code_prompt)
         return result
     except Exception as e:
         console.print(f"❌ Error: {e}", style="red")
