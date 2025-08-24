@@ -34,9 +34,12 @@ class AICrewManager:
         try:
             if self.provider == "local":
                 # Use smart routing to choose optimal endpoint
-                base_url = router.get_optimal_base_url()
-                if base_url != config.model.base_url:
-                    console.print(f"⚡ Using GPU acceleration: {base_url}", style="yellow")
+                task_description = kwargs.get('task', '')
+                complexity = len(task_description) // 50 + 5  # Basic complexity estimation
+                base_url = router.get_optimal_base_url(task_description, complexity)
+                
+                if router.should_use_gpu(task_description, complexity):
+                    console.print(f"🚀 Using GPU processing", style="yellow")
                 else:
                     console.print(f"💻 Using local processing", style="blue")
                     

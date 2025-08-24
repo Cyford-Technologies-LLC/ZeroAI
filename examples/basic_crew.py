@@ -26,18 +26,18 @@ def main():
     console.print("=" * 60)
     
     try:
-        # Initialize the AI Crew Manager
-        console.print("🔧 Initializing AI Crew Manager...")
-        manager = AICrewManager()
-        
-        # Create a research crew
-        console.print("👥 Creating research crew...")
-        crew = manager.create_research_crew()
-        
         # Define the research topic
         topic = input("\n📝 Enter a topic to research (or press Enter for default): ").strip()
         if not topic:
             topic = "The future of artificial intelligence in healthcare"
+        
+        # Initialize the AI Crew Manager with task context
+        console.print("🔧 Initializing AI Crew Manager...")
+        manager = AICrewManager(task=topic)
+        
+        # Create a research crew
+        console.print("👥 Creating research crew...")
+        crew = manager.create_research_crew()
         
         console.print(f"\n🔍 Researching topic: [bold green]{topic}[/bold green]")
         
