@@ -55,8 +55,11 @@ class SmartRouter:
     
     def get_optimal_base_url(self, task: str = "", complexity: int = 5) -> str:
         """Get optimal base URL for processing."""
-        if self.should_use_gpu(task, complexity):
-            return self.prime_url or "http://localhost:11434"
+        if self.should_use_gpu(task, complexity) and self.prime_url:
+            # GPU bridge needs /api suffix for Ollama compatibility
+            if not self.prime_url.endswith('/api'):
+                return f"{self.prime_url}/api"
+            return self.prime_url
         return "http://localhost:11434"
 
 # Global router instance
