@@ -1,240 +1,274 @@
 #!/usr/bin/env python3
 """
-Resume Improvement Module
+Basic AI Crew Example
 
-Uses distributed models to improve resumes through AI enhancement.
+This example demonstrates how to create and run a simple AI crew
+for research and content creation tasks with AI intercommunication capabilities.
 """
 
 import sys
 import os
 import time
+import requests
 from pathlib import Path
 
 # Add the src directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+# Import modules from src package
 from crewai import LLM, Agent, Task, Crew
-from distributed_router import distributed_router
-from agent_communication import agent_comm
-from peer_discovery import peer_discovery
+from src.distributed_router import distributed_router  # Fix import path
+from src.agent_communication import agent_comm  # Fix import path
+from src.cache_manager import cache  # Fix import path
 from rich.console import Console
 
 console = Console()
 
-def list_resume_capable_nodes():
-    """List nodes with resume-optimized models."""
-    console.print("\n🔍 [bold blue]Scanning network for resume-capable nodes...[/bold blue]")
+def get_available_models():
+    """Get a list of available models from Ollama."""
+    try:
+        response = requests.get("http://localhost:11434/api/tags")
+        if response.status_code == 200:
+            models = [model["name"] for model in response.json()["models"]]
+            return models
+        else:
+            console.print("⚠️ Could not fetch available models", style="yellow")
+            return []
+    except Exception as e:
+        console.print(f"⚠️ Error getting models: {e}", style="yellow")
+        return []
 
-    resume_models = ["mistral", "qwen2.5:7b", "llama3.1:8b", "gemma2"]
-    capable_nodes = []
+def get_best_available_model(topic, available_models):
+    """
+    Get the best available model for the given topic.
 
-    for peer in peer_discovery.peers.values():
-        if not peer.capabilities.available:
-            continue
+    Args:
+        topic (str): The topic to research
+        available_models (list): List of available models
 
-        peer_models = set(peer.capabilities.models)
-        has_models = [model for model in resume_models if model in peer_models]
+    Returns:
+        str: Name of the best available model
+    """
+    console.print("\n🤔 [bold yellow]Finding optimal AI model for task...[/bold yellow]")
 
-        if has_models:
-            capable_nodes.append((peer, has_models))
+    # Define preferred models in order of preference for different tasks
+    preferred_models = {
+        "resume": ["mistral", "qwen2.5:7b", "llama3.1:8b", "llama3.2:1b"],
+        "code": ["codellama:13b", "qwen2.5:7b", "llama3.1:8b", "llama3.2:1b"],
+        "technical": ["llama3.1:8b", "qwen2.5:7b", "llama3.2:1b"],
+        "creative": ["gemma2", "mistral", "llama3.1:8b", "llama3.2:1b"],
+        "general": ["mistral", "llama3.1:8b", "qwen2.5:7b", "llama3.2:1b"]
+    }
 
-    if capable_nodes:
-        console.print("\n✅ [bold green]Found resume-capable nodes:[/bold green]")
-        for peer, models in capable_nodes:
-            status = "🟢" if peer.capabilities.available else "🔴"
-            gpu_info = f", GPU: {peer.capabilities.gpu_memory_gb:.1f}GB" if peer.capabilities.gpu_memory_gb > 0 else ""
-            console.print(f"{status} {peer.name} ({peer.ip}) - RAM: {peer.capabilities.memory_gb:.1f}GB{gpu_info}")
-            console.print(f"   Resume models: {', '.join(models)}")
+    # Determine task type based on topic
+    if any(word in topic.lower() for word in ["resume", "cv", "curriculum vitae", "job application"]):
+        task_type = "resume"
+        reason = "professional writing capabilities and document formatting"
+    elif "code" in topic.lower() or "programming" in topic.lower():
+        task_type = "code"
+        reason = "specialized code generation capabilities"
+    elif "technical" in topic.lower() or "analysis" in topic.lower():
+        task_type = "technical"
+        reason = "technical analysis strengths"
+    elif "creative" in topic.lower() or "writing" in topic.lower():
+        task_type = "creative"
+        reason = "creative content generation strengths"
     else:
-        console.print("\n⚠️ [bold yellow]No resume-capable nodes found in network[/bold yellow]")
+        task_type = "general"
+        reason = "general research capabilities"
 
-    return capable_nodes
+    # Check which preferred models are available
+    for model in preferred_models[task_type]:
+        if model in available_models:
+            console.print(f"✅ Selected model: [bold blue]{model}[/bold blue] for {reason}")
+            return model
 
-def get_best_resume_model():
-    """Find the best available model for resume improvement."""
-    # Model preference order
-    model_preference = ["mistral", "qwen2.5:7b", "llama3.1:8b", "gemma2", "llama3.2:1b"]
+    # If none of the preferred models are available, use any available model
+    if available_models:
+        default_model = available_models[0]
+        console.print(f"⚠️ No preferred models available. Using: [bold blue]{default_model}[/bold blue]")
+        return default_model
+    else:
+        # If no models are available, use a guaranteed default that should come with Ollama
+        console.print("⚠️ No models found. Using default model: [bold blue]llama3.2:1b[/bold blue]")
+        return "llama3.2:1b"
 
-    # First check if peers have these models
-    for model in model_preference:
-        best_peer = peer_discovery.get_best_peer(model=model)
-        if best_peer:
-            return model, best_peer
 
-    # If not found on peers, check local models
-    local_models = peer_discovery._get_available_models()
-    for model in model_preference:
-        if model in local_models:
-            return model, None
-
-    # If still nothing, return default model
-    if local_models:
-        return local_models[0], None
-    return "llama3.2:1b", None
-
-def improve_resume(resume_text):
-    """Improve a resume using AI."""
-    console.print("🚀 [bold blue]ZeroAI Resume Improvement Module[/bold blue]")
+def main():
+    console.print("🚀 [bold blue]ZeroAI Basic Crew Example[/bold blue]")
     console.print("=" * 50)
 
-    # First scan the network for capable nodes
-    capable_nodes = list_resume_capable_nodes()
+    # Get the research topic
+    topic = input("\n📝 Enter a topic to research (or press Enter for default): ").strip()
+    if not topic:
+        topic = "The future of artificial intelligence in healthcare"
 
-    # Get best available model and node
-    model_name, best_peer = get_best_resume_model()
+    # Get list of available models
+    available_models = get_available_models()
+    console.print(f"📋 Available models: {', '.join(available_models) if available_models else 'None detected'}")
 
-    if best_peer:
-        console.print(f"\n✅ Selected model: [bold blue]{model_name}[/bold blue] on node: {best_peer.name}")
-        processing_location = f"remote:{best_peer.name}"
-        base_url = f"http://{best_peer.ip}:11434"
-    else:
-        console.print(f"\n✅ Selected model: [bold blue]{model_name}[/bold blue] (local processing)")
-        processing_location = "local"
+    # Get best available model for the task
+    model_name = get_best_available_model(topic, available_models)
+    console.print(f"🧠 Using model: {model_name}")
+
+    # Use distributed routing to find optimal processing peer
+    try:
+        base_url, peer_name = distributed_router.get_optimal_endpoint(topic, model_name)
+        if peer_name == "local":
+            console.print("💻 Using local processing (no suitable peers)")
+        console.print(f"🌐 Processing with: {peer_name}")
+    except Exception as e:
+        console.print(f"⚠️ Error with distributed router: {e}", style="yellow")
         base_url = "http://localhost:11434"
+        peer_name = "local"
+        console.print("💻 Falling back to local processing", style="yellow")
 
-    # Try using peer agent directly if available
-    if best_peer:
+    # Try using peer agent directly for better performance if available
+    if peer_name != "local":
         console.print("🔄 Attempting direct processing with peer agent...")
         try:
             start_time = time.time()
-            task_data = {
-                "type": "resume_improvement",
-                "content": resume_text,
-                "model": model_name,
-                "temperature": 0.7,
-                "max_tokens": 1024
-            }
-            response = agent_comm.send_task_to_peer(best_peer.ip, task_data)
+            result = agent_comm.process_research_task(peer_name.split(':')[0], topic, model_name)
+            end_time = time.time()
 
-            if response and response.get("success"):
-                result = response.get("response")
-                end_time = time.time()
+            if result:
                 generation_time = end_time - start_time
                 console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
-                return result
+
+                # Display and save results
+                console.print("\n" + "=" * 50)
+                console.print("📊 [bold green]Research Results:[/bold green]")
+                console.print("=" * 50)
+                print(result)
+
+                # Save to file
+                output_file = Path("output") / f"research_{topic.replace(' ', '_')[:30]}.txt"
+                output_file.parent.mkdir(exist_ok=True)
+
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(result)
+
+                console.print(f"\n💾 Research saved to: [bold blue]{output_file}[/bold blue]")
+                return
             else:
                 console.print("❌ Peer agent processing failed", style="red")
         except Exception as e:
             console.print(f"❌ Error with peer agent: {e}", style="red")
 
-    # Fallback to CrewAI processing
-    console.print("🔄 Using CrewAI for resume improvement...", style="yellow")
+    # Fallback to local crew-based processing
+    console.print("🔄 Falling back to local crew-based processing", style="yellow")
 
+    # Check cache first
     try:
-        # Create LLM instance
-        llm = LLM(
-            model=f"ollama/{model_name}",
-            base_url=base_url,
-            temperature=0.7,
-            max_tokens=1024
-        )
+        cache_key = f"{topic}_{model_name}"
+        cached_result = cache.get(cache_key, "research")
 
-        # Create the resume analyzer agent
-        analyzer = Agent(
-            role="Resume Analyzer",
-            goal="Analyze resumes and identify areas for improvement",
-            backstory="You are an expert resume analyst with years of experience helping job seekers land interviews",
-            llm=llm
-        )
-
-        # Create the resume improver agent
-        improver = Agent(
-            role="Resume Improver",
-            goal="Enhance resumes with powerful language and proper formatting",
-            backstory="You are a professional resume writer who knows exactly what hiring managers and ATS systems look for",
-            llm=llm
-        )
-
-        # Create analysis task
-        analysis_task = Task(
-            description=f"Analyze this resume and identify areas for improvement:\n\n{resume_text}",
-            expected_output="Detailed analysis of resume strengths and weaknesses",
-            agent=analyzer
-        )
-
-        # Create improvement task
-        improvement_task = Task(
-            description=f"Improve this resume based on the analysis. Keep the same general structure but enhance the language, achievements, and formatting:\n\n{resume_text}",
-            expected_output="An improved version of the resume with enhanced language and formatting",
-            agent=improver,
-            dependencies=[analysis_task]
-        )
-
-        # Create and run the crew
-        crew = Crew(
-            agents=[analyzer, improver],
-            tasks=[analysis_task, improvement_task],
-            verbose=True
-        )
-
-        console.print("\n🔍 Starting resume improvement process...")
-        start_time = time.time()
-        result = crew.kickoff()
-        end_time = time.time()
-
-        generation_time = end_time - start_time
-        console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
-
-        return result
+        if cached_result:
+            console.print("⚡ [bold yellow]Using cached result![/bold yellow]")
+            result = cached_result
     except Exception as e:
-        console.print(f"❌ Error during processing: {e}", style="red")
-        console.print("💡 Make sure Ollama is running and has required models installed")
-        return None
+        console.print(f"⚠️ Cache error: {e}", style="yellow")
+        cached_result = None
 
-def main():
-    # Get resume content
-    console.print("\n📄 Enter your resume text (or press Enter to use sample):")
-    resume_text = input().strip()
+    if not cached_result:
+        # Set up local processing with CrewAI
+        try:
+            # Make sure we're using a model that exists
+            if model_name not in available_models and peer_name == "local":
+                # If model doesn't exist locally and we're not using a peer, switch to a guaranteed model
+                if "llama3.2:1b" in available_models:
+                    local_model = "llama3.2:1b"
+                elif available_models:
+                    local_model = available_models[0]  # Use any available model
+                else:
+                    # If no models are found, suggest pulling one
+                    console.print("❌ No models available. Please run 'ollama pull llama3.2:1b'", style="red")
+                    return
 
-    if not resume_text:
-        resume_text = """
-JOHN DOE
-Software Developer
-email@example.com | (555) 123-4567 | linkedin.com/in/johndoe
+                console.print(f"⚠️ Model {model_name} not available, using {local_model} instead", style="yellow")
+                model_name = local_model
 
-PROFESSIONAL SUMMARY
-Software developer with 3 years of experience in web development and application design.
+            llm = LLM(
+                model=f"ollama/{model_name}",
+                base_url=base_url,
+                temperature=0.7,
+                max_tokens=512
+            )
 
-SKILLS
-Programming: JavaScript, Python, HTML, CSS
-Frameworks: React, Node.js
-Tools: Git, Docker
+            # Create the researcher agent
+            researcher = Agent(
+                role="Researcher",
+                goal=f"Research {topic} thoroughly and provide comprehensive information",
+                backstory="You are an expert researcher with access to vast knowledge",
+                llm=llm
+            )
 
-EXPERIENCE
-Junior Developer, ABC Company
-2020 - Present
-- Worked on website development
-- Fixed bugs in existing applications
-- Helped with code reviews
+            # Create the writer agent
+            writer = Agent(
+                role="Writer",
+                goal="Create well-structured, informative content based on research",
+                backstory="You are a skilled writer who can communicate complex ideas clearly",
+                llm=llm
+            )
 
-Intern, XYZ Tech
-2019 - 2020
-- Assisted senior developers
-- Learned company workflows
-- Participated in team meetings
+            # Create research task - Adding expected_output to fix the validation error
+            research_task = Task(
+                description=f"Research the following topic thoroughly: {topic}",
+                expected_output="Detailed research findings on the topic",
+                agent=researcher
+            )
 
-EDUCATION
-Bachelor of Science in Computer Science
-University College, Graduated 2019
-        """
+            # Create writing task - Adding expected_output to fix the validation error
+            writing_task = Task(
+                description=f"Create a comprehensive report on {topic} based on the research",
+                expected_output="A well-structured, comprehensive report",
+                agent=writer,
+                dependencies=[research_task]
+            )
 
-    # Improve the resume
-    improved_resume = improve_resume(resume_text)
+            # Create and run the crew
+            crew = Crew(
+                agents=[researcher, writer],
+                tasks=[research_task, writing_task],
+                verbose=True
+            )
 
-    if improved_resume:
-        console.print("\n" + "=" * 50)
-        console.print("📝 [bold green]Improved Resume:[/bold green]")
-        console.print("=" * 50)
-        print(improved_resume)
+            console.print("\n🔍 Crew starting research and content creation...")
+            start_time = time.time()
+            result = crew.kickoff()
+            end_time = time.time()
 
-        # Save to file
-        output_file = Path("output") / f"improved_resume_{int(time.time())}.txt"
-        output_file.parent.mkdir(exist_ok=True)
+            generation_time = end_time - start_time
+            console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
 
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(improved_resume)
+            # Cache the result
+            try:
+                cache.set(cache_key, "research", result)
+            except Exception as e:
+                console.print(f"⚠️ Cache error during save: {e}", style="yellow")
+        except Exception as e:
+            console.print(f"❌ Error during processing: {e}", style="red")
 
-        console.print(f"\n💾 Improved resume saved to: [bold blue]{output_file}[/bold blue]")
+            if "model 'mistral' not found" in str(e):
+                console.print("💡 The selected model is not installed. Run: `ollama pull llama3.2:1b`", style="yellow")
+            else:
+                console.print("💡 Make sure Ollama is running: `ollama serve`", style="yellow")
+            return
+
+    # Display and save results
+    console.print("\n" + "=" * 50)
+    console.print("📊 [bold green]Research Results:[/bold green]")
+    console.print("=" * 50)
+    print(result)
+
+    # Save to file
+    output_file = Path("output") / f"research_{topic.replace(' ', '_')[:30]}.txt"
+    output_file.parent.mkdir(exist_ok=True)
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(result)
+
+    console.print(f"\n💾 Research saved to: [bold blue]{output_file}[/bold blue]")
 
 if __name__ == "__main__":
     main()
