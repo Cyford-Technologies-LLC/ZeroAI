@@ -1,15 +1,14 @@
 #!/bin/bash
-set -e # Exit immediately if a command exits with a non-zero status.
+set -e
 
-# --- SCRIPT CONFIGURATION ---
 PROJECT_ROOT="/opt/ZeroAI"
 PYTHON_VERSION="python3.11"
 SERVICE_NAME="zeroai"
 API_FILE_PATH="$PROJECT_ROOT/API/api.py"
 SERVICE_FILE_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
+AI_CREW_FILE_PATH="$PROJECT_ROOT/src/ai_crew.py"
 
 # --- HELPER FUNCTIONS ---
-# Function to detect the OS and set the package manager
 detect_os() {
     if grep -q "debian" /etc/os-release; then
         OS="debian"
@@ -18,26 +17,58 @@ detect_os() {
         OS="rocky"
         PM="dnf"
     else
-        echo "Unsupported OS. The script requires Debian or Rocky Linux."
+        echo "Unsupported OS."
         exit 1
     fi
-    echo "Detected OS: $OS with package manager: $PM"
 }
 
-# Function to run the correct package manager command
-install_packages() {
-    echo "Installing core dependencies..."
-    if [[ "$OS" == "debian" ]]; then
-        sudo $PM update -y
-        sudo $PM install -y "$PYTHON_VERSION" "$PYTHON_VERSION"-pip
-    elif [[ "$OS" == "rocky" ]]; then
-        sudo $PM update -y
-        sudo dnf config-manager --set-enabled crb || true # CRB might be enabled already, allow it to fail
-        sudo $PM install -y "$PYTHON_VERSION" "$PYTHON_VERSION"-pip
-    fi
+# Overwrite the ai_crew.py file
+fix_ai_crew_file() {
+    echo "Overwriting ai_crew.py to ensure the correct class exists."
+    cat > "$AI_CREW_FILE_PATH" << EOF
+from crewai import Agent, Task, Crew, Process
+
+class LatestAiDevelopmentCrew:
+    def crew(self):
+        researcher = Agent(
+            role="Senior Researcher",
+            goal="Identify the latest AI trends and developments",
+            backstory="A seasoned professional who is an expert in AI."
+        )
+
+        writer = Agent(
+            role="AI Content Writer",
+            goal="Compose compelling and informative content about AI.",
+            backstory="A creative writer with a passion for explaining AI topics."
+        )
+
+        research_task = Task(
+            description="Investigate the most recent advancements in AI technology.",
+            agent=researcher,
+            expected_output="A list of 5-10 key AI developments from the past month."
+        )
+
+        writing_task = Task(
+            description="Write a concise blog post based on the research.",
+            agent=writer,
+            expected_output="A 500-word blog post in markdown format."
+        )
+
+        return Crew(
+            agents=[researcher, writer],
+            tasks=[research_task, writing_task],
+            process=Process.sequential,
+        )
+
+if __name__ == '__main__':
+    print("Running a test of the CrewAI crew...")
+    crew = LatestAiDevelopmentCrew().crew()
+    result = crew.kickoff(inputs={'topic': 'latest AI developments'})
+    print("Crew run complete.")
+EOF
 }
 
-# Function to fix the import in the API file
+# Overwrite the API file
 fix_api_file() {
     echo "Fixing import in API file..."
     cat > "$API_FILE_PATH" << EOF
@@ -71,17 +102,23 @@ if __name__ == "__main__":
 EOF
 }
 
-# Function to create and manage the service
-manage_service() {
-    echo "Managing systemd service..."
-    # Stop and disable if it exists to ensure a clean state
-    if sudo systemctl is-enabled --quiet "$SERVICE_NAME"; then
-        sudo systemctl stop "$SERVICE_NAME" || true
-        sudo systemctl disable "$SERVICE_NAME" || true
-    fi
+# Main execution flow
+echo "Starting ZeroAI API setup script..."
+detect_os
 
-    # Create the service file
-    cat > "$SERVICE_FILE_PATH" << EOF
+echo "Installing Python packages..."
+cd "$PROJECT_ROOT"
+sudo "$PYTHON_VERSION" -m pip install --upgrade pip
+sudo "$PYTHON_VERSION" -m pip install fastapi uvicorn "uvicorn[standard]" pysqlite3-binary
+
+fix_ai_crew_file
+fix_api_file
+
+echo "Managing systemd service..."
+sudo systemctl stop "$SERVICE_NAME" || true
+sudo systemctl disable "$SERVICE_NAME" || true
+
+cat > "$SERVICE_FILE_PATH" << EOF
 [Unit]
 Description=ZeroAI FastAPI Service
 After=network.target
@@ -97,24 +134,9 @@ Environment="PYTHONPATH=$PROJECT_ROOT/src"
 WantedBy=multi-user.target
 EOF
 
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$SERVICE_NAME"
-    sudo systemctl start "$SERVICE_NAME"
-    sudo systemctl status "$SERVICE_NAME" --no-pager
-}
-
-# --- MAIN EXECUTION FLOW ---
-echo "Starting ZeroAI API setup script..."
-detect_os
-install_packages
-
-echo "Installing Python packages..."
-cd "$PROJECT_ROOT"
-sudo "$PYTHON_VERSION" -m pip install --upgrade pip
-sudo "$PYTHON_VERSION" -m pip install fastapi uvicorn "uvicorn[standard]" pysqlite3-binary
-
-fix_api_file
-manage_service
+sudo systemctl daemon-reload
+sudo systemctl enable "$SERVICE_NAME"
+sudo systemctl start "$SERVICE_NAME"
+sudo systemctl status "$SERVICE_NAME" --no-pager
 
 echo "Setup complete. The ZeroAI API should now be running in the background."
-
