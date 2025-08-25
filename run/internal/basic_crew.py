@@ -1,110 +1,80 @@
 #!/usr/bin/env python3
 """
-Basic Ollama Chat Example
+Basic AI Crew Example
 
-A simple script to interact with Ollama models without dependencies on the ZeroAI framework.
+This example demonstrates how to create and run a simple AI crew
+for research and content creation tasks.
 """
 
 import sys
 import os
-import time
-import requests
 from pathlib import Path
+
+# Add the src directory to the Python path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from ai_crew import AICrewManager
+from cache_manager import cache
 from rich.console import Console
 
 console = Console()
 
-def get_available_models():
-    """Get a list of available models from Ollama."""
-    try:
-        response = requests.get("http://localhost:11434/api/tags")
-        if response.status_code == 200:
-            models = [model["name"] for model in response.json()["models"]]
-            return models
-        else:
-            console.print("⚠️ Could not fetch available models", style="yellow")
-            return []
-    except Exception as e:
-        console.print(f"⚠️ Error getting models: {e}", style="yellow")
-        return []
-
-def chat_with_model(model_name, message):
-    """Chat with an Ollama model."""
-    try:
-        console.print(f"🤖 Sending message to {model_name}...", style="blue")
-
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": model_name,
-                "prompt": message,
-                "stream": False
-            },
-            timeout=60
-        )
-
-        if response.status_code == 200:
-            return response.json().get("response", "No response received")
-        else:
-            console.print(f"❌ Error: {response.status_code} - {response.text}", style="red")
-            return None
-    except Exception as e:
-        console.print(f"❌ Error: {e}", style="red")
-        return None
 
 def main():
-    console.print("🚀 [bold blue]Simple Ollama Chat[/bold blue]")
-    console.print("=" * 50)
+    """Run the basic crew example."""
+    console.print("🤖 [bold blue]Self-Hosted Agentic AI - Basic Crew Example[/bold blue]")
+    console.print("=" * 60)
 
-    # Get list of available models
-    available_models = get_available_models()
+    try:
+        # Define the research topic
+        topic = input("\n📝 Enter a topic to research (or press Enter for default): ").strip()
+        if not topic:
+            topic = "The future of artificial intelligence in healthcare"
 
-    if not available_models:
-        console.print("❌ No models found. Please run 'ollama pull llama3.2:1b' first", style="red")
-        console.print("💡 Make sure Ollama is running with: 'ollama serve'", style="yellow")
-        return
+        # Initialize the AI Crew Manager with task context
+        console.print("🔧 Initializing AI Crew Manager...")
+        manager = AICrewManager(task=topic)
 
-    # Display available models
-    console.print("\n📋 Available models:")
-    for i, model in enumerate(available_models, 1):
-        console.print(f"  {i}. {model}")
+        # Create a research crew
+        console.print("👥 Creating research crew...")
+        crew = manager.create_research_crew()
 
-    # Select a model
-    default_model = available_models[0]
-    console.print(f"\n🤖 Using default model: [bold blue]{default_model}[/bold blue]")
+        console.print(f"\n🔍 Researching topic: [bold green]{topic}[/bold green]")
 
-    # Get user message
-    console.print("\n💬 Enter your message (or press Enter for default):")
-    message = input().strip()
+        # Check cache first
+        cached_result = cache.get(topic, "crew_research")
+        if cached_result:
+            console.print("\n⚡ [bold yellow]Using cached result![/bold yellow]")
+            result = cached_result
+        else:
+            # Execute the crew
+            result = manager.execute_crew(crew, {"topic": topic})
+            # Cache the result
+            cache.set(topic, "crew_research", str(result))
 
-    if not message:
-        message = "Tell me about who you are"
+        # Display results
+        console.print("\n" + "=" * 60)
+        console.print("📊 [bold green]Research Results:[/bold green]")
+        console.print("=" * 60)
+        console.print(result)
 
-    # Start timer
-    start_time = time.time()
-
-    # Get response
-    response = chat_with_model(default_model, message)
-
-    # End timer
-    end_time = time.time()
-    generation_time = end_time - start_time
-
-    if response:
-        console.print("\n" + "=" * 50)
-        console.print("🤖 [bold green]Response:[/bold green]")
-        console.print("=" * 50)
-        print(response)
-        console.print(f"\n⏱️ Generation time: {generation_time:.2f} seconds", style="cyan")
-
-        # Save to file
-        output_file = Path("output") / f"chat_{int(time.time())}.txt"
+        # Save results to file
+        output_file = Path("output") / f"research_{topic.replace(' ', '_')[:30]}.txt"
         output_file.parent.mkdir(exist_ok=True)
 
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(f"Message: {message}\n\nResponse:\n{response}")
+            f.write(f"Research Topic: {topic}\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(str(result))
 
-        console.print(f"\n💾 Chat saved to: [bold blue]{output_file}[/bold blue]")
+        console.print(f"\n💾 Results saved to: [bold blue]{output_file}[/bold blue]")
+
+    except KeyboardInterrupt:
+        console.print("\n⚠️  Operation cancelled by user.")
+    except Exception as e:
+        console.print(f"\n❌ Error: {e}")
+        console.print("💡 Make sure Ollama is running: `ollama serve`")
+
 
 if __name__ == "__main__":
     main()
