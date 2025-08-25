@@ -35,7 +35,8 @@ def main():
     # Local settings
     console.print("\n🏠 [bold]Local AI Settings[/bold]")
     env_vars["OLLAMA_BASE_URL"] = Prompt.ask(
-        "Ollama server URL", 
+        "Ollama server URL",
+
         default="http://localhost:11434"
     )
     env_vars["DEFAULT_MODEL"] = Prompt.ask(
