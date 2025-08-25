@@ -39,17 +39,17 @@ PKG_MANAGER=$(get_pkg_manager)
 if ! command -v python3.11 &> /dev/null; then
     echo "📦 Installing Python 3.11 and dependencies..."
     if [[ "$PKG_MANAGER" == "apt" ]]; then
-        sudo apt update && sudo apt install -y python3.11 python3.11-venv python3.11-distutils python3.11-dev
+        sudo apt update && sudo apt install -y python3.11 python3.11-distutils python3.11-dev
     elif [[ "$PKG_MANAGER" == "dnf" ]]; then
-        sudo dnf config-manager --set-enabled crb || true  # Enable CRB on Rocky, ignore if not present
-        sudo dnf install -y python3.11 python3.11-venv python3.11-devel
+        sudo dnf config-manager --set-enabled crb || true  # Enable CRB on Rocky
+        sudo dnf install -y python3.11 python3.11-devel
     else
         echo "❌ No supported package manager found to install Python 3.11."
         exit 1
     fi
 fi
 
-# Install Python dependencies using python3.11's pip
+# Install Python dependencies system-wide using python3.11's pip
 echo "📦 Installing Python dependencies..."
 python3.11 -m pip install --upgrade pip
 python3.11 -m pip install pysqlite3-binary -r requirements.txt
@@ -90,7 +90,11 @@ else
 fi
 
 echo ""
-echo "🎉 ZeroAI setup complete!"
-echo "You can now run:"
+echo "🎉 ZeroAI setup complete! You can now run:"
 echo "   python3.11 run/internal/basic_crew.py"
 echo ""
+echo "📚 Documentation:"
+echo "   cat README.md"
+echo ""
+echo "⚙️  Configuration:"
+echo "   nano .env"
