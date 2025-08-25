@@ -35,26 +35,40 @@ get_pkg_manager() {
 
 PKG_MANAGER=$(get_pkg_manager)
 
-# Check Python
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python3 not found. Please install Python 3.8+"
-    exit 1
-fi
-
-PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-echo "🐍 Python version: $PYTHON_VERSION"
-
-# Check and install pip
-if ! command -v pip3 &> /dev/null; then
-    echo "📦 Installing pip..."
+# Check Python 3.11 and install if not present
+if ! command -v python3.11 &> /dev/null; then
+    echo "📦 Installing Python 3.11 and dependencies..."
     if [[ "$PKG_MANAGER" == "apt" ]]; then
-        sudo apt update && sudo apt install -y python3-pip
+        sudo apt update && sudo apt install -y python3.11 python3.11-venv python3.11-distutils python3.11-dev
     elif [[ "$PKG_MANAGER" == "dnf" ]]; then
-        sudo dnf install -y python3-pip
+        sudo dnf install -y python3.11 python3.11-venv python3.11-devel
     else
-        echo "❌ No supported package manager found to install pip."
+        echo "❌ No supported package manager found to install Python 3.11."
         exit 1
     fi
+fi
+
+# Create and activate virtual environment
+if [ ! -d "venv-crewai" ]; then
+    echo "🐍 Creating virtual environment..."
+    python3.11 -m venv venv-crewai
+fi
+source venv-crewai/bin/activate
+
+# Add pysqlite3-binary to requirements for compatibility
+echo "pysqlite3-binary" >> requirements.txt
+
+# Install Python dependencies
+echo "📦 Installing Python dependencies..."
+pip install -r requirements.txt
+
+# Setup environment file
+if [ ! -f .env ]; then
+    echo "⚙️  Creating .env file..."
+    cp .env.example .env
+    echo "📝 Please edit .env with your configuration"
+else
+    echo "✅ .env file exists"
 fi
 
 # Install Ollama if not present
@@ -63,19 +77,6 @@ if ! command -v ollama &> /dev/null; then
     curl -fsSL https://ollama.ai/install.sh | sh
 else
     echo "✅ Ollama already installed"
-fi
-
-# Install Python dependencies
-echo "📦 Installing Python dependencies..."
-#pip3 install -r requirements.txt
-python3.11 -m pip install -r requirements.txt
-# Setup environment file
-if [ ! -f .env ]; then
-    echo "⚙️  Creating .env file..."
-    cp .env.example .env
-    echo "📝 Please edit .env with your configuration"
-else
-    echo "✅ .env file exists"
 fi
 
 # Start Ollama if not running
@@ -97,10 +98,10 @@ else
 fi
 
 echo ""
-echo "🎉 ZeroAI setup complete!"
+echo "🎉 ZeroAI setup complete! Virtual environment is active."
 echo ""
 echo "🚀 Quick start:"
-echo "   python3 run_example.py"
+echo "   python3 run/internal/basic_crew.py"
 echo ""
 echo "📚 Documentation:"
 echo "   cat README.md"

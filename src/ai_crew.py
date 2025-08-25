@@ -7,10 +7,15 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 
-__import__('pysqlite3')
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import sys
 import os
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import config
