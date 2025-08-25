@@ -20,7 +20,7 @@ class CrewRequest(BaseModel):
     inputs: Dict[str, Any]
 
 @app.post("/run_crew_ai/")
-@app.post("/run_code_crew_ai/")
+#@app.post("/run_code_crew_ai/")
 def run_crew_ai(request: CrewRequest):
     """
     Endpoint to trigger a specific CrewAI crew.
