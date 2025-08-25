@@ -32,7 +32,8 @@ class AICrewManager:
             if any(word in task for word in ['code', 'php', 'python', 'javascript']):
                 self.model_name = 'codellama:13b'
             else:
-                self.model_name = 'llama3.1:8b'
+                # self.model_name = 'llama3.1:8b'
+                self.model_name = 'llama3.2:1b'
         else:
             self.model_name = model_name or config.model.name
         self.provider = provider

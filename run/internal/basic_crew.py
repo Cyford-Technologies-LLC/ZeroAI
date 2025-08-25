@@ -14,10 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from ai_crew import AICrewManager
-from crewai import LLM
-from config import config
-from distributed_router import distributed_router
-
 from cache_manager import cache
 from rich.console import Console
 
