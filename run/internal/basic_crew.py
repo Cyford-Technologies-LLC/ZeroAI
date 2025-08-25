@@ -13,7 +13,7 @@ from pathlib import Path
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-# from ai_crew import AICrewManager
+from ai_crew import AICrewManager
 from crewai import LLM
 from config import config
 from distributed_router import distributed_router
