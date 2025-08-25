@@ -1,4 +1,14 @@
-from ..src.ZeroAI.crew import LatestAiDevelopmentCrew
+# API/api.py
+
+import os
+import sys
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Dict, Any
+
+# Fix the import to be a direct import, not relative
+from ZeroAI.crew import LatestAiDevelopmentCrew
 
 
 # Get the absolute path to the project root and add `src` to the Python path
