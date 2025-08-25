@@ -67,8 +67,8 @@ fi
 
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
-pip3 install -r requirements.txt
-
+#pip3 install -r requirements.txt
+python3.11 -m pip install -r requirements.txt
 # Setup environment file
 if [ ! -f .env ]; then
     echo "⚙️  Creating .env file..."
