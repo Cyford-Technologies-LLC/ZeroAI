@@ -5,6 +5,12 @@ Basic AI Crew Example
 This example demonstrates how to create and run a simple AI crew
 for research and content creation tasks.
 """
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
 
 import sys
 import os
