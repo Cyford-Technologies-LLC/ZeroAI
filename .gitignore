@@ -30,7 +30,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-cyford/
+run/cyford/
 
 
 # IDE
