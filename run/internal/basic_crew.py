@@ -70,6 +70,8 @@ def main():
 
     # Use distributed routing to find optimal processing peer
     base_url, peer_name = distributed_router.get_optimal_endpoint(topic, model_name)
+    if peer_name == "local":
+        console.print("💻 Using local processing (no suitable peers)")
     console.print(f"🌐 Processing with: {peer_name}")
 
     # Try using peer agent directly for better performance if available
@@ -151,15 +153,17 @@ def main():
                 llm=llm
             )
 
-            # Create research task
+            # Create research task - Adding expected_output to fix the validation error
             research_task = Task(
                 description=f"Research the following topic thoroughly: {topic}",
+                expected_output="Detailed research findings on the topic",
                 agent=researcher
             )
 
-            # Create writing task
+            # Create writing task - Adding expected_output to fix the validation error
             writing_task = Task(
                 description=f"Create a comprehensive report on {topic} based on the research",
+                expected_output="A well-structured, comprehensive report",
                 agent=writer,
                 dependencies=[research_task]
             )
