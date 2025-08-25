@@ -1,28 +1,12 @@
-# API/api.py
+# /opt/ZeroAI/API/api.py
 
-import os
-import sys
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
 
-# Fix the import to be a direct import, not relative
+# This is the ONLY import statement you need for your crew.
 from ZeroAI.crew import LatestAiDevelopmentCrew
-
-
-# Get the absolute path to the project root and add `src` to the Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(os.path.join(project_root, 'src'))
-
-# Import your CrewAI module from the new path
-try:
-    from ZeroAI.crew import LatestAiDevelopmentCrew
-except ImportError as e:
-    raise RuntimeError(
-        "Could not import your CrewAI crew. "
-        "Check your project structure and import path."
-    ) from e
 
 # Initialize FastAPI app
 app = FastAPI(
