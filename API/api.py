@@ -20,6 +20,7 @@ class CrewRequest(BaseModel):
     inputs: Dict[str, Any]
 
 @app.post("/run_crew_ai/")
+@app.post("/run_code_crew_ai/")
 def run_crew_ai(request: CrewRequest):
     """
     Endpoint to trigger a specific CrewAI crew.
@@ -30,6 +31,18 @@ def run_crew_ai(request: CrewRequest):
         return {"result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def run_code_crew_ai(request: CrewRequest):
+    """
+    Endpoint to trigger a specific CrewAI crew.
+    """
+    try:
+        crew_instance = LatestAiDevelopmentCrew().crew()
+        result = crew_instance.kickoff(inputs=request.inputs)
+        return {"result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     uvicorn.run("API.api:app", host="0.0.0.0", port=3939)
