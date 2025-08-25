@@ -18,55 +18,29 @@ detect_os() {
         OS="rocky"
         PM="dnf"
     else
-        echo "Unsupported OS."
+        echo "Unsupported OS. The script requires Debian or Rocky Linux."
         exit 1
     fi
     echo "Detected OS: $OS with package manager: $PM"
 }
 
-# Function to update packages
-update_packages() {
-    echo "Updating package list..."
+# Function to run the correct package manager command
+install_packages() {
+    echo "Installing core dependencies..."
     if [[ "$OS" == "debian" ]]; then
-        sudo $PM update
+        sudo $PM update -y
+        sudo $PM install -y "$PYTHON_VERSION" "$PYTHON_VERSION"-pip
     elif [[ "$OS" == "rocky" ]]; then
         sudo $PM update -y
+        sudo dnf config-manager --set-enabled crb || true # CRB might be enabled already, allow it to fail
+        sudo $PM install -y "$PYTHON_VERSION" "$PYTHON_VERSION"-pip
     fi
 }
 
-# --- MAIN EXECUTION FLOW ---
-echo "Starting ZeroAI API setup script..."
-detect_os
-update_packages
-
-# 1. Install necessary dependencies based on OS
-echo "Installing core dependencies..."
-if [[ "$OS" == "debian" ]]; then
-    sudo $PM install -y python3-pip python3.11
-elif [[ "$OS" == "rocky" ]]; then
-    # Enable CRB repo for newer python on Rocky
-    sudo dnf config-manager --set-enabled crb
-    sudo $PM install -y python3.11 python3.11-pip
-fi
-
-# 2. Install Python packages and overwrite API file
-echo "Installing API dependencies and fixing import..."
-cd "$PROJECT_ROOT"
-# Install required packages
-sudo "$PYTHON_VERSION" -m pip install fastapi uvicorn "uvicorn[standard]" pysqlite3-binary
-
-# Create a temporary file with the correct API code
-cat > temp_api_fix.py << EOF
-import os
-import sys
-
-# Ensure the project root is in the path
-project_root = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(project_root, 'src'))
-
-# Overwrite the API file with the correct import
-with open('$API_FILE_PATH', 'w') as f:
-    f.write('''
+# Function to fix the import in the API file
+fix_api_file() {
+    echo "Fixing import in API file..."
+    cat > "$API_FILE_PATH" << EOF
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -94,14 +68,20 @@ def run_crew_ai(request: CrewRequest):
 
 if __name__ == "__main__":
     uvicorn.run("API.api:app", host="0.0.0.0", port=3939)
-''')
 EOF
-sudo "$PYTHON_VERSION" temp_api_fix.py
-rm temp_api_fix.py
+}
 
-# 3. Create a systemd service file
-echo "Creating systemd service file..."
-cat > "$SERVICE_FILE_PATH" << EOF
+# Function to create and manage the service
+manage_service() {
+    echo "Managing systemd service..."
+    # Stop and disable if it exists to ensure a clean state
+    if sudo systemctl is-enabled --quiet "$SERVICE_NAME"; then
+        sudo systemctl stop "$SERVICE_NAME" || true
+        sudo systemctl disable "$SERVICE_NAME" || true
+    fi
+
+    # Create the service file
+    cat > "$SERVICE_FILE_PATH" << EOF
 [Unit]
 Description=ZeroAI FastAPI Service
 After=network.target
@@ -109,18 +89,32 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=$PROJECT_ROOT
-ExecStart=$PYTHON_VERSION -m uvicorn API.api:app --host 0.0.0.0 --port 3939 --workers 1 --app-dir $PROJECT_ROOT
+ExecStart=$PYTHON_VERSION -m uvicorn API.api:app --host 0.0.0.0 --port 3939 --workers 1
 Restart=always
+Environment="PYTHONPATH=$PROJECT_ROOT/src"
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# 4. Enable and start the service
-echo "Enabling and starting service..."
-sudo systemctl daemon-reload
-sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl start "$SERVICE_NAME"
-sudo systemctl status "$SERVICE_NAME"
+    sudo systemctl daemon-reload
+    sudo systemctl enable "$SERVICE_NAME"
+    sudo systemctl start "$SERVICE_NAME"
+    sudo systemctl status "$SERVICE_NAME" --no-pager
+}
+
+# --- MAIN EXECUTION FLOW ---
+echo "Starting ZeroAI API setup script..."
+detect_os
+install_packages
+
+echo "Installing Python packages..."
+cd "$PROJECT_ROOT"
+sudo "$PYTHON_VERSION" -m pip install --upgrade pip
+sudo "$PYTHON_VERSION" -m pip install fastapi uvicorn "uvicorn[standard]" pysqlite3-binary
+
+fix_api_file
+manage_service
 
 echo "Setup complete. The ZeroAI API should now be running in the background."
+
