@@ -35,12 +35,13 @@ get_pkg_manager() {
 
 PKG_MANAGER=$(get_pkg_manager)
 
-# Check Python 3.11 and install if not present
+# Check and install Python 3.11 and necessary dependencies
 if ! command -v python3.11 &> /dev/null; then
     echo "📦 Installing Python 3.11 and dependencies..."
     if [[ "$PKG_MANAGER" == "apt" ]]; then
         sudo apt update && sudo apt install -y python3.11 python3.11-venv python3.11-distutils python3.11-dev
     elif [[ "$PKG_MANAGER" == "dnf" ]]; then
+        sudo dnf config-manager --set-enabled crb || true  # Enable CRB on Rocky, ignore if not present
         sudo dnf install -y python3.11 python3.11-venv python3.11-devel
     else
         echo "❌ No supported package manager found to install Python 3.11."
@@ -48,19 +49,10 @@ if ! command -v python3.11 &> /dev/null; then
     fi
 fi
 
-# Create and activate virtual environment
-if [ ! -d "venv-crewai" ]; then
-    echo "🐍 Creating virtual environment..."
-    python3.11 -m venv venv-crewai
-fi
-source venv-crewai/bin/activate
-
-# Add pysqlite3-binary to requirements for compatibility
-echo "pysqlite3-binary" >> requirements.txt
-
-# Install Python dependencies
+# Install Python dependencies using python3.11's pip
 echo "📦 Installing Python dependencies..."
-pip install -r requirements.txt
+python3.11 -m pip install --upgrade pip
+python3.11 -m pip install pysqlite3-binary -r requirements.txt
 
 # Setup environment file
 if [ ! -f .env ]; then
@@ -98,13 +90,7 @@ else
 fi
 
 echo ""
-echo "🎉 ZeroAI setup complete! Virtual environment is active."
+echo "🎉 ZeroAI setup complete!"
+echo "You can now run:"
+echo "   python3.11 run/internal/basic_crew.py"
 echo ""
-echo "🚀 Quick start:"
-echo "   python3 run/internal/basic_crew.py"
-echo ""
-echo "📚 Documentation:"
-echo "   cat README.md"
-echo ""
-echo "⚙️  Configuration:"
-echo "   nano .env"

@@ -1,11 +1,5 @@
 """Main AI Crew management system."""
 
-import logging
-from typing import List, Dict, Any, Optional
-from crewai import Agent, Task, Crew, LLM
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
-
 
 try:
     __import__('pysqlite3')
@@ -13,6 +7,13 @@ try:
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 except ImportError:
     pass
+
+
+import logging
+from typing import List, Dict, Any, Optional
+from crewai import Agent, Task, Crew, LLM
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 import sys
 import os
