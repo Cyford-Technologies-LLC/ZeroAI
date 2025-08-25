@@ -5,9 +5,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
 
-# Adjust the path to import from the src directory
-# This assumes your project structure is /opt/ZeroAI/src/ZeroAI/crew.py
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src'))
+# Get the absolute path to the project root and add `src` to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(project_root, 'src'))
 
 # Import your CrewAI module from the new path
 try:
@@ -42,5 +42,4 @@ def run_crew_ai(request: CrewRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    # The uvicorn.run command should point to the correct file path
-    uvicorn.run(app, host="0.0.0.0", port=3939)
+    uvicorn.run("API.api:app", host="0.0.0.0", port=3939)
