@@ -1,6 +1,7 @@
 import os
 import sys
 import uvicorn
+from ..src.ZeroAI.crew import LatestAiDevelopmentCrew
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
