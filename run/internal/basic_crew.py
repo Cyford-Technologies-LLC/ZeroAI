@@ -1,26 +1,3 @@
-## Me
-ok  my last ai  created a new feature for me  to make all my ai peers  communicate ith each other an se the best AI  resource..   however  he only made it work  for   examples/code_generator.py
-i moved all code too rn/internal..    but i need help  making this run the mlost the same way  in basic crew..
-run/internal/basic_crew.py
-
-
-
-## AI Assistant
-I'll help you understand how to make the AI communication feature work with your `basic_crew.py` file. Let me first explore the existing code and files to see what we're working with.I need to examine the AI crew communication feature that was added to the code generator. Let me look at both files to understand what I need to adapt:I'll help you adapt the AI intercommunication feature from `code_generator.py` to work in `basic_crew.py`. Let's examine the files we have and implement a solution for you.
-
-Based on your description, you had a feature that enabled AI agents to communicate with each other to find the best AI resource, but it only works in the `examples/code_generator.py` file. You've moved the code to `run/internal/`, and now you need to implement the same functionality in `basic_crew.py`.
-
-Let's modify your `run/internal/basic_crew.py` to include this feature:
-
-```textmate
-#!/usr/bin/env python3
-"""
-Basic AI Crew Example
-
-This example demonstrates how to create and run a simple AI crew
-for research and content creation tasks with AI intercommunication capabilities.
-"""
-
 import sys
 import os
 from pathlib import Path
