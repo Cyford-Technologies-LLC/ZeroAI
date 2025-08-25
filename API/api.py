@@ -1,10 +1,5 @@
-import os
-import sys
-import uvicorn
 from ..src.ZeroAI.crew import LatestAiDevelopmentCrew
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any
+
 
 # Get the absolute path to the project root and add `src` to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
