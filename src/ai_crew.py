@@ -46,7 +46,7 @@ class AICrewManager:
                 # Use distributed routing to find best peer
                 task_description = kwargs.get('task', '')
                 base_url, peer_name = distributed_router.get_optimal_endpoint(task_description, self.model_name)
-                    
+                console.print(f"✅ BASEURL {base_url}", style="green")
                 llm = LLM(
                     model=f"ollama/{self.model_name}",
                     base_url=base_url,

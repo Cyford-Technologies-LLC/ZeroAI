@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from ai_crew import AICrewManager
 from cache_manager import cache
+
 from rich.console import Console
 
 console = Console()
