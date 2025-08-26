@@ -101,6 +101,8 @@ class AICrewManager:
 
     # Modified for optional inputs
     def create_analysis_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
+        if not inputs:
+            inputs = []
         researcher = create_researcher(self.llm, inputs)
         analyst = create_analyst(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
@@ -115,6 +117,8 @@ class AICrewManager:
 
     # New method for coding crew
     def create_coding_crew(self, inputs: Dict[str, Any]) -> Crew:
+        if not inputs:
+            inputs = []
         coder = Agent(
             role='Senior Software Developer',
             goal=f'Write clean, efficient, and well-documented code for the task: "{inputs.get("topic")}". Context: "{inputs.get("context")}".',
