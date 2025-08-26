@@ -73,33 +73,33 @@ class AICrewManager:
             console.print(f"❌ Failed to connect to {self.provider}: {e}", style="red")
             raise
 
-    # ... (rest of the class remains the same) ...
-    def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        # ... (implementation remains the same) ...
+    # ... (Add create_crew_for_category and other crew creation methods here) ...
+    # This example assumes these methods exist in your full ai_crew.py.
 
     def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
-            """Execute a crew with progress tracking and return full response."""
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console,
-            ) as progress:
-                task = progress.add_task("Executing AI crew...", total=None)
+        """Execute a crew with progress tracking and return full response."""
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Executing AI crew...", total=None)
 
-                try:
-                    result_text = crew.kickoff(inputs=inputs)
-                    progress.update(task, description="✅ Crew execution completed!")
+            try:
+                result_text = crew.kickoff(inputs=inputs)
+                progress.update(task, description="✅ Crew execution completed!")
 
-                    # Return a dictionary with both the result and LLM details
-                    return {
-                        "result": result_text,
-                        "llm_details": self.get_llm_details()
-                    }
-                except Exception as e:
-                    progress.update(task, description=f"❌ Crew execution failed: {e}")
-                    raise
+                # Return a dictionary with both the result and LLM details
+                return {
+                    "result": result_text,
+                    "llm_details": self.get_llm_details()
+                }
+            except Exception as e:
+                progress.update(task, description=f"❌ Crew execution failed: {e}")
+                # Re-raise the exception or return an error response
+                # depending on your desired error handling
+                raise
 
-    # Helper method to get the LLM details
     def get_llm_details(self) -> Dict[str, str]:
         return {
             "model_name": self.model_name,
