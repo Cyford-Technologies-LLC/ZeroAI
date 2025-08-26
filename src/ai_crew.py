@@ -179,7 +179,12 @@ class AICrewManager:
             task = progress.add_task("Executing AI crew...", total=None)
 
             try:
-                result_text = crew.kickoff(inputs=inputs)
+                # crew.kickoff() returns a CrewOutput object.
+                crew_output_object = crew.kickoff(inputs=inputs)
+
+                # Extract the raw string output.
+                result_text = crew_output_object.raw
+
                 progress.update(task, description="✅ Crew execution completed!")
 
                 # Return a dictionary with both the result and LLM details
