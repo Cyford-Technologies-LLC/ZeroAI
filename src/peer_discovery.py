@@ -33,6 +33,39 @@ class PeerNode:
 
 class PeerDiscovery:
     """Manages peer discovery and resource sharing"""
+    def __init__(self):
+        # ... (other init logic)
+        self.peers = {}
+        self.ollama_host = os.getenv("OLLAMA_HOST", "ollama-prod")
+
+        # Add the local host to the peer list
+        self.add_local_host_as_peer()
+
+    def add_local_host_as_peer(self):
+        try:
+            # Get the hostname
+            hostname = socket.gethostname()
+            # Get the internal Docker IP
+            internal_ip = socket.gethostbyname(hostname)
+
+            # Add the internal IP as a peer
+            self.add_peer(ip=internal_ip, port=8080, name=f"{hostname}-internal")
+
+        except Exception as e:
+            # Handle error if network lookup fails
+            pass
+
+    def get_public_ip(self):
+        # This function should be implemented to retrieve the public IP
+        # using an external service or a pre-configured environment variable.
+        # For example, using an environment variable OLLAMA_PUBLIC_HOST
+        return os.getenv("OLLAMA_PUBLIC_HOST")
+
+    def discover_peers(self):
+        # ... (existing discovery logic)
+        public_ip = self.get_public_ip()
+        if public_ip:
+            self.add_peer(ip=public_ip, port=8080, name=f"{socket.gethostname()}-public")
 
     def __init__(self, config_file: str = "config/peers.json"):
         self.config_file = Path(config_file)

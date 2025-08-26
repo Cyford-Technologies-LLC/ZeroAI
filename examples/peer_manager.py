@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from distributed_router import distributed_router
 from rich.console import Console
+from peer_discovery import peer_discovery, PeerNode
 import argparse
 
 console = Console()
@@ -37,7 +38,7 @@ def main():
             return
         
         console.print(f"🔍 Adding peer: {args.ip}:{args.port}")
-        success = distributed_router.add_peer(args.ip, args.port, args.name)
+        success = peer_discovery.add_peer(args.ip, args.port, args.name)
         
         if success:
             console.print("✅ Peer added successfully!", style="green")
