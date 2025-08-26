@@ -107,7 +107,8 @@ class AICrewManager:
         )
         return Crew(agents=[researcher], tasks=[task], process=Process.sequential)
 
-    def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
+    # Make the inputs argument optional for CLI compatibility
+    def create_research_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
         """Create a research-focused crew."""
         researcher = create_researcher(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
@@ -121,7 +122,8 @@ class AICrewManager:
             verbose=config.agents.verbose
         )
 
-    def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
+    # Make the inputs argument optional for CLI compatibility
+    def create_analysis_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
         """Create an analysis-focused crew."""
         researcher = create_researcher(self.llm, inputs)
         analyst = create_analyst(self.llm, inputs)
