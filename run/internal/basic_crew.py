@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from ai_crew import AICrewManager
 from cache_manager import cache
+from distributed_router import distributed_router # Import the router
 
 from rich.console import Console
 
@@ -38,13 +39,13 @@ def main():
         if not topic:
             topic = "The future of artificial intelligence in healthcare"
 
-        # Initialize the AI Crew Manager with task context
+        # Initialize the AI Crew Manager with task context and the router instance
         console.print("🔧 Initializing AI Crew Manager...")
-        manager = AICrewManager(task=topic)
+        manager = AICrewManager(distributed_router, topic=topic) # Pass distributed_router as the first argument
 
         # Create a research crew
         console.print("👥 Creating research crew...")
-        crew = manager.create_research_crew()
+        crew = manager.create_research_crew({"topic": topic}) # Pass the inputs as a dictionary
 
         console.print(f"\n🔍 Researching topic: [bold green]{topic}[/bold green]")
 

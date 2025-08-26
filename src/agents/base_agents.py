@@ -4,7 +4,7 @@ from crewai import Agent, LLM
 from typing import Optional, List
 
 
-def create_researcher(llm: LLM) -> Agent:
+def create_researcher(llm, inputs: dict[str, any]) -> Agent:
     """Create a research specialist agent."""
     return Agent(
         role="Senior Research Specialist",
@@ -19,7 +19,7 @@ def create_researcher(llm: LLM) -> Agent:
     )
 
 
-def create_writer(llm: LLM) -> Agent:
+def create_writer(llm, inputs: dict[str, any]) -> Agent:
     """Create a professional writer agent."""
     return Agent(
         role="Professional Content Writer",
@@ -34,7 +34,7 @@ def create_writer(llm: LLM) -> Agent:
     )
 
 
-def create_analyst(llm: LLM) -> Agent:
+def create_analyst(llm, inputs: dict[str, any]) -> Agent:
     """Create a data analyst agent."""
     return Agent(
         role="Senior Data Analyst",
@@ -49,7 +49,7 @@ def create_analyst(llm: LLM) -> Agent:
     )
 
 
-def create_strategist(llm: LLM) -> Agent:
+def create_strategist(llm, inputs: dict[str, any]) -> Agent:
     """Create a strategic planning agent."""
     return Agent(
         role="Strategic Planning Consultant",

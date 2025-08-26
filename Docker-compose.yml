@@ -1,19 +1,15 @@
-version: '3.8'
-
 services:
   ollama:
-    container_name: ollama
+    container_name: ollama-prod
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "11434:11434" # Exposed for host access in production
     volumes:
       - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0:11434
     restart: always
 
   zeroai_api:
-    container_name: zeroai_api
+    container_name: zeroai_api-prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,27 +19,27 @@ services:
       - "3939:3939"
     environment:
       - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL_NAME=llama3.2:1b
       - PYTHONPATH=/app/src
     volumes:
-      - .:/app
-    entrypoint: /bin/bash -c "ollama pull llama3.1:8b && uvicorn API.api:app --host 0.0.0.0 --port 3939"
+      - ./src:/app/src
+    entrypoint: /bin/bash -c "sleep 5 && curl -s http://ollama:11434/api/pull -d '{\"name\":\"llama3.1:8b\"}' && uvicorn API.api:app --host 0.0.0.0 --port 3939"
 
   zeroai_peer:
-    container_name: zeroai_peer
+    container_name: zeroai_peer-prod
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - ollama
-    # === CORRECTED: Add ports mapping here ===
-    ports:
-      - "8080:8080"
+    # No ports mapping to the host
     volumes:
-      - .:/app
+      - ./src:/app/src
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - PYTHONPATH=/app/src
-    command: ["python3.11", "examples/start_peer_service_docker.py"]
+    working_dir: /app
+    command: ["python3.11", "run/internal/start_peer_service_docker.py"]
 
 volumes:
   ollama_data:

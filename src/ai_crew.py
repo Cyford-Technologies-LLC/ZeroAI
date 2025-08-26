@@ -6,14 +6,7 @@ from crewai import Agent, Task, Crew, LLM, Process, CrewOutput
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-import sys
-import os
-from pathlib import Path
-# Add the src directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent))
-
 from config import config
-from distributed_router import distributed_router
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
 from providers.cloud_providers import CloudProviderManager
@@ -21,44 +14,34 @@ from providers.cloud_providers import CloudProviderManager
 console = Console()
 logger = logging.getLogger(__name__)
 
-
 class AICrewManager:
     """Manages AI crew creation and execution."""
 
-    def __init__(self, model_name: Optional[str] = None, provider: str = "local", **kwargs):
-        """Initialize the AI Crew Manager."""
+    def __init__(self, distributed_router_instance, **kwargs):
+        self.router = distributed_router_instance
         self.category = kwargs.pop('category', 'general')
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
 
-        if not model_name and self.task_description:
-            task = self.task_description.lower()
-            if any(word in task for word in ['code', 'php', 'python', 'javascript']):
-                self.model_name = 'codellama:13b'
-            else:
-                self.model_name = 'llama3.2:1b'
-        else:
-            self.model_name = model_name or config.model.name
+        base_url, peer_name, model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
 
+        self.model_name = model_name
+        self.endpoint = base_url
+        self.peer_name = peer_name
         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
-        self.provider = provider
-        self.endpoint = None
+        self.provider = "local"
         self.llm = self._setup_llm(**kwargs)
 
     def _setup_llm(self, **kwargs) -> LLM:
-        """Setup LLM connection (local or cloud)."""
         try:
             if self.provider == "local":
-                task_description = self.task_description or kwargs.get('task', '')
-                base_url, peer_name = distributed_router.get_optimal_endpoint(task_description, self.model_name)
-                console.print(f"✅ BASEURL {base_url}", style="green")
-                self.endpoint = base_url
+                console.print(f"✅ BASEURL {self.endpoint}", style="green")
                 llm = LLM(
                     model=f"ollama/{self.model_name}",
-                    base_url=base_url,
+                    base_url=self.endpoint,
                     temperature=config.model.temperature,
                     max_tokens=self.max_tokens
                 )
-                console.print(f"✅ Connected to {self.model_name}", style="green")
+                console.print(f"✅ Connected to {self.model_name} on {self.peer_name}", style="green")
             elif self.provider in ["openai", "anthropic", "azure", "google"]:
                 self.endpoint = self.provider
                 if self.provider == "openai":
@@ -66,13 +49,11 @@ class AICrewManager:
                 console.print(f"✅ Connected to {self.provider} {self.model_name}", style="green")
             else:
                 raise ValueError(f"Unsupported provider: {self.provider}")
-
             return llm
         except Exception as e:
             console.print(f"❌ Failed to connect to {self.provider}: {e}", style="red")
             raise
 
-    # New factory method for web interface and CLI compatibility
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
         if self.category == "research":
@@ -85,24 +66,18 @@ class AICrewManager:
             console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
             return self.create_research_crew(inputs)
 
-    # Modified for optional inputs
-    def create_research_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
-        if not inputs:
-            inputs = []
+    def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
         research_task = create_research_task(researcher, inputs)
-        writing_task = create_writing_task(writer, inputs)
+        writing_task = create_writing_task(writer, inputs, context=[research_task])
         return Crew(
             agents=[researcher, writer],
             tasks=[research_task, writing_task],
             verbose=config.agents.verbose
         )
 
-    # Modified for optional inputs
-    def create_analysis_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
-        if not inputs:
-            inputs = []
+    def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm, inputs)
         analyst = create_analyst(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
@@ -115,10 +90,7 @@ class AICrewManager:
             verbose=config.agents.verbose
         )
 
-    # New method for coding crew
     def create_coding_crew(self, inputs: Dict[str, Any]) -> Crew:
-        if not inputs:
-            inputs = []
         coder = Agent(
             role='Senior Software Developer',
             goal=f'Write clean, efficient, and well-documented code for the task: "{inputs.get("topic")}". Context: "{inputs.get("context")}".',
@@ -165,8 +137,8 @@ class AICrewManager:
                 if self.category == 'coding':
                     for task_output in crew_output_object.tasks_outputs:
                         if "code" in task_output.description.lower():
-                             result_text = task_output.output
-                             break
+                            result_text = task_output.output
+                            break
                     if result_text is None:
                         result_text = crew_output_object.raw
                 else:
@@ -189,14 +161,3 @@ class AICrewManager:
             "provider": self.provider,
             "endpoint": self.endpoint
         }
-
-
-# Convenience functions for CLI compatibility
-def create_research_crew(model_name: Optional[str] = None, provider: str = "local", **kwargs) -> Crew:
-    manager = AICrewManager(model_name, provider, **kwargs)
-    return manager.create_research_crew(kwargs)
-
-
-def create_analysis_crew(model_name: Optional[str] = None, provider: str = "local", **kwargs) -> Crew:
-    manager = AICrewManager(model_name, provider, **kwargs)
-    return manager.create_analysis_crew(kwargs)
