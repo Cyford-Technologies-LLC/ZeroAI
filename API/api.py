@@ -30,23 +30,26 @@ def run_crew_ai(request: CrewRequest):
     """
     try:
         topic = request.inputs.get("topic")
-        category = request.inputs.get("category", "general")  # Get the category from the request
+        category = request.inputs.get("category", "general")
         context = request.inputs.get("context", "")
         research_focus = request.inputs.get("research_focus", "")
 
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        # Initialize the AI Crew Manager with the topic, category, and other inputs
+        # Initialize the AI Crew Manager
         manager = AICrewManager(
             task=topic,
-            category=category,  # Pass the category to the manager
+            category=category,
             context=context,
             research_focus=research_focus
         )
 
-        # The manager will now decide which crew to create based on the category
-        crew = manager.create_crew_for_category()
+        # Get LLM details immediately after manager is initialized
+        llm_details = manager.get_llm_details()
+
+        # Decide which crew to create
+        crew = manager.create_crew_for_category(request.inputs)
 
         # Check cache first
         cache_key = f"{category}_{topic}_{context}_{research_focus}"
@@ -55,12 +58,12 @@ def run_crew_ai(request: CrewRequest):
         if cached_result:
             result = cached_result
         else:
-            # Execute the crew with all the inputs
             result = manager.execute_crew(crew, request.inputs)
-            # Cache the result
             cache.set(cache_key, "crew_result", str(result))
 
-        return {"result": str(result)}
+        return {
+            "result": str(result),
+            "llm_details": llm_details  # Include LLM details in the response
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
