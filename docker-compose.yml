@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    restart: always
+
+  zeroai_api:
+    container_name: zeroai_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    ports:
+      - "3939:3939"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - PYTHONPATH=/app/src
+    volumes:
+      - .:/app
+    entrypoint: /bin/bash -c "ollama pull llama3.1:8b && uvicorn API.api:app --host 0.0.0.0 --port 3939"
+
+  zeroai_peer:
+    container_name: zeroai_peer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    # === CORRECTED: Add ports mapping here ===
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - PYTHONPATH=/app/src
+    command: ["python3.11", "examples/start_peer_service_docker.py"]
+
+volumes:
+  ollama_data:
