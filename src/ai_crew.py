@@ -41,7 +41,6 @@ class AICrewManager:
 
         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
         self.provider = kwargs.pop('provider', 'local')
-        # Store the server endpoint during initialization
         self.endpoint = None
         self.llm = self._setup_llm(**kwargs)
 
@@ -51,7 +50,7 @@ class AICrewManager:
             if self.provider == "local":
                 base_url, peer_name = distributed_router.get_optimal_endpoint(self.task_description, self.model_name)
                 console.print(f"✅ BASEURL {base_url}", style="green")
-                self.endpoint = base_url  # Store the base URL
+                self.endpoint = base_url
                 llm = LLM(
                     model=f"ollama/{self.model_name}",
                     base_url=base_url,
@@ -60,11 +59,9 @@ class AICrewManager:
                 )
                 console.print(f"✅ Connected to {self.model_name}", style="green")
             elif self.provider in ["openai", "anthropic", "azure", "google"]:
-                # For cloud providers, store provider name and model for simplicity
                 self.endpoint = self.provider
                 if self.provider == "openai":
                     llm = CloudProviderManager.create_openai_llm(model=self.model_name, **kwargs)
-                # ... (add other cloud provider logic) ...
                 console.print(f"✅ Connected to {self.provider} {self.model_name}", style="green")
             else:
                 raise ValueError(f"Unsupported provider: {self.provider}")
@@ -75,24 +72,18 @@ class AICrewManager:
             raise
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        """
-        Factory method that dispatches to the correct crew creation based on the category.
-        """
         console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
-
         if self.category == "research":
             return self.create_research_crew(inputs)
         elif self.category == "analysis":
             return self.create_analysis_crew(inputs)
         elif self.category == "coding":
             return self.create_coding_crew(inputs)
-        # Add other categories here
         else:
             console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
             return self.create_general_crew(inputs)
 
     def create_general_crew(self, inputs: Dict[str, Any]) -> Crew:
-        """Creates a general-purpose crew."""
         researcher = Agent(
             role='General AI Assistant',
             goal=f'Provide a comprehensive answer to the request: "{inputs.get("topic")}"',
@@ -107,32 +98,24 @@ class AICrewManager:
         )
         return Crew(agents=[researcher], tasks=[task], process=Process.sequential)
 
-    # Make the inputs argument optional for CLI compatibility
     def create_research_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
-        """Create a research-focused crew."""
         researcher = create_researcher(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
-
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, inputs)
-
         return Crew(
             agents=[researcher, writer],
             tasks=[research_task, writing_task],
             verbose=config.agents.verbose
         )
 
-    # Make the inputs argument optional for CLI compatibility
     def create_analysis_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
-        """Create an analysis-focused crew."""
         researcher = create_researcher(self.llm, inputs)
         analyst = create_analyst(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
-
         research_task = create_research_task(researcher, inputs)
         analysis_task = create_analysis_task(analyst, inputs)
         writing_task = create_writing_task(writer, inputs)
-
         return Crew(
             agents=[researcher, analyst, writer],
             tasks=[research_task, analysis_task, writing_task],
@@ -140,7 +123,6 @@ class AICrewManager:
         )
 
     def create_coding_crew(self, inputs: Dict[str, Any]) -> Crew:
-        """Create a coding-focused crew."""
         coder = Agent(
             role='Senior Software Developer',
             goal=f'Write clean, efficient, and well-documented code for the task: "{inputs.get("topic")}". Context: "{inputs.get("context")}".',
@@ -172,31 +154,31 @@ class AICrewManager:
         )
 
     def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a crew with progress tracking and return full response."""
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
             task = progress.add_task("Executing AI crew...", total=None)
-
             try:
-                # crew.kickoff() returns a CrewOutput object.
                 crew_output_object = crew.kickoff(inputs=inputs)
-
-                # Extract the raw string output.
-                result_text = crew_output_object.raw
-
+                result_text = None
+                if self.category == 'coding':
+                    for task_output in crew_output_object.tasks_outputs:
+                        if "code" in task_output.description.lower():
+                             result_text = task_output.output
+                             break
+                    if result_text is None:
+                        result_text = crew_output_object.raw
+                else:
+                    result_text = crew_output_object.raw
                 progress.update(task, description="✅ Crew execution completed!")
-
-                # Return a dictionary with both the result and LLM details
                 return {
                     "result": result_text,
                     "llm_details": self.get_llm_details()
                 }
             except Exception as e:
                 progress.update(task, description=f"❌ Crew execution failed: {e}")
-                # Log the full exception for better debugging
                 logger.error("Crew execution failed", exc_info=True)
                 raise
 
