@@ -2,7 +2,7 @@
 
 import logging
 from typing import Dict, Any, Optional
-from crewai import Agent, Task, Crew, LLM
+from crewai import Agent, Task, Crew, LLM, Process
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -28,7 +28,7 @@ class AICrewManager:
     def __init__(self, **kwargs):
         """Initialize the AI Crew Manager with category and task context."""
         self.category = kwargs.pop('category', 'general')
-        self.task_description = kwargs.get('task', '')
+        self.task_description = kwargs.get('topic', '')
 
         model_name = kwargs.pop('model_name', None)
         if not model_name:
@@ -39,6 +39,7 @@ class AICrewManager:
         else:
             self.model_name = model_name
 
+        self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
         self.provider = kwargs.pop('provider', 'local')
         # Store the server endpoint during initialization
         self.endpoint = None
@@ -55,7 +56,7 @@ class AICrewManager:
                     model=f"ollama/{self.model_name}",
                     base_url=base_url,
                     temperature=config.model.temperature,
-                    max_tokens=config.model.max_tokens
+                    max_tokens=self.max_tokens
                 )
                 console.print(f"✅ Connected to {self.model_name}", style="green")
             elif self.provider in ["openai", "anthropic", "azure", "google"]:
@@ -73,33 +74,125 @@ class AICrewManager:
             console.print(f"❌ Failed to connect to {self.provider}: {e}", style="red")
             raise
 
-    # ... (rest of the class remains the same) ...
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        # ... (implementation remains the same) ...
+        """
+        Factory method that dispatches to the correct crew creation based on the category.
+        """
+        console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
+
+        if self.category == "research":
+            return self.create_research_crew(inputs)
+        elif self.category == "analysis":
+            return self.create_analysis_crew(inputs)
+        elif self.category == "coding":
+            return self.create_coding_crew(inputs)
+        # Add other categories here
+        else:
+            console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
+            return self.create_general_crew(inputs)
+
+    def create_general_crew(self, inputs: Dict[str, Any]) -> Crew:
+        """Creates a general-purpose crew."""
+        researcher = Agent(
+            role='General AI Assistant',
+            goal=f'Provide a comprehensive answer to the request: "{inputs.get("topic")}"',
+            backstory='A versatile AI that can assist with a wide range of requests.',
+            verbose=True,
+            llm=self.llm,
+        )
+        task = Task(
+            description=f"Address the user's request: {inputs.get('topic')}. Context: {inputs.get('context', '')}",
+            expected_output='A well-structured response that directly addresses the user\'s query.',
+            agent=researcher
+        )
+        return Crew(agents=[researcher], tasks=[task], process=Process.sequential)
+
+    def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
+        """Create a research-focused crew."""
+        researcher = create_researcher(self.llm, inputs)
+        writer = create_writer(self.llm, inputs)
+
+        research_task = create_research_task(researcher, inputs)
+        writing_task = create_writing_task(writer, inputs)
+
+        return Crew(
+            agents=[researcher, writer],
+            tasks=[research_task, writing_task],
+            verbose=config.agents.verbose
+        )
+
+    def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
+        """Create an analysis-focused crew."""
+        researcher = create_researcher(self.llm, inputs)
+        analyst = create_analyst(self.llm, inputs)
+        writer = create_writer(self.llm, inputs)
+
+        research_task = create_research_task(researcher, inputs)
+        analysis_task = create_analysis_task(analyst, inputs)
+        writing_task = create_writing_task(writer, inputs)
+
+        return Crew(
+            agents=[researcher, analyst, writer],
+            tasks=[research_task, analysis_task, writing_task],
+            verbose=config.agents.verbose
+        )
+
+    def create_coding_crew(self, inputs: Dict[str, Any]) -> Crew:
+        """Create a coding-focused crew."""
+        coder = Agent(
+            role='Senior Software Developer',
+            goal=f'Write clean, efficient, and well-documented code for the task: "{inputs.get("topic")}". Context: "{inputs.get("context")}".',
+            backstory='A seasoned developer with expertise in multiple programming languages.',
+            verbose=True,
+            llm=self.llm,
+        )
+        qa_engineer = Agent(
+            role='Quality Assurance Engineer',
+            goal='Review the generated code for correctness, bugs, and best practices.',
+            backstory='A meticulous QA engineer who ensures all code is of the highest quality.',
+            verbose=True,
+            llm=self.llm,
+        )
+        coding_task = Task(
+            description=f"Generate code to fulfill the request: {inputs.get('topic')}. Context: {inputs.get('context')}.",
+            expected_output='A well-commented code snippet that solves the problem.',
+            agent=coder
+        )
+        review_task = Task(
+            description="Review the code generated by the developer.",
+            expected_output='A quality assurance report highlighting potential issues and improvements.',
+            agent=qa_engineer
+        )
+        return Crew(
+            agents=[coder, qa_engineer],
+            tasks=[coding_task, review_task],
+            verbose=config.agents.verbose
+        )
 
     def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
-            """Execute a crew with progress tracking and return full response."""
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console,
-            ) as progress:
-                task = progress.add_task("Executing AI crew...", total=None)
+        """Execute a crew with progress tracking and return full response."""
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Executing AI crew...", total=None)
 
-                try:
-                    result_text = crew.kickoff(inputs=inputs)
-                    progress.update(task, description="✅ Crew execution completed!")
+            try:
+                result_text = crew.kickoff(inputs=inputs)
+                progress.update(task, description="✅ Crew execution completed!")
 
-                    # Return a dictionary with both the result and LLM details
-                    return {
-                        "result": result_text,
-                        "llm_details": self.get_llm_details()
-                    }
-                except Exception as e:
-                    progress.update(task, description=f"❌ Crew execution failed: {e}")
-                    raise
+                # Return a dictionary with both the result and LLM details
+                return {
+                    "result": result_text,
+                    "llm_details": self.get_llm_details()
+                }
+            except Exception as e:
+                progress.update(task, description=f"❌ Crew execution failed: {e}")
+                # Log the full exception for better debugging
+                logger.error("Crew execution failed", exc_info=True)
+                raise
 
-    # Helper method to get the LLM details
     def get_llm_details(self) -> Dict[str, str]:
         return {
             "model_name": self.model_name,
