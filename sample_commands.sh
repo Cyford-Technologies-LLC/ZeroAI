@@ -6,7 +6,7 @@ done
 
 # Add peers
 python3 examples/peer_manager.py  --ip 0.0.0.0 --name GPU-01 --model codellama:13b add
-python3 examples/peer_manager.py  --ip 0.0.0.0 --name GPU-01 --model codellama:13b list
+python3 examples/peer_manager.py    list
 
 #cli  direct command
 clear ; python3 run/examples/simple_chat.py

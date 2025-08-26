@@ -2,9 +2,14 @@
 
 import logging
 from typing import Dict, Any, Optional
-from crewai import Agent, Task, Crew, LLM, Process, CrewOutput
+from crewai import Agent, Task, Crew, Process, CrewOutput
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
+# Fix: Use explicit imports for LLM providers
+from langchain_community.chat_models import ChatOllama
+from langchain_community.llms.ollama import Ollama
+from crewai.llm import LLM as CrewAILLM  # Use crewai's LLM for compatibility
 
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
@@ -22,6 +27,9 @@ class AICrewManager:
         self.category = kwargs.pop('category', 'general')
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
 
+        # New: Store inputs to propagate to LLM setup
+        self.inputs = kwargs
+
         base_url, peer_name, model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
 
         self.model_name = model_name
@@ -31,16 +39,22 @@ class AICrewManager:
         self.provider = "local"
         self.llm = self._setup_llm(**kwargs)
 
-    def _setup_llm(self, **kwargs) -> LLM:
+    def _setup_llm(self, **kwargs) -> CrewAILLM:
         try:
             if self.provider == "local":
-                console.print(f"✅ BASEURL {self.endpoint}", style="green")
-                llm = LLM(
-                    model=f"ollama/{self.model_name}",
+                console.print(f"✅ Connecting to Ollama at BASEURL: [bold green]{self.endpoint}[/bold green] for model: [bold yellow]{self.model_name}[/bold yellow]")
+
+                # Fix: Use Ollama directly from langchain for native support
+                # This explicitly sets the model and base_url separately as required
+                ollama_llm_instance = Ollama(
+                    model=self.model_name,
                     base_url=self.endpoint,
                     temperature=config.model.temperature,
-                    max_tokens=self.max_tokens
                 )
+
+                # Fix: Wrap the LangChain LLM with CrewAILLM for compatibility
+                llm = CrewAILLM(ollama_llm_instance)
+
                 console.print(f"✅ Connected to {self.model_name} on {self.peer_name}", style="green")
             elif self.provider in ["openai", "anthropic", "azure", "google"]:
                 self.endpoint = self.provider
@@ -51,7 +65,7 @@ class AICrewManager:
                 raise ValueError(f"Unsupported provider: {self.provider}")
             return llm
         except Exception as e:
-            console.print(f"❌ Failed to connect to {self.provider}: {e}", style="red")
+            console.print(f"❌ Failed to connect to {self.provider} at {self.endpoint} for model {self.model_name}: {e}", style="red")
             raise
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:

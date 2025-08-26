@@ -1,8 +1,11 @@
+# /opt/ZeroAI/src/distributed_router.py
+
 import sys
 from pathlib import Path
 from typing import Optional, List, Tuple
 from rich.console import Console
 
+# Assuming PeerNode and other types are defined in peer_discovery
 from peer_discovery import peer_discovery, PeerNode
 
 console = Console()
@@ -13,7 +16,11 @@ class DistributedRouter:
         self.peer_discovery.start_discovery_service()
 
     def get_optimal_endpoint_and_model(self, prompt: str) -> Tuple[str, str, str]:
-        all_peers = self.peer_discovery.get_peers() + [self.peer_discovery.get_local_node()]
+        all_peers = self.peer_discovery.get_peers()
+        local_node = self.peer_discovery.get_local_node()
+
+        # Fix: Ensure local node is handled explicitly
+        all_peers_with_local = all_peers + [local_node]
 
         is_coding_task = any(
             keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
@@ -26,7 +33,7 @@ class DistributedRouter:
 
         for preferred_model in model_preference:
             eligible_peers = [
-                peer for peer in all_peers
+                peer for peer in all_peers_with_local
                 if peer.capabilities.available and preferred_model in peer.capabilities.models
             ]
 
@@ -37,8 +44,6 @@ class DistributedRouter:
                        if optimal_peer.name == "local-node":
                            return "http://host.docker.internal:11434", "local", preferred_model
 
-                       # Fix: Use the standard Ollama port (11434) for LLM communication
-                       # ZeroAI peer port (8080) is for ZeroAI tasks, not for the LLM itself
                        peer_ollama_url = f"http://{optimal_peer.ip}:11434"
 
                        console.print(
@@ -49,7 +54,8 @@ class DistributedRouter:
                        return peer_ollama_url, optimal_peer.name, preferred_model
 
         console.print("⚠️  No suitable peer or model found. Using local fallback.", style="red")
-        local_node = self.peer_discovery.get_local_node()
+
+        # Fix: Ensure local node capabilities are checked for fallback
         if "llama3.2:1b" in local_node.capabilities.models:
             return "http://host.docker.internal:11434", "local", "llama3.2:1b"
         else:
