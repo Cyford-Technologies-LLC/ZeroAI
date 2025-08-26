@@ -87,8 +87,9 @@ class AICrewManager:
 
     # Modified for optional inputs
     def create_research_crew(self, inputs: Dict[str, Any] = {}) -> Crew:
-        # researcher = create_researcher(self.llm, inputs)
-        researcher = create_researcher(self.llm)
+        if not inputs:
+            inputs = []
+        researcher = create_researcher(self.llm, inputs)
         writer = create_writer(self.llm, inputs)
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, inputs)
