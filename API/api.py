@@ -29,41 +29,32 @@ def run_crew_ai(request: CrewRequest):
     Endpoint to trigger a self-hosted CrewAI crew using AICrewManager, based on a category.
     """
     try:
-        topic = request.inputs.get("topic")
-        category = request.inputs.get("category", "general")
-        context = request.inputs.get("context", "")
-        research_focus = request.inputs.get("research_focus", "")
-
+        inputs = request.inputs
+        topic = inputs.get("topic")
+        category = inputs.get("category", "general")
+        
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
         # Initialize the AI Crew Manager
-        manager = AICrewManager(
-            task=topic,
-            category=category,
-            context=context,
-            research_focus=research_focus
-        )
-
-        # Get LLM details immediately after manager is initialized
-        llm_details = manager.get_llm_details()
-
+        manager = AICrewManager(**inputs)
+        
         # Decide which crew to create
-        crew = manager.create_crew_for_category(request.inputs)
+        crew = manager.create_crew_for_category(inputs)
 
-        # Check cache first
-        cache_key = f"{category}_{topic}_{context}_{research_focus}"
-        cached_result = cache.get(cache_key, "crew_result")
+        # Check cache first (consider including max_tokens in the cache key)
+        cache_key = f"{category}_{topic}_{inputs.get('max_tokens', '')}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}"
+        cached_response = cache.get(cache_key, "crew_result")
 
-        if cached_result:
-            result = cached_result
+        if cached_response:
+            # If from cache, it's already a dictionary
+            response_data = cached_response
         else:
-            result = manager.execute_crew(crew, request.inputs)
-            cache.set(cache_key, "crew_result", str(result))
+            # Execute the crew and get the full response dictionary
+            response_data = manager.execute_crew(crew, inputs)
+            # Cache the full response dictionary
+            cache.set(cache_key, "crew_result", response_data)
 
-        return {
-            "result": str(result),
-            "llm_details": llm_details  # Include LLM details in the response
-        }
+        return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
