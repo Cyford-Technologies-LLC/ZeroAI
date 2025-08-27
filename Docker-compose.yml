@@ -3,10 +3,12 @@ services:
     container_name: ollama-prod
     image: ollama/ollama:latest
     ports:
-      - "11434:11434" # Exposed for host access in production
+      - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: always
+    networks:
+      - zeroai_network
 
   zeroai_api:
     container_name: zeroai_api-prod
@@ -24,6 +26,8 @@ services:
     volumes:
       - ./src:/app/src
     entrypoint: /bin/bash -c "sleep 5 && curl -s http://ollama:11434/api/pull -d '{\"name\":\"llama3.1:8b\"}' && uvicorn API.api:app --host 0.0.0.0 --port 3939"
+    networks:
+      - zeroai_network
 
   zeroai_peer:
     container_name: zeroai_peer-prod
@@ -32,7 +36,6 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - ollama
-    # Fix: Add port mapping for peer-to-peer communication
     ports:
       - "8080:8080"
     volumes:
@@ -42,6 +45,12 @@ services:
       - PYTHONPATH=/app/src
     working_dir: /app
     command: ["python3.11", "run/internal/start_peer_service_docker.py"]
+    networks:
+      - zeroai_network
 
 volumes:
   ollama_data:
+
+networks:
+  zeroai_network:
+    driver: bridge
