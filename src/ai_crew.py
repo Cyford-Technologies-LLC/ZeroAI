@@ -6,7 +6,6 @@ from crewai import Agent, Task, Crew, Process
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-# Fix: Use explicit imports for LLM providers
 from langchain_community.llms.ollama import Ollama
 
 from config import config
@@ -26,22 +25,21 @@ class AICrewManager:
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
 
-        # New: Store LLM details for agent creation
         self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
 
+        # FIX: Prepend 'ollama/' to the model name for LiteLLM
+        # Some versions of CrewAI/LiteLLM require this explicit provider prefix for Ollama
+        prefixed_model_name = f"ollama/{self.model_name}"
+
         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
-        self.provider = "local" # Assuming local for this path
+        self.provider = "local"
         self.llm_config = {
-            "model": self.model_name,
+            "model": prefixed_model_name, # Use the prefixed model name
             "base_url": self.base_url,
             "temperature": config.model.temperature
         }
 
-        console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.model_name}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
-
-
-    # No longer need a separate _setup_llm method; agent creation handles it
-    # def _setup_llm...
+        console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
@@ -56,9 +54,10 @@ class AICrewManager:
             return self.create_research_crew(inputs)
 
     def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
-        # Fix: Pass the LLM config directly when creating agents
-        researcher = create_researcher(Ollama(**self.llm_config), inputs)
-        writer = create_writer(Ollama(**self.llm_config), inputs)
+        # Pass the LLM config directly when creating agents
+        llm_instance = Ollama(**self.llm_config)
+        researcher = create_researcher(llm_instance, inputs)
+        writer = create_writer(llm_instance, inputs)
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, inputs, context=[research_task])
         return Crew(
@@ -68,10 +67,11 @@ class AICrewManager:
         )
 
     def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
-        # Fix: Pass the LLM config directly when creating agents
-        researcher = create_researcher(Ollama(**self.llm_config), inputs)
-        analyst = create_analyst(Ollama(**self.llm_config), inputs)
-        writer = create_writer(Ollama(**self.llm_config), inputs)
+        # Pass the LLM config directly when creating agents
+        llm_instance = Ollama(**self.llm_config)
+        researcher = create_researcher(llm_instance, inputs)
+        analyst = create_analyst(llm_instance, inputs)
+        writer = create_writer(llm_instance, inputs)
         research_task = create_research_task(researcher, inputs)
         analysis_task = create_analysis_task(analyst, inputs)
         writing_task = create_writing_task(writer, inputs)
@@ -82,7 +82,7 @@ class AICrewManager:
         )
 
     def create_coding_crew(self, inputs: Dict[str, Any]) -> Crew:
-        # Fix: Pass the LLM config directly when creating agents
+        # Pass the LLM config directly when creating agents
         llm_instance = Ollama(**self.llm_config)
         coder = Agent(
             role='Senior Software Developer',
@@ -126,16 +126,7 @@ class AICrewManager:
             try:
                 crew_output_object = crew.kickoff(inputs=inputs)
 
-                result_text = None
-                if self.category == 'coding':
-                    for task_output in crew_output_object.tasks_outputs:
-                        if "code" in task_output.description.lower():
-                            result_text = task_output.output
-                            break
-                    if result_text is None:
-                        result_text = crew_output_object.raw
-                else:
-                    result_text = crew_output_object.raw
+                result_text = crew_output_object.raw
 
                 progress.update(task, description="✅ Crew execution completed!")
 
@@ -150,8 +141,7 @@ class AICrewManager:
 
     def get_llm_details(self) -> Dict[str, str]:
         return {
-            "model_name": self.model_name,
+            "model_name": self.llm_config['model'],
             "provider": self.provider,
             "endpoint": self.base_url
         }
-
