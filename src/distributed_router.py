@@ -29,12 +29,12 @@ def get_container_memory_limit_gb() -> float:
     try:
         with open("/sys/fs/cgroup/memory/memory.limit_in_bytes", "r") as f:
             limit_in_bytes = int(f.read())
-            # A very large number indicates no memory limit, so return a reasonable max.
+            # A very large number indicates no memory limit.
             if limit_in_bytes > (1024**4):
                 return float('inf')
             return limit_in_bytes / (1024**3)
     except (FileNotFoundError, ValueError):
-        return float('inf') # Return infinity if not in a cgroup or file not found
+        return float('inf')  # Return infinity if not in a cgroup or file not found
 
 
 class DistributedRouter:
@@ -52,6 +52,16 @@ class DistributedRouter:
         except requests.exceptions.RequestException:
             return []
 
+    def _get_local_ollama_memory(self) -> float:
+        """
+        Attempts to get the memory available to the local Ollama instance.
+        This is a fallback method. The more robust approach is to gather this info
+        during peer discovery, but this provides a local-only estimate.
+        """
+        # This is a placeholder for a more robust Ollama memory API call.
+        # For now, we fall back to the container's own cgroup limit.
+        return get_container_memory_limit_gb()
+
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[str, str, str]:
         if failed_peers is None:
             failed_peers = []
@@ -65,17 +75,17 @@ class DistributedRouter:
 
         endpoints_to_try: List[Dict[str, Any]] = []
 
-        container_memory_limit = get_container_memory_limit_gb()
-        console.print(f"System has a memory limit of [bold green]{container_memory_limit:.1f} GiB[/bold green].")
-
         local_ollama_models = self._get_local_ollama_models()
+        ollama_memory_limit = self._get_local_ollama_memory()
+        console.print(f"Local Ollama instance has [bold green]{ollama_memory_limit:.1f} GiB[/bold green] memory available.")
+
 
         # Build list of all potential endpoints
         for model in model_preference:
             # Check local models first, and ensure they meet memory requirements
             if "local" not in failed_peers and model in local_ollama_models:
                 required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
-                if required_memory < container_memory_limit:
+                if required_memory < ollama_memory_limit:
                     endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
 
             # Consider remote peers (no memory check needed here, assuming peers have resources)
