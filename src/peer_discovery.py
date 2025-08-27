@@ -6,10 +6,10 @@ import threading
 import time
 import requests
 import yaml
+import psutil
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from rich.console import Console
-import psutil
 
 console = Console()
 
@@ -32,9 +32,10 @@ class PeerNode:
         self.capabilities = capabilities or PeerCapabilities()
 
 class PeerDiscovery:
-    def __init__(self, ollama_service_name: str = "ollama"):
+    def __init__(self, ollama_service_name: str = "ollama", peer_service_name: str = "zeroai_peer"):
         self.peers: Dict[str, PeerNode] = {}
         self.ollama_service_name = ollama_service_name
+        self.peer_service_name = peer_service_name
         self._load_peers_from_file()
         self.local_node = self._get_local_node()
 
@@ -80,48 +81,50 @@ class PeerDiscovery:
 
     def _discover_single_peer(self, node: PeerNode):
         """Checks a single peer and updates its capabilities."""
-        try:
-            ollama_url = f"http://{node.ip}:11434"
-            # Get Ollama models
-            models_response = requests.get(f"{ollama_url}/api/tags", timeout=5)
-            models_response.raise_for_status()
-            models = [m['name'] for m in models_response.json().get('models', [])]
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Assume Ollama is on port 11434
+                ollama_url = f"http://{node.ip}:11434"
+                models_response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+                models_response.raise_for_status()
+                models = [m['name'] for m in models_response.json().get('models', [])]
 
-            # Get system status (requires custom endpoint on peers)
-            # For the local node, use a direct call
-            if node.name == "local-node":
-                metrics = self._get_local_metrics()
-            else:
-                # Assuming remote peers have a custom /api/status endpoint
-                status_response = requests.get(f"http://{node.ip}:{node.port}/api/status", timeout=5)
-                status_response.raise_for_status()
-                metrics = status_response.json()
+                if node.name == "local-node":
+                    metrics = self._get_local_metrics()
+                else:
+                    # Assume custom endpoint for metrics on external peers
+                    # This relies on the other ZeroAI instance exposing its metrics
+                    status_response = requests.get(f"http://{node.ip}:{node.port}/api/status", timeout=5)
+                    status_response.raise_for_status()
+                    metrics = status_response.json()
 
-            node.capabilities.available = True
-            node.capabilities.models = models
-            node.capabilities.last_seen = time.time()
-            node.capabilities.load_avg = metrics.get("load_avg", 0.0)
-            node.capabilities.available_memory = metrics.get("available_memory", 0)
-            node.capabilities.total_memory = metrics.get("total_memory", 0)
-            console.print(f"✅ Discovered peer {node.name} at {node.ip} with models: {models}", style="dim")
-            console.print(f"   Metrics: Load={node.capabilities.load_avg:.1f}%, Mem={node.capabilities.available_memory / (1024**3):.1f} GiB", style="dim")
-        except requests.exceptions.RequestException:
-            node.capabilities.available = False
-            console.print(f"❌ Failed to connect to peer {node.name} at {node.ip}", style="dim")
+                node.capabilities.available = True
+                node.capabilities.models = models
+                node.capabilities.last_seen = time.time()
+                node.capabilities.load_avg = metrics.get("load_avg", 0.0)
+                node.capabilities.available_memory = metrics.get("available_memory", 0)
+                node.capabilities.total_memory = metrics.get("total_memory", 0)
+                console.print(f"✅ Discovered peer {node.name} at {node.ip} with models: {models}", style="dim")
+                console.print(f"   Metrics: Load={node.capabilities.load_avg:.1f}%, Mem={node.capabilities.available_memory / (1024**3):.1f} GiB", style="dim")
+                return # Exit on success
+            except requests.exceptions.RequestException as e:
+                console.print(f"❌ Failed to connect to peer {node.name} at {node.ip} (Attempt {attempt + 1}/{max_retries}): {e}", style="dim")
+                time.sleep(1) # Wait before retrying
+
+        node.capabilities.available = False
+        console.print(f"❌ Failed to connect to peer {node.name} after {max_retries} retries.", style="red")
 
     def _discover_peers(self):
-        """
-        Periodically checks known peers to update their capabilities.
-        This runs in a background thread.
-        """
         while True:
+            console.print("\n🔍 Initiating peer discovery cycle...", style="yellow")
             all_nodes = list(self.peers.values()) + [self.local_node]
             for node in all_nodes:
                 self._discover_single_peer(node)
+            console.print("🔍 Peer discovery cycle complete.", style="yellow")
             time.sleep(60)
 
     def start_discovery_service(self):
-        """Starts the discovery thread."""
         discovery_thread = threading.Thread(target=self._discover_peers, daemon=True)
         discovery_thread.start()
 
