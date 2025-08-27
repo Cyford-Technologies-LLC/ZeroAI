@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from flask import Flask, jsonify, request
 import os
-import subprocess
+import requests
 import json as json_lib
 
 # Add the src directory to the Python path
@@ -21,7 +21,6 @@ peer_discovery = PeerDiscovery()
 @app.route('/capabilities')
 def get_capabilities():
     """Return current node capabilities"""
-    # Refresh capabilities
     capabilities = peer_discovery._get_my_capabilities()
     return jsonify({
         'cpu_cores': capabilities.cpu_cores,
@@ -44,10 +43,12 @@ def process_task():
         task_data = request.get_json()
         task_type = task_data.get('type')
         model = task_data.get('model', 'llama3.1:8b')
+        temperature = task_data.get('temperature', 0.7)
+        max_tokens = task_data.get('max_tokens', 512)
 
         if task_type == 'code_generation':
             prompt = task_data.get('prompt')
-            code_prompt = f"""Generate working code for: {prompt}
+            llm_prompt = f"""Generate working code for: {prompt}
 Requirements:
 - Provide ONLY the code, no explanations
 - Make it functional and complete
@@ -55,43 +56,43 @@ Requirements:
 Code:"""
         elif task_type == 'research':
             topic = task_data.get('topic')
-            code_prompt = f"Research and provide key information about: {topic}"
+            llm_prompt = f"Research and provide key information about: {topic}"
         else:
             return jsonify({'success': False, 'error': 'Unknown task type'})
 
         ollama_data = {
             'model': model,
-            'prompt': code_prompt,
+            'prompt': llm_prompt,
             'stream': False,
             'options': {
-                'temperature': task_data.get('temperature', 0.7),
-                'num_predict': task_data.get('max_tokens', 512)
+                'temperature': temperature,
+                'num_predict': max_tokens
             }
         }
 
-        # Use the OLLAMA_HOST from the environment
         ollama_host = os.environ.get('OLLAMA_HOST', 'http://ollama:11434')
+        api_url = f'{ollama_host}/api/generate'
 
-        result = subprocess.run(
-            ['curl', '-s', '-X', 'POST', f'{ollama_host}/api/generate',
-             '-H', 'Content-Type: application/json',
-             '-d', json_lib.dumps(ollama_data)],
-            capture_output=True, text=True, timeout=60
+        # Make the API call using the requests library
+        response = requests.post(
+            api_url,
+            json=ollama_data,
+            headers={'Content-Type': 'application/json'},
+            timeout=60
         )
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
 
-        if result.returncode == 0:
-            response_data = json_lib.loads(result.stdout)
-            return jsonify({
-                'success': True,
-                'response': response_data.get('response', ''),
-                'model_used': model
-            })
-        else:
-            return jsonify({'success': False, 'error': f'Ollama processing failed: {result.stderr}'})
+        response_data = response.json()
+        return jsonify({
+            'success': True,
+            'response': response_data.get('response', ''),
+            'model_used': model
+        })
 
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': f'Ollama processing failed: {str(e)}'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == "__main__":
-    # The debug=False is important for production to disable the debugger and use a more stable server
     app.run(host='0.0.0.0', port=8080, debug=False)
