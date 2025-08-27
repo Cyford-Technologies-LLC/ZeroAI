@@ -14,6 +14,7 @@ from peer_discovery import peer_discovery, PeerNode
 console = Console()
 
 # Mapping model names to their approximate system memory requirements in GB
+# This map is now informational, not used for proactive filtering.
 MODEL_MEMORY_MAP = {
     "llama3.1:8b": 5.6,
     "llama3.2:latest": 3.0,
@@ -23,18 +24,6 @@ MODEL_MEMORY_MAP = {
     "gemma2:2b": 3.5,
     "llava:7b": 5.0,
 }
-
-# Function to get the memory limit from the cgroup file
-def get_container_memory_limit_gb() -> float:
-    try:
-        with open("/sys/fs/cgroup/memory/memory.limit_in_bytes", "r") as f:
-            limit_in_bytes = int(f.read())
-            # A very large number indicates no memory limit.
-            if limit_in_bytes > (1024**4):
-                return float('inf')
-            return limit_in_bytes / (1024**3)
-    except (FileNotFoundError, ValueError):
-        return float('inf')  # Return infinity if not in a cgroup or file not found
 
 
 class DistributedRouter:
@@ -52,16 +41,6 @@ class DistributedRouter:
         except requests.exceptions.RequestException:
             return []
 
-    def _get_local_ollama_memory(self) -> float:
-        """
-        Attempts to get the memory available to the local Ollama instance.
-        This is a fallback method. The more robust approach is to gather this info
-        during peer discovery, but this provides a local-only estimate.
-        """
-        # This is a placeholder for a more robust Ollama memory API call.
-        # For now, we fall back to the container's own cgroup limit.
-        return get_container_memory_limit_gb()
-
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[str, str, str]:
         if failed_peers is None:
             failed_peers = []
@@ -71,24 +50,29 @@ class DistributedRouter:
             keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
         )
 
-        model_preference = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b", "codellama:7b", "gemma2:2b", "llava:7b"] if is_coding_task else ["llama3.1:8b", "llama3.2:latest", "llama3.2:1b", "gemma2:2b", "llava:7b"]
+        # Prioritize smaller models first, especially for local machine, to avoid memory issues.
+        if is_coding_task:
+             model_preference = [
+                "codellama:7b", "llama3.2:1b", "gemma2:2b",
+                "codellama:13b", "llama3.2:latest", "llama3.1:8b", "llava:7b"
+             ]
+        else:
+            model_preference = [
+                "llama3.2:1b", "llama3.2:latest", "gemma2:2b",
+                "llama3.1:8b", "llava:7b"
+            ]
 
         endpoints_to_try: List[Dict[str, Any]] = []
 
         local_ollama_models = self._get_local_ollama_models()
-        ollama_memory_limit = self._get_local_ollama_memory()
-        console.print(f"Local Ollama instance has [bold green]{ollama_memory_limit:.1f} GiB[/bold green] memory available.")
-
 
         # Build list of all potential endpoints
         for model in model_preference:
-            # Check local models first, and ensure they meet memory requirements
+            # Check local models first
             if "local" not in failed_peers and model in local_ollama_models:
-                required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
-                if required_memory < ollama_memory_limit:
-                    endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
+                endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
 
-            # Consider remote peers (no memory check needed here, assuming peers have resources)
+            # Consider remote peers
             eligible_peers = [
                 peer for peer in all_peers
                 if peer.capabilities.available and model in peer.capabilities.models and peer.name not in failed_peers
@@ -102,4 +86,4 @@ class DistributedRouter:
         for endpoint_info in endpoints_to_try:
             return endpoint_info['endpoint'], endpoint_info['peer_name'], endpoint_info['model']
 
-        raise RuntimeError("No suitable model found locally that meets memory requirements, or on discovered peers. All attempts failed.")
+        raise RuntimeError("No suitable model found locally or on discovered peers. All attempts failed.")
