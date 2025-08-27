@@ -71,6 +71,7 @@ def main():
             console.print(f"❌ {message}", style="red")
 
     elif args.command == "list":
+        # Fix: Call the list_peers method on the peer_discovery instance
         peer_discovery.list_peers()
 
     elif args.command == "test":
