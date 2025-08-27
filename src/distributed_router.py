@@ -18,9 +18,7 @@ class DistributedRouter:
         self.peer_discovery.start_discovery_service()
 
     def _get_local_ollama_models(self) -> List[str]:
-        """
-        Directly queries the local Ollama instance to get available models.
-        """
+        """Directly queries the local Ollama instance to get available models."""
         try:
             ollama_url = "http://ollama:11434"
             response = requests.get(f"{ollama_url}/api/tags", timeout=5)
@@ -30,7 +28,6 @@ class DistributedRouter:
         except requests.exceptions.RequestException:
             return []
 
-    # Fix: Add a parameter to exclude failed peers
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[str, str, str]:
         if failed_peers is None:
             failed_peers = []
@@ -43,14 +40,8 @@ class DistributedRouter:
         model_preference = ["codellama:13b", "llama3.1:8b", "llama3.2:1b"] if is_coding_task else ["llama3.1:8b", "llama3.2:1b"]
 
         endpoints_to_try = []
-        local_ollama_models = self._get_local_ollama_models()
 
-        # Add local models first based on preference, excluding if it has failed
-        for model in model_preference:
-            if model in local_ollama_models and "local" not in failed_peers:
-                endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
-
-        # Add remote peers based on preference, excluding any that have failed
+        # New: Add remote peers first based on preference and load
         for model in model_preference:
             eligible_peers = [
                 peer for peer in all_peers
@@ -61,7 +52,14 @@ class DistributedRouter:
                 for peer in eligible_peers:
                     endpoints_to_try.append({"model": model, "endpoint": f"http://{peer.ip}:11434", "peer_name": peer.name})
 
-        # Fix: Now we iterate through the pre-built list to find the next available option
+        local_ollama_models = self._get_local_ollama_models()
+
+        # New: Add all viable local models to the list *after* remote peers
+        for model in model_preference:
+            if model in local_ollama_models and "local" not in failed_peers:
+                endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
+
+        # Return the next available option from the list
         for endpoint_info in endpoints_to_try:
             return endpoint_info['endpoint'], endpoint_info['peer_name'], endpoint_info['model']
 
