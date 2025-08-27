@@ -3,6 +3,10 @@ for model in llama3.2:latest mixtral-8x7b-instruct-v0.1 gemma2:2b codellama:7b l
   ollama pull $model
 done
 
+#   this is how it should go...      1   connect t the strongest  server,  gpu,memory, cpu    in that order..         if it falls back to local,   its hould try an use a model  that is good for that cpu..      if all else fails..   it should use   3.2:1b
+#
+#
+#
 
 # Add peers
 python3 examples/peer_manager.py  --ip 0.0.0.0 --name GPU-01 --model codellama:13b add
