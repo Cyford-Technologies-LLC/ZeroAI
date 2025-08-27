@@ -68,7 +68,7 @@ class PeerDiscovery:
             console.print(f"❌ Failed to save peers to peers.yml: {e}", style="red")
 
     def _get_local_node(self) -> PeerNode:
-        return PeerNode(name="local-node", ip=self.ollama_service_name, port=11434)
+        return PeerNode(name="local-node", ip=self.ollama_service_name, port=8080)
 
     def _get_local_metrics(self) -> Dict[str, Any]:
         """Gets system metrics for the local node."""
