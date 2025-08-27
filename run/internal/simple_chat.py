@@ -32,9 +32,9 @@ def main():
         peer_discovery_instance = PeerDiscovery()
         router = DistributedRouter(peer_discovery_instance)
 
-        # Initialize AICrewManager with the router instance
-        # The task description for the chat category is handled in ai_crew.py.
-        manager = AICrewManager(router, category="chat")
+        # FIX: Initialize AICrewManager with the router instance AND a specific task.
+        # This resolves the model selection error by providing the router with a valid lookup.
+        manager = AICrewManager(router, category="chat", task="llama3.2:latest")
 
         # Define the system message for the bot's persona
         system_message = "You are a chatbot named Tony. You work for the Tiger company. Greet the user and answer their questions concisely."
@@ -76,3 +76,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -22,7 +22,7 @@ python3 run/internal/peer_manager.py  --ip 0.0.0.0 --name GPU-01 --model codella
 python3 run/internal/peer_manager.py    list
 
 #cli  direct command
-clear ; python3 run/examples/simple_chat.py
+clear ; python3 run/internal/simple_chat.py
 clear ; python3 run/internal/code_generator.py
 clear ; python3 run/internal/basic_crew.py
 clear ; python3 run/examples/advanced_analysis.py
