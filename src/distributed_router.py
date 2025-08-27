@@ -17,11 +17,11 @@ class DistributedRouter:
 
     def _get_local_ollama_models(self) -> List[str]:
         """
-        Directly queries the local Ollama instance to get available models.
-        This provides a more reliable source of truth than the discovery cache.
+        Directly queries the local Ollama instance (by its service name) to get available models.
         """
         try:
-            ollama_url = "http://host.docker.internal:11434"
+            # Fix: Use the service name 'ollama' for internal Docker networking
+            ollama_url = "http://ollama:11434"
             console.print(f"🔍 Pinging local Ollama at {ollama_url}...", style="yellow")
             response = requests.get(f"{ollama_url}/api/tags", timeout=5)
             response.raise_for_status()
@@ -35,8 +35,6 @@ class DistributedRouter:
     def get_optimal_endpoint_and_model(self, prompt: str) -> Tuple[str, str, str]:
         local_ollama_models = self._get_local_ollama_models()
         all_peers = self.peer_discovery.get_peers()
-        local_node = self.peer_discovery.get_local_node()
-        all_peers_with_local = all_peers + [local_node]
 
         is_coding_task = any(
             keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
@@ -51,7 +49,8 @@ class DistributedRouter:
         for preferred_model in model_preference:
             if preferred_model in local_ollama_models:
                 console.print(f"✅ Using local model: [bold yellow]{preferred_model}[/bold yellow] via direct check.", style="green")
-                return "http://host.docker.internal:11434", "local", preferred_model
+                # Fix: Use the service name 'ollama' for the endpoint
+                return "http://ollama:11434", "local", preferred_model
 
         # 2. Search for optimal peer if no suitable local model found
         for preferred_model in model_preference:
@@ -74,14 +73,7 @@ class DistributedRouter:
                 )
                 return peer_ollama_url, optimal_peer.name, preferred_model
 
-        # 3. Final fallback if no suitable model is found anywhere
-        console.print("⚠️  No suitable peer or model found in preferences. Falling back to local 'llama3.2:1b'.", style="red")
-
-        if "llama3.2:1b" in local_ollama_models:
-            console.print("✅ Local fallback model 'llama3.2:1b' found.", style="green")
-            return "http://host.docker.internal:11434", "local", "llama3.2:1b"
-        else:
-            console.print("❌ Local fallback model 'llama3.2:1b' not found after direct check.", style="red")
-            raise RuntimeError("Local fallback model 'llama3.2:1b' not found. Ollama may be misconfigured or discovery failed.")
+        # 3. Handle no suitable model found
+        raise RuntimeError("No suitable model found locally or on discovered peers. Ollama may be misconfigured or discovery failed.")
 
 distributed_router = DistributedRouter(peer_discovery)
