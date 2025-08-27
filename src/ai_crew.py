@@ -20,6 +20,11 @@ class AICrewManager:
     """Manages AI crew creation and execution."""
 
     def __init__(self, distributed_router_instance, **kwargs):
+        # Print the task description received
+        print(f"DEBUG: AICrewManager received task_description: '{self.task_description}'")
+        print(f"DEBUG: AICrewManager received category: '{self.category}'")
+
+
         self.router = distributed_router_instance
         self.category = kwargs.pop('category', 'general')
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
