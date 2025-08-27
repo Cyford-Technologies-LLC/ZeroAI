@@ -9,7 +9,7 @@ done
 #   that is good for that cpu..
 #   if all else fails..   it should use   3.2:1b
 #
-#
+# docker exec -it zeroai_api-prod bash
 #
 
 # Add peers

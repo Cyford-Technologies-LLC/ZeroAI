@@ -21,9 +21,8 @@ def generate_code(prompt: str):
     max_retries = 5
     failed_peers = []
 
-    # Initialize the router instance
-    peer_discovery_instance = PeerDiscovery()
-    router = DistributedRouter(peer_discovery_instance)
+    # Initialize peer_name outside the try block
+    peer_name = None
 
     for attempt in range(max_retries):
         try:
@@ -44,7 +43,7 @@ Requirements:
 Code:"""
 
             start_time = time.time()
-            # Remove max_tokens from the invoke call
+            # The `max_tokens` argument is not supported by this API, so it's removed.
             result = llm.invoke(code_prompt)
             end_time = time.time()
 
