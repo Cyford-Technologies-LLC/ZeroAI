@@ -52,7 +52,6 @@ class DistributedRouter:
             keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
         )
 
-        # Define model preference list based on task type
         model_preference = [
             "codellama:13b", "llama3.1:8b", "codellama:7b", "gemma2:2b",
             "llama3.2:latest", "llava:7b", "llama3.2:1b"
@@ -61,7 +60,6 @@ class DistributedRouter:
             "llava:7b", "llama3.2:1b"
         ]
 
-        # Build a comprehensive list of all valid candidates (peer + model)
         all_candidates = []
         local_ollama_models = self._get_local_ollama_models()
 
@@ -84,20 +82,27 @@ class DistributedRouter:
                         })
 
         # --- REVISED SORTING LOGIC ---
-        # Sort all candidates based on the specified priority:
-        # 1. GPU (True > False)
-        # 2. GPU memory (higher is better)
-        # 3. System RAM (higher is better)
-        # 4. **CPU load (lower is better, with a strong weighting)**
-        # 5. Model preference list (as a final tie-breaker)
-        all_candidates.sort(key=lambda c: (
-            c['peer'].capabilities.gpu_available,
-            c['peer'].capabilities.gpu_memory,
-            c['peer'].capabilities.memory,
-            # Invert the load_avg to prioritize lower values, giving it high priority
-            -c['peer'].capabilities.load_avg,
-            model_preference.index(c['model'])
-        ), reverse=True)
+        # Sort all candidates based on the specified priority using a more granular scoring system.
+        # Higher score is better.
+        def get_score(candidate):
+            peer = candidate['peer']
+
+            # Heavy weight for GPU, prioritizing peers with a GPU first.
+            gpu_score = 1000 if peer.capabilities.gpu_available else 0
+
+            # Prioritize higher GPU and system memory.
+            memory_score = peer.capabilities.gpu_memory * 10 + peer.capabilities.memory
+
+            # Strong penalty for high load average. Invert load_avg for sorting.
+            # A load_avg of 0 gets a high score, a high load_avg gets a low score.
+            load_score = max(0, 100 - peer.capabilities.load_avg)
+
+            # Prioritize better models as a tie-breaker.
+            model_index_score = len(model_preference) - model_preference.index(candidate['model'])
+
+            return (gpu_score + memory_score + load_score + model_index_score)
+
+        all_candidates.sort(key=get_score, reverse=True)
 
         # Return the best candidate if found
         if all_candidates:
@@ -115,4 +120,3 @@ class DistributedRouter:
             return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
 
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
-
