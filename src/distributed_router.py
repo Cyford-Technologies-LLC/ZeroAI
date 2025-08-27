@@ -87,7 +87,7 @@ class DistributedRouter:
 
         # Return the next viable option
         if endpoints_to_try:
-            best_option = endpoints_to_try
+            best_option = endpoints_to_try[0] # Get the first (best) option
             return best_option['endpoint'], best_option['peer_name'], best_option['model']
 
         raise RuntimeError("No suitable model found that meets memory requirements locally or on discovered peers. All attempts failed.")
