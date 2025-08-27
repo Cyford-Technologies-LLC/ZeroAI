@@ -68,8 +68,24 @@ class PeerDiscovery:
 
     def _get_local_node(self) -> PeerNode:
         """Dynamically creates the local node reference."""
-        local_node = PeerNode(name="local-node", ip=self.ollama_service_name, port=11434)
-        return local_node
+        # Fix: Ensure the local node uses the 'ollama' service name for internal traffic
+        return PeerNode(name="local-node", ip=self.ollama_service_name, port=11434)
+
+    def _discover_single_peer(self, node: PeerNode):
+        """Checks a single peer and updates its capabilities."""
+        try:
+            ollama_url = f"http://{node.ip}:11434"
+            response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+            response.raise_for_status()
+            models = [m['name'] for m in response.json().get('models', [])]
+            node.capabilities.available = True
+            node.capabilities.models = models
+            node.capabilities.last_seen = time.time()
+            node.capabilities.load_avg = 0.0
+            console.print(f"✅ Discovered peer {node.name} at {node.ip} with models: {models}", style="dim")
+        except requests.exceptions.RequestException:
+            node.capabilities.available = False
+            console.print(f"❌ Failed to connect to peer {node.name} at {node.ip}", style="dim")
 
     def _discover_peers(self):
         """
@@ -77,21 +93,10 @@ class PeerDiscovery:
         This runs in a background thread.
         """
         while True:
+            # Fix: Use a copy of the dictionary to avoid issues during modification
             all_nodes = list(self.peers.values()) + [self.local_node]
             for node in all_nodes:
-                try:
-                    ollama_url = f"http://{node.ip}:11434"
-                    response = requests.get(f"{ollama_url}/api/tags", timeout=5)
-                    response.raise_for_status()
-                    models = [m['name'] for m in response.json().get('models', [])]
-                    node.capabilities.available = True
-                    node.capabilities.models = models
-                    node.capabilities.last_seen = time.time()
-                    node.capabilities.load_avg = 0.0
-                    console.print(f"✅ Discovered peer {node.name} at {node.ip} with models: {models}", style="dim")
-                except requests.exceptions.RequestException:
-                    node.capabilities.available = False
-                    console.print(f"❌ Failed to connect to peer {node.name} at {node.ip}", style="dim")
+                self._discover_single_peer(node)
             time.sleep(60)
 
     def start_discovery_service(self):
@@ -104,7 +109,6 @@ class PeerDiscovery:
         if not name:
             name = f"{ip}:{port}"
 
-        # Check for duplicate names or IPs
         if name in self.peers:
             return False, f"Peer with name '{name}' already exists."
         if any(p.ip == ip for p in self.peers.values()):
