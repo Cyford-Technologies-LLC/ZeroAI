@@ -38,6 +38,13 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager received task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager received category: '{self.category}'")
 
+                try:
+                    self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
+                    print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
+                except Exception as e:
+                    print(f"❌ Error during router call in AICrewManager: {e}")
+                    raise  # Re-raise to show the original trace
+
 
         # FIX: Prepend 'ollama/' to the model name for LiteLLM
         # Some versions of CrewAI/LiteLLM require this explicit provider prefix for Ollama
