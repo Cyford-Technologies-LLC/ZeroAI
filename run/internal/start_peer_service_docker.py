@@ -20,23 +20,26 @@ peer_discovery = PeerDiscovery()
 
 @app.route('/capabilities')
 def get_capabilities():
+    """Return current node capabilities"""
+    # Refresh capabilities
     capabilities = peer_discovery._get_my_capabilities()
     return jsonify({
         'cpu_cores': capabilities.cpu_cores,
-        'memory_gb': capabilities.memory_gb,
-        'gpu_memory_gb': capabilities.gpu_memory_gb,
+        'memory_gb': capabilities.memory,
+        'gpu_memory_gb': capabilities.gpu_memory,
         'models': capabilities.models,
         'load_avg': capabilities.load_avg,
         'available': capabilities.available,
-        'last_seen': capabilities.last_seen
     })
 
 @app.route('/health')
 def health_check():
+    """Health check endpoint"""
     return jsonify({'status': 'healthy'})
 
 @app.route('/process_task', methods=['POST'])
 def process_task():
+    """Process AI task from another agent"""
     try:
         task_data = request.get_json()
         task_type = task_data.get('type')
@@ -84,7 +87,7 @@ Code:"""
                 'model_used': model
             })
         else:
-            return jsonify({'success': False, 'error': 'Ollama processing failed'})
+            return jsonify({'success': False, 'error': f'Ollama processing failed: {result.stderr}'})
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})

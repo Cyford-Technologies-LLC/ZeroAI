@@ -2,6 +2,7 @@
 
 import sys
 import os
+from pathlib import Path
 import requests
 import json
 import time
@@ -23,9 +24,8 @@ class PeerCapabilities:
     models: List[str] = None
     load_avg: float = 0.0
     memory: float = 0.0
-    # Assuming metrics service provides these
     gpu_available: bool = False
-    gpu_load: float = 0.0
+    gpu_memory: float = 0.0
 
 @dataclass
 class PeerNode:
@@ -77,49 +77,76 @@ class PeerDiscovery:
         except requests.exceptions.RequestException:
             return []
 
-    def _get_ollama_memory(self, ip: str) -> float:
-        # Assuming a more robust check now exists
+    def _get_my_capabilities(self) -> PeerCapabilities:
+        """Get the capabilities of the local node."""
         try:
-            # Example using a potential metrics service on a peer
-            response = requests.get(f"http://{ip}:8080/health", timeout=5)
-            response.raise_for_status()
-            return response.json().get('available_memory_gb', 0.0)
-        except requests.exceptions.RequestException:
-            # Fallback to local check if remote fails
-            try:
-                return psutil.virtual_memory().available / (1024**3)
-            except Exception:
-                return 0.0
+            # Get Ollama models from the local ollama service
+            ollama_models = self._get_ollama_models("ollama")
 
-    def _get_gpu_metrics(self, ip: str) -> Tuple[bool, float]:
-        # Placeholder for real GPU metric fetching from a peer
-        # Assume a metrics service running on the peer
+            # Gather system metrics using psutil
+            memory_gb = psutil.virtual_memory().available / (1024**3)
+            load_avg = psutil.cpu_percent(interval=1)
+
+            # Placeholder for GPU metrics (requires additional setup)
+            gpu_available = False
+            gpu_memory_gb = 0.0
+
+            return PeerCapabilities(
+                available=True,
+                models=ollama_models,
+                load_avg=load_avg,
+                memory=memory_gb,
+                gpu_available=gpu_available,
+                gpu_memory=gpu_memory_gb
+            )
+        except Exception:
+            return PeerCapabilities(available=False)
+
+    def _get_peer_metrics(self, ip: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves metrics from the peer's API endpoint (your custom metrics).
+        """
         try:
-            response = requests.get(f"http://{ip}:8080/metrics/gpu", timeout=5)
+            metrics_url = f"http://{ip}:8080/capabilities" # Using your /capabilities endpoint
+            response = requests.get(metrics_url, timeout=PEER_PING_TIMEOUT)
             response.raise_for_status()
-            gpu_data = response.json()
-            return gpu_data.get('gpu_available', False), gpu_data.get('gpu_load', 0.0)
-        except requests.exceptions.RequestException:
-            return False, 0.0
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            console.print(f"❌ Failed to get metrics from peer at {ip}: {e}", style="red")
+            return None
 
 
     def _check_ollama_peer(self, peer_name: str, ollama_ip: str) -> PeerCapabilities:
         for attempt in range(PEER_PING_RETRIES):
             try:
-                ollama_url = f"http://{ollama_ip}:11434"
+                # Handle local node separately using _get_my_capabilities
+                if peer_name == "local-node":
+                    return self._get_my_capabilities()
 
-                # Use the correct API endpoint: /api/tags
-                response = requests.get(f"{ollama_url}/api/tags", timeout=PEER_PING_TIMEOUT)
-                response.raise_for_status()
-                models = [m['name'] for m in response.json().get('models', [])]
+                # First, check if Ollama is running and get its models
+                ollama_models = self._get_ollama_models(ollama_ip)
+                if not ollama_models:
+                    raise requests.exceptions.RequestException("No models found on Ollama instance.")
 
-                load = self._get_system_load()
-                memory = self._get_ollama_memory(ollama_ip)
-                gpu_available, gpu_load = self._get_gpu_metrics(ollama_ip)
+                # Next, try to get metrics from the zeroai_peer service
+                metrics = self._get_peer_metrics(ollama_ip)
 
-                console.print(f"✅ Discovered peer {peer_name} at {ollama_ip} with models: {models}", style="green")
-                console.print(f"   Metrics: Load={load:.1f}%, Mem={memory:.1f} GiB, GPU={gpu_available}", style="green")
-                return PeerCapabilities(available=True, models=models, load_avg=load, memory=memory, gpu_available=gpu_available, gpu_load=gpu_load)
+                if metrics:
+                    capabilities = PeerCapabilities(
+                        available=True,
+                        models=ollama_models,
+                        load_avg=metrics.get('load_avg', 0.0),
+                        memory=metrics.get('memory_gb', 0.0),
+                        gpu_available=metrics.get('gpu_available', False),
+                        gpu_memory=metrics.get('gpu_memory_gb', 0.0)
+                    )
+                    console.print(f"✅ Discovered peer {peer_name} at {ollama_ip} with models: {capabilities.models}", style="green")
+                    console.print(f"   Metrics: Load={capabilities.load_avg:.1f}%, Mem={capabilities.memory:.1f} GiB, GPU={capabilities.gpu_available}", style="green")
+                    return capabilities
+
+                # Fallback to basic info if metrics service is unavailable
+                raise requests.exceptions.RequestException("Metrics service unavailable.")
+
             except requests.exceptions.RequestException as e:
                 console.print(f"❌ Failed to connect to peer {peer_name} at {ollama_ip} (Attempt {attempt + 1}/{PEER_PING_RETRIES}): {e}", style="red")
                 time.sleep(1)
