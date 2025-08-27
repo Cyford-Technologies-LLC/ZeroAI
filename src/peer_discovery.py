@@ -185,3 +185,4 @@ class PeerDiscovery:
     def get_peers(self) -> List[PeerNode]:
         with self.peers_lock:
             return list(self.peers.values())
+peer_discovery = PeerDiscovery()
