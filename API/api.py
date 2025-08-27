@@ -1,23 +1,30 @@
 # /opt/ZeroAI/API/api.py
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends # Import Depends
 from pydantic import BaseModel
 from typing import Dict, Any
 from pathlib import Path
+from rich.console import Console
 
 # Fix: Adjust sys.path for robust import resolution
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-# Fix: Import specific components and instantiate the router
-from peer_discovery import peer_discovery
+# Fix: Import specific components
+from peer_discovery import PeerDiscovery # Correct PeerDiscovery import
 from distributed_router import DistributedRouter
 from ai_crew import AICrewManager
 from cache_manager import cache
 
-# Fix: Create the DistributedRouter instance once at the top level
-distributed_router = DistributedRouter(peer_discovery)
+# Initialize a console for logging
+console = Console()
+
+# --- FIX: Initialize complex objects once globally ---
+# This is the key change to ensure the router and its components are set up correctly.
+peer_discovery_instance = PeerDiscovery()
+distributed_router = DistributedRouter(peer_discovery_instance)
+# --- END FIX ---
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -30,10 +37,17 @@ app = FastAPI(
 class CrewRequest(BaseModel):
     inputs: Dict[str, Any]
 
+# Define a dependency provider for the router
+def get_distributed_router():
+    return distributed_router
+
 @app.post("/run_crew_ai/")
-def run_crew_ai(request: CrewRequest):
+def run_crew_ai(
+    request: CrewRequest,
+    router: DistributedRouter = Depends(get_distributed_router) # Inject the router here
+):
     """
-    Endpoint to trigger a self-hosted CrewAI crew using AICrewManager, based on a category.
+    Endpoint to trigger a self-hosted CrewAI crew using AICrewManager.
     """
     try:
         inputs = request.inputs
@@ -43,10 +57,10 @@ def run_crew_ai(request: CrewRequest):
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        # Fix: Pass the router instance to the AICrewManager constructor
-        manager = AICrewManager(distributed_router, inputs=inputs)
+        # Fix: Pass the injected router instance to the AICrewManager constructor
+        manager = AICrewManager(router, inputs=inputs)
 
-        # Decide which crew to create
+        # The rest of your code remains largely the same
         crew = manager.create_crew_for_category(inputs)
 
         # Check cache first
@@ -61,4 +75,8 @@ def run_crew_ai(request: CrewRequest):
 
         return response_data
     except Exception as e:
+        console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
