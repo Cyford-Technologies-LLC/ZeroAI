@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import requests
 import json
-import yaml # Still needed for other potential configs
+import yaml
 import time
 from typing import List, Optional, Dict, Any
 from rich.console import Console
@@ -14,7 +14,6 @@ from dataclasses import dataclass
 import psutil
 
 console = Console()
-# FIX: Use the correct file name peers.json
 PEERS_CONFIG_PATH = Path("/app/config/peers.json")
 PEER_DISCOVERY_INTERVAL = 60
 PEER_PING_TIMEOUT = 5
@@ -45,23 +44,27 @@ class PeerDiscovery:
 
     def _load_peers_from_config(self) -> List[Dict[str, str]]:
         """Loads peers from the configuration file (peers.json)."""
-        if PEERS_CONFIG_PATH.exists():
-            try:
-                with open(PEERS_CONFIG_PATH, 'r') as f:
-                    data = json.load(f) # FIX: Use json.load for .json file
-                    return data.get('peers', [])
-            except Exception as e:
-                console.print(f"[red]Error loading {PEERS_CONFIG_PATH}: {e}[/red]")
-                return []
-        else:
+        if not PEERS_CONFIG_PATH.exists():
+            console.print(f"[yellow]Warning: Configuration file {PEERS_CONFIG_PATH} not found.[/yellow]")
+            return []
+
+        try:
+            with open(PEERS_CONFIG_PATH, 'r') as f:
+                data = json.load(f)
+                return data.get('peers', [])
+        except Exception as e:
+            console.print(f"[red]Error loading {PEERS_CONFIG_PATH}: {e}[/red]")
             return []
 
     def _load_all_peers(self) -> List[Dict[str, str]]:
+        """Loads peers from configuration, falling back to default."""
         peers = self._load_peers_from_config()
         if peers:
+            console.print(f"[green]✅ Loaded {len(peers)} peers from configuration.[/green]")
             return peers
-        console.print("[yellow]Warning: No peers configured. Using default local-node.[/yellow]")
-        return [{"name": "local-node", "ip": "ollama"}]
+        else:
+            console.print("[yellow]Warning: No peers configured. Using default local-node.[/yellow]")
+            return [{"name": "local-node", "ip": "ollama"}]
 
     def _get_system_load(self) -> float:
         try:
