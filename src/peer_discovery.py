@@ -9,10 +9,10 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from rich.console import Console
+import psutil
 
 console = Console()
 
-# Define the path for the peers configuration file
 PEERS_FILE = Path(__file__).parent / "peers.yml"
 
 class PeerCapabilities:
@@ -21,6 +21,8 @@ class PeerCapabilities:
         self.load_avg: float = kwargs.get("load_avg", 0.0)
         self.models: List[str] = kwargs.get("models", [])
         self.last_seen: float = kwargs.get("last_seen", 0.0)
+        self.available_memory: int = kwargs.get("available_memory", 0) # in bytes
+        self.total_memory: int = kwargs.get("total_memory", 0) # in bytes
 
 class PeerNode:
     def __init__(self, name: str, ip: str, port: int, capabilities: Optional[PeerCapabilities] = None):
@@ -37,7 +39,6 @@ class PeerDiscovery:
         self.local_node = self._get_local_node()
 
     def _load_peers_from_file(self):
-        """Loads peers from the peers.yml file."""
         if PEERS_FILE.exists():
             try:
                 with open(PEERS_FILE, 'r') as f:
@@ -54,7 +55,6 @@ class PeerDiscovery:
                 self.peers = {}
 
     def _save_peers_to_file(self):
-        """Saves current peers to the peers.yml file."""
         peers_data = {
             peer.name: {"ip": peer.ip, "port": peer.port}
             for peer in self.peers.values()
@@ -67,22 +67,44 @@ class PeerDiscovery:
             console.print(f"❌ Failed to save peers to peers.yml: {e}", style="red")
 
     def _get_local_node(self) -> PeerNode:
-        """Dynamically creates the local node reference."""
-        # Fix: Ensure the local node uses the 'ollama' service name for internal traffic
         return PeerNode(name="local-node", ip=self.ollama_service_name, port=11434)
+
+    def _get_local_metrics(self) -> Dict[str, Any]:
+        """Gets system metrics for the local node."""
+        mem = psutil.virtual_memory()
+        return {
+            "load_avg": psutil.cpu_percent(),
+            "available_memory": mem.available,
+            "total_memory": mem.total,
+        }
 
     def _discover_single_peer(self, node: PeerNode):
         """Checks a single peer and updates its capabilities."""
         try:
             ollama_url = f"http://{node.ip}:11434"
-            response = requests.get(f"{ollama_url}/api/tags", timeout=5)
-            response.raise_for_status()
-            models = [m['name'] for m in response.json().get('models', [])]
+            # Get Ollama models
+            models_response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+            models_response.raise_for_status()
+            models = [m['name'] for m in models_response.json().get('models', [])]
+
+            # Get system status (requires custom endpoint on peers)
+            # For the local node, use a direct call
+            if node.name == "local-node":
+                metrics = self._get_local_metrics()
+            else:
+                # Assuming remote peers have a custom /api/status endpoint
+                status_response = requests.get(f"http://{node.ip}:{node.port}/api/status", timeout=5)
+                status_response.raise_for_status()
+                metrics = status_response.json()
+
             node.capabilities.available = True
             node.capabilities.models = models
             node.capabilities.last_seen = time.time()
-            node.capabilities.load_avg = 0.0
+            node.capabilities.load_avg = metrics.get("load_avg", 0.0)
+            node.capabilities.available_memory = metrics.get("available_memory", 0)
+            node.capabilities.total_memory = metrics.get("total_memory", 0)
             console.print(f"✅ Discovered peer {node.name} at {node.ip} with models: {models}", style="dim")
+            console.print(f"   Metrics: Load={node.capabilities.load_avg:.1f}%, Mem={node.capabilities.available_memory / (1024**3):.1f} GiB", style="dim")
         except requests.exceptions.RequestException:
             node.capabilities.available = False
             console.print(f"❌ Failed to connect to peer {node.name} at {node.ip}", style="dim")
@@ -93,7 +115,6 @@ class PeerDiscovery:
         This runs in a background thread.
         """
         while True:
-            # Fix: Use a copy of the dictionary to avoid issues during modification
             all_nodes = list(self.peers.values()) + [self.local_node]
             for node in all_nodes:
                 self._discover_single_peer(node)
@@ -105,7 +126,6 @@ class PeerDiscovery:
         discovery_thread.start()
 
     def add_peer(self, ip: str, port: int, name: str) -> Tuple[bool, str]:
-        """Adds a new peer and saves it to the configuration file."""
         if not name:
             name = f"{ip}:{port}"
 
@@ -127,7 +147,6 @@ class PeerDiscovery:
             return False, f"Failed to connect to new peer at {ip}:11434: {e}"
 
     def list_peers(self):
-        """Displays a list of all discovered and configured peers."""
         console.print("\n📋 [bold]Peer List[/bold]")
         if not self.peers:
             console.print("   No external peers configured.", style="dim")
@@ -138,7 +157,7 @@ class PeerDiscovery:
                 if peer.capabilities.available:
                     models = ", ".join(peer.capabilities.models)
                     console.print(f"     Models: {models}", style="dim")
-                    console.print(f"     Load: {peer.capabilities.load_avg:.1f}%", style="dim")
+                    console.print(f"     Load: {peer.capabilities.load_avg:.1f}%, Mem: {peer.capabilities.available_memory / (1024**3):.1f} GiB", style="dim")
 
         local_status = "[green]Available[/green]" if self.local_node.capabilities.available else "[red]Offline[/red]"
         console.print("\n📋 [bold]Local Node[/bold]")
@@ -146,6 +165,7 @@ class PeerDiscovery:
         if self.local_node.capabilities.available:
             models = ", ".join(self.local_node.capabilities.models)
             console.print(f"     Models: {models}", style="dim")
+            console.print(f"     Load: {self.local_node.capabilities.load_avg:.1f}%, Mem: {self.local_node.capabilities.available_memory / (1024**3):.1f} GiB", style="dim")
 
     def get_peers(self) -> List[PeerNode]:
         return list(self.peers.values())
