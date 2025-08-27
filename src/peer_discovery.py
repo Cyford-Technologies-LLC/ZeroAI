@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import requests
 import json
+import yaml
 import time
 from typing import List, Optional, Dict, Any
 from rich.console import Console
@@ -13,7 +14,6 @@ from dataclasses import dataclass
 import psutil
 
 console = Console()
-# FIX: Corrected path to point to the 'config' directory
 PEERS_YML_PATH = Path("config/peers.yml")
 PEER_DISCOVERY_INTERVAL = 60
 PEER_PING_TIMEOUT = 5
@@ -27,7 +27,7 @@ class PeerCapabilities:
     memory: float = 0.0
     gpu_available: bool = False
     gpu_memory: float = 0.0
-    cpu_cores: int = 0  # FIX: Added cpu_cores attribute
+    cpu_cores: int = 0
 
 @dataclass
 class PeerNode:
@@ -41,20 +41,49 @@ class PeerDiscovery:
         self.peers: Dict[str, PeerNode] = {}
         self.peers_lock = Lock()
         self.discovery_thread: Optional[Thread] = None
+        self.default_peers = [{"name": "local-node", "ip": "ollama"}]
 
-        if not PEERS_YML_PATH.exists():
-            console.print(f"[red]Error: {PEERS_YML_PATH} not found. Please create it.[/red]")
-            raise FileNotFoundError(f"{PEERS_YML_PATH} not found.")
+    def _load_peers_from_env(self) -> List[Dict[str, str]]:
+        """Loads peers from the ZEROAI_PEERS environment variable."""
+        peers_json = os.environ.get("ZEROAI_PEERS")
+        if peers_json:
+            try:
+                peers_list = json.loads(peers_json)
+                if isinstance(peers_list, list):
+                    return peers_list
+                console.print("[red]Error: ZEROAI_PEERS environment variable is not a valid JSON list.[/red]")
+                return []
+            except json.JSONDecodeError as e:
+                console.print(f"[red]Error decoding ZEROAI_PEERS JSON: {e}[/red]")
+                return []
+        return []
 
     def _load_peers_from_yml(self) -> List[Dict[str, str]]:
-        try:
-            with open(PEERS_YML_PATH, 'r') as f:
-                import yaml
-                data = yaml.safe_load(f)
-                return data.get('peers', [])
-        except Exception as e:
-            console.print(f"[red]Error loading peers.yml: {e}[/red]")
-            return []
+        """Loads peers from the peers.yml file."""
+        if PEERS_YML_PATH.exists():
+            try:
+                with open(PEERS_YML_PATH, 'r') as f:
+                    data = yaml.safe_load(f)
+                    return data.get('peers', [])
+            except Exception as e:
+                console.print(f"[red]Error loading peers.yml: {e}[/red]")
+                return []
+        return []
+
+    def _load_all_peers(self) -> List[Dict[str, str]]:
+        """Loads peers from environment variables, falling back to yml, then defaults."""
+        peers = self._load_peers_from_env()
+        if peers:
+            console.print("[green]✅ Loaded peers from ZEROAI_PEERS environment variable.[/green]")
+            return peers
+
+        peers = self._load_peers_from_yml()
+        if peers:
+            console.print("[green]✅ Loaded peers from peers.yml.[/green]")
+            return peers
+
+        console.print("[yellow]Warning: No peers configured. Using default local-node.[/yellow]")
+        return self.default_peers
 
     def _get_system_load(self) -> float:
         try:
@@ -72,20 +101,13 @@ class PeerDiscovery:
             return []
 
     def _get_my_capabilities(self) -> PeerCapabilities:
-        """Get the capabilities of the local node."""
         try:
-            # Get Ollama models from the local ollama service
             ollama_models = self._get_ollama_models("ollama")
-
-            # Gather system metrics using psutil
             memory_gb = psutil.virtual_memory().available / (1024**3)
             load_avg = psutil.cpu_percent(interval=1)
             cpu_cores = psutil.cpu_count(logical=True)
-
-            # Placeholder for GPU metrics (requires additional setup in peer service)
             gpu_available = False
             gpu_memory_gb = 0.0
-
             return PeerCapabilities(
                 available=True,
                 models=ollama_models,
@@ -100,19 +122,14 @@ class PeerDiscovery:
             return PeerCapabilities(available=False)
 
     def _get_peer_metrics(self, ip: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieves metrics from the peer's API endpoint (your custom metrics).
-        This is now non-critical for basic peer availability.
-        """
         try:
             metrics_url = f"http://{ip}:8080/capabilities"
             response = requests.get(metrics_url, timeout=PEER_PING_TIMEOUT)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            console.print(f"⚠️ Failed to get metrics from peer at {ip}, using basic Ollama models. Error: {e}", style="yellow")
+            console.print(f"⚠️ Failed to get metrics from peer at {ip}: {e}", style="yellow")
             return None
-
 
     def _check_ollama_peer(self, peer_name: str, ollama_ip: str) -> PeerCapabilities:
         for attempt in range(PEER_PING_RETRIES):
@@ -127,25 +144,15 @@ class PeerDiscovery:
                 console.print(f"✅ Discovered Ollama on peer {peer_name} at {ollama_ip}. Models: {ollama_models}", style="green")
 
                 metrics = self._get_peer_metrics(ollama_ip)
-
                 if metrics:
-                    capabilities = PeerCapabilities(
-                        available=True,
-                        models=ollama_models,
-                        load_avg=metrics.get('load_avg', 0.0),
-                        memory=metrics.get('memory_gb', 0.0),
-                        gpu_available=metrics.get('gpu_available', False),
-                        gpu_memory=metrics.get('gpu_memory_gb', 0.0),
-                        cpu_cores=metrics.get('cpu_cores', 0)
+                    return PeerCapabilities(
+                        available=True, models=ollama_models, load_avg=metrics.get('load_avg', 0.0),
+                        memory=metrics.get('memory_gb', 0.0), gpu_available=metrics.get('gpu_available', False),
+                        gpu_memory=metrics.get('gpu_memory_gb', 0.0), cpu_cores=metrics.get('cpu_cores', 0)
                     )
-                    console.print(f"✅ Peer {peer_name} details: Load={capabilities.load_avg:.1f}%, Mem={capabilities.memory:.1f} GiB, GPU={capabilities.gpu_available}", style="green")
-                    return capabilities
                 else:
                     console.print(f"⚠️  Metrics service failed for peer {peer_name}. Falling back to basic metrics.", style="yellow")
-                    return PeerCapabilities(
-                        available=True,
-                        models=ollama_models,
-                    )
+                    return PeerCapabilities(available=True, models=ollama_models)
 
             except requests.exceptions.RequestException as e:
                 console.print(f"❌ Failed to connect to peer {peer_name} at {ollama_ip} (Attempt {attempt + 1}/{PEER_PING_RETRIES}): {e}", style="red")
@@ -158,9 +165,9 @@ class PeerDiscovery:
     def _discovery_cycle(self):
         console.print("\n🔍 Initiating peer discovery cycle...", style="cyan")
         new_peers: Dict[str, PeerNode] = {}
-        peers_from_yml = self._load_peers_from_yml()
+        peers_to_check = self._load_all_peers()
 
-        for peer_info in peers_from_yml:
+        for peer_info in peers_to_check:
             name = peer_info['name']
             ip = peer_info['ip']
 
