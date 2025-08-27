@@ -19,46 +19,42 @@ logger = logging.getLogger(__name__)
 class AICrewManager:
     """Manages AI crew creation and execution."""
 
- # In /opt/ZeroAI/src/ai_crew.py, inside AICrewManager.__init__
-
     def __init__(self, distributed_router_instance, **kwargs):
-         self.router = distributed_router_instance
-         self.category = kwargs.pop('category', 'general')
-         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
-         self.inputs = kwargs
+        self.router = distributed_router_instance
+        self.category = kwargs.pop('category', 'general')
+        self.task_description = kwargs.get('topic', kwargs.get('task', ''))
+        self.inputs = kwargs
 
-         # FIX: Map generic categories to specific models for the router, before the first call.
-         if self.category == "chat" and not self.task_description:
-             self.task_description = "llama3.2:latest"
-         elif self.category == "coding" and not self.task_description:
-             self.task_description = "codellama:13b"
+        # FIX: Move category mapping to the top of the __init__ method
+        if self.category == "chat" and not self.task_description:
+            self.task_description = "llama3.2:latest"
+        elif self.category == "coding" and not self.task_description:
+            self.task_description = "codellama:13b"
 
-         # Debug prints moved to after the task_description is properly defined.
-         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
-         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
+        # Debug prints now correctly show the resolved task_description
+        print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
+        print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
-         # The router call is now inside a try block
-         try:
-             self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
-             print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
-         except Exception as e:
-             print(f"❌ Error during router call in AICrewManager: {e}")
-             raise  # Re-raise to show the original trace
+        # The router call is now inside a try block
+        try:
+            self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
+            print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
+        except Exception as e:
+            print(f"❌ Error during router call in AICrewManager: {e}")
+            raise
 
-         # FIX: Prepend 'ollama/' to the model name for LiteLLM
-         prefixed_model_name = f"ollama/{self.model_name}"
+        # FIX: Prepend 'ollama/' to the model name for LiteLLM
+        prefixed_model_name = f"ollama/{self.model_name}"
 
-         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
-         self.provider = "local"
-         self.llm_config = {
-             "model": prefixed_model_name,
-             "base_url": self.base_url,
-             "temperature": config.model.temperature
-         }
+        self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
+        self.provider = "local"
+        self.llm_config = {
+            "model": prefixed_model_name,
+            "base_url": self.base_url,
+            "temperature": config.model.temperature
+        }
 
-         console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
-
-
+        console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
@@ -119,7 +115,7 @@ class AICrewManager:
         )
         coding_task = Task(
             description=f"Generate code to fulfill the request: {inputs.get('topic')}. Context: {inputs.get('context')}.",
-            expected_output='A well-commented code snippet that solves the problem.',
+            expected_output='A well-commented code snippet',
             agent=coder
         )
         review_task = Task(
