@@ -1,4 +1,4 @@
-# peer_discovery.py
+# /app/src/peer_discovery.py
 
 import sys
 import os
@@ -26,6 +26,7 @@ class PeerCapabilities:
     memory: float = 0.0
     gpu_available: bool = False
     gpu_memory: float = 0.0
+    cpu_cores: int = 0  # FIX: Added cpu_cores attribute
 
 @dataclass
 class PeerNode:
@@ -71,7 +72,7 @@ class PeerDiscovery:
     def _get_ollama_models(self, ip: str) -> List[str]:
         try:
             ollama_url = f"http://{ip}:11434"
-            response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+            response = requests.get(f"{ollama_url}/api/tags", timeout=PEER_PING_TIMEOUT)
             response.raise_for_status()
             return [m['name'] for m in response.json().get('models', [])]
         except requests.exceptions.RequestException:
@@ -86,6 +87,7 @@ class PeerDiscovery:
             # Gather system metrics using psutil
             memory_gb = psutil.virtual_memory().available / (1024**3)
             load_avg = psutil.cpu_percent(interval=1)
+            cpu_cores = psutil.cpu_count(logical=True) # FIX: Get CPU core count
 
             # Placeholder for GPU metrics (requires additional setup)
             gpu_available = False
@@ -97,7 +99,8 @@ class PeerDiscovery:
                 load_avg=load_avg,
                 memory=memory_gb,
                 gpu_available=gpu_available,
-                gpu_memory=gpu_memory_gb
+                gpu_memory=gpu_memory_gb,
+                cpu_cores=cpu_cores # FIX: Pass cpu_cores to the data class
             )
         except Exception:
             return PeerCapabilities(available=False)
@@ -138,7 +141,8 @@ class PeerDiscovery:
                         load_avg=metrics.get('load_avg', 0.0),
                         memory=metrics.get('memory_gb', 0.0),
                         gpu_available=metrics.get('gpu_available', False),
-                        gpu_memory=metrics.get('gpu_memory_gb', 0.0)
+                        gpu_memory=metrics.get('gpu_memory_gb', 0.0),
+                        cpu_cores=metrics.get('cpu_cores', 0) # FIX: Get cpu_cores from metrics
                     )
                     console.print(f"✅ Discovered peer {peer_name} at {ollama_ip} with models: {capabilities.models}", style="green")
                     console.print(f"   Metrics: Load={capabilities.load_avg:.1f}%, Mem={capabilities.memory:.1f} GiB, GPU={capabilities.gpu_available}", style="green")
