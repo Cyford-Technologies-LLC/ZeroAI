@@ -21,13 +21,15 @@ def generate_code(prompt: str):
     max_retries = 5
     failed_peers = []
 
+    # Initialize the router instance
+    peer_discovery_instance = PeerDiscovery()
+    router = DistributedRouter(peer_discovery_instance)
+
     for attempt in range(max_retries):
         try:
-            # Use the router instance here
             ollama_url, peer_name, model_name = router.get_optimal_endpoint_and_model(prompt, failed_peers)
             console.print(f"🤖 Using model: [bold green]{model_name}[/bold green] on peer: [bold cyan]{peer_name}[/bold cyan]")
 
-            # Use the new ChatOllama class
             llm = ChatOllama(
                 model=model_name,
                 base_url=ollama_url,
@@ -42,14 +44,15 @@ Requirements:
 Code:"""
 
             start_time = time.time()
-            result = llm.invoke(code_prompt, max_tokens=512)
+            # Remove max_tokens from the invoke call
+            result = llm.invoke(code_prompt)
             end_time = time.time()
 
             generation_time = end_time - start_time
             console.print(f"⏱️  Generation time: {generation_time:.2f} seconds", style="cyan")
             return result.content if result else "Generation failed."
 
-        except (RuntimeError, litellm.APIConnectionError, ValueError) as e:
+        except (RuntimeError, litellm.APIConnectionError, ValueError, TypeError) as e:
             console.print(f"❌ LLM Call Failed (Attempt {attempt + 1}/{max_retries}): {e}", style="red")
 
             if peer_name:
@@ -59,6 +62,7 @@ Code:"""
 
     console.print(f"❌ Failed to generate code after {max_retries} attempts.", style="red")
     return None
+
 
 def main():
     console.print("🚀 [bold blue]ZeroAI Code Generator[/bold blue]")
