@@ -28,6 +28,7 @@ services:
       - ZEROAI_CONFIG_DIR=config
     volumes:
       - ./src:/app/src
+      - ./config:/app/config
       - ./prepare_resources.py:/app/prepare_resources.py # Add the new script
     entrypoint: ["/bin/bash", "-c", "sleep 5 && python /app/prepare_resources.py && uvicorn API.api:app --host 0.0.0.0 --port 3939"]
     networks:
