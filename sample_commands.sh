@@ -10,7 +10,12 @@ done
 #   if all else fails..   it should use   3.2:1b
 #
 # docker exec -it zeroai_api-prod bash
-#
+#   sites:
+#   https://www.cyfordtechnologies.com/zeroai.php
+#   https://www.cyfordtechnologies.com/allens_ai.php
+#   https://github.com/Cyford-Technologies-LLC/ZeroAI/
+
+
 
 # Add peers
 python3 run/internal/peer_manager.py  --ip 0.0.0.0 --name GPU-01 --model codellama:13b add
