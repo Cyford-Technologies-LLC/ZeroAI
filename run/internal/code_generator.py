@@ -7,7 +7,8 @@ import litellm
 # Fix: Import from the new package as suggested by the deprecation warning
 from langchain_ollama import ChatOllama
 from config import config
-from distributed_router import distributed_router
+#from distributed_router import distributed_router
+from distributed_router import DistributedRouter
 from rich.console import Console
 
 console = Console()
