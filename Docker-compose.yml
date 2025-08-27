@@ -25,6 +25,7 @@ services:
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL_NAME=llama3.2:1b
       - PYTHONPATH=/app/src
+      - ZEROAI_CONFIG_DIR=config
     volumes:
       - ./src:/app/src
       - ./prepare_resources.py:/app/prepare_resources.py # Add the new script
@@ -47,6 +48,7 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - PYTHONPATH=/app/src
+      - ZEROAI_CONFIG_DIR=config
     working_dir: /app
     entrypoint: ["/bin/bash", "-c", "sleep 5 && python prepare_resources.py && python3.11 run/internal/start_peer_service_docker.py"]
     networks:

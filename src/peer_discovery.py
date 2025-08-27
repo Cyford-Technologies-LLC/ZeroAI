@@ -13,7 +13,8 @@ from dataclasses import dataclass
 import psutil
 
 console = Console()
-PEERS_YML_PATH = Path("peers.yml")
+# FIX: Corrected path to point to the 'config' directory
+PEERS_YML_PATH = Path("config/peers.yml")
 PEER_DISCOVERY_INTERVAL = 60
 PEER_PING_TIMEOUT = 5
 PEER_PING_RETRIES = 3
@@ -42,16 +43,8 @@ class PeerDiscovery:
         self.discovery_thread: Optional[Thread] = None
 
         if not PEERS_YML_PATH.exists():
-            console.print("[yellow]Warning: peers.yml not found. Using default peers.[/yellow]")
-            self._write_default_peers_yml()
-
-    def _write_default_peers_yml(self):
-        with open(PEERS_YML_PATH, "w") as f:
-            f.write("peers:\n")
-            f.write("  - name: local-node\n")
-            f.write("    ip: ollama\n")
-            f.write("#  - name: GPU-01\n")
-            f.write("#    ip: 149.36.1.65\n")
+            console.print(f"[red]Error: {PEERS_YML_PATH} not found. Please create it.[/red]")
+            raise FileNotFoundError(f"{PEERS_YML_PATH} not found.")
 
     def _load_peers_from_yml(self) -> List[Dict[str, str]]:
         try:
@@ -87,9 +80,9 @@ class PeerDiscovery:
             # Gather system metrics using psutil
             memory_gb = psutil.virtual_memory().available / (1024**3)
             load_avg = psutil.cpu_percent(interval=1)
-            cpu_cores = psutil.cpu_count(logical=True) # FIX: Get CPU core count
+            cpu_cores = psutil.cpu_count(logical=True)
 
-            # Placeholder for GPU metrics (requires additional setup)
+            # Placeholder for GPU metrics (requires additional setup in peer service)
             gpu_available = False
             gpu_memory_gb = 0.0
 
@@ -100,38 +93,39 @@ class PeerDiscovery:
                 memory=memory_gb,
                 gpu_available=gpu_available,
                 gpu_memory=gpu_memory_gb,
-                cpu_cores=cpu_cores # FIX: Pass cpu_cores to the data class
+                cpu_cores=cpu_cores
             )
-        except Exception:
+        except Exception as e:
+            console.print(f"[red]Error getting local capabilities: {e}[/red]")
             return PeerCapabilities(available=False)
 
     def _get_peer_metrics(self, ip: str) -> Optional[Dict[str, Any]]:
         """
         Retrieves metrics from the peer's API endpoint (your custom metrics).
+        This is now non-critical for basic peer availability.
         """
         try:
-            metrics_url = f"http://{ip}:8080/capabilities" # Using your /capabilities endpoint
+            metrics_url = f"http://{ip}:8080/capabilities"
             response = requests.get(metrics_url, timeout=PEER_PING_TIMEOUT)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            console.print(f"❌ Failed to get metrics from peer at {ip}: {e}", style="red")
+            console.print(f"⚠️ Failed to get metrics from peer at {ip}, using basic Ollama models. Error: {e}", style="yellow")
             return None
 
 
     def _check_ollama_peer(self, peer_name: str, ollama_ip: str) -> PeerCapabilities:
         for attempt in range(PEER_PING_RETRIES):
             try:
-                # Handle local node separately using _get_my_capabilities
                 if peer_name == "local-node":
                     return self._get_my_capabilities()
 
-                # First, check if Ollama is running and get its models
                 ollama_models = self._get_ollama_models(ollama_ip)
                 if not ollama_models:
                     raise requests.exceptions.RequestException("No models found on Ollama instance.")
 
-                # Next, try to get metrics from the zeroai_peer service
+                console.print(f"✅ Discovered Ollama on peer {peer_name} at {ollama_ip}. Models: {ollama_models}", style="green")
+
                 metrics = self._get_peer_metrics(ollama_ip)
 
                 if metrics:
@@ -142,20 +136,22 @@ class PeerDiscovery:
                         memory=metrics.get('memory_gb', 0.0),
                         gpu_available=metrics.get('gpu_available', False),
                         gpu_memory=metrics.get('gpu_memory_gb', 0.0),
-                        cpu_cores=metrics.get('cpu_cores', 0) # FIX: Get cpu_cores from metrics
+                        cpu_cores=metrics.get('cpu_cores', 0)
                     )
-                    console.print(f"✅ Discovered peer {peer_name} at {ollama_ip} with models: {capabilities.models}", style="green")
-                    console.print(f"   Metrics: Load={capabilities.load_avg:.1f}%, Mem={capabilities.memory:.1f} GiB, GPU={capabilities.gpu_available}", style="green")
+                    console.print(f"✅ Peer {peer_name} details: Load={capabilities.load_avg:.1f}%, Mem={capabilities.memory:.1f} GiB, GPU={capabilities.gpu_available}", style="green")
                     return capabilities
-
-                # Fallback to basic info if metrics service is unavailable
-                raise requests.exceptions.RequestException("Metrics service unavailable.")
+                else:
+                    console.print(f"⚠️  Metrics service failed for peer {peer_name}. Falling back to basic metrics.", style="yellow")
+                    return PeerCapabilities(
+                        available=True,
+                        models=ollama_models,
+                    )
 
             except requests.exceptions.RequestException as e:
                 console.print(f"❌ Failed to connect to peer {peer_name} at {ollama_ip} (Attempt {attempt + 1}/{PEER_PING_RETRIES}): {e}", style="red")
                 time.sleep(1)
 
-        console.print(f"❌ Failed to connect to peer {peer_name} after {PEER_PING_RETRIES} retries.", style="red")
+        console.print(f"❌ Failed to connect to peer {peer_name} after {PEER_PING_RETRIES} retries. Marking unavailable.", style="red")
         return PeerCapabilities(available=False)
 
 
@@ -189,4 +185,5 @@ class PeerDiscovery:
     def get_peers(self) -> List[PeerNode]:
         with self.peers_lock:
             return list(self.peers.values())
+
 peer_discovery = PeerDiscovery()
