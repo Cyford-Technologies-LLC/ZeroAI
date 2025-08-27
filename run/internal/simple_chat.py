@@ -10,7 +10,7 @@ from pathlib import Path
 from rich.console import Console
 
 # Import necessary components
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from ai_crew import AICrewManager
 from distributed_router import distributed_router
 from rich.console import Console
