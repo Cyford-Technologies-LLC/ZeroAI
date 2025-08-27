@@ -176,5 +176,30 @@ class PeerDiscovery:
     def get_local_node(self) -> PeerNode:
         return self.local_node
 
+    def _check_ollama_peer(self, peer_name: str, ollama_ip: str) -> PeerCapabilities:
+        for attempt in range(PEER_PING_RETRIES):
+            try:
+                ollama_url = f"http://{ollama_ip}:11434"
+
+                # Use the correct API endpoint: /api/tags
+                response = requests.get(f"{ollama_url}/api/tags", timeout=PEER_PING_TIMEOUT)
+                response.raise_for_status()
+                models = [m['name'] for m in response.json().get('models', [])]
+
+                # Get system load and memory info
+                # Note: This load/memory is for the discovery peer, not the ollama peer.
+                # A full solution would require the ollama peer to expose this info.
+                load = self._get_system_load()
+                memory = self._get_ollama_memory(ollama_ip)
+
+                console.print(f"✅ Discovered peer {peer_name} at {ollama_ip} with models: {models}", style="green")
+                console.print(f"   Metrics: Load={load:.1f}%, Mem={memory:.1f} GiB", style="green")
+                return PeerCapabilities(available=True, models=models, load_avg=load, memory=memory)
+            except requests.exceptions.RequestException as e:
+                console.print(f"❌ Failed to connect to peer {peer_name} at {ollama_ip} (Attempt {attempt + 1}/{PEER_PING_RETRIES}): {e}", style="red")
+                time.sleep(1)
+
+        console.print(f"❌ Failed to connect to peer {peer_name} after {PEER_PING_RETRIES} retries.", style="red")
+        return PeerCapabilities(available=False)
 # Create a singleton instance
 peer_discovery = PeerDiscovery()
