@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Fix: Import specific components and instantiate the router
-from peer_discovery import PeerDiscovery
+from peer_discovery import peer_discovery
 from distributed_router import DistributedRouter
 from ai_crew import AICrewManager
 from cache_manager import cache
