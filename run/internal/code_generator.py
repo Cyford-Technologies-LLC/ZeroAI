@@ -27,7 +27,20 @@ def generate_code(prompt: str):
     for attempt in range(max_retries):
         try:
             ollama_url, peer_name, model_name = router.get_optimal_endpoint_and_model(prompt, failed_peers)
+
+            # Restore printing the server and resource information here
             console.print(f"🤖 Using model: [bold green]{model_name}[/bold green] on peer: [bold cyan]{peer_name}[/bold cyan]")
+
+            # Additional logic to print more details from the peer_discovery object
+            all_peers = peer_discovery_instance.get_peers()
+            peer_info = next((p for p in all_peers if p.name == peer_name), None)
+            if peer_info:
+                console.print(f"   Resource Details:", style="cyan")
+                console.print(f"     - Memory: {peer_info.capabilities.memory:.1f} GiB", style="cyan")
+                console.print(f"     - Load Avg: {peer_info.capabilities.load_avg:.1f}%", style="cyan")
+                if peer_info.capabilities.gpu_available:
+                    console.print(f"     - GPU Memory: {peer_info.capabilities.gpu_memory:.1f} GiB", style="cyan")
+
 
             llm = ChatOllama(
                 model=model_name,
@@ -43,7 +56,7 @@ Requirements:
 Code:"""
 
             start_time = time.time()
-            # The `max_tokens` argument is not supported by this API, so it's removed.
+            # Pass the code_prompt to llm.invoke()
             result = llm.invoke(code_prompt)
             end_time = time.time()
 
