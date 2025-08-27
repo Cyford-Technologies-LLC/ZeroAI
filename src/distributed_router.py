@@ -41,8 +41,15 @@ class DistributedRouter:
 
         endpoints_to_try = []
 
-        # New: Add remote peers first based on preference and load
+        # New: Systematically build a list of all possible endpoints
+        local_ollama_models = self._get_local_ollama_models()
+
         for model in model_preference:
+            # Check local peer first for the current preferred model
+            if model in local_ollama_models and "local" not in failed_peers:
+                endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
+
+            # Then check remote peers for the same model
             eligible_peers = [
                 peer for peer in all_peers
                 if peer.capabilities.available and model in peer.capabilities.models and peer.name not in failed_peers
@@ -52,14 +59,12 @@ class DistributedRouter:
                 for peer in eligible_peers:
                     endpoints_to_try.append({"model": model, "endpoint": f"http://{peer.ip}:11434", "peer_name": peer.name})
 
-        local_ollama_models = self._get_local_ollama_models()
-
-        # New: Add all viable local models to the list *after* remote peers
-        for model in model_preference:
-            if model in local_ollama_models and "local" not in failed_peers:
+        # New: Also add other local models as a final fallback
+        for model in local_ollama_models:
+            if model not in model_preference and "local" not in failed_peers:
                 endpoints_to_try.append({"model": model, "endpoint": "http://ollama:11434", "peer_name": "local"})
 
-        # Return the next available option from the list
+        # Iterate through the pre-built list to find the next available option
         for endpoint_info in endpoints_to_try:
             return endpoint_info['endpoint'], endpoint_info['peer_name'], endpoint_info['model']
 
