@@ -32,7 +32,9 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - ollama
-    # No ports mapping to the host
+    # Fix: Add port mapping for peer-to-peer communication
+    ports:
+      - "8080:8080"
     volumes:
       - ./src:/app/src
     environment:
