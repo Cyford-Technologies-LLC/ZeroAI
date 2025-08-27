@@ -7,19 +7,15 @@ import litellm
 # Fix: Import from the new package as suggested by the deprecation warning
 from langchain_ollama import ChatOllama
 from config import config
-#from distributed_router import distributed_router
-from distributed_router import DistributedRouter
-from peer_discovery import PeerDiscovery  # Assuming this exists
-
-# Initialize the router instance
-peer_discovery_instance = PeerDiscovery()
-router = DistributedRouter(peer_discovery_instance)
-
-
-
 from rich.console import Console
+from peer_discovery import PeerDiscovery
+from distributed_router import DistributedRouter
 
 console = Console()
+
+# Instantiate the router AFTER importing PeerDiscovery and DistributedRouter
+peer_discovery_instance = PeerDiscovery()
+router = DistributedRouter(peer_discovery_instance)
 
 def generate_code(prompt: str):
     max_retries = 5
@@ -27,7 +23,8 @@ def generate_code(prompt: str):
 
     for attempt in range(max_retries):
         try:
-            ollama_url, peer_name, model_name = distributed_router.get_optimal_endpoint_and_model(prompt, failed_peers)
+            # Use the router instance here
+            ollama_url, peer_name, model_name = router.get_optimal_endpoint_and_model(prompt, failed_peers)
             console.print(f"🤖 Using model: [bold green]{model_name}[/bold green] on peer: [bold cyan]{peer_name}[/bold cyan]")
 
             # Use the new ChatOllama class
@@ -55,7 +52,8 @@ Code:"""
         except (RuntimeError, litellm.APIConnectionError, ValueError) as e:
             console.print(f"❌ LLM Call Failed (Attempt {attempt + 1}/{max_retries}): {e}", style="red")
 
-            failed_peers.append(peer_name)
+            if peer_name:
+                failed_peers.append(peer_name)
             console.print(f"🔄 Retrying with another peer or model...", style="yellow")
             continue
 
