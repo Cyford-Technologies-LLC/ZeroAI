@@ -9,12 +9,16 @@ import os
 from pathlib import Path
 from rich.console import Console
 
-# Import necessary components
+# Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+
 from ai_crew import AICrewManager
-from distributed_router import distributed_router
+from distributed_router import distributed_router, DistributedRouter
+from peer_discovery import PeerDiscovery
+from langchain_ollama import ChatOllama
+from config import config
 from rich.console import Console
-from langchain_core.messages import HumanMessage, SystemMessage  # New import
+from langchain_core.messages import HumanMessage, SystemMessage
 
 console = Console()
 
@@ -24,17 +28,19 @@ def main():
     console.print("=" * 40)
 
     try:
-        # Provide a task description that maps to a working model
-        # Use a model known to exist on the peer and be suitable for chat.
-        manager = AICrewManager(distributed_router, category="chat", task="llama3.2:latest")
+        # --- FIX: Instantiate the router and pass it to AICrewManager ---
+        peer_discovery_instance = PeerDiscovery()
+        router = DistributedRouter(peer_discovery_instance)
+
+        # Initialize AICrewManager with the router instance
+        # The task description for the chat category is handled in ai_crew.py.
+        manager = AICrewManager(router, category="chat")
 
         # Define the system message for the bot's persona
         system_message = "You are a chatbot named Tony. You work for the Tiger company. Greet the user and answer their questions concisely."
 
-        # The llm object is available from the AICrewManager instance
         llm = manager.llm
 
-        # Print the initial greeting from the bot
         console.print(f"\n💡 [bold green]Tony:[/bold green] Hi! I'm Tony, and I work for the Tiger company. How can I help you today?")
 
         while True:
@@ -49,7 +55,6 @@ def main():
             console.print(f"\n🤔 Thinking about: [green]{question}[/green]")
 
             try:
-                # Use a list of message objects for the LLM call
                 messages = [
                     SystemMessage(content=system_message),
                     HumanMessage(content=question)
@@ -71,4 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
