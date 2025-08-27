@@ -1,6 +1,15 @@
-# docker-compose.override.yml
+# /opt/ZeroAI/docker-compose.gpu.override.yml
 services:
   ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  zeroai_peer:
     deploy:
       resources:
         reservations:
