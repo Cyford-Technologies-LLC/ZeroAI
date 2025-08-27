@@ -2,14 +2,12 @@
 
 import logging
 from typing import Dict, Any, Optional
-from crewai import Agent, Task, Crew, Process, CrewOutput
+from crewai import Agent, Task, Crew, Process
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 # Fix: Use explicit imports for LLM providers
-from langchain_community.chat_models import ChatOllama
 from langchain_community.llms.ollama import Ollama
-from crewai.llm import LLM as CrewAILLM  # Use crewai's LLM for compatibility
 
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
@@ -26,47 +24,24 @@ class AICrewManager:
         self.router = distributed_router_instance
         self.category = kwargs.pop('category', 'general')
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
-
-        # New: Store inputs to propagate to LLM setup
         self.inputs = kwargs
 
-        base_url, peer_name, model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
+        # New: Store LLM details for agent creation
+        self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
 
-        self.model_name = model_name
-        self.endpoint = base_url
-        self.peer_name = peer_name
         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
-        self.provider = "local"
-        self.llm = self._setup_llm(**kwargs)
+        self.provider = "local" # Assuming local for this path
+        self.llm_config = {
+            "model": self.model_name,
+            "base_url": self.base_url,
+            "temperature": config.model.temperature
+        }
 
-    def _setup_llm(self, **kwargs) -> CrewAILLM:
-        try:
-            if self.provider == "local":
-                console.print(f"✅ Connecting to Ollama at BASEURL: [bold green]{self.endpoint}[/bold green] for model: [bold yellow]{self.model_name}[/bold yellow]")
+        console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.model_name}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
-                # Fix: Use Ollama directly from langchain for native support
-                # This explicitly sets the model and base_url separately as required
-                ollama_llm_instance = Ollama(
-                    model=self.model_name,
-                    base_url=self.endpoint,
-                    temperature=config.model.temperature,
-                )
 
-                # Fix: Wrap the LangChain LLM with CrewAILLM for compatibility
-                llm = CrewAILLM(ollama_llm_instance)
-
-                console.print(f"✅ Connected to {self.model_name} on {self.peer_name}", style="green")
-            elif self.provider in ["openai", "anthropic", "azure", "google"]:
-                self.endpoint = self.provider
-                if self.provider == "openai":
-                    llm = CloudProviderManager.create_openai_llm(model=self.model_name, **kwargs)
-                console.print(f"✅ Connected to {self.provider} {self.model_name}", style="green")
-            else:
-                raise ValueError(f"Unsupported provider: {self.provider}")
-            return llm
-        except Exception as e:
-            console.print(f"❌ Failed to connect to {self.provider} at {self.endpoint} for model {self.model_name}: {e}", style="red")
-            raise
+    # No longer need a separate _setup_llm method; agent creation handles it
+    # def _setup_llm...
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
@@ -81,8 +56,9 @@ class AICrewManager:
             return self.create_research_crew(inputs)
 
     def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
-        researcher = create_researcher(self.llm, inputs)
-        writer = create_writer(self.llm, inputs)
+        # Fix: Pass the LLM config directly when creating agents
+        researcher = create_researcher(Ollama(**self.llm_config), inputs)
+        writer = create_writer(Ollama(**self.llm_config), inputs)
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, inputs, context=[research_task])
         return Crew(
@@ -92,9 +68,10 @@ class AICrewManager:
         )
 
     def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
-        researcher = create_researcher(self.llm, inputs)
-        analyst = create_analyst(self.llm, inputs)
-        writer = create_writer(self.llm, inputs)
+        # Fix: Pass the LLM config directly when creating agents
+        researcher = create_researcher(Ollama(**self.llm_config), inputs)
+        analyst = create_analyst(Ollama(**self.llm_config), inputs)
+        writer = create_writer(Ollama(**self.llm_config), inputs)
         research_task = create_research_task(researcher, inputs)
         analysis_task = create_analysis_task(analyst, inputs)
         writing_task = create_writing_task(writer, inputs)
@@ -105,19 +82,21 @@ class AICrewManager:
         )
 
     def create_coding_crew(self, inputs: Dict[str, Any]) -> Crew:
+        # Fix: Pass the LLM config directly when creating agents
+        llm_instance = Ollama(**self.llm_config)
         coder = Agent(
             role='Senior Software Developer',
             goal=f'Write clean, efficient, and well-documented code for the task: "{inputs.get("topic")}". Context: "{inputs.get("context")}".',
             backstory='A seasoned developer with expertise in multiple programming languages.',
             verbose=True,
-            llm=self.llm,
+            llm=llm_instance,
         )
         qa_engineer = Agent(
             role='Quality Assurance Engineer',
             goal='Review the generated code for correctness, bugs, and best practices.',
             backstory='A meticulous QA engineer who ensures all code is of the highest quality.',
             verbose=True,
-            llm=self.llm,
+            llm=llm_instance,
         )
         coding_task = Task(
             description=f"Generate code to fulfill the request: {inputs.get('topic')}. Context: {inputs.get('context')}.",
@@ -173,5 +152,6 @@ class AICrewManager:
         return {
             "model_name": self.model_name,
             "provider": self.provider,
-            "endpoint": self.endpoint
+            "endpoint": self.base_url
         }
+
