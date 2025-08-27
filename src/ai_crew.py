@@ -20,9 +20,7 @@ class AICrewManager:
     """Manages AI crew creation and execution."""
 
     def __init__(self, distributed_router_instance, **kwargs):
-        # Print the task description received
-        print(f"DEBUG: AICrewManager received task_description: '{self.task_description}'")
-        print(f"DEBUG: AICrewManager received category: '{self.category}'")
+
 
 
         self.router = distributed_router_instance
@@ -31,6 +29,15 @@ class AICrewManager:
         self.inputs = kwargs
 
         self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
+
+        if self.category == "chat" and not self.task_description:
+            self.task_description = "llama3.2:latest"
+        elif self.category == "coding" and not self.task_description:
+            self.task_description = "codellama:13b"
+        # Print the task description received
+        print(f"DEBUG: AICrewManager received task_description: '{self.task_description}'")
+        print(f"DEBUG: AICrewManager received category: '{self.category}'")
+
 
         # FIX: Prepend 'ollama/' to the model name for LiteLLM
         # Some versions of CrewAI/LiteLLM require this explicit provider prefix for Ollama
