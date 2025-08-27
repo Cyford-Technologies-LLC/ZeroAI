@@ -21,7 +21,7 @@ class AICrewManager:
 
  # In /opt/ZeroAI/src/ai_crew.py, inside AICrewManager.__init__
 
-     def __init__(self, distributed_router_instance, **kwargs):
+    def __init__(self, distributed_router_instance, **kwargs):
          self.router = distributed_router_instance
          self.category = kwargs.pop('category', 'general')
          self.task_description = kwargs.get('topic', kwargs.get('task', ''))
