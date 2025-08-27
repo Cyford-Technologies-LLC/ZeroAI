@@ -1,3 +1,5 @@
+# docker-compose.yml
+
 services:
   ollama:
     container_name: ollama-prod
@@ -25,7 +27,8 @@ services:
       - PYTHONPATH=/app/src
     volumes:
       - ./src:/app/src
-    entrypoint: /bin/bash -c "sleep 5 && curl -s http://ollama:11434/api/pull -d '{\"name\":\"llama3.1:8b\"}' && uvicorn API.api:app --host 0.0.0.0 --port 3939"
+      - ./prepare_resources.py:/app/prepare_resources.py # Add the new script
+    entrypoint: ["/bin/bash", "-c", "sleep 5 && python /app/prepare_resources.py && uvicorn API.api:app --host 0.0.0.0 --port 3939"]
     networks:
       - zeroai_network
 
@@ -40,11 +43,12 @@ services:
       - "8080:8080"
     volumes:
       - ./src:/app/src
+      - ./prepare_resources.py:/app/prepare_resources.py # Add the new script
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - PYTHONPATH=/app/src
     working_dir: /app
-    command: ["python3.11", "run/internal/start_peer_service_docker.py"]
+    entrypoint: ["/bin/bash", "-c", "sleep 5 && python prepare_resources.py && python3.11 run/internal/start_peer_service_docker.py"]
     networks:
       - zeroai_network
 
