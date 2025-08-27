@@ -12,12 +12,9 @@ from rich.console import Console
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-# Import all necessary components
 from ai_crew import AICrewManager
-from distributed_router import distributed_router, DistributedRouter
-from peer_discovery import PeerDiscovery
-from langchain_ollama import ChatOllama
-from config import config
+from distributed_router import distributed_router
+from rich.console import Console
 
 console = Console()
 
@@ -27,30 +24,10 @@ def main():
     console.print("=" * 40)
 
     try:
-        # --- FIX 1: Explicitly define the model for chat ---
+        # --- FIX: Provide a task description that maps to a working model ---
+        # The 'task' argument is used by AICrewManager to find the optimal endpoint.
         # Use a model known to exist on the peer and be suitable for chat.
-        model_name = "llama3.2:latest"  # You can also use "codellama:13b"
-
-        # Instantiate the router and find the correct endpoint for our model
-        peer_discovery_instance = PeerDiscovery()
-        router = DistributedRouter(peer_discovery_instance)
-
-        ollama_url, peer_name, _ = router.get_optimal_endpoint_and_model(model_name)
-
-        # Print the selected peer and model for clarity
-        console.print(f"🤖 Using model: [bold green]{model_name}[/bold green] on peer: [bold cyan]{peer_name}[/bold cyan]")
-
-        # --- FIX 2: Initialize the LLM explicitly ---
-        # Initialize the ChatOllama LLM with the specific model and URL
-        llm = ChatOllama(
-            model=model_name,
-            base_url=ollama_url,
-            temperature=config.model.temperature
-        )
-
-        # Initialize the AICrewManager with the pre-configured LLM
-        # This bypasses the automatic model selection for the "chat" category
-        manager = AICrewManager(llm, category="chat")
+        manager = AICrewManager(distributed_router, category="chat", task="llama3.2:latest")
 
         while True:
             question = input("\n❓ Ask me anything (or 'quit' to exit): ").strip()
@@ -64,13 +41,16 @@ def main():
             console.print(f"\n🤔 Thinking about: [green]{question}[/green]")
 
             try:
-                # Call the LLM directly through the manager
-                result = manager.llm.invoke(f"Answer this question concisely: {question}")
-
-                console.print(f"\n💡 [bold green]Answer:[/bold green]\n{result.content}")
+                # The AICrewManager is already configured with the correct LLM
+                # and endpoint via the distributed_router.
+                llm = manager.llm
+                result = llm.call(f"Answer this question concisely: {question}")
+                console.print(f"\n💡 [bold green]Answer:[/bold green]\n{result}")
 
             except Exception as e:
                 console.print(f"❌ Error during LLM call: {e}")
+
+        console.print("\n👋 Goodbye!")
 
     except KeyboardInterrupt:
         console.print("\n👋 Goodbye!")
@@ -79,3 +59,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
