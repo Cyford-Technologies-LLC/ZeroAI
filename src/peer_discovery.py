@@ -95,7 +95,7 @@ class PeerDiscovery:
                 else:
                     # Assume custom endpoint for metrics on external peers
                     # This relies on the other ZeroAI instance exposing its metrics
-                    status_response = requests.get(f"http://{node.ip}:{node.port}/health", timeout=5)
+                    status_response = requests.get(f"http://{node.ip}:8080/health", timeout=5)
                     status_response.raise_for_status()
                     metrics = status_response.json()
 
