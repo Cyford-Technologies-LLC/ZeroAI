@@ -58,6 +58,31 @@ class PeerDiscovery:
             console.print(f"[red]Error loading {PEERS_CONFIG_PATH}: {e}[/red]")
             return []
 
+
+    def add_peer(self, ip: str, port: int, name: str) -> (bool, str):
+        try:
+            # Read existing peers or initialize if the file doesn't exist
+            peers_data = self._load_peers_from_config()
+
+            # Check if peer already exists to avoid duplicates
+            if any(p['ip'] == ip for p in peers_data):
+                return False, f"Peer with IP {ip} already exists."
+
+            # Add the new peer
+            new_peer = {"name": name, "ip": ip, "port": port}
+            peers_data.append(new_peer)
+
+            # Write the updated peer list back to the file
+            with open(PEERS_CONFIG_PATH, 'w') as f:
+                json.dump({"peers": peers_data}, f, indent=4)
+
+            # Immediately trigger a discovery cycle to pick up the new peer
+            self._discovery_cycle()
+
+            return True, f"Successfully added peer {name} at {ip}:{port}."
+        except Exception as e:
+            return False, f"Failed to add peer: {e}"
+
     def _load_all_peers(self) -> List[Dict[str, str]]:
         peers = self._load_peers_from_config()
         if peers:
