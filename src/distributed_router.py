@@ -120,3 +120,4 @@ class DistributedRouter:
             return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
 
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
+distributed_router = DistributedRouter(peer_discovery) # <-- This global instance is problematic

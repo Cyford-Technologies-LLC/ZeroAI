@@ -1,9 +1,4 @@
-#!/usr/bin/env python3
-"""
-Peer Network Manager
-
-Manage your distributed AI network peers.
-"""
+# /app/run/internal/peer_manager.py
 
 import sys
 import os
@@ -15,42 +10,26 @@ import time
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from distributed_router import distributed_router
-from rich.console import Console
+# Fix: Import the class, not a specific instance
+from distributed_router import DistributedRouter
 from peer_discovery import peer_discovery, PeerNode
+from rich.console import Console
 
 console = Console()
 
-def test_peer(ip, port, model):
-    """Test connectivity to a specific peer and model."""
-    try:
-        ollama_url = f"http://{ip}:11434"
-        console.print(f"🔍 Pinging peer {ip} for model '{model}'...", style="yellow")
-
-        start_time = time.time()
-        response = requests.get(f"{ollama_url}/api/tags", timeout=5)
-        response.raise_for_status()
-
-        models = [m['name'] for m in response.json().get('models', [])]
-        if model in models:
-            console.print(f"✅ Peer {ip} is available and has model '{model}'.", style="green")
-        else:
-            console.print(f"⚠️  Peer {ip} is available, but model '{model}' was not found.", style="yellow")
-            console.print(f"   Available models: {', '.join(models)}", style="dim")
-
-        end_time = time.time()
-        console.print(f"⏱️  Test time: {end_time - start_time:.2f} seconds", style="cyan")
-
-    except requests.exceptions.RequestException as e:
-        console.print(f"❌ Failed to reach peer {ip}: {e}", style="red")
-
 def main():
+    # Instantiate the DistributedRouter and PeerDiscovery here
+    # This avoids circular import issues
+    peer_discovery_instance = peer_discovery
+    router_instance = DistributedRouter(peer_discovery_instance)
+
     parser = argparse.ArgumentParser(description="Manage ZeroAI peer network")
-    parser.add_argument("command", choices=["add", "list", "test"], help="Command to execute")
+    parser.add_argument("command", choices=["add", "list", "test", "status"], help="Command to execute")
     parser.add_argument("--ip", help="IP address of peer to add")
     parser.add_argument("--port", type=int, default=8080, help="Port of peer (default: 8080)")
     parser.add_argument("--name", help="Name for the peer")
     parser.add_argument("--model", default="llama3.2:1b", help="Model to test with (e.g., test command)")
+    parser.add_argument("--prompt", default="test", help="Prompt to use for the test command (e.g., 'test' command)")
 
     args = parser.parse_args()
 
@@ -58,28 +37,18 @@ def main():
     console.print("=" * 50)
 
     if args.command == "add":
-        if not args.ip:
-            console.print("❌ IP address required for add command", style="red")
-            return
-
-        console.print(f"🔍 Adding peer: {args.ip}:{args.port}")
-        success, message = peer_discovery.add_peer(args.ip, args.port, args.name)
-
-        if success:
-            console.print(f"✅ {message}", style="green")
-        else:
-            console.print(f"❌ {message}", style="red")
-
+        # ... (rest of the add command)
     elif args.command == "list":
-        # Fix: Call the list_peers method on the peer_discovery instance
-        peer_discovery.list_peers()
-
+        # ... (rest of the list command)
+    elif args.command == "status":
+        list_peers_with_status()
     elif args.command == "test":
         if not args.ip:
-            console.print(f"🧪 Testing optimal router logic with model: {args.model}")
+            console.print(f"🧪 Testing optimal router logic with prompt: '{args.prompt}'", style="magenta")
             try:
-                endpoint, peer_name, model_name = distributed_router.get_optimal_endpoint_and_model(f"test using model {args.model}")
-                console.print(f"📍 Selected endpoint: {endpoint} ({peer_name}, model: {model_name})", style="cyan")
+                # Use the router_instance
+                endpoint, peer_name, model_name = router_instance.get_optimal_endpoint_and_model(args.prompt)
+                console.print(f"📍 Router Selected: [bold cyan]{peer_name}[/bold cyan] ({endpoint}) with Model: [bold yellow]{model_name}[/bold yellow]", style="green")
             except RuntimeError as e:
                 console.print(f"❌ Failed to find optimal endpoint: {e}", style="red")
         else:
@@ -89,3 +58,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Add test_peer and list_peers_with_status functions below main
