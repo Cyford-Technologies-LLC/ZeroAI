@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import requests
 import json
-import yaml
+import yaml # Still needed for other potential configs
 import time
 from typing import List, Optional, Dict, Any
 from rich.console import Console
@@ -14,7 +14,8 @@ from dataclasses import dataclass
 import psutil
 
 console = Console()
-PEERS_YML_PATH = Path("config/peers.yml")
+# FIX: Use the correct file name peers.json
+PEERS_CONFIG_PATH = Path("/app/config/peers.json")
 PEER_DISCOVERY_INTERVAL = 60
 PEER_PING_TIMEOUT = 5
 PEER_PING_RETRIES = 3
@@ -41,49 +42,26 @@ class PeerDiscovery:
         self.peers: Dict[str, PeerNode] = {}
         self.peers_lock = Lock()
         self.discovery_thread: Optional[Thread] = None
-        self.default_peers = [{"name": "local-node", "ip": "ollama"}]
 
-    def _load_peers_from_env(self) -> List[Dict[str, str]]:
-        """Loads peers from the ZEROAI_PEERS environment variable."""
-        peers_json = os.environ.get("ZEROAI_PEERS")
-        if peers_json:
+    def _load_peers_from_config(self) -> List[Dict[str, str]]:
+        """Loads peers from the configuration file (peers.json)."""
+        if PEERS_CONFIG_PATH.exists():
             try:
-                peers_list = json.loads(peers_json)
-                if isinstance(peers_list, list):
-                    return peers_list
-                console.print("[red]Error: ZEROAI_PEERS environment variable is not a valid JSON list.[/red]")
-                return []
-            except json.JSONDecodeError as e:
-                console.print(f"[red]Error decoding ZEROAI_PEERS JSON: {e}[/red]")
-                return []
-        return []
-
-    def _load_peers_from_yml(self) -> List[Dict[str, str]]:
-        """Loads peers from the peers.yml file."""
-        if PEERS_YML_PATH.exists():
-            try:
-                with open(PEERS_YML_PATH, 'r') as f:
-                    data = yaml.safe_load(f)
+                with open(PEERS_CONFIG_PATH, 'r') as f:
+                    data = json.load(f) # FIX: Use json.load for .json file
                     return data.get('peers', [])
             except Exception as e:
-                console.print(f"[red]Error loading peers.yml: {e}[/red]")
+                console.print(f"[red]Error loading {PEERS_CONFIG_PATH}: {e}[/red]")
                 return []
-        return []
+        else:
+            return []
 
     def _load_all_peers(self) -> List[Dict[str, str]]:
-        """Loads peers from environment variables, falling back to yml, then defaults."""
-        peers = self._load_peers_from_env()
+        peers = self._load_peers_from_config()
         if peers:
-            console.print("[green]✅ Loaded peers from ZEROAI_PEERS environment variable.[/green]")
             return peers
-
-        peers = self._load_peers_from_yml()
-        if peers:
-            console.print("[green]✅ Loaded peers from peers.yml.[/green]")
-            return peers
-
         console.print("[yellow]Warning: No peers configured. Using default local-node.[/yellow]")
-        return self.default_peers
+        return [{"name": "local-node", "ip": "ollama"}]
 
     def _get_system_load(self) -> float:
         try:
@@ -136,13 +114,10 @@ class PeerDiscovery:
             try:
                 if peer_name == "local-node":
                     return self._get_my_capabilities()
-
                 ollama_models = self._get_ollama_models(ollama_ip)
                 if not ollama_models:
                     raise requests.exceptions.RequestException("No models found on Ollama instance.")
-
                 console.print(f"✅ Discovered Ollama on peer {peer_name} at {ollama_ip}. Models: {ollama_models}", style="green")
-
                 metrics = self._get_peer_metrics(ollama_ip)
                 if metrics:
                     return PeerCapabilities(
@@ -153,30 +128,23 @@ class PeerDiscovery:
                 else:
                     console.print(f"⚠️  Metrics service failed for peer {peer_name}. Falling back to basic metrics.", style="yellow")
                     return PeerCapabilities(available=True, models=ollama_models)
-
             except requests.exceptions.RequestException as e:
                 console.print(f"❌ Failed to connect to peer {peer_name} at {ollama_ip} (Attempt {attempt + 1}/{PEER_PING_RETRIES}): {e}", style="red")
                 time.sleep(1)
-
         console.print(f"❌ Failed to connect to peer {peer_name} after {PEER_PING_RETRIES} retries. Marking unavailable.", style="red")
         return PeerCapabilities(available=False)
-
 
     def _discovery_cycle(self):
         console.print("\n🔍 Initiating peer discovery cycle...", style="cyan")
         new_peers: Dict[str, PeerNode] = {}
         peers_to_check = self._load_all_peers()
-
         for peer_info in peers_to_check:
             name = peer_info['name']
             ip = peer_info['ip']
-
             capabilities = self._check_ollama_peer(name, ip)
             new_peers[name] = PeerNode(name, ip, capabilities)
-
         with self.peers_lock:
             self.peers = new_peers
-
         console.print("🔍 Peer discovery cycle complete.", style="cyan")
 
     def _discovery_loop(self):
