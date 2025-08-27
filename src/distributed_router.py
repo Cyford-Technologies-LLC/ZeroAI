@@ -24,6 +24,7 @@ MODEL_MEMORY_MAP = {
     "llava:7b": 5.0,
 }
 
+
 class DistributedRouter:
     def __init__(self, peer_discovery_instance):
         self.peer_discovery = peer_discovery_instance
@@ -46,19 +47,23 @@ class DistributedRouter:
 
         score = 0.0
 
-        # 1. GPU priority
+        # 1. GPU priority (1000 points per available GPU)
         if peer.capabilities.gpu_available:
-            score += 1000.0 * (1.0 - peer.capabilities.gpu_load)
+            # Score based on GPU memory headroom and load
+            if peer.capabilities.gpu_memory > 0:
+                score += 1000.0 * (1.0 - (peer.capabilities.gpu_load or 0.0)) * (peer.capabilities.gpu_memory / 16) # Scale based on 16GB GPU memory
+            else:
+                score += 1000.0 * (1.0 - (peer.capabilities.gpu_load or 0.0))
 
-        # 2. Memory priority
+        # 2. Memory priority (100 points per GiB of free memory)
         memory_headroom = peer.capabilities.memory - model_memory_req
         if memory_headroom > 0:
-            score += 100.0 * (memory_headroom / peer.capabilities.memory)
+            score += 100.0 * memory_headroom
         else:
             return -1.0 # Not enough memory
 
-        # 3. CPU priority
-        score += 10.0 * (1.0 - peer.capabilities.load_avg)
+        # 3. CPU priority (10 points per 10% of free CPU)
+        score += 10.0 * (1.0 - (peer.capabilities.load_avg or 0.0))
 
         return score
 
@@ -79,46 +84,39 @@ class DistributedRouter:
             "gemma2:2b", "llava:7b"
         ]
 
-        endpoints_to_try: List[Dict[str, Any]] = []
+        endpoints_with_scores: List[Dict[str, Any]] = []
 
-        # 1. Prioritize GPU peers
-        for model in model_preference:
-            for peer in all_peers:
-                if peer.capabilities.gpu_available and model in peer.capabilities.models and peer.name not in failed_peers:
-                    required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
-                    if required_memory <= peer.capabilities.memory:
-                        endpoints_to_try.append({"model": model, "endpoint": f"http://{peer.ip}:11434", "peer_name": peer.name, "score": self._calculate_score(peer, required_memory)})
+        for peer in all_peers:
+            if peer.name in failed_peers:
+                continue
 
-        # 2. Prioritize other remote peers
-        for model in model_preference:
-            for peer in all_peers:
-                if not peer.capabilities.gpu_available and model in peer.capabilities.models and peer.name not in failed_peers and peer.name != "local-node":
-                    required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
-                    if required_memory <= peer.capabilities.memory:
-                        endpoints_to_try.append({"model": model, "endpoint": f"http://{peer.ip}:11434", "peer_name": peer.name, "score": self._calculate_score(peer, required_memory)})
-
-        # 3. Fallback to local
-        local_peer_info = next((peer for peer in all_peers if peer.name == "local-node"), None)
-        if local_peer_info and local_peer_info.name not in failed_peers:
             for model in model_preference:
-                if model in local_peer_info.capabilities.models:
+                if model in peer.capabilities.models:
                     required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
-                    if required_memory <= local_peer_info.capabilities.memory:
-                         endpoints_to_try.append({"model": model, "endpoint": f"http://{local_peer_info.ip}:11434", "peer_name": local_peer_info.name, "score": self._calculate_score(local_peer_info, required_memory)})
+                    score = self._calculate_score(peer, required_memory)
+                    if score > 0:
+                        endpoints_with_scores.append({
+                            "model": model,
+                            "endpoint": f"http://{peer.ip}:11434",
+                            "peer_name": peer.name,
+                            "score": score,
+                            "gpu_available": peer.capabilities.gpu_available
+                        })
 
-        # 4. Fallback to llama3.2:1b if all else fails
-        if not endpoints_to_try and local_peer_info and local_peer_info.name not in failed_peers:
-             model = "llama3.2:1b"
-             if model in local_peer_info.capabilities.models:
-                 required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
-                 if required_memory <= local_peer_info.capabilities.memory:
-                     endpoints_to_try.append({"model": model, "endpoint": f"http://{local_peer_info.ip}:11434", "peer_name": local_peer_info.name, "score": 99.0})
+        # Sort by GPU availability first, then by score
+        endpoints_with_scores.sort(key=lambda x: (x['gpu_available'], x['score']), reverse=True)
 
-        # Sort by score and return the best option
-        if endpoints_to_try:
-            endpoints_to_try.sort(key=lambda x: x['score'], reverse=True)
-            best_option = endpoints_to_try[0]
+        if endpoints_with_scores:
+            best_option = endpoints_with_scores[0]
             return best_option['endpoint'], best_option['peer_name'], best_option['model']
 
-        raise RuntimeError("No suitable model found that meets memory requirements locally or on discovered peers. All attempts failed.")
+        # If no suitable endpoint is found, try the final fallback
+        local_peer_info = next((peer for peer in all_peers if peer.name == "local-node"), None)
+        if local_peer_info and local_peer_info.name not in failed_peers:
+            model = "llama3.2:1b"
+            if model in local_peer_info.capabilities.models:
+                required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
+                if required_memory <= local_peer_info.capabilities.memory:
+                    return f"http://{local_peer_info.ip}:11434", local_peer_info.name, model
 
+        raise RuntimeError("No suitable model found that meets memory requirements locally or on discovered peers. All attempts failed.")
