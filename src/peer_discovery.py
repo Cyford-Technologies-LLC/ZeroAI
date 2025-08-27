@@ -43,7 +43,6 @@ class PeerDiscovery:
         self.discovery_thread: Optional[Thread] = None
 
     def _load_peers_from_config(self) -> List[Dict[str, str]]:
-        """Loads peers from the configuration file (peers.json)."""
         if not PEERS_CONFIG_PATH.exists():
             console.print(f"[yellow]Warning: Configuration file {PEERS_CONFIG_PATH} not found.[/yellow]")
             return []
@@ -51,16 +50,19 @@ class PeerDiscovery:
         try:
             with open(PEERS_CONFIG_PATH, 'r') as f:
                 data = json.load(f)
+                if not isinstance(data, dict) or "peers" not in data or not isinstance(data["peers"], list):
+                    console.print(f"[red]Error: {PEERS_CONFIG_PATH} is not in the correct format.[/red]")
+                    return []
                 return data.get('peers', [])
         except Exception as e:
             console.print(f"[red]Error loading {PEERS_CONFIG_PATH}: {e}[/red]")
             return []
 
     def _load_all_peers(self) -> List[Dict[str, str]]:
-        """Loads peers from configuration, falling back to default."""
         peers = self._load_peers_from_config()
         if peers:
             console.print(f"[green]✅ Loaded {len(peers)} peers from configuration.[/green]")
+            console.print("   Loaded peers:", peers) # ADD THIS LINE FOR DEBUGGING
             return peers
         else:
             console.print("[yellow]Warning: No peers configured. Using default local-node.[/yellow]")
