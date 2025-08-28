@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
 from rich.console import Console
 from pydantic import BaseModel, Field
+import warnings
 
 from langchain_community.llms.ollama import Ollama
 
@@ -47,9 +48,33 @@ class AICrewManager:
         self.category = kwargs.pop('category', 'general')
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
+        self.llm_instance = None
 
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
+
+    # FIX: Add the missing execute_crew method
+    def execute_crew(self) -> CrewOutput:
+        """Executes the appropriate crew based on the category."""
+        inputs = self.inputs
+        category = inputs.get('category', 'auto')
+
+        if category == "auto":
+            category = self._classify_task(inputs)
+            if not category:
+                raise Exception("Auto-classification failed.")
+
+        crew = self.create_crew_for_category(inputs)
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                result = crew.kickoff()
+                return result
+        except Exception as e:
+            console.print(f"❌ Error during crew execution: {e}", style="red")
+            # Return an empty CrewOutput with the error message
+            return CrewOutput(tasks_output=[], raw=f"Error: {e}", total_tokens=0)
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
@@ -130,10 +155,8 @@ class AICrewManager:
             ]
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         elif category == "auto":
-            classified_category = self._classify_task(inputs)
-            if not classified_category:
-                raise Exception("Auto-classification failed.")
-            return self._create_specialized_crew(classified_category, inputs)
+            # NOTE: This part was broken. The `_classify_task` method is now called directly in execute_crew.
+            raise NotImplementedError("Auto classification is handled in execute_crew.")
         else:
             console.print(f"⚠️  Category not recognized, defaulting to general crew for category: {category}",
                           style="yellow")
