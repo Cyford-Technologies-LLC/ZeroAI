@@ -1,4 +1,6 @@
-from crewai import Task
+# /app/src/crews/coding/tasks.py
+
+from crewai import Task, Agent # <-- Add this import
 from typing import Dict, Any
 
 def create_coding_task(coder: Agent, inputs: Dict[str, Any]) -> Task:

@@ -1,4 +1,6 @@
-from crewai import Task
+# /app/src/crews/customer_service/tasks.py
+
+from crewai import Task, Agent  # <-- Add this import
 from typing import Dict, Any
 
 def create_customer_service_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
