@@ -7,6 +7,8 @@ class DelegatingMathTool(BaseTool):
     description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
 
     def __init__(self, crew_manager, **kwargs):
+        print(f"DEBUG: Initializing DelegatingMathTool from: {__file__}") # Add this line
+
         # Pass all keyword arguments to the parent class
         super().__init__(**kwargs)
         # Correctly assign the crew_manager to the instance
