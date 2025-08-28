@@ -1,8 +1,8 @@
 import logging
 from typing import Dict, Any, Optional, List
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process, CrewOutput
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 
 from langchain_community.llms.ollama import Ollama
 
@@ -14,7 +14,7 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.customer_service.tasks import create_customer_service_task
+# from crews.customer_service.tasks import create_customer_service_task # Not used directly here
 from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
 
 # --- Import ALL specialist agents for Hierarchical Process ---
@@ -69,15 +69,15 @@ class AICrewManager:
 
         console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
-    def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
-        if self.category == "research":
+    def create_crew_for_category(self, category: str, inputs: Dict[str, Any]) -> Crew:
+        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+        if category == "research":
             return self.create_research_crew(inputs)
-        elif self.category == "analysis":
+        elif category == "analysis":
             return self.create_analysis_crew(inputs)
-        elif self.category == "coding":
+        elif category == "coding":
             return create_coding_crew(self.llm_instance, inputs)
-        elif self.category == "customer_service":
+        elif category == "customer_service":
             specialist_agents = [
                 create_mathematician_agent(self.llm_instance, inputs),
                 create_tech_support_agent(self.llm_instance, inputs),
@@ -85,9 +85,9 @@ class AICrewManager:
                 create_researcher(self.llm_instance, inputs)
             ]
             return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
-        elif self.category == "tech_support":
+        elif category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs)
-        elif self.category == "math":
+        elif category == "math":
             return create_math_crew(self.llm_instance, inputs)
         else:
             console.print("⚠️  Category not recognized, defaulting to customer service crew.", style="yellow")
@@ -159,16 +159,42 @@ class AICrewManager:
 
     def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a crew with progress tracking and return full response, with a robust fallback."""
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("[yellow]Executing AI Crew...", total=1)
-            try:
+        console.print(f"🚀 Executing Crew for category: [bold yellow]{self.category}[/bold yellow]", style="bold blue")
+        final_output = None
+        try:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TimeRemainingColumn(),
+                console=console
+            ) as progress:
+                task_id = progress.add_task(f"[yellow]Executing {self.category} crew...", total=None)
                 result = crew.kickoff(inputs=inputs)
-                progress.update(task, description="[green]AI Crew execution complete.", completed=1)
-                return {"result": result}
-            except Exception as e:
-                progress.update(task, description="[red]AI Crew execution failed.", completed=1)
-                return {"error": f"An error occurred during crew execution: {e}"}
+                progress.update(task_id, description=f"[green]Execution of {self.category} crew complete.", completed=1)
+                final_output = result
+        except Exception as e:
+            console.print(f"❌ Execution of crew failed: {e}", style="bold red")
+            # --- Fallback logic ---
+            console.print("🔄 Initiating fallback to provide a simple response...", style="bold yellow")
+            fallback_agent = Agent(
+                role='Fallback Responder',
+                goal='Provide a simple, direct, and polite answer to the customer query when other crews fail.',
+                backstory="An AI that assists customers when specialized crews encounter problems.",
+                llm=self.llm_instance,
+                verbose=False
+            )
+            fallback_task = Task(
+                description=f"Provide a simple, direct answer for the inquiry: {inputs.get('topic')}. A previous specialized crew failed to complete this task.",
+                agent=fallback_agent,
+                expected_output="A polite and simple fallback answer for the customer."
+            )
+            fallback_crew = Crew(
+                agents=[fallback_agent],
+                tasks=[fallback_task],
+                verbose=False
+            )
+            final_output = fallback_crew.kickoff(inputs=inputs)
+
+        return {"output": final_output}
+
