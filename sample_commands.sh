@@ -23,7 +23,8 @@ python3 run/internal/peer_manager.py    list
 
 #cli  direct command
 clear ; python3 run/internal/simple_chat.py
-clear ; python3 run/internal/run/internal/api_crew.py
+clear ; python3 run/internal
+/api_crew.py
 clear ; python3 run/internal/smart_ai_demo.py
 clear ; python3 run/internal/code_generator.py
 clear ; python3 run/internal/basic_crew.py

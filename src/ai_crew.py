@@ -3,6 +3,7 @@
 import logging
 from typing import Dict, Any, Optional
 from crewai import Agent, Task, Crew, Process
+from crewai_tools import Tool
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -15,6 +16,61 @@ from providers.cloud_providers import CloudProviderManager
 
 console = Console()
 logger = logging.getLogger(__name__)
+
+# --- New functions for customer service and delegation ---
+
+# Define a placeholder function to simulate a delegation tool.
+def technical_support_tool_function(query: str):
+    """
+    Simulates delegating a query to a technical support crew.
+    In a real system, this would trigger another crew or external service.
+    """
+    return f"Delegated to Technical Support for inquiry: {query}"
+
+# Define the Tool for delegation.
+tech_support_tool = Tool(
+    name="Technical Support Delegation Tool",
+    func=technical_support_tool_function,
+    description="Tool to delegate technical support queries."
+)
+
+def create_customer_service_agent(llm, inputs: Dict[str, Any]) -> Agent:
+    return Agent(
+        role="Customer Service Representative",
+        goal="Handle customer inquiries, answer questions, and delegate complex issues.",
+        backstory=(
+            "You are a friendly and efficient customer service representative. "
+            "Your job is to understand the customer's request and provide a solution "
+            "or delegate it to the appropriate specialized crew if needed. "
+            "You always start by greeting the customer and confirming their request."
+        ),
+        llm=llm,
+        tools=[tech_support_tool],  # The agent can now use this tool.
+        verbose=True,
+        allow_delegation=True
+    )
+
+def create_customer_service_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
+    return Task(
+        description=f"Process the following customer inquiry: {inputs.get('topic')}",
+        agent=agent,
+        expected_output="A polite and helpful response that addresses the customer's query. "
+                        "If the query requires specialized knowledge, the response should "
+                        "indicate that it is being delegated to the correct team."
+    )
+
+def create_customer_service_crew(llm, inputs: Dict[str, Any]) -> Crew:
+    customer_service_agent = create_customer_service_agent(llm, inputs)
+    customer_service_task = create_customer_service_task(customer_service_agent, inputs)
+
+    return Crew(
+        agents=[customer_service_agent],
+        tasks=[customer_service_task],
+        process=Process.sequential,
+        verbose=config.agents.verbose
+    )
+
+# --- End new functions ---
 
 class AICrewManager:
     """Manages AI crew creation and execution."""
@@ -30,6 +86,10 @@ class AICrewManager:
             self.task_description = "llama3.2:latest"
         elif self.category == "coding" and not self.task_description:
             self.task_description = "codellama:13b"
+        elif self.category == "customer_service" and not self.task_description:
+            # You may want a different default model for this category
+            self.task_description = "llama3.2:latest"
+
 
         # Debug prints now correctly show the resolved task_description
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
@@ -57,13 +117,15 @@ class AICrewManager:
         console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
+        console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow}", style="blue")
         if self.category == "research":
             return self.create_research_crew(inputs)
         elif self.category == "analysis":
             return self.create_analysis_crew(inputs)
         elif self.category == "coding":
             return self.create_coding_crew(inputs)
+        elif self.category == "customer_service":
+            return self.create_customer_service_crew(inputs)
         else:
             console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
             return self.create_research_crew(inputs)
@@ -128,6 +190,19 @@ class AICrewManager:
             tasks=[coding_task, review_task],
             verbose=config.agents.verbose
         )
+
+    def create_customer_service_crew(self, inputs: Dict[str, Any]) -> Crew:
+        llm_instance = Ollama(**self.llm_config)
+        customer_service_agent = create_customer_service_agent(llm_instance, inputs)
+        customer_service_task = create_customer_service_task(customer_service_agent, inputs)
+
+        return Crew(
+            agents=[customer_service_agent],
+            tasks=[customer_service_task],
+            process=Process.sequential,
+            verbose=config.agents.verbose
+        )
+
 
     def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a crew with progress tracking and return full response."""
