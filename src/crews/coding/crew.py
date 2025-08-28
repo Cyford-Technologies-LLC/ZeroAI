@@ -8,6 +8,7 @@ from .tasks import create_coding_task
 from distributed_router import DistributedRouter # Import router
 
 def create_coding_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
+    # Pass the router instance to the agent creation functions
     coding_developer = create_coding_developer_agent(router, inputs)
     qa_engineer = create_qa_engineer_agent(router, inputs)
     coding_task = create_coding_task(coding_developer, inputs)
