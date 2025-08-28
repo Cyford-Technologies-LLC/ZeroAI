@@ -109,13 +109,53 @@ class AICrewManager:
         inputs['category'] = category
 
         try:
-            crew = self.create_crew_for_category(inputs)
+            # Check for "auto" category and run classifier
+            if category == "auto":
+                category = self._classify_task(inputs)
+                if not category:
+                    return "Auto-classification failed."
+
+            # Create and execute the specialized crew
+            crew = self._create_specialized_crew(category, inputs)
             crew_output = crew.kickoff()
-            # Ensure the returned result is a string, not the full CrewOutput object
             return crew_output.result
         except Exception as e:
             console.print(f"❌ Error during specialized crew execution: {e}", style="red")
             return f"Failed to execute {category} crew: {e}"
+
+    def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
+        """
+        Helper method to run the classification crew and return the category.
+        """
+        classifier_agent = create_classifier_agent(self.llm_instance)
+        classifier_task = Task(
+            description=f"""
+            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
+            Inquiry: {inputs.get('topic')}.
+            Provide only the category name as your output.
+            """,
+            agent=classifier_agent,
+            expected_output="A single word representing the category: math, coding, research, or general.",
+        )
+
+        classifier_crew = Crew(
+            agents=[classifier_agent],
+            tasks=[classifier_task],
+            verbose=config.agents.verbose,
+        )
+
+        try:
+            classification_result = classifier_crew.kickoff()
+
+            # Correct FIX: The output of a single-task crew is in the 'result' of the single TaskOutput object
+            # which is an attribute of the crew output.
+            if classification_result.tasks_output and isinstance(classification_result.tasks_output, TaskOutput):
+                return classification_result.tasks_output.result.strip().lower()
+            else:
+                raise Exception("Classification crew did not produce a valid output.")
+        except Exception as e:
+            console.print(f"❌ Classification failed: {e}", style="red")
+            return None
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         console.print("📦 Creating a specialized crew for category: [bold yellow]{}[/bold yellow]".format(category),
@@ -136,48 +176,20 @@ class AICrewManager:
         elif category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs)
         else:
-            raise ValueError(f"Unknown category: {category}")
+            # Fallback to general crew creation if category is not recognized
+            console.print(f"⚠️ Category '{category}' not recognized, defaulting to general purpose.", style="yellow")
+            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs)
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         category = inputs.get('category', 'auto')
 
         if category == "auto":
-            # Create a classifier agent and task to determine the appropriate category
-            classifier_agent = create_classifier_agent(self.llm_instance)
-            classifier_task = Task(
-                description=f"""
-                Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
-                Inquiry: {inputs.get('topic')}.
-                Provide only the category name as your output.
-                """,
-                agent=classifier_agent,
-                expected_output="A single word representing the category: math, coding, research, or general.",
-            )
+            category = self._classify_task(inputs)
+            if not category:
+                # Crash as requested if auto-classification fails
+                raise Exception("Auto-classification failed. Crashing.")
 
-            # Create a small crew to run the classifier task
-            classifier_crew = Crew(
-                agents=[classifier_agent],
-                tasks=[classifier_task],
-                verbose=config.agents.verbose,
-            )
-
-            # Execute the classifier crew to get the category
-            try:
-                classification_result = classifier_crew.kickoff()
-
-                # FIX: Access the result correctly from the CrewOutput object
-                # The output is in the .result attribute of the first (and only) item of tasks_output
-                if classification_result.tasks_output and isinstance(classification_result.tasks_output[0], TaskOutput):
-                    category = classification_result.tasks_output[0].result.strip().lower()
-                    console.print(f"Classifier identified category: [bold cyan]{category}[/bold cyan]", style="green")
-                else:
-                    raise Exception("Classification crew did not produce a valid output.")
-
-            except Exception as e:
-                console.print(f"❌ Classification failed, defaulting to general: {e}", style="red")
-                category = 'general'
-        else:
-            console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow]", style="blue")
+        console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow}", style="blue")
 
         # Route to the correct crew based on the classification result or user input
         console.print("📦 Creating a crew for category: [bold yellow]{}[/bold yellow]".format(category), style="blue")
@@ -193,16 +205,9 @@ class AICrewManager:
             return create_tech_support_crew(self.llm_instance, inputs)
         else:
             # For general or unrecognized inquiries, route to the customer service crew
-            specialist_agents = [
-                create_mathematician_agent(self.llm_instance, inputs),
-                create_tech_support_agent(self.llm_instance, inputs),
-                create_coding_developer_agent(self.llm_instance, inputs),
-                create_researcher(self.llm_instance, inputs)
-            ]
-            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
+            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs)
 
-    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any],
-                                                  specialist_agents: List[Agent]) -> Crew:
+    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
         # For general tasks, it can still delegate to research or other specialized sub-crews if needed
@@ -222,7 +227,7 @@ class AICrewManager:
             expected_output="A polite and direct final answer to the customer's query."
         )
 
-        all_agents = [customer_service_agent] + specialist_agents
+        all_agents = [customer_service_agent]
 
         return Crew(
             agents=all_agents,
@@ -242,3 +247,4 @@ class AICrewManager:
             tasks=[research_task, writing_task],
             verbose=config.agents.verbose
         )
+
