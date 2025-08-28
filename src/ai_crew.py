@@ -8,7 +8,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRe
 import warnings
 
 from langchain_community.llms.ollama import Ollama
-from langchain_community import __version__ as langchain_community_version
+# Removed problematic import
+# from langchain_core.exceptions import LangChainDeprecationWarning
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -26,6 +27,7 @@ from crews.math.agents import create_mathematician_agent
 from crews.coding.agents import create_coding_developer_agent, create_qa_engineer_agent
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
+from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool  # Correct import
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -36,60 +38,11 @@ class CrewDelegationInput(BaseModel):
     query: str = Field(description="The user's query or the task to delegate.")
 
 
-class DelegatingMathTool(BaseTool):
-    """
-    A tool that delegates math queries to a specialized math crew.
-    """
-    name: str = "Delegating Math Tool"
-    description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
-    args_schema: type[BaseModel] = CrewDelegationInput
-    crew_manager: Any = None
-    inputs: Dict[str, Any] = {}
-
-    def _run(self, query: str) -> str:
-        console.print(f"Delegate Math Tool triggered for query: [bold green]{query}[/bold green]", style="yellow")
-        try:
-            # Create a math crew with the new query
-            math_inputs = self.inputs.copy()
-            math_inputs['topic'] = query
-            math_crew = self.crew_manager._create_specialized_crew("math", math_inputs)
-
-            math_output: CrewOutput = math_crew.kickoff()
-            final_output = math_output.raw
-
-            console.print(f"Math delegation successful. Result: {final_output}", style="green")
-            return final_output
-        except Exception as e:
-            console.print(f"❌ Error in DelegatingMathTool: {e}", style="red")
-            return f"Error: Could not solve the math problem. Delegation failed. Details: {e}"
-
-
-class ResearchDelegationTool(BaseTool):
-    """
-    A tool that delegates research queries to a specialized research crew.
-    """
-    name: str = "Research Delegation Tool"
-    description: str = "Use this tool to perform research by delegating to a research crew."
-    args_schema: type[BaseModel] = CrewDelegationInput
-    crew_manager: Any = None
-    inputs: Dict[str, Any] = {}
-
-    def _run(self, query: str) -> str:
-        console.print(f"Delegate Research Tool triggered for query: [bold green]{query}[/bold green]", style="yellow")
-        try:
-            # Create a research crew with the new query
-            research_inputs = self.inputs.copy()
-            research_inputs['topic'] = query
-            research_crew = self.crew_manager._create_specialized_crew("research", research_inputs)
-
-            research_output: CrewOutput = research_crew.kickoff()
-            final_output = research_output.raw
-
-            console.print(f"Research delegation successful. Result: {final_output}", style="green")
-            return final_output
-        except Exception as e:
-            console.print(f"❌ Error in ResearchDelegationTool: {e}", style="red")
-            return f"Error: Could not perform research. Delegation failed. Details: {e}"
+# The following tool definitions should be moved to src/crews/customer_service/tools.py
+# as per the file structure provided by the user.
+# The ai_crew.py file should only import them.
+# The user's provided ai_crew.py was overwriting the tool definitions,
+# which is likely the source of the persistent issues.
 
 
 class AICrewManager:
@@ -132,17 +85,17 @@ class AICrewManager:
             "temperature": config.model.temperature
         }
 
-        # NOTE: Remove the problematic import and the related warnings.catch_warnings block.
-        # The Ollama constructor itself will still issue a deprecation warning, but
-        # the ImportError will be fixed.
-        self.llm_instance = Ollama(**self.llm_config)
+        with warnings.catch_warnings():
+            # This is to silence the deprecation warning without a potentially
+            # problematic import, assuming the latest langchain_community is used.
+            warnings.simplefilter("ignore", DeprecationWarning)
+            self.llm_instance = Ollama(**self.llm_config)
 
         console.print(
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        # Corrected f-string, using standard string format
         console.print("📦 Creating a specialized crew for category: [bold yellow]{}[/bold yellow]".format(category),
                       style="blue")
         if category == "research":
@@ -160,7 +113,6 @@ class AICrewManager:
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         category = inputs.get('category', self.category)
-        # Corrected f-string
         console.print("📦 Creating a crew for category: [bold yellow]{}[/bold yellow]".format(category), style="blue")
 
         if category == "customer_service":
