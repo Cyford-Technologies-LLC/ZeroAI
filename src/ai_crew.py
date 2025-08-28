@@ -19,6 +19,8 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
+# Assuming `create_customer_service_crew` is updated
+from crews.customer_service.crew import create_customer_service_crew
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -207,7 +209,13 @@ class AICrewManager:
         if category == "customer_service":
             raise ValueError("Recursive call to create_customer_service_crew detected. This is not allowed.")
 
-        if category == "research":
+        # FIX: Explicitly check for the "general" category and route it
+        if category == "general":
+            # Assuming you have a list of specialists for delegation in the hierarchical crew
+            # For simplicity, we'll pass an empty list here, but you should adjust this as needed
+            specialist_agents = []
+            return create_customer_service_crew(self.llm_instance, inputs, specialist_agents, full_output=full_output)
+        elif category == "research":
             return self.create_research_crew(inputs, full_output=full_output)
         elif category == "analysis":
             return self.create_analysis_crew(inputs, full_output=full_output)
@@ -218,6 +226,7 @@ class AICrewManager:
         elif category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs, full_output=full_output)
         else:
+            # Fallback to general research crew if category is not recognized
             console.print(f"⚠️ Category '{category}' not recognized, falling back to general research crew.",
                           style="yellow")
             return self.create_research_crew(inputs, full_output=full_output)
