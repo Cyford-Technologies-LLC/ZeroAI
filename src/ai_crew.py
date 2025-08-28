@@ -139,11 +139,11 @@ class AICrewManager:
         ) as progress:
             task = progress.add_task("Executing AI crew...", total=None)
             try:
-                # Attempt to run the main crew
-                crew_output_object = crew.kickoff(inputs=inputs)
-                result_text = crew_output_object
-                progress.update(task, description="✅ Crew execution completed!")
-                return {"result": result_text, "llm_details": self.get_llm_details()}
+                            # Attempt to run the main crew
+                            crew_output_object = crew.kickoff(inputs=inputs)
+                            result_text = crew_output_object.raw  # Extract the raw string output
+                            progress.update(task, description="✅ Crew execution completed!")
+                            return {"result": result_text, "llm_details": self.get_llm_details()}
             except Exception as e:
                 progress.update(task, description=f"❌ Crew execution failed: {e}. Falling back to basic customer service.")
                 logger.error("Crew execution failed, falling back.", exc_info=True)
