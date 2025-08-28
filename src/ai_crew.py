@@ -1,4 +1,4 @@
-# src/ai_crew.py
+# Path: src/ai_crew.py
 
 import logging
 from typing import Dict, Any, Optional, List
@@ -136,7 +136,8 @@ class AICrewManager:
             style="blue")
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow}",
+        # The fix is here: double the closing curly brace
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]}}",
                       style="blue")
         if category == "research":
             return self.create_research_crew(inputs)
@@ -153,7 +154,8 @@ class AICrewManager:
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         category = inputs.get('category', self.category)
-        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+        # Another f-string with an unescaped closing brace
+        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]}}", style="blue")
 
         if category == "customer_service":
             specialist_agents = [
@@ -179,7 +181,6 @@ class AICrewManager:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
         manager_tools = [
-            # Pass instances of the tool classes, not the classes themselves
             DelegatingMathTool(crew_manager=self, inputs=inputs),
             ResearchDelegationTool(crew_manager=self, inputs=inputs),
         ]
