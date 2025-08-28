@@ -102,10 +102,11 @@ class AICrewManager:
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # Define manager tools to use for delegation
+        # Instantiate delegation tools with the AICrewManager instance (self)
         manager_tools = [
             DelegatingMathTool(self, inputs),
             ResearchDelegationTool(self, inputs),
+            # Add other delegating tools here
         ]
 
         customer_service_task = Task(
