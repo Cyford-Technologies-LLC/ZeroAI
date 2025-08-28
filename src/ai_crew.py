@@ -97,10 +97,13 @@ class AICrewManager:
         customer_service_task = Task(
             description=f"Handle customer inquiry: {inputs.get('topic')}",
             agent=customer_service_agent,
-            expected_output="A polite and helpful response that addresses the customer's query, including answers from specialist agents if needed."
+            expected_output="The final answer to the customer's query, possibly obtained by delegating to a specialist agent."
         )
+
+        all_agents = [customer_service_agent] + specialist_agents
+
         return Crew(
-            agents=[customer_service_agent] + specialist_agents,
+            agents=all_agents,
             tasks=[customer_service_task],
             process=Process.hierarchical,
             manager_llm=llm,
