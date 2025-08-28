@@ -1,6 +1,6 @@
 import logging
-from typing import Dict, Any, Optional
-from crewai import Agent, Task, Crew, Process
+from typing import Dict, Any, Optional, List
+from crewai import Agent, Task, Crew, Process, BaseTool
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -15,6 +15,13 @@ from providers.cloud_providers import CloudProviderManager
 from crews.customer_service.crew import create_customer_service_crew
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
+from crews.tech_support.crew import create_tech_support_crew # Now that it's implemented
+
+# --- Import Agents from Sub-Crews for Hierarchical Process ---
+from crews.math.agents import create_mathematician_agent
+from crews.coding.agents import create_coding_developer_agent, create_qa_engineer_agent
+from crews.tech_support.agents import create_tech_support_agent
+from crews.customer_service.agents import create_customer_service_agent
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -36,6 +43,9 @@ class AICrewManager:
             self.task_description = "llama3.2:latest"
         elif self.category == "tech_support" and not self.task_description:
             self.task_description = "llama3.2:latest"
+        elif self.category == "math" and not self.task_description:
+            self.task_description = "llama3.2:latest"
+
 
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
@@ -68,12 +78,17 @@ class AICrewManager:
         elif self.category == "coding":
             return create_coding_crew(self.llm_instance, inputs)
         elif self.category == "customer_service":
-            return create_customer_service_crew(self.llm_instance, inputs)
+            # Pass all potential worker agents for hierarchical delegation
+            specialist_agents = [
+                create_mathematician_agent(self.llm_instance, inputs),
+                create_tech_support_agent(self.llm_instance, inputs),
+                create_coding_developer_agent(self.llm_instance, inputs),
+                create_researcher(self.llm_instance, inputs)
+            ]
+            return create_customer_service_crew(self.llm_instance, inputs, specialist_agents)
         elif self.category == "tech_support":
-            # You can handle the "tech_support" category here if and when you implement it.
-            # For now, it will default to the general crew.
-            console.print("⚠️  Tech support crew not implemented, defaulting to general crew.", style="yellow")
-            return self.create_research_crew(inputs)
+            # This is handled directly for now, until delegation is robustly implemented
+            return create_tech_support_crew(self.llm_instance, inputs)
         elif self.category == "math":
             return create_math_crew(self.llm_instance, inputs)
         else:

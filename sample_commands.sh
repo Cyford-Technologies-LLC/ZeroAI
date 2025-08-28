@@ -14,31 +14,34 @@ done
 #   https://www.cyfordtechnologies.com/zeroai.php
 #   https://www.cyfordtechnologies.com/allens_ai.php
 #   https://github.com/Cyford-Technologies-LLC/ZeroAI/
-/opt/ZeroAI/
-├── src/
-│   ├── ai_crew.py              # Main manager class for crew creation
-│   ├── agents/
-│   │   ├── base_agents.py      # Your existing base agent definitions
-│   │   └── ...                 # Other agent files
-│   ├── crews/
-│   │   ├── customer_service/
-│   │   │   ├── __init__.py     # Makes directory a Python package
-│   │   │   ├── agents.py       # Defines Customer Service agents and tools
-│   │   │   ├── tasks.py        # Defines Customer Service tasks
-│   │   │   └── crew.py         # Assembles the Customer Service crew
-│   │   ├── coding/
-│   │   │   ├── __init__.py
-│   │   │   ├── agents.py       # Defines Coding agents
-│   │   │   ├── tasks.py        # Defines Coding tasks
-│   │   │   └── crew.py         # Assembles the Coding crew
-│   │   └── tech_support/
-│   │       ├── __init__.py
-│   │       ├── agents.py       # Defines Tech Support agents and tools
-│   │       ├── tasks.py        # Defines Tech Support tasks
-│   │       └── crew.py         # Assembles the Tech Support crew
-│   └── tasks/
-│       ├── base_tasks.py       # Your existing base task definitions
-└── config.py
+
+
+
+#/opt/ZeroAI/
+#├── src/
+#│   ├── ai_crew.py              # Main manager class for crew creation
+#│   ├── agents/
+#│   │   ├── base_agents.py      # Your existing base agent definitions
+#│   │   └── ...                 # Other agent files
+#│   ├── crews/
+#│   │   ├── customer_service/
+#│   │   │   ├── __init__.py     # Makes directory a Python package
+#│   │   │   ├── agents.py       # Defines Customer Service agents and tools
+#│   │   │   ├── tasks.py        # Defines Customer Service tasks
+#│   │   │   └── crew.py         # Assembles the Customer Service crew
+#│   │   ├── coding/
+#│   │   │   ├── __init__.py
+#│   │   │   ├── agents.py       # Defines Coding agents
+#│   │   │   ├── tasks.py        # Defines Coding tasks
+#│   │   │   └── crew.py         # Assembles the Coding crew
+#│   │   └── tech_support/
+#│   │       ├── __init__.py
+#│   │       ├── agents.py       # Defines Tech Support agents and tools
+#│   │       ├── tasks.py        # Defines Tech Support tasks
+#│   │       └── crew.py         # Assembles the Tech Support crew
+#│   └── tasks/
+#│       ├── base_tasks.py       # Your existing base task definitions
+#└── config.py
 
 
 # Add peers
