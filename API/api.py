@@ -118,8 +118,10 @@ def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
     if not isinstance(crew_output, CrewOutput):
         return crew_output
 
-    # Use Pydantic V2's recommended model_dump() method
-    return crew_output.model_dump()
+    data = crew_output.model_dump()
+    if hasattr(crew_output, 'result'):
+        data['result'] = crew_output.result
+    return data
 
 
 def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
