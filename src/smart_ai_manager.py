@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional
 from crewai import Crew
 from rich.console import Console
 
-from .intelligent_router import IntelligentAIRouter
+from src.intelligent_router import IntelligentAIRouter
 from .agents.base_agents import create_researcher, create_writer, create_analyst
 from .tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
 
