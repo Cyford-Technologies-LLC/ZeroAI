@@ -26,6 +26,7 @@ class UsageMetrics:
 # Disable CrewAI telemetry by setting the environment variable
 os.environ['CREWAI_DISABLE_TELEMETRY'] = "true"
 
+# Ensure src directory is in the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from peer_discovery import PeerDiscovery
@@ -102,7 +103,6 @@ def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
         return crew_output
 
     tasks_output = [task_output_to_dict(task) for task in crew_output.tasks_output]
-    # Handle the case where token_usage might be None or a different type
     token_usage = getattr(crew_output, 'token_usage', UsageMetrics())
     token_usage_dict = usage_metrics_to_dict(token_usage)
 
@@ -154,6 +154,7 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         inputs['file_content'] = ""
         if uploaded_files_paths:
             try:
+                # Correctly read the first uploaded file
                 with open(uploaded_files_paths[0], 'r') as f:
                     inputs['file_content'] = f.read()
             except Exception as e:
@@ -176,22 +177,16 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
 
         cached_response = cache.get(cache_key, "crew_result")
 
-        # Check if cache hit and it's a CrewOutput object
         if cached_response:
-            if isinstance(cached_response, CrewOutput):
-                # Convert cached object to dictionary before returning
-                console.print(f"✅ Cache Hit. Converting cached CrewOutput object to dictionary.", style="blue")
-                response_data = crew_output_to_dict(cached_response)
-            else:
-                # If cached data is already a dictionary, use it directly
-                console.print(f"✅ Cache Hit. Using cached dictionary.", style="blue")
-                response_data = cached_response
+            console.print(f"✅ Cache Hit. Using cached data.", style="blue")
+            # The cached object is already a dictionary, so no conversion is needed.
+            response_data = cached_response
         else:
             console.print(f"⚠️ Cache Miss. Executing AI Crew.", style="yellow")
             crew_output = manager.execute_crew(crew, inputs)
             # Convert the new result to a dictionary and cache the dictionary
             response_data = crew_output_to_dict(crew_output)
-            cache.set(cache_key, "crew_result", response_data)  # Cache the dictionary
+            cache.set(cache_key, "crew_result", response_data)
 
         return response_data
 
