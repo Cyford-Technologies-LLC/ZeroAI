@@ -30,7 +30,6 @@ MODEL_MEMORY_MAP = {
     "llava:7b": 5.0,
 }
 
-
 # --- Shared instance of PeerDiscovery for the entire application lifecycle ---
 # FIX: Instantiate the class directly
 peer_discovery_instance = PeerDiscovery()
@@ -38,6 +37,7 @@ peer_discovery_instance = PeerDiscovery()
 
 class DistributedRouter:
     """Manages routing logic based on network state and model requirements."""
+
     def __init__(self, peer_discovery_instance):
         self.peer_discovery = peer_discovery_instance
         self.peer_discovery.start_discovery_service()
@@ -54,7 +54,8 @@ class DistributedRouter:
             console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
             return []
 
-    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[str, str, str]:
+    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[
+        str, str, str]:
         if failed_peers is None:
             failed_peers = []
 
@@ -120,7 +121,9 @@ class DistributedRouter:
             best_candidate = all_candidates[0]
             peer = best_candidate['peer']
             model = best_candidate['model']
-            console.print(f"Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]", style="green")
+            console.print(
+                f"Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]",
+                style="green")
             return f"http://{peer.ip}:11434", peer.name, model
 
         # If no candidates meet requirements, use a final fallback
@@ -135,15 +138,46 @@ class DistributedRouter:
     def get_llm_for_task(self, prompt: str) -> Ollama:
         """Gets an Ollama LLM instance based on the prompt using the router's logic."""
         base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
-        prefixed_model_name = f"ollama/{model_name}"
+
+        # CORRECTED: Pass the model name directly, without the "ollama/" prefix
         llm_config = {
-            "model": prefixed_model_name,
+            "model": model_name,
             "base_url": base_url,
             "temperature": config.model.temperature
         }
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             return Ollama(**llm_config)
+
+    def get_llm_for_role(self, role: str) -> Optional[Ollama]:
+        """Gets an Ollama LLM instance based on the role using the router's logic."""
+        prompt = ""
+        if "coding" in role.lower() or "developer" in role.lower():
+            # Use a coding-focused prompt or preference for coding models
+            prompt = "Please provide code or resolve a coding issue."
+        elif "qa" in role.lower() or "quality" in role.lower():
+            # Use a general-purpose or reasoning-focused model for QA tasks
+            prompt = "Please analyze and provide a critique of a code's functionality."
+        else:
+            # Default to the general routing logic
+            prompt = "General purpose query."
+
+        # Call the existing routing logic with a specific prompt
+        try:
+            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt)
+            # Pass the model and URL directly to Ollama, as required by LangChain
+            llm_config = {
+                "model": model_name,
+                "base_url": base_url,
+                "temperature": config.model.temperature
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                return Ollama(**llm_config)
+        except Exception as e:
+            console.print(f"❌ Failed to get LLM for role {role}: {e}", style="red")
+            return None
+
 
 # --- Use @lru_cache for dependency to reuse the same instance ---
 @lru_cache()
