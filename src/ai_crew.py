@@ -1,5 +1,3 @@
-# Path: src/ai_crew.py
-
 import logging
 from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput
@@ -84,6 +82,23 @@ class AICrewManager:
         console.print(
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
+
+    def execute_crew(self, category: str, query: str) -> str:
+        """
+        Creates and executes a specialized crew, returning the final result.
+        """
+        inputs = self.inputs.copy()
+        inputs['topic'] = query
+        inputs['category'] = category
+
+        try:
+            crew = self._create_specialized_crew(category, inputs)
+            crew_output = crew.kickoff()
+            # Ensure the returned result is a string, not the full CrewOutput object
+            return crew_output.result
+        except Exception as e:
+            console.print(f"❌ Error during specialized crew execution: {e}", style="red")
+            return f"Failed to execute {category} crew: {e}"
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         console.print("📦 Creating a specialized crew for category: [bold yellow]{}[/bold yellow]".format(category),
@@ -170,39 +185,5 @@ class AICrewManager:
         return Crew(
             agents=[researcher, writer],
             tasks=[research_task, writing_task],
-            verbose=config.agents.verbose
-        )
-
-    def execute_crew(self, category: str, query: str) -> str:
-        """
-        Creates and executes a specialized crew, returning the final result.
-        """
-        console.print(f"🔄 Executing specialized crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
-
-        # Prepare inputs for the sub-crew
-        inputs = self.inputs.copy()
-        inputs['topic'] = query
-        inputs['category'] = category
-
-        try:
-            crew = self._create_specialized_crew(category, inputs)
-            crew_output = crew.kickoff()
-            return crew_output.result
-        except Exception as e:
-            console.print(f"❌ Error during specialized crew execution: {e}", style="red")
-            return f"Error executing {category} crew: {e}"
-
-    def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
-        researcher = create_researcher(self.llm_instance, inputs)
-        analyst = create_analyst(self.llm_instance, inputs)
-        writer = create_writer(self.llm_instance, inputs)
-
-        research_task = create_research_task(researcher, inputs)
-        analysis_task = create_analysis_task(analyst, inputs, context=[research_task])
-        writing_task = create_writing_task(writer, inputs, context=[analysis_task])
-
-        return Crew(
-            agents=[researcher, analyst, writer],
-            tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
