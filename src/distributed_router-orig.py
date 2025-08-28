@@ -1,4 +1,4 @@
-# distributed_router.py
+# /opt/ZeroAI/src/distributed_router.py
 
 import sys
 from pathlib import Path
@@ -52,42 +52,72 @@ class DistributedRouter:
             keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
         )
 
-        # PRIORITIZE SMALLER MODELS FOR LOCAL PEER TO AVOID MEMORY ERRORS
         model_preference = [
-            "llama3.2:1b", "gemma2:2b", "llama3.2:latest",
-            "codellama:7b", "llama3.1:8b", "codellama:13b", "llava:7b"
+            "codellama:13b", "llama3.1:8b", "codellama:7b", "gemma2:2b",
+            "llama3.2:latest", "llava:7b", "llama3.2:1b"
         ] if is_coding_task else [
-            "llama3.2:1b", "llama3.2:latest", "gemma2:2b",
-            "llama3.1:8b", "llava:7b"
+            "llama3.1:8b", "llama3.2:latest", "gemma2:2b",
+            "llava:7b", "llama3.2:1b"
         ]
 
-        endpoints_to_try: List[Dict[str, Any]] = []
-
+        all_candidates = []
         local_ollama_models = self._get_local_ollama_models()
 
-        # Tier 1: Eligible Local Models (already filtered for memory by the pre-pull script)
-        for model in model_preference:
-            if model in local_ollama_models and "local-node" not in failed_peers:
-                local_peer_info = next((peer for peer in all_peers if peer.name == "local-node"), None)
-                if local_peer_info:
-                    endpoints_to_try.append({"model": model, "endpoint": f"http://{local_peer_info.ip}:11434", "peer_name": local_peer_info.name})
+        for peer in all_peers:
+            if peer.name in failed_peers:
+                continue
 
-        # Tier 2: Remote Peers (filtered by memory)
-        for model in model_preference:
-            eligible_peers = [
-                peer for peer in all_peers
-                if peer.capabilities.available and model in peer.capabilities.models and peer.name not in failed_peers and peer.name != "local-node"
-            ]
-            if eligible_peers:
-                eligible_peers.sort(key=lambda p: p.capabilities.load_avg)
-                for peer in eligible_peers:
-                    required_memory = MODEL_MEMORY_MAP.get(model, float('inf'))
+            available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
+
+            for model in model_preference:
+                if model in available_models:
+                    required_memory = MODEL_MEMORY_MAP.get(model)
+                    if required_memory is None:
+                        continue
+
                     if required_memory <= peer.capabilities.memory:
-                        endpoints_to_try.append({"model": model, "endpoint": f"http://{peer.ip}:11434", "peer_name": peer.name})
+                        all_candidates.append({
+                            "peer": peer,
+                            "model": model
+                        })
 
-        # Return the next viable option
-        if endpoints_to_try:
-            best_option = endpoints_to_try[0] # Get the first (best) option
-            return best_option['endpoint'], best_option['peer_name'], best_option['model']
+        # --- REVISED SORTING LOGIC ---
+        # Sort all candidates based on the specified priority using a more granular scoring system.
+        # Higher score is better.
+        def get_score(candidate):
+            peer = candidate['peer']
 
-        raise RuntimeError("No suitable model found that meets memory requirements locally or on discovered peers. All attempts failed.")
+            # Heavy weight for GPU, prioritizing peers with a GPU first.
+            gpu_score = 1000 if peer.capabilities.gpu_available else 0
+
+            # Prioritize higher GPU and system memory.
+            memory_score = peer.capabilities.gpu_memory * 10 + peer.capabilities.memory
+
+            # Strong penalty for high load average. Invert load_avg for sorting.
+            # A load_avg of 0 gets a high score, a high load_avg gets a low score.
+            load_score = max(0, 100 - peer.capabilities.load_avg)
+
+            # Prioritize better models as a tie-breaker.
+            model_index_score = len(model_preference) - model_preference.index(candidate['model'])
+
+            return (gpu_score + memory_score + load_score + model_index_score)
+
+        all_candidates.sort(key=get_score, reverse=True)
+
+        # Return the best candidate if found
+        if all_candidates:
+            best_candidate = all_candidates[0]
+            peer = best_candidate['peer']
+            model = best_candidate['model']
+            console.print(f"Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]", style="green")
+            return f"http://{peer.ip}:11434", peer.name, model
+
+        # If no candidates meet requirements, use a final fallback
+        console.print("❌ No suitable peer/model combination found. Falling back to smallest local model.", style="red")
+        local_peer_info = next((peer for peer in all_peers if peer.name == "local-node"), None)
+        if local_peer_info:
+            fallback_model = "llama3.2:1b"
+            return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
+
+        raise RuntimeError("No suitable peer or model found. All attempts failed.")
+distributed_router = DistributedRouter(peer_discovery) # <-- This global instance is problematic

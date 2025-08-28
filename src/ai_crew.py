@@ -235,7 +235,8 @@ class AICrewManager:
         elif category == "coding":
             return create_coding_crew(self.llm_instance, inputs, full_output=full_output)
         elif category == "math":
-            return create_math_crew(self.llm_instance, inputs, full_output=full_output)
+            # return create_math_crew(self.llm_instance, inputs, full_output=full_output)
+            return create_math_crew(self.router, inputs, full_output=full_output)
         elif category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs, full_output=full_output)
         else:

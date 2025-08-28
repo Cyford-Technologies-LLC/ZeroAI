@@ -9,8 +9,11 @@ import time
 import litellm
 import os
 import json
+import warnings
+from functools import lru_cache
 
 from peer_discovery import peer_discovery, PeerNode
+from langchain_community.llms.ollama import Ollama
 
 console = Console()
 
@@ -25,8 +28,12 @@ MODEL_MEMORY_MAP = {
     "llava:7b": 5.0,
 }
 
+# --- Shared instance of PeerDiscovery for the entire application lifecycle ---
+# This remains a long-lived instance to manage network state, but is not the router itself.
+peer_discovery_instance = peer_discovery.PeerDiscovery()
 
 class DistributedRouter:
+    """Manages routing logic based on network state and model requirements."""
     def __init__(self, peer_discovery_instance):
         self.peer_discovery = peer_discovery_instance
         self.peer_discovery.start_discovery_service()
@@ -120,4 +127,9 @@ class DistributedRouter:
             return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
 
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
-distributed_router = DistributedRouter(peer_discovery) # <-- This global instance is problematic
+
+# --- Use @lru_cache for dependency to reuse the same instance ---
+@lru_cache()
+def get_distributed_router_dependency() -> DistributedRouter:
+    """FastAPI dependency to provide a cached instance of the DistributedRouter."""
+    return DistributedRouter(peer_discovery_instance)
