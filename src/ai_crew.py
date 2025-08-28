@@ -53,9 +53,6 @@ class DelegatingMathTool(BaseTool):
             math_crew = self.crew_manager._create_specialized_crew("math", math_inputs)
 
             math_output: CrewOutput = math_crew.kickoff()
-
-            # The error 'CrewOutput' object has no attribute 'get' occurred here.
-            # The correct way is to access the 'raw' attribute of the CrewOutput object.
             final_output = math_output.raw
 
             console.print(f"Math delegation successful. Result: {final_output}", style="green")
@@ -84,8 +81,6 @@ class ResearchDelegationTool(BaseTool):
             research_crew = self.crew_manager._create_specialized_crew("research", research_inputs)
 
             research_output: CrewOutput = research_crew.kickoff()
-
-            # Use the raw attribute for the final output string.
             final_output = research_output.raw
 
             console.print(f"Research delegation successful. Result: {final_output}", style="green")
@@ -104,7 +99,6 @@ class AICrewManager:
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
 
-        # Default model for each category if not specified
         if self.category == "chat" and not self.task_description:
             self.task_description = "llama3.2:latest"
         elif self.category == "coding" and not self.task_description:
@@ -142,8 +136,7 @@ class AICrewManager:
             style="blue")
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        """Helper method to create specialized crews based on category."""
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow}",
                       style="blue")
         if category == "research":
             return self.create_research_crew(inputs)
@@ -159,7 +152,6 @@ class AICrewManager:
             raise ValueError(f"Unknown category: {category}")
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        """Main method for creating the top-level crew."""
         category = inputs.get('category', self.category)
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
@@ -187,6 +179,7 @@ class AICrewManager:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
         manager_tools = [
+            # Pass instances of the tool classes, not the classes themselves
             DelegatingMathTool(crew_manager=self, inputs=inputs),
             ResearchDelegationTool(crew_manager=self, inputs=inputs),
         ]
