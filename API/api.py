@@ -157,9 +157,9 @@ def handle_crew_result(crew_result: Any, cache_key: str):
         raise TypeError(f"Cannot serialize object of type {type(crew_result)}")
 
 
-def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
+def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str], output_format: str):
     """
-    Handles the core logic for running the AI crew and returns only the final answer.
+    Handles the core logic for running the AI crew and returns output based on format.
     """
     try:
         topic = inputs.get("topic")
@@ -209,16 +209,20 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
             console.print(f"❌ Final response data is not a dictionary. Type: {type(response_data)}", style="red")
             raise TypeError("Final response data is not a dictionary and cannot be serialized.")
 
-        # --- FIX: Extract final answer from the last task output or raw field ---
-        final_answer = "No final answer found."
-        tasks_output = response_data.get('tasks_output', [])
-        if tasks_output and isinstance(tasks_output[-1], dict) and tasks_output[-1].get('raw'):
-            final_answer = tasks_output[-1]['raw']
-        elif response_data.get('raw'):
-            final_answer = response_data['raw']
-        # --- END FIX ---
+        # --- LOGIC FOR HANDLING OUTPUT FORMAT ---
+        if output_format == "final_answer":
+            final_answer = "No final answer found."
+            tasks_output = response_data.get('tasks_output', [])
+            if tasks_output and isinstance(tasks_output[-1], dict) and tasks_output[-1].get('raw'):
+                final_answer = tasks_output[-1]['raw']
+            elif response_data.get('raw'):
+                final_answer = response_data['raw']
 
-        return JSONResponse(content={'final_answer': final_answer})
+            return JSONResponse(content={'final_answer': final_answer})
+        elif output_format == "full_json":
+            return JSONResponse(content=response_data)
+        else:
+            raise ValueError(f"Invalid output_format: {output_format}")
 
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
@@ -234,6 +238,7 @@ async def run_crew_ai_form(
         ai_provider: Optional[str] = Form(None),
         server_endpoint: Optional[str] = Form(None),
         model_name: Optional[str] = Form(None),
+        output_format: Optional[str] = Form("final_answer"),
         files: List[UploadFile] = File([])
 ):
     """
@@ -260,7 +265,7 @@ async def run_crew_ai_form(
                 shutil.copyfileobj(file.file, buffer)
             uploaded_files_paths.append(str(file_location))
 
-        response = process_crew_request(inputs, uploaded_files_paths)
+        response = process_crew_request(inputs, uploaded_files_paths, output_format)
         return response
     finally:
         for file_path in uploaded_files_paths:
@@ -272,6 +277,7 @@ async def run_crew_ai_form(
 @app.post("/run_crew_ai_json/")
 def run_crew_ai_json(
         request: CrewRequest,
+        output_format: Optional[str] = "final_answer",
         router: DistributedRouter = Depends(get_distributed_router)
 ):
     """
@@ -295,7 +301,7 @@ def run_crew_ai_json(
                     buffer.write(file_bytes)
                 uploaded_files_paths.append(str(file_location))
 
-        response = process_crew_request(inputs, uploaded_files_paths)
+        response = process_crew_request(inputs, uploaded_files_paths, output_format)
         return response
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")

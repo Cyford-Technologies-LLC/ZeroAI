@@ -1,5 +1,3 @@
-# src/ai_crew.py
-
 import logging
 from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput
@@ -172,43 +170,20 @@ class AICrewManager:
             verbose=config.agents.verbose
         )
 
-    def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a crew with progress tracking and return full response, with a robust fallback."""
-        console.print(f"🚀 Executing Crew for category: [bold yellow]{self.category}[/bold yellow]", style="bold blue")
-        final_output = None
-        try:
-            with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    BarColumn(),
-                    TimeRemainingColumn(),
-                    console=console
-            ) as progress:
-                task_id = progress.add_task(f"[yellow]Executing {self.category} crew...", total=None)
-                result = crew.kickoff(inputs=inputs)
-                progress.update(task_id, description=f"[green]Execution of {self.category} crew complete.", completed=1)
-                final_output = result
-        except Exception as e:
-            console.print(f"❌ Execution of crew failed: {e}", style="bold red")
-            # --- Fallback logic ---
-            console.print("🔄 Initiating fallback to provide a simple response...", style="bold yellow")
-            fallback_agent = Agent(
-                role='Fallback Responder',
-                goal='Provide a simple, direct, and polite answer to the customer query when other crews fail.',
-                backstory="An AI that assists customers when specialized crews encounter problems.",
-                llm=self.llm_instance,
-                verbose=False
-            )
-            fallback_task = Task(
-                description=f"Provide a simple, direct answer for the inquiry: {inputs.get('topic')}. A previous specialized crew failed to complete this task.",
-                agent=fallback_agent,
-                expected_output="A polite and simple fallback answer for the customer."
-            )
-            fallback_crew = Crew(
-                agents=[fallback_agent],
-                tasks=[fallback_task],
-                verbose=False
-            )
-            final_output = fallback_crew.kickoff(inputs=inputs)
+    def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> CrewOutput:
+        """Executes the given crew with the provided inputs."""
+        with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TimeRemainingColumn(),
+                console=console,
+                transient=True,
+        ) as progress:
+            task = progress.add_task("Executing crew...", total=1)
+            result = crew.kickoff(inputs=inputs)
+            progress.update(task, completed=1)
 
-        return {"output": final_output}
+        console.print(f"🚀 Execution of {self.category} crew complete. ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", style="bold green")
+        return result
+
