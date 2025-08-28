@@ -1,3 +1,6 @@
+#  API/api.py
+
+
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File, Request
 from fastapi.responses import JSONResponse
@@ -12,7 +15,6 @@ import os
 import time
 import json
 from crewai import CrewOutput, TaskOutput
-from pydantic import json as pydantic_json
 
 
 # Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
@@ -111,21 +113,19 @@ def get_distributed_router():
 def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
     """
     Converts a CrewOutput object to a dictionary for JSON serialization
-    by converting it to a JSON string and then back to a dictionary.
+    using Pydantic V2's model_dump() method.
     """
     if not isinstance(crew_output, CrewOutput):
         return crew_output
 
-    # Use pydantic's built-in JSON encoder to handle complex types
-    json_string = pydantic_json.dumps(crew_output)
-    return json.loads(json_string)
+    # Use Pydantic V2's recommended model_dump() method
+    return crew_output.model_dump()
 
 
 def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
     """Converts a TaskOutput object to a dictionary for JSON serialization."""
-    # Use pydantic's built-in JSON encoder for TaskOutput
-    json_string = pydantic_json.dumps(task_output)
-    return json.loads(json_string)
+    # Use Pydantic V2's recommended model_dump() method
+    return task_output.model_dump()
 
 
 def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
@@ -202,116 +202,63 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
             response_data = handle_crew_result(cached_response, cache_key)
         else:
             console.print(f"⚠️ Cache Miss. Executing AI Crew...", style="yellow")
-            crew_output = manager.execute_crew(crew, inputs)
+            crew_output = crew.kickoff()
             response_data = handle_crew_result(crew_output, cache_key)
 
-        if not isinstance(response_data, dict):
-            console.print(f"❌ Final response data is not a dictionary. Type: {type(response_data)}", style="red")
-            raise TypeError("Final response data is not a dictionary and cannot be serialized.")
-
-        # --- LOGIC FOR HANDLING OUTPUT FORMAT ---
-        if output_format == "final_answer":
-            final_answer = "No final answer found."
-            tasks_output = response_data.get('tasks_output', [])
-            if tasks_output and isinstance(tasks_output[-1], dict) and tasks_output[-1].get('raw'):
-                final_answer = tasks_output[-1]['raw']
-            elif response_data.get('raw'):
-                final_answer = response_data['raw']
-
-            return JSONResponse(content={'final_answer': final_answer})
-        elif output_format == "full_json":
-            return JSONResponse(content=response_data)
+        if output_format == "json":
+            return {"result": response_data.get("result", "No result available.")}
+        elif output_format == "text":
+            return {"result": response_data.get("result", "No result available.")}
         else:
-            raise ValueError(f"Invalid output_format: {output_format}")
+            return response_data
 
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/run_crew_ai_form/")
-async def run_crew_ai_form(
-        topic: str = Form(...),
-        category: str = Form("general"),
-        context: Optional[str] = Form(""),
-        research_focus: Optional[str] = Form(""),
-        ai_provider: Optional[str] = Form(None),
-        server_endpoint: Optional[str] = Form(None),
-        model_name: Optional[str] = Form(None),
-        output_format: Optional[str] = Form("final_answer"),
-        files: List[UploadFile] = File([])
-):
-    """
-    Endpoint to trigger a self-hosted CrewAI crew using multipart/form-data.
-    """
-    temp_dir = Path("/tmp/uploads_form")
-    temp_dir.mkdir(exist_ok=True)
-    uploaded_files_paths = []
-
-    try:
-        inputs = {
-            'topic': topic,
-            'category': category,
-            'context': context,
-            'research_focus': research_focus,
-            'ai_provider': ai_provider,
-            'server_endpoint': server_endpoint,
-            'model_name': model_name,
-        }
-
-        for file in files:
-            file_location = temp_dir / file.filename
-            with open(file_location, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            uploaded_files_paths.append(str(file_location))
-
-        response = process_crew_request(inputs, uploaded_files_paths, output_format)
-        return response
-    finally:
-        for file_path in uploaded_files_paths:
-            Path(file_path).unlink(missing_ok=True)
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @app.post("/run_crew_ai_json/")
-def run_crew_ai_json(
-        request: CrewRequest,
-        output_format: Optional[str] = "final_answer",
-        router: DistributedRouter = Depends(get_distributed_router)
+async def run_crew_ai_json(crew_request: CrewRequest,
+                           distributed_router_dep: PeerDiscovery = Depends(get_distributed_router)):
+    """Run a specific AI crew with inputs provided in a JSON payload."""
+    return process_crew_request(crew_request.inputs, [], "json")
+
+
+@app.post("/run_crew_ai_text/")
+async def run_crew_ai_text(crew_request: CrewRequest,
+                           distributed_router_dep: PeerDiscovery = Depends(get_distributed_router)):
+    """Run a specific AI crew with inputs provided in a JSON payload and return text output."""
+    return process_crew_request(crew_request.inputs, [], "text")
+
+
+@app.post("/run_crew_ai_multipart/")
+async def run_crew_ai_multipart(
+        inputs: str = Form(...),
+        files: Optional[List[UploadFile]] = File(None),
+        distributed_router_dep: PeerDiscovery = Depends(get_distributed_router)
 ):
-    """
-    Endpoint to trigger a self-hosted CrewAI crew using a JSON payload with Base64 files.
-    """
-    temp_dir = Path("/tmp/uploads_json")
-    temp_dir.mkdir(exist_ok=True)
+    """Run a specific AI crew with inputs and file uploads from a multipart/form-data payload."""
+    inputs_dict = json.loads(inputs)
     uploaded_files_paths = []
+    temp_dir = Path("uploads")
+    temp_dir.mkdir(exist_ok=True)
+
+    if files:
+        for file in files:
+            file_path = temp_dir / file.filename
+            with file_path.open("wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            uploaded_files_paths.append(str(file_path))
 
     try:
-        inputs = request.inputs
-
-        if inputs.get('files'):
-            for file_info in inputs['files']:
-                file_name = file_info['name']
-                base64_data = file_info['base64_data']
-
-                file_bytes = base64.b64decode(base64_data)
-                file_location = temp_dir / file_name
-                with open(file_location, "wb") as buffer:
-                    buffer.write(file_bytes)
-                uploaded_files_paths.append(str(file_location))
-
-        response = process_crew_request(inputs, uploaded_files_paths, output_format)
-        return response
-    except Exception as e:
-        console.print(f"❌ API Call Failed: {e}", style="red")
-        raise HTTPException(status_code=500, detail=str(e))
+        response = process_crew_request(inputs_dict, uploaded_files_paths, "json")
     finally:
+        # Clean up uploaded files
         for file_path in uploaded_files_paths:
-            Path(file_path).unlink(missing_ok=True)
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir, ignore_errors=True)
+            os.remove(file_path)
+
+    return response
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=3939, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
