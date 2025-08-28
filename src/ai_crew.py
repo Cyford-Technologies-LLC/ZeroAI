@@ -147,7 +147,13 @@ class AICrewManager:
         try:
             classification_result = classifier_crew.kickoff()
 
-            # FIX: Access the result from the first item in the tasks_output list
+            # --- DEBUGGING STEP ---
+            console.print("[bold cyan]--- Classifier Crew Output Dump ---[/bold cyan]")
+            console.print(classification_result.tasks_output)
+            console.print("[bold cyan]----------------------------[/bold cyan]")
+            # --- END DEBUGGING STEP ---
+
+            # Correct FIX: Access the result from the first item in the tasks_output list
             # and check if it exists before accessing its 'result' attribute.
             if classification_result.tasks_output and isinstance(classification_result.tasks_output, list) and classification_result.tasks_output[0]:
                 return classification_result.tasks_output[0].result.strip().lower()
@@ -246,4 +252,3 @@ class AICrewManager:
             tasks=[research_task, writing_task],
             verbose=config.agents.verbose
         )
-
