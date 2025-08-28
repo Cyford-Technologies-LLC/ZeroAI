@@ -6,7 +6,8 @@ from .agents import create_classifier_agent
 
 
 def create_classifier_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-    classifier_agent = create_classifier_agent(router)
+    # Pass inputs to the agent creation function
+    classifier_agent = create_classifier_agent(router, inputs)
     classifier_task = Task(
         description=f"""
         Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
