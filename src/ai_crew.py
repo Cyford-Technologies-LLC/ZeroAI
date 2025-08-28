@@ -8,8 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRe
 import warnings
 
 from langchain_community.llms.ollama import Ollama
-# Removed problematic import
-# from langchain_core.exceptions import LangChainDeprecationWarning
+from langchain_community import __version__ as langchain_community_version
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -27,7 +26,7 @@ from crews.math.agents import create_mathematician_agent
 from crews.coding.agents import create_coding_developer_agent, create_qa_engineer_agent
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
-from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool  # Correct import
+from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -36,13 +35,6 @@ logger = logging.getLogger(__name__)
 # --- Input Schema for Delegating Tools ---
 class CrewDelegationInput(BaseModel):
     query: str = Field(description="The user's query or the task to delegate.")
-
-
-# The following tool definitions should be moved to src/crews/customer_service/tools.py
-# as per the file structure provided by the user.
-# The ai_crew.py file should only import them.
-# The user's provided ai_crew.py was overwriting the tool definitions,
-# which is likely the source of the persistent issues.
 
 
 class AICrewManager:
@@ -86,8 +78,6 @@ class AICrewManager:
         }
 
         with warnings.catch_warnings():
-            # This is to silence the deprecation warning without a potentially
-            # problematic import, assuming the latest langchain_community is used.
             warnings.simplefilter("ignore", DeprecationWarning)
             self.llm_instance = Ollama(**self.llm_config)
 
@@ -98,6 +88,11 @@ class AICrewManager:
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         console.print("📦 Creating a specialized crew for category: [bold yellow]{}[/bold yellow]".format(category),
                       style="blue")
+
+        # Prevent delegation tools from recursively creating customer service crews.
+        if category == "customer_service":
+            raise ValueError("Recursive call to create_customer_service_crew detected. This is not allowed.")
+
         if category == "research":
             return self.create_research_crew(inputs)
         elif category == "analysis":
