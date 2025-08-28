@@ -8,8 +8,19 @@ import sys
 import shutil
 import base64
 import os
-from crewai import CrewOutput, TaskOutput # Import necessary classes
-from crewai.telemetry.telemetry_metrics import UsageMetrics # Correct import for UsageMetrics
+# Remove the invalid telemetry import
+from crewai import CrewOutput, TaskOutput
+
+# Define a placeholder class to avoid the NameError in usage_metrics_to_dict.
+class UsageMetrics:
+    def __init__(self, total_tokens=0, prompt_tokens=0, completion_tokens=0, successful_requests=0):
+        self.total_tokens = total_tokens
+        self.prompt_tokens = prompt_tokens
+        self.completion_tokens = completion_tokens
+        self.successful_requests = successful_requests
+
+# Disable CrewAI telemetry by setting the environment variable
+os.environ['CREWAI_DISABLE_TELEMETRY'] = "true"
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -46,7 +57,8 @@ def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
         return crew_output
 
     tasks_output = [task_output_to_dict(task) for task in crew_output.tasks_output]
-    token_usage_dict = usage_metrics_to_dict(crew_output.token_usage)
+    # Telemetry data will not be available, so we set it to a dummy value
+    token_usage_dict = usage_metrics_to_dict(crew_output.token_usage) if hasattr(crew_output, 'token_usage') else usage_metrics_to_dict(UsageMetrics())
 
     return {
         "raw": crew_output.raw,
@@ -97,7 +109,7 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if uploaded_files_paths:
             try:
                 # Assuming only one file for simplicity in this example
-                with open(uploaded_files_paths, 'r') as f:
+                with open(uploaded_files_paths[0], 'r') as f: # Corrected logic to handle list
                     inputs['file_content'] = f.read()
             except Exception as e:
                 console.print(f"❌ Error reading file: {e}", style="red")
@@ -216,4 +228,3 @@ def run_crew_ai_json(
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3939)
-
