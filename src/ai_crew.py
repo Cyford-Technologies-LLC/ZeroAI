@@ -43,18 +43,21 @@ logger = logging.getLogger(__name__)
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
-    def __init__(self, distributed_router_instance: DistributedRouter, inputs: Dict[str, Any], **kwargs):
+    def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         self.router = distributed_router_instance
-        self.inputs = inputs
+        # FIX: Correctly extract the inputs from kwargs
+        self.inputs = kwargs.get('inputs', {})
         self.category = self.inputs.get('category', 'general')
         self.task_description = self.inputs.get('topic', '')
         self.llm_instance = None
 
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
+        logging.info(f"AICrewManager.__init__: self.inputs type={type(self.inputs)}, content={self.inputs}")
 
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
+        logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
         self.router = router
         self.inputs = inputs
         category = inputs.get('category', 'auto')
@@ -79,6 +82,7 @@ class AICrewManager:
         """
         Helper method to run the classification crew and return the category.
         """
+        logging.info(f"AICrewManager._classify_task: inputs type={type(inputs)}, content={inputs}")
         try:
             classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
@@ -120,6 +124,7 @@ class AICrewManager:
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         """Helper method to create specialized crews based on category."""
+        logging.info(f"AICrewManager._create_specialized_crew: inputs type={type(inputs)}, content={inputs}")
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
 
@@ -140,6 +145,7 @@ class AICrewManager:
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         """Main method for creating the top-level crew."""
+        logging.info(f"AICrewManager.create_crew_for_category: inputs type={type(inputs)}, content={inputs}")
         category = inputs.get('category', self.category)
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
