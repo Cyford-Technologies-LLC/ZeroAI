@@ -14,7 +14,7 @@ from providers.cloud_providers import CloudProviderManager
 # --- New Crew Imports ---
 from crews.customer_service.crew import create_customer_service_crew
 from crews.coding.crew import create_coding_crew
-# REMOVE THIS LINE: from crews.tech_support.crew import create_tech_support_crew
+from crews.math.crew import create_math_crew
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -74,6 +74,8 @@ class AICrewManager:
             # For now, it will default to the general crew.
             console.print("⚠️  Tech support crew not implemented, defaulting to general crew.", style="yellow")
             return self.create_research_crew(inputs)
+        elif self.category == "math":
+            return create_math_crew(self.llm_instance, inputs)
         else:
             console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
             return self.create_research_crew(inputs)
