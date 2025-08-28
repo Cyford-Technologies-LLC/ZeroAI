@@ -8,7 +8,7 @@ import sys
 import shutil
 import base64
 import os
-from crewai import CrewOutput, TaskOutput  # Import CrewOutput and TaskOutput
+from crewai import CrewOutput, TaskOutput, UsageMetrics # Import necessary classes
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -28,19 +28,55 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
 class FileData(BaseModel):
     name: str
     type: str
     base64_data: str
 
-
 class CrewRequest(BaseModel):
     inputs: Dict[str, Any]
 
-
 def get_distributed_router():
     return distributed_router
+
+def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
+    """Converts a CrewOutput object to a dictionary for JSON serialization."""
+    if not isinstance(crew_output, CrewOutput):
+        return crew_output
+
+    tasks_output = [task_output_to_dict(task) for task in crew_output.tasks_output]
+    token_usage_dict = usage_metrics_to_dict(crew_output.token_usage)
+
+    return {
+        "raw": crew_output.raw,
+        "pydantic": crew_output.pydantic,
+        "json_dict": crew_output.json_dict,
+        "tasks_output": tasks_output,
+        "token_usage": token_usage_dict
+    }
+
+def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
+    """Converts a TaskOutput object to a dictionary for JSON serialization."""
+    return {
+        "description": task_output.description,
+        "name": task_output.name,
+        "expected_output": task_output.expected_output,
+        "summary": task_output.summary,
+        "raw": task_output.raw,
+        "pydantic": task_output.pydantic,
+        "json_dict": task_output.json_dict,
+        "agent": task_output.agent,
+        "output_format": task_output.output_format.name if task_output.output_format else None
+    }
+
+def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
+    """Converts a UsageMetrics object to a dictionary for JSON serialization."""
+    return {
+        "total_tokens": usage_metrics.total_tokens,
+        "prompt_tokens": usage_metrics.prompt_tokens,
+        "completion_tokens": usage_metrics.completion_tokens,
+        "successful_requests": usage_metrics.successful_requests
+    }
 
 
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
@@ -60,13 +96,13 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if uploaded_files_paths:
             try:
                 # Assuming only one file for simplicity in this example
-                with open(uploaded_files_paths[0], 'r') as f:
+                with open(uploaded_files_paths, 'r') as f:
                     inputs['file_content'] = f.read()
             except Exception as e:
                 console.print(f"❌ Error reading file: {e}", style="red")
                 inputs['file_content'] = "Error reading uploaded file."
 
-        inputs['files'] = uploaded_files_paths  # Store file paths for potential other uses
+        inputs['files'] = uploaded_files_paths # Store file paths for potential other uses
 
         console.print(f"✅ Received API Request:", style="green")
         console.print(f"   Topic: {topic}")
@@ -97,49 +133,16 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
-    """Converts a CrewOutput object to a dictionary for JSON serialization."""
-    if not isinstance(crew_output, CrewOutput):
-        # Already a dictionary or other serializable type
-        return crew_output
-
-    # Extract serializable data
-    serialized_output = {
-        "raw": crew_output.raw,
-        "pydantic": crew_output.pydantic,
-        "json_dict": crew_output.json_dict,
-        "tasks_output": [task_output_to_dict(task) for task in crew_output.tasks_output],
-        "token_usage": crew_output.token_usage.__dict__
-    }
-    return serialized_output
-
-
-def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
-    """Converts a TaskOutput object to a dictionary."""
-    return {
-        "description": task_output.description,
-        "name": task_output.name,
-        "expected_output": task_output.expected_output,
-        "summary": task_output.summary,
-        "raw": task_output.raw,
-        "pydantic": task_output.pydantic,
-        "json_dict": task_output.json_dict,
-        "agent": task_output.agent,
-        "output_format": task_output.output_format.name if task_output.output_format else None
-    }
-
-
 @app.post("/run_crew_ai_form/")
 async def run_crew_ai_form(
-        topic: str = Form(...),
-        category: str = Form("general"),
-        context: Optional[str] = Form(""),
-        research_focus: Optional[str] = Form(""),
-        ai_provider: Optional[str] = Form(None),
-        server_endpoint: Optional[str] = Form(None),
-        model_name: Optional[str] = Form(None),
-        files: List[UploadFile] = File([])
+    topic: str = Form(...),
+    category: str = Form("general"),
+    context: Optional[str] = Form(""),
+    research_focus: Optional[str] = Form(""),
+    ai_provider: Optional[str] = Form(None),
+    server_endpoint: Optional[str] = Form(None),
+    model_name: Optional[str] = Form(None),
+    files: List[UploadFile] = File([])
 ):
     """
     Endpoint to trigger a self-hosted CrewAI crew using multipart/form-data.
@@ -173,11 +176,10 @@ async def run_crew_ai_form(
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-
 @app.post("/run_crew_ai_json/")
 def run_crew_ai_json(
-        request: CrewRequest,
-        router: DistributedRouter = Depends(get_distributed_router)
+    request: CrewRequest,
+    router: DistributedRouter = Depends(get_distributed_router)
 ):
     """
     Endpoint to trigger a self-hosted CrewAI crew using a JSON payload with Base64 files.
@@ -210,7 +212,6 @@ def run_crew_ai_json(
             Path(file_path).unlink(missing_ok=True)
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3939)
