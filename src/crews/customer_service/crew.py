@@ -1,14 +1,14 @@
-from crewai import Crew, Process, Agent # Import Agent
+from crewai import Crew, Process, Agent
 from typing import Dict, Any, List
-from langchain_community.llms.ollama import Ollama
 from config import config
+from distributed_router import DistributedRouter
 
 from .agents import create_customer_service_agent
 from .tasks import create_customer_service_task
 
-# Add `full_output` to the function signature with a default value of False
-def create_customer_service_crew(llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent], full_output: bool = False) -> Crew:
-    customer_service_agent = create_customer_service_agent(llm, inputs)
+def create_customer_service_crew(router: DistributedRouter, inputs: Dict[str, Any], specialist_agents: List[Agent], full_output: bool = False) -> Crew:
+    """Creates a customer service crew using the distributed router."""
+    customer_service_agent = create_customer_service_agent(router, inputs)
     customer_service_task = create_customer_service_task(customer_service_agent, inputs)
 
     # Combine manager and specialist agents into a single list
@@ -18,7 +18,8 @@ def create_customer_service_crew(llm: Ollama, inputs: Dict[str, Any], specialist
         agents=all_agents,
         tasks=[customer_service_task],
         process=Process.hierarchical,
-        manager_llm=llm,
+        manager_llm=router.get_llm_for_task("Manage hierarchical crew"),
         verbose=config.agents.verbose,
-        full_output=full_output # Pass the argument to the Crew constructor
+        full_output=full_output
     )
+

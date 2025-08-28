@@ -1,5 +1,9 @@
 from crewai import Agent
 from crewai.tools import BaseTool
+from typing import Dict, Any, Optional, List
+from distributed_router import DistributedRouter
+from config import config
+
 
 class TechnicalSupportTool(BaseTool):
     name: str = "Technical Support Delegation Tool"
@@ -8,13 +12,14 @@ class TechnicalSupportTool(BaseTool):
     def _run(self, query: str):
         return f"Delegated to Technical Support for inquiry: {query}"
 
-# New tools for delegation
+
 class MathDelegationTool(BaseTool):
     name: str = "Math Delegation Tool"
     description: str = "Use this tool to delegate mathematical inquiries to the Math crew."
 
     def _run(self, query: str):
         return f"Delegated to Math Crew for inquiry: {query}"
+
 
 class ResearchDelegationTool(BaseTool):
     name: str = "Research Delegation Tool"
@@ -23,11 +28,17 @@ class ResearchDelegationTool(BaseTool):
     def _run(self, query: str):
         return f"Delegated to Research Crew for inquiry: {query}"
 
+
 tech_support_tool = TechnicalSupportTool()
 math_delegation_tool = MathDelegationTool()
 research_delegation_tool = ResearchDelegationTool()
 
-def create_customer_service_agent(llm, inputs: dict) -> Agent:
+
+def create_customer_service_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+    """Create a customer service agent using the distributed router."""
+    task_description = "Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew."
+    llm = router.get_llm_for_task(task_description)
+
     return Agent(
         role="Customer Service Representative",
         goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
