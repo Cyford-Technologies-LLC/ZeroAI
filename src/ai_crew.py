@@ -10,6 +10,7 @@ from langchain_community.llms.ollama import Ollama
 from langchain_community import __version__ as langchain_community_version
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
+from fastapi.encoders import jsonable_encoder
 
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
@@ -121,8 +122,10 @@ class AICrewManager:
             return crew_output
         except Exception as e:
             console.print(f"❌ Error during specialized crew execution: {e}", style="red")
-            # Create a mock Agent for the TaskOutput
-            mock_agent = Agent(role="Error Handler", goal="Report an error", backstory="Handles exceptions.")
+
+            # Create a mock agent role for the TaskOutput object.
+            # This is a robust way to handle Pydantic validation.
+            mock_agent = "Error Handler"
 
             error_output = CrewOutput(
                 raw=f"Failed to execute {category} crew: {e}",
@@ -130,7 +133,7 @@ class AICrewManager:
                     TaskOutput(
                         raw=f"Failed to execute: {e}",
                         description="Error in execution",
-                        agent=mock_agent  # FIX: Add a valid agent to the TaskOutput
+                        agent=mock_agent  # Use the string agent role here
                     )
                 ],
                 pydantic=None,
@@ -158,7 +161,7 @@ class AICrewManager:
             agents=[classifier_agent],
             tasks=[classifier_task],
             verbose=config.agents.verbose,
-            full_output=True  # Ensure full output is captured
+            full_output=True  # Also enable for the classifier crew
         )
 
         try:
@@ -168,7 +171,6 @@ class AICrewManager:
             console.print("[bold cyan]----------------------------[/bold cyan]")
 
             if classification_result and classification_result.tasks_output:
-                # Use a more robust way to get the final output
                 last_task_output = classification_result.tasks_output[-1]
                 if last_task_output and last_task_output.raw:
                     category = last_task_output.raw.strip().lower()
@@ -178,33 +180,38 @@ class AICrewManager:
                     else:
                         console.print(f"❌ Invalid category '{category}' returned. Falling back to 'general'.",
                                       style="red")
-                        return "general"
 
             console.print("❌ Classification crew did not produce a valid output. Falling back to 'general'.",
                           style="red")
-            return "general"
+            return "general"  # Fallback to general
         except Exception as e:
-            console.print(f"❌ Classification failed with an exception: {e}. Falling back to 'general'.", style="red")
-            return "general"
+            console.print(f"❌ Classification failed with an exception: {e}", style="red")
+            return "general"  # Fallback on exception
 
-    def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
+    def create_crew_for_category(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
+        category = inputs.get("category", self.category)
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
-        # All crew creations must pass the `full_output=True` flag
+
+        # Prevent delegation tools from recursively creating customer service crews.
+        if category == "customer_service":
+            raise ValueError("Recursive call to create_customer_service_crew detected. This is not allowed.")
+
         if category == "research":
-            return self.create_research_crew(inputs, full_output=True)
+            return self.create_research_crew(inputs, full_output=full_output)
         elif category == "analysis":
-            return self.create_analysis_crew(inputs, full_output=True)
+            return self.create_analysis_crew(inputs, full_output=full_output)
         elif category == "coding":
-            return create_coding_crew(self.llm_instance, inputs, full_output=True)
+            return create_coding_crew(self.llm_instance, inputs, full_output=full_output)
         elif category == "math":
-            return create_math_crew(self.llm_instance, inputs, full_output=True)
+            return create_math_crew(self.llm_instance, inputs, full_output=full_output)
         elif category == "tech_support":
-            return create_tech_support_crew(self.llm_instance, inputs, full_output=True)
+            return create_tech_support_crew(self.llm_instance, inputs, full_output=full_output)
         else:
+            # Fallback to general crew creation if category is not recognized
             console.print(f"⚠️ Category '{category}' not recognized, falling back to general research crew.",
                           style="yellow")
-            return self.create_research_crew(inputs, full_output=True)
+            return self.create_research_crew(inputs, full_output=full_output)
 
     def create_research_crew(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
@@ -235,3 +242,4 @@ class AICrewManager:
             process=Process.sequential,
             full_output=full_output,
         )
+
