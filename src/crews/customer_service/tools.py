@@ -45,4 +45,3 @@ class ResearchDelegationTool(BaseTool):
 
         result = self._crew_manager.execute_crew(research_crew, self._inputs)
         return result.get("output", "Could not complete the research task.")
-
