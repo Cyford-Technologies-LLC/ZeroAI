@@ -1,3 +1,5 @@
+# src/crews/customer_service/tools.py
+
 from crewai.tools import BaseTool
 
 class DelegatingMathTool(BaseTool):
@@ -5,7 +7,9 @@ class DelegatingMathTool(BaseTool):
     description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
 
     def __init__(self, crew_manager, **kwargs):
+        # Pass all keyword arguments to the parent class
         super().__init__(**kwargs)
+        # Correctly assign the crew_manager to the instance
         self.crew_manager = crew_manager
         self.inputs = kwargs.get('inputs', {})
 
@@ -19,7 +23,9 @@ class ResearchDelegationTool(BaseTool):
     description: str = "Use this tool to perform a research inquiry by delegating to the Research crew and retrieving the result."
 
     def __init__(self, crew_manager, **kwargs):
+        # Pass all keyword arguments to the parent class
         super().__init__(**kwargs)
+        # Correctly assign the crew_manager to the instance
         self.crew_manager = crew_manager
         self.inputs = kwargs.get('inputs', {})
 
