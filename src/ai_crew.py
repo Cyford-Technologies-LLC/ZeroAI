@@ -45,6 +45,7 @@ class AICrewManager:
 
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         self.router = distributed_router_instance
+        # FIX: Correctly extract the inputs from kwargs
         self.inputs = kwargs.get('inputs', {})
         self.category = self.inputs.get('category', 'general')
         self.task_description = self.inputs.get('topic', '')
