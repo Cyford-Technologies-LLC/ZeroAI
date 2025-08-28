@@ -57,12 +57,12 @@ class DistributedRouter:
     # Add the get_local_llm() method here
     def get_local_llm(self, model_name: str) -> Optional[Ollama]:
         """Gets an Ollama LLM instance for a specific model running on localhost."""
-        # Assuming _get_local_ollama_models() handles the logic for available models
         if model_name in self._get_local_ollama_models():
-            # Use the OLLAMA_HOST environment variable set in docker-compose.yml
             base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+            # FIX: Ensure model name is prefixed for LiteLLM compatibility
+            prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
-                "model": model_name,
+                "model": prefixed_model_name,
                 "base_url": base_url,
                 "temperature": config.model.temperature
             }

@@ -175,16 +175,20 @@ class AICrewManager:
 
     def create_customer_service_crew_hierarchical(self, router, inputs: Dict[str, Any],
                                                   specialist_agents: List[Agent]) -> Crew:
-        customer_service_agent = create_customer_service_agent(router, inputs)
+        # Get the correct LLM for the customer service agent from the router
+        customer_service_agent_llm = router.get_llm_for_role('customer_service')
+        customer_service_agent = create_customer_service_agent(customer_service_agent_llm, inputs)
+
+        # Get the manager LLM specifically for the hierarchical process
         manager_llm = router.get_llm_for_role('manager')
 
-        # Log the manager LLM's connection details
+        # Log the manager LLM's connection details for debugging
         if manager_llm:
             console.print(
                 f"🔗 Manager LLM connecting to model: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
                 style="blue")
         else:
-            console.print("⚠️ Manager LLM not available.", style="yellow")
+            console.print("⚠️ Manager LLM not available. Hierarchical crew may fail.", style="yellow")
 
         manager_tools = [
             DelegatingMathTool(crew_manager=self, inputs=inputs),
