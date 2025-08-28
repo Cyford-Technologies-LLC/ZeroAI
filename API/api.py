@@ -12,7 +12,7 @@ import os
 import time
 import json
 from crewai import CrewOutput, TaskOutput
-from pydantic import json as pydantic_json
+from pydantic import json as pydantic_json  # Import Pydantic's JSON tool
 
 
 # Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
