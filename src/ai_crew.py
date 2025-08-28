@@ -14,7 +14,6 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.classifier.crew import create_classifier_crew_internal
 from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
 
 # --- Import ALL specialized agents for Hierarchical Process ---
@@ -101,6 +100,7 @@ class AICrewManager:
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
 
+        # Pass the router instance to the specific crew creation functions
         if category == "research":
             return self.create_research_crew(self.router, inputs)
         elif category == "analysis":
@@ -199,3 +199,4 @@ class AICrewManager:
             tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
+
