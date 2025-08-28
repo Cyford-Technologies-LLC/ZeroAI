@@ -3,6 +3,7 @@
 from typing import Any, Dict
 from pydantic import PrivateAttr
 from crewai.tools import BaseTool
+from crewai import CrewOutput
 
 
 class DelegatingMathTool(BaseTool):
@@ -18,14 +19,15 @@ class DelegatingMathTool(BaseTool):
         self._inputs = inputs
 
     def _run(self, query: str):
-        # Update the inputs with the new query
         self._inputs["topic"] = query
-
-        # CORRECT CALL: Use the new _create_specialized_crew method
         math_crew = self._crew_manager._create_specialized_crew(category="math", inputs=self._inputs)
 
-        result = self._crew_manager.execute_crew(math_crew, self._inputs)
-        return result.get("output", "Could not solve the math problem.")
+        crew_output = self._crew_manager.execute_crew(math_crew, self._inputs)
+
+        if isinstance(crew_output, CrewOutput):
+            return crew_output.result
+        else:
+            return "Could not solve the math problem. Unexpected output type from the crew."
 
 
 class ResearchDelegationTool(BaseTool):
@@ -41,11 +43,12 @@ class ResearchDelegationTool(BaseTool):
         self._inputs = inputs
 
     def _run(self, query: str):
-        # Update the inputs with the new query
         self._inputs["topic"] = query
-
-        # CORRECT CALL: Use the new _create_specialized_crew method
         research_crew = self._crew_manager._create_specialized_crew(category="research", inputs=self._inputs)
 
-        result = self._crew_manager.execute_crew(research_crew, self._inputs)
-        return result.get("output", "Could not complete the research task.")
+        crew_output = self._crew_manager.execute_crew(research_crew, self._inputs)
+
+        if isinstance(crew_output, CrewOutput):
+            return crew_output.result
+        else:
+            return "Could not complete the research task. Unexpected output type from the crew."
