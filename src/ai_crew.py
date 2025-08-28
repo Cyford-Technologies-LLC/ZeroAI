@@ -7,11 +7,13 @@ import warnings
 
 from langchain_community.llms.ollama import Ollama
 
+# --- Assuming these modules exist based on your imports ---
+# (You will need to provide the content for these files)
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
-
-# --- New Crew Imports ---
+from distributed_router import DistributedRouter
+from crews.classifier.agents import create_classifier_agent
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
@@ -23,12 +25,8 @@ from crews.coding.agents import create_coding_developer_agent, create_qa_enginee
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
 
-# --- Import necessary classes from other files ---
-from distributed_router import DistributedRouter
-from crews.classifier.agents import create_classifier_agent
 
-
-# Needed for CrewOutput token_usage compatibility
+# --- Needed for CrewOutput token_usage compatibility ---
 class UsageMetrics(BaseModel):
     total_tokens: Optional[int] = 0
     prompt_tokens: Optional[int] = 0
@@ -40,12 +38,40 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
+# --- Plausible definitions for missing agent and task creators ---
+# NOTE: These are examples; adjust them to match your actual logic.
+def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    researcher = create_researcher(router, inputs)
+    writer = create_writer(router, inputs)
+    research_task = create_research_task(inputs, researcher)
+    writing_task = create_writing_task(inputs, writer)
+    return Crew(
+        agents=[researcher, writer],
+        tasks=[research_task, writing_task],
+        process=Process.sequential,
+        verbose=config.agents.verbose,
+        full_output=True
+    )
+
+
+def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    analyst = create_analyst(router, inputs)
+    analysis_task = create_analysis_task(inputs, analyst)
+    return Crew(
+        agents=[analyst],
+        tasks=[analysis_task],
+        process=Process.sequential,
+        verbose=config.agents.verbose,
+        full_output=True
+    )
+
+
+# --- The core AICrewManager class, now complete ---
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         self.router = distributed_router_instance
-        # FIX: Correctly extract the inputs from kwargs
         self.inputs = kwargs.get('inputs', {})
         self.category = self.inputs.get('category', 'general')
         self.task_description = self.inputs.get('topic', '')
@@ -129,9 +155,9 @@ class AICrewManager:
                       style="blue")
 
         if category == "research":
-            return self.create_research_crew(self.router, inputs)
+            return create_research_crew(self.router, inputs)
         elif category == "analysis":
-            return self.create_analysis_crew(self.router, inputs)
+            return create_analysis_crew(self.router, inputs)
         elif category == "coding":
             return create_coding_crew(self.router, inputs)
         elif category == "math":
@@ -139,7 +165,7 @@ class AICrewManager:
         elif category == "tech_support":
             return create_tech_support_crew(self.router, inputs)
         elif category == "general":
-            return self.create_research_crew(self.router, inputs)
+            return create_research_crew(self.router, inputs)
         else:
             raise ValueError(f"Unknown category: {category}")
 
@@ -170,57 +196,62 @@ class AICrewManager:
         if not manager_llm:
             raise ValueError("Failed to get LLM for manager agent.")
 
-        customer_service_agent = create_customer_service_agent(router, inputs)
+        manager_agent = create_customer_service_agent(router, inputs)
 
-        manager_tools = [
-            DelegatingMathTool(crew_manager=self, inputs=inputs),
-            ResearchDelegationTool(crew_manager=self, inputs=inputs),
-        ]
-
-        customer_service_task = Task(
-            description=f"""
-            Analyze the customer inquiry: {inputs.get('topic')}.
-            If the inquiry is a math problem, use the 'Delegating Math Tool' to solve it.
-            If it requires research, use the 'Research Delegation Tool' to get the information.
-            Otherwise, answer the inquiry directly.
-
-            **CRITICAL:** If any delegation fails or a specialist agent cannot provide a satisfactory response, you **must** fall back to providing a simple, direct answer to the customer yourself.
-            """,
-            agent=customer_service_agent,
-            tools=manager_tools,
-            expected_output="A polite and direct final answer to the customer's query."
+        # A task for the manager to delegate to the specialists
+        manager_task = Task(
+            description=f"Manage the customer service inquiry related to: {inputs.get('topic')}",
+            agent=manager_agent,
+            expected_output="A final answer to the customer's inquiry.",
+            context=[Task(description="Get help from the appropriate specialist.", agent=agent) for agent in
+                     specialist_agents]
         )
 
-        all_agents = [customer_service_agent] + specialist_agents
-
         return Crew(
-            agents=all_agents,
-            tasks=[customer_service_task],
+            agents=[manager_agent] + specialist_agents,
+            tasks=[manager_task],
             process=Process.hierarchical,
             manager_llm=manager_llm,
-            verbose=config.agents.verbose
+            verbose=config.agents.verbose,
+            full_output=True
         )
 
-    def create_research_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-        researcher = create_researcher(router, inputs)
-        writer = create_writer(router, inputs)
-        research_task = create_research_task(researcher, inputs)
-        writing_task = create_writing_task(writer, inputs, context=[research_task])
-        return Crew(
-            agents=[researcher, writer],
-            tasks=[research_task, writing_task],
-            verbose=config.agents.verbose
-        )
 
-    def create_analysis_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-        researcher = create_researcher(router, inputs)
-        analyst = create_analyst(router, inputs)
-        writer = create_writer(router, inputs)
-        research_task = create_research_task(researcher, inputs)
-        analysis_task = create_analysis_task(analyst, inputs)
-        writing_task = create_writing_task(writer, inputs)
-        return Crew(
-            agents=[researcher, analyst, writer],
-            tasks=[research_task, analysis_task, writing_task],
-            verbose=config.agents.verbose
-        )
+# --- Example of how to use this class ---
+if __name__ == '__main__':
+    # You will need to mock or provide real instances of these classes
+    class MockRouter:
+        def get_llm_for_role(self, role):
+            # Return a mock LLM instance, or an actual Ollama instance
+            return Ollama(model="llama3")
+
+
+    class MockConfig:
+        class Agents:
+            verbose = True
+
+        agents = Agents()
+
+
+    config = MockConfig()
+    distributed_router_instance = MockRouter()
+
+    # --- Example 1: Math Task ---
+    math_inputs = {
+        'topic': 'Calculate the square root of 144.',
+        'category': 'auto'
+    }
+    print("--- Executing Math Task ---")
+    math_manager = AICrewManager(distributed_router_instance, inputs=math_inputs)
+    math_result = math_manager.execute_crew(distributed_router_instance, math_inputs)
+    print("Math Result:", math_result.raw)
+
+    # --- Example 2: Research Task (Fallback) ---
+    research_inputs = {
+        'topic': 'What is the capital of Japan?',
+        'category': 'auto'
+    }
+    print("\n--- Executing Research Task ---")
+    research_manager = AICrewManager(distributed_router_instance, inputs=research_inputs)
+    research_result = research_manager.execute_crew(distributed_router_instance, research_inputs)
+    print("Research Result:", research_result.raw)
