@@ -14,8 +14,7 @@ from providers.cloud_providers import CloudProviderManager
 # --- New Crew Imports ---
 from crews.customer_service.crew import create_customer_service_crew
 from crews.coding.crew import create_coding_crew
-# Assuming you also create a tech_support crew file
-from crews.tech_support.crew import create_tech_support_crew
+# REMOVE THIS LINE: from crews.tech_support.crew import create_tech_support_crew
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -29,7 +28,6 @@ class AICrewManager:
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
 
-        # Move category mapping to the top of the __init__ method
         if self.category == "chat" and not self.task_description:
             self.task_description = "llama3.2:latest"
         elif self.category == "coding" and not self.task_description:
@@ -50,7 +48,6 @@ class AICrewManager:
             raise
 
         prefixed_model_name = f"ollama/{self.model_name}"
-
         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
         self.provider = "local"
         self.llm_config = {
@@ -69,14 +66,14 @@ class AICrewManager:
         elif self.category == "analysis":
             return self.create_analysis_crew(inputs)
         elif self.category == "coding":
-            # Call the imported function from the new module
             return create_coding_crew(self.llm_instance, inputs)
         elif self.category == "customer_service":
-            # Call the imported function from the new module
             return create_customer_service_crew(self.llm_instance, inputs)
         elif self.category == "tech_support":
-            # Call the imported function from the new module
-            return create_tech_support_crew(self.llm_instance, inputs)
+            # You can handle the "tech_support" category here if and when you implement it.
+            # For now, it will default to the general crew.
+            console.print("⚠️  Tech support crew not implemented, defaulting to general crew.", style="yellow")
+            return self.create_research_crew(inputs)
         else:
             console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
             return self.create_research_crew(inputs)
@@ -113,15 +110,11 @@ class AICrewManager:
             console=console,
         ) as progress:
             task = progress.add_task("Executing AI crew...", total=None)
-
             try:
                 crew_output_object = crew.kickoff(inputs=inputs)
                 result_text = crew_output_object.raw
                 progress.update(task, description="✅ Crew execution completed!")
-                return {
-                    "result": result_text,
-                    "llm_details": self.get_llm_details()
-                }
+                return {"result": result_text, "llm_details": self.get_llm_details()}
             except Exception as e:
                 progress.update(task, description=f"❌ Crew execution failed: {e}")
                 logger.error("Crew execution failed", exc_info=True)
