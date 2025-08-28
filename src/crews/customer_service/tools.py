@@ -1,4 +1,4 @@
-# src/crews/customer_service/tools.py
+# Path: src/crews/customer_service/tools.py
 
 from typing import Any, Dict
 from pydantic import PrivateAttr
@@ -18,14 +18,20 @@ class DelegatingMathTool(BaseTool):
         self._inputs = inputs
 
     def _run(self, query: str):
-        # Update the inputs with the new query
-        self._inputs["topic"] = query
+        """
+        Runs the Math crew to solve a query.
+        """
+        # Create a new, isolated inputs dictionary to prevent concurrency issues
+        delegated_inputs = self._inputs.copy()
+        delegated_inputs["topic"] = query
+        delegated_inputs["category"] = "math" # Explicitly set category for delegation
 
-        # CORRECT CALL: Use the new _create_specialized_crew method
-        math_crew = self._crew_manager._create_specialized_crew(category="math", inputs=self._inputs)
-
-        result = self._crew_manager.execute_crew(math_crew, self._inputs)
-        return result.get("output", "Could not solve the math problem.")
+        try:
+            # Call the new execute_crew method on the manager, passing the necessary inputs
+            result = self._crew_manager.execute_crew(category="math", query=query)
+            return result
+        except Exception as e:
+            return f"Failed to delegate to Math Crew: {e}"
 
 
 class ResearchDelegationTool(BaseTool):
@@ -41,11 +47,18 @@ class ResearchDelegationTool(BaseTool):
         self._inputs = inputs
 
     def _run(self, query: str):
-        # Update the inputs with the new query
-        self._inputs["topic"] = query
+        """
+        Runs the Research crew to answer a query.
+        """
+        # Create a new, isolated inputs dictionary to prevent concurrency issues
+        delegated_inputs = self._inputs.copy()
+        delegated_inputs["topic"] = query
+        delegated_inputs["category"] = "research" # Explicitly set category for delegation
 
-        # CORRECT CALL: Use the new _create_specialized_crew method
-        research_crew = self._crew_manager._create_specialized_crew(category="research", inputs=self._inputs)
+        try:
+            # Call the new execute_crew method on the manager, passing the necessary inputs
+            result = self._crew_manager.execute_crew(category="research", query=query)
+            return result
+        except Exception as e:
+            return f"Failed to delegate to Research Crew: {e}"
 
-        result = self._crew_manager.execute_crew(research_crew, self._inputs)
-        return result.get("output", "Could not complete the research task.")
