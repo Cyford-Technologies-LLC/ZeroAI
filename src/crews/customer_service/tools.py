@@ -1,13 +1,12 @@
-# Corrected Tool classes (revisiting the prior fix)
 from crewai.tools import BaseTool
 
 class DelegatingMathTool(BaseTool):
     name: str = "Delegating Math Tool"
     description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
 
-    def __init__(self, crew_manager_instance, **kwargs):
+    def __init__(self, crew_manager, **kwargs):
         super().__init__(**kwargs)
-        self.crew_manager = crew_manager_instance
+        self.crew_manager = crew_manager
         self.inputs = kwargs.get('inputs', {})
 
     def _run(self, query: str):
@@ -19,9 +18,9 @@ class ResearchDelegationTool(BaseTool):
     name: str = "Research Delegation Tool"
     description: str = "Use this tool to perform a research inquiry by delegating to the Research crew and retrieving the result."
 
-    def __init__(self, crew_manager_instance, **kwargs):
+    def __init__(self, crew_manager, **kwargs):
         super().__init__(**kwargs)
-        self.crew_manager = crew_manager_instance
+        self.crew_manager = crew_manager
         self.inputs = kwargs.get('inputs', {})
 
     def _run(self, query: str):
