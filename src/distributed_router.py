@@ -54,6 +54,23 @@ class DistributedRouter:
             console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
             return []
 
+    # Add the get_local_llm() method here
+    def get_local_llm(self, model_name: str) -> Optional[Ollama]:
+        """Gets an Ollama LLM instance for a specific model running on localhost."""
+        local_peer_info = next((peer for peer in self.peer_discovery.get_peers() if peer.name == "local-node"), None)
+        if local_peer_info and model_name in self._get_local_ollama_models():
+            base_url = f"http://{local_peer_info.ip}:11434"
+            llm_config = {
+                "model": model_name,
+                "base_url": base_url,
+                "temperature": config.model.temperature
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]", style="blue")
+                return Ollama(**llm_config)
+        return None
+
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[
         str, str, str]:
         if failed_peers is None:
@@ -134,6 +151,7 @@ class DistributedRouter:
             return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
 
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
+
 
     def get_llm_for_task(self, prompt: str) -> Ollama:
         """Gets an Ollama LLM instance based on the prompt using the router's logic."""

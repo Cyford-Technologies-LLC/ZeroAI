@@ -239,6 +239,22 @@ class AICrewManager:
             verbose=config.agents.verbose
         )
 
+    def create_classifier_agent(router) -> Agent:
+        llm = router.get_local_llm("llama3.2:1b")
+        if not llm:
+            console.print("⚠️ Local LLM not available for classifier. Falling back to optimal distributed model.",
+                          style="yellow")
+            llm = router.get_llm_for_role('classifier')
+        if not llm:
+            raise ValueError("Failed to get LLM for classifier agent.")
+        console.print(
+            f"🔗 Classifier Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+            style="blue")
+        return Agent(
+            role='Task Classifier',
+            goal='Accurately classify the user query into categories: math, coding, research, or general.',
+            # ... (rest of agent config) ...
+        )
     def execute_crew(self, category: str, query: str) -> CrewOutput:
         inputs = self.inputs.copy()
         inputs['topic'] = query
