@@ -102,10 +102,10 @@ class AICrewManager:
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # Instantiate delegation tools with the AICrewManager instance (self)
+        # Instantiate delegation tools with the AICrewManager instance (self) and inputs
         manager_tools = [
-            DelegatingMathTool(self, inputs),
-            ResearchDelegationTool(self, inputs),
+            DelegatingMathTool(crew_manager=self, inputs=inputs),
+            ResearchDelegationTool(crew_manager=self, inputs=inputs),
             # Add other delegating tools here
         ]
 
@@ -164,41 +164,12 @@ class AICrewManager:
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task("Executing AI crew...", total=None)
+            task = progress.add_task("[yellow]Executing AI Crew...", total=1)
             try:
-                crew_output_object = crew.kickoff(inputs=inputs)
-                result_text = crew_output_object.raw
-                progress.update(task, description="✅ Crew execution completed!")
-                return {"result": result_text, "llm_details": self.get_llm_details()}
+                result = crew.kickoff(inputs=inputs)
+                progress.update(task, description="[green]AI Crew execution complete.", completed=1)
+                return {"result": result}
             except Exception as e:
-                progress.update(task, description=f"❌ Crew execution failed: {e}. Falling back to basic customer service.")
-                logger.error("Crew execution failed, falling back.", exc_info=True)
+                progress.update(task, description="[red]AI Crew execution failed.", completed=1)
+                return {"error": f"An error occurred during crew execution: {e}"}
 
-                try:
-                    fallback_agent = create_customer_service_agent(self.llm_instance, inputs)
-                    fallback_task = Task(
-                        description=f"A complex query delegation failed. Please provide a concise, polite fallback response to the user's inquiry: {inputs.get('topic')}. Apologize for the inconvenience.",
-                        agent=fallback_agent,
-                        expected_output="A polite fallback message for the customer."
-                    )
-                    fallback_crew = Crew(
-                        agents=[fallback_agent],
-                        tasks=[fallback_task],
-                        process=Process.sequential,
-                        verbose=False
-                    )
-                    fallback_output = fallback_crew.kickoff()
-                    fallback_output_text = fallback_output.raw
-                    progress.update(task, description="✅ Fallback crew completed!")
-                    return {"result": fallback_output_text, "llm_details": self.get_llm_details()}
-                except Exception as fallback_e:
-                    logger.error("Fallback crew also failed.", exc_info=True)
-                    progress.update(task, description="❌ Fallback crew failed!")
-                    return {"result": "An unexpected error occurred. Please try again later.", "llm_details": self.get_llm_details()}
-
-    def get_llm_details(self) -> Dict[str, str]:
-        return {
-            "model_name": self.llm_config['model'],
-            "provider": self.provider,
-            "endpoint": self.base_url
-        }
