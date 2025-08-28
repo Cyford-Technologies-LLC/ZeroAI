@@ -1,16 +1,17 @@
+# src/crews/customer_service/tasks.py
+
 from crewai import Task, Agent
 from typing import Dict, Any
 
 def create_customer_service_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     return Task(
-        description=f"Initial customer inquiry: {inputs.get('topic')}",
-        agent=agent,
-        expected_output="A polite response that addresses the customer's query. If the query requires specialized knowledge, the response should include the specialist's final answer."
-    )
+        description=f"""
+        Analyze the customer inquiry: {inputs.get('topic')}.
+        Identify which specialist agent is best suited to handle this inquiry (e.g., math, tech support, coding, etc.).
+        Delegate the inquiry to the most appropriate specialist agent.
 
-def create_delegation_task(specialist_agent: Agent, sub_task_description: str) -> Task:
-    return Task(
-        description=sub_task_description,
-        agent=specialist_agent,
-        expected_output="The result of the specialized sub-task."
+        **CRITICAL:** If any delegation fails or a specialist agent cannot provide a satisfactory response, you **must** fall back to providing a simple, direct answer to the customer yourself.
+        """,
+        agent=agent,
+        expected_output="The final, polished answer to the customer's query, either from a specialist or from the customer service agent as a fallback."
     )

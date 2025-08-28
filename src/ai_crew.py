@@ -9,12 +9,12 @@ from langchain_community.llms.ollama import Ollama
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
-from providers.cloud_providers import CloudProviderManager
 
 # --- New Crew Imports ---
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
+from crews.customer_service.tasks import create_customer_service_task  # Import refined task
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -26,7 +26,7 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 class AICrewManager:
-    """Manages AI crew creation and execution."""
+    """Manages AI crew creation and execution with a robust fallback."""
 
     def __init__(self, distributed_router_instance, **kwargs):
         self.router = distributed_router_instance
@@ -34,6 +34,7 @@ class AICrewManager:
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
 
+        # Default model for each category if not specified
         if self.category == "chat" and not self.task_description:
             self.task_description = "llama3.2:latest"
         elif self.category == "coding" and not self.task_description:
@@ -93,11 +94,7 @@ class AICrewManager:
 
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
-        customer_service_task = Task(
-            description=f"Handle customer inquiry: {inputs.get('topic')}",
-            agent=customer_service_agent,
-            expected_output="The final answer to the customer's query, possibly obtained by delegating to a specialist agent."
-        )
+        customer_service_task = create_customer_service_task(customer_service_agent, inputs) # Use imported task
 
         all_agents = [customer_service_agent] + specialist_agents
 
@@ -134,7 +131,7 @@ class AICrewManager:
         )
 
     def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a crew with progress tracking and return full response."""
+        """Execute a crew with progress tracking and return full response, with a robust fallback."""
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -142,14 +139,37 @@ class AICrewManager:
         ) as progress:
             task = progress.add_task("Executing AI crew...", total=None)
             try:
+                # Attempt to run the main crew
                 crew_output_object = crew.kickoff(inputs=inputs)
-                result_text = crew_output_object.raw
+                result_text = crew_output_object
                 progress.update(task, description="✅ Crew execution completed!")
                 return {"result": result_text, "llm_details": self.get_llm_details()}
             except Exception as e:
-                progress.update(task, description=f"❌ Crew execution failed: {e}")
-                logger.error("Crew execution failed", exc_info=True)
-                raise
+                progress.update(task, description=f"❌ Crew execution failed: {e}. Falling back to basic customer service.")
+                logger.error("Crew execution failed, falling back.", exc_info=True)
+
+                # --- Fallback Logic ---
+                try:
+                    # Create a simple customer service agent for the fallback
+                    fallback_agent = create_customer_service_agent(self.llm_instance, inputs)
+
+                    fallback_task = Task(
+                        description=f"A complex query delegation failed. Please provide a concise, polite fallback response to the user's inquiry: {inputs.get('topic')}. Apologize for the inconvenience and let them know a human will be in touch.",
+                        agent=fallback_agent,
+                        expected_output="A polite fallback message for the customer."
+                    )
+
+                    fallback_crew = Crew(
+                        agents=[fallback_agent],
+                        tasks=[fallback_task],
+                        process=Process.sequential,
+                        verbose=False
+                    )
+                    fallback_output = fallback_crew.kickoff()
+                    return {"result": fallback_output, "llm_details": self.get_llm_details()}
+                except Exception as fallback_e:
+                    logger.error("Fallback crew also failed.", exc_info=True)
+                    return {"result": "An unexpected error occurred. Please try again later.", "llm_details": self.get_llm_details()}
 
     def get_llm_details(self) -> Dict[str, str]:
         return {
