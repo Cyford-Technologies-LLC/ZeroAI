@@ -1,5 +1,6 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from pathlib import Path
@@ -8,6 +9,8 @@ import sys
 import shutil
 import base64
 import os
+import time
+import json
 from crewai import CrewOutput, TaskOutput
 
 
@@ -40,6 +43,43 @@ app = FastAPI(
     description="API to expose CrewAI crews as endpoints.",
     version="1.0.0",
 )
+
+
+# Add a logging middleware to inspect all requests and responses
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    console.print(f"[bold yellow]--- Incoming Request ---[/bold yellow]")
+    console.print(f"[yellow]Path:[/yellow] {request.url.path}")
+    console.print(f"[yellow]Method:[/yellow] {request.method}")
+    console.print(f"[yellow]Headers:[/yellow] {dict(request.headers)}")
+
+    # Log the request body for JSON endpoints
+    if request.url.path == "/run_crew_ai_json/":
+        try:
+            body = await request.json()
+            console.print(f"[yellow]Body:[/yellow] {json.dumps(body, indent=2)}")
+        except json.JSONDecodeError:
+            console.print(f"[yellow]Body:[/yellow] Could not decode JSON body", style="dim")
+
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response_body = b""
+    async for chunk in response.body_iterator:
+        response_body += chunk
+
+    try:
+        response_data = json.loads(response_body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        response_data = response_body.decode("utf-8", errors="ignore")
+
+    console.print(f"[bold green]--- Outgoing Response ---[/bold green]")
+    console.print(f"[green]Status Code:[/green] {response.status_code}")
+    console.print(f"[green]Processing Time:[/green] {process_time:.4f}s")
+    console.print(f"[green]Response Body:[/green] {json.dumps(response_data, indent=2)}")
+    console.print(f"[bold yellow]-------------------------[/bold yellow]")
+
+    return JSONResponse(content=response_data, status_code=response.status_code)
 
 
 class FileData(BaseModel):
@@ -135,14 +175,25 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         cache_key = f"{category}_{topic}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}_{inputs.get('ai_provider', '')}_{inputs.get('model_name', '')}"
 
         cached_response = cache.get(cache_key, "crew_result")
-        if cached_response and isinstance(cached_response, CrewOutput):
-            crew_output = cached_response
-        else:
-            crew_output = manager.execute_crew(crew, inputs)
-            cache.set(cache_key, "crew_result", crew_output)
 
-        # Convert the CrewOutput object to a serializable dictionary and return it.
-        return crew_output_to_dict(crew_output)
+        # Check if cache hit and it's a CrewOutput object
+        if cached_response:
+            if isinstance(cached_response, CrewOutput):
+                # Convert cached object to dictionary before returning
+                console.print(f"✅ Cache Hit. Converting cached CrewOutput object to dictionary.", style="blue")
+                response_data = crew_output_to_dict(cached_response)
+            else:
+                # If cached data is already a dictionary, use it directly
+                console.print(f"✅ Cache Hit. Using cached dictionary.", style="blue")
+                response_data = cached_response
+        else:
+            console.print(f"⚠️ Cache Miss. Executing AI Crew.", style="yellow")
+            crew_output = manager.execute_crew(crew, inputs)
+            # Convert the new result to a dictionary and cache the dictionary
+            response_data = crew_output_to_dict(crew_output)
+            cache.set(cache_key, "crew_result", response_data)  # Cache the dictionary
+
+        return response_data
 
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
@@ -232,4 +283,5 @@ def run_crew_ai_json(
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=3939)
+    # Add reload=True for automatic reloading during development
+    uvicorn.run(app, host="0.0.0.0", port=3939, reload=True)
