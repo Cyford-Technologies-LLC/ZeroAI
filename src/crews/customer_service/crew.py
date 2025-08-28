@@ -6,7 +6,8 @@ from config import config
 from .agents import create_customer_service_agent
 from .tasks import create_customer_service_task
 
-def create_customer_service_crew(llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
+# Add `full_output` to the function signature with a default value of False
+def create_customer_service_crew(llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent], full_output: bool = False) -> Crew:
     customer_service_agent = create_customer_service_agent(llm, inputs)
     customer_service_task = create_customer_service_task(customer_service_agent, inputs)
 
@@ -18,5 +19,6 @@ def create_customer_service_crew(llm: Ollama, inputs: Dict[str, Any], specialist
         tasks=[customer_service_task],
         process=Process.hierarchical,
         manager_llm=llm,
-        verbose=config.agents.verbose
+        verbose=config.agents.verbose,
+        full_output=full_output # Pass the argument to the Crew constructor
     )
