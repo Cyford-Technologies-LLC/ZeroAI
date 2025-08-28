@@ -25,44 +25,9 @@ from distributed_router import distributed_router
 from rich.console import Console
 
 # Import necessary CrewAI components for creating agents and tasks
-from crewai import Agent, Task, Crew, Process
+from crewai import Crew
 
 console = Console()
-
-def create_customer_service_agent(llm):
-    return Agent(
-        role="Customer Service Representative",
-        goal="Handle customer inquiries, answer questions, and delegate complex issues.",
-        backstory=(
-            "You are a friendly and efficient customer service representative. "
-            "Your job is to understand the customer's request and provide a solution "
-            "or delegate it to the appropriate specialized crew if needed. "
-            "You always start by greeting the customer and confirming their request."
-        ),
-        llm=llm,
-        # The agent will need tools or delegation capabilities defined here
-        # For this example, we will let the LLM's reasoning handle the delegation implicitly
-        verbose=True,
-        allow_delegation=True
-    )
-
-def create_customer_service_task(agent, topic):
-    return Task(
-        description=f"Process the following customer inquiry: {topic}",
-        agent=agent,
-        expected_output="A polite and helpful response that addresses the customer's query. If the query requires specialized knowledge, the response should indicate that it is being escalated to the correct team."
-    )
-
-def create_customer_service_crew(llm, topic):
-    customer_service_agent = create_customer_service_agent(llm)
-    customer_service_task = create_customer_service_task(customer_service_agent, topic)
-
-    return Crew(
-        agents=[customer_service_agent],
-        tasks=[customer_service_task],
-        process=Process.sequential,
-        verbose=True
-    )
 
 def main():
     """Run the customer service crew example."""
@@ -75,14 +40,13 @@ def main():
         if not topic:
             topic = "I have a question about my last payment and want to know my account balance."
 
-        # Initialize the AI Crew Manager with task context and the router instance
+        # Initialize the AI Crew Manager with category and inputs
         console.print("🔧 Initializing AI Crew Manager...")
-        manager = AICrewManager(distributed_router, inputs={"topic": topic})
+        manager = AICrewManager(distributed_router, category="customer_service", inputs={"topic": topic})
 
-        # Create the customer service crew
+        # Create the customer service crew via the unified method
         console.print("👥 Creating customer service crew...")
-        # Note: You'll need to update AICrewManager to create this specific crew type
-        crew = manager.create_customer_service_crew(inputs={"topic": topic})
+        crew = manager.create_crew_for_category({"topic": topic})
 
         console.print(f"\n🔍 Processing inquiry: [bold green]{topic}[/bold green]")
 
