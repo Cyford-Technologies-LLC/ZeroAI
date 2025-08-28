@@ -38,10 +38,14 @@ logger = logging.getLogger(__name__)
 
 # --- Task Classifier Agent ---
 def create_classifier_agent(router) -> Agent:
-    llm = router.get_llm_for_role('classifier')
+    # **FIX:** Explicitly request the local model first.
+    llm = router.get_local_llm("llama3.2:1b")
     if not llm:
-        # Fallback to a specific local model if role-based lookup fails
-        llm = router.get_local_llm("llama3.2:1b")
+        # Fallback to distributed model if local is not available.
+        console.print("⚠️ Local LLM not available for classifier. Falling back to optimal distributed model.",
+                      style="yellow")
+        llm = router.get_llm_for_role('classifier')
+
     if not llm:
         raise ValueError("Failed to get LLM for classifier agent.")
 
