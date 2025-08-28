@@ -40,5 +40,5 @@ def create_customer_service_agent(llm, inputs: dict) -> Agent:
         llm=llm,
         tools=[tech_support_tool, math_delegation_tool, research_delegation_tool],
         verbose=True,
-        allow_delegation=True
+        allow_delegation=False
     )

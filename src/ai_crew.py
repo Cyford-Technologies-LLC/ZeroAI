@@ -148,7 +148,7 @@ class AICrewManager:
             try:
                 # Attempt to run the main crew
                 crew_output_object = crew.kickoff(inputs=inputs)
-                result_text = crew_output_object.raw  # Correctly extract the raw string
+                result_text = crew_output_object.raw
                 progress.update(task, description="✅ Crew execution completed!")
                 return {"result": result_text, "llm_details": self.get_llm_details()}
             except Exception as e:
@@ -161,7 +161,7 @@ class AICrewManager:
                     fallback_agent = create_customer_service_agent(self.llm_instance, inputs)
 
                     fallback_task = Task(
-                        description=f"A complex query delegation failed. Please provide a concise, polite fallback response to the user's inquiry: {inputs.get('topic')}. Apologize for the inconvenience and let them know a human will be in touch.",
+                        description=f"A complex query delegation failed. Please provide a concise, polite fallback response to the user's inquiry: {inputs.get('topic')}. Apologize for the inconvenience.",
                         agent=fallback_agent,
                         expected_output="A polite fallback message for the customer."
                     )
