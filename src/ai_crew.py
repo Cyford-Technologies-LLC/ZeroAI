@@ -38,10 +38,13 @@ logger = logging.getLogger(__name__)
 
 # --- Task Classifier Agent ---
 def create_classifier_agent(router) -> Agent:
-    # **FIX:** Get LLM from router specifically for the classifier's role.
     llm = router.get_llm_for_role('classifier')
     if not llm:
         raise ValueError("Failed to get LLM for classifier agent.")
+    # **FIX**: Add logging for the classifier's LLM
+    console.print(
+        f"🔗 Classifier Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
     return Agent(
         role='Task Classifier',
         goal='Accurately classify the user query into categories: math, coding, research, or general.',
@@ -68,14 +71,10 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
-        # **FIX:** Remove LLM instantiation from __init__.
-        # Agents will get their own LLM from the router when they are created.
-
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
         Helper method to run the classification crew and return the category.
         """
-        # **FIX:** Pass the router to the agent creator to get a role-specific LLM.
         try:
             classifier_agent = create_classifier_agent(self.router)
         except ValueError as e:
@@ -120,7 +119,6 @@ class AICrewManager:
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
 
-        # **FIX:** Pass the router to the crew creator instead of a single llm_instance.
         if category == "research":
             return self.create_research_crew(self.router, inputs)
         elif category == "analysis":
@@ -142,14 +140,12 @@ class AICrewManager:
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
         if category == "customer_service":
-            # **FIX:** Create agents with router, not single LLM.
             specialist_agents = [
                 create_mathematician_agent(self.router, inputs),
                 create_tech_support_agent(self.router, inputs),
                 create_coding_developer_agent(self.router, inputs),
                 create_researcher(self.router, inputs)
             ]
-            # **FIX:** Create hierarchical crew with router
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         elif category == "auto":
             classified_category = self._classify_task(inputs)
@@ -169,10 +165,16 @@ class AICrewManager:
 
     def create_customer_service_crew_hierarchical(self, router, inputs: Dict[str, Any],
                                                   specialist_agents: List[Agent]) -> Crew:
-        # **FIX:** Create customer service agent using router.
         customer_service_agent = create_customer_service_agent(router, inputs)
-        # **FIX:** Get manager_llm from router.
         manager_llm = router.get_llm_for_role('manager')
+
+        # **FIX:** Add logging for the manager LLM
+        if manager_llm:
+            console.print(
+                f"🔗 Manager LLM connecting to model: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
+                style="blue")
+        else:
+            console.print("⚠️ Manager LLM not available.", style="yellow")
 
         manager_tools = [
             DelegatingMathTool(crew_manager=self, inputs=inputs),
@@ -204,7 +206,6 @@ class AICrewManager:
         )
 
     def create_research_crew(self, router, inputs: Dict[str, Any]) -> Crew:
-        # **FIX:** Create agents with router.
         researcher = create_researcher(router, inputs)
         writer = create_writer(router, inputs, topic=inputs.get('topic'))
         research_task = create_research_task(researcher, inputs)
@@ -216,7 +217,6 @@ class AICrewManager:
         )
 
     def create_analysis_crew(self, router, inputs: Dict[str, Any]) -> Crew:
-        # **FIX:** Create agents with router.
         researcher = create_researcher(router, inputs)
         analyst = create_analyst(router, inputs)
         writer = create_writer(router, inputs, topic=inputs.get('topic'))
@@ -235,17 +235,7 @@ class AICrewManager:
         inputs['category'] = category
 
         try:
-            # The LLM instance is no longer created in __init__
-            # Agents now get LLMs from the router.
-
-            if category == "auto":
-                classified_category = self._classify_task(inputs)
-                if not classified_category:
-                    raise Exception("Auto-classification failed.")
-                crew = self._create_specialized_crew(classified_category, inputs)
-            else:
-                crew = self._create_specialized_crew(category, inputs)
-
+            crew = self.create_crew_for_category(inputs)
             with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
