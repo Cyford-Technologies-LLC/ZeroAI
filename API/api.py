@@ -40,7 +40,6 @@ class CrewRequest(BaseModel):
 def get_distributed_router():
     return distributed_router
 
-# Helper function to process the core logic
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
     try:
         topic = inputs.get("topic")
@@ -49,7 +48,6 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        # Update inputs with file paths for the AICrewManager
         inputs['files'] = uploaded_files_paths
 
         console.print(f"✅ Received API Request:", style="green")
@@ -78,7 +76,6 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
 
 @app.post("/run_crew_ai_form/")
 async def run_crew_ai_form(
-    # Using Annotated for Python 3.9+ for clearer type hints
     topic: str = Form(...),
     category: str = Form("general"),
     context: Optional[str] = Form(""),
@@ -106,7 +103,6 @@ async def run_crew_ai_form(
             'model_name': model_name,
         }
 
-        # Process uploaded files and save them temporarily
         for file in files:
             file_location = temp_dir / file.filename
             with open(file_location, "wb") as buffer:
@@ -116,7 +112,6 @@ async def run_crew_ai_form(
         response_data = process_crew_request(inputs, uploaded_files_paths)
         return response_data
     finally:
-        # Clean up temporary files
         for file_path in uploaded_files_paths:
             Path(file_path).unlink(missing_ok=True)
         if temp_dir.exists():
@@ -137,7 +132,6 @@ def run_crew_ai_json(
     try:
         inputs = request.inputs
 
-        # Process Base64 encoded files
         if inputs.get('files'):
             for file_info in inputs['files']:
                 file_name = file_info['name']
@@ -155,11 +149,11 @@ def run_crew_ai_json(
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Clean up temporary files
         for file_path in uploaded_files_paths:
             Path(file_path).unlink(missing_ok=True)
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=3939)
+
