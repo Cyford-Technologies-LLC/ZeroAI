@@ -61,7 +61,6 @@ class AICrewManager:
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
 
-        # Default model for each category if not specified
         if self.category == "chat" and not self.task_description:
             self.task_description = "llama3.2:latest"
         elif self.category == "coding" and not self.task_description:
@@ -102,6 +101,7 @@ class AICrewManager:
         """
         Helper method to run the classification crew and return the category.
         """
+        # **FIX:** Ensure the create_classifier_agent receives the correct LLM instance.
         classifier_agent = create_classifier_agent(self.llm_instance)
         classifier_task = Task(
             description=f"""
@@ -155,7 +155,6 @@ class AICrewManager:
         elif category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs)
         elif category == "general":
-            # Treat 'general' as a research task or another default if needed.
             return self.create_research_crew(inputs)
         else:
             raise ValueError(f"Unknown category: {category}")
