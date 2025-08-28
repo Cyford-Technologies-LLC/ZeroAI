@@ -68,6 +68,7 @@ class AICrewManager:
 
         console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
+    # Corrected method to accept 'category' and 'inputs'
     def create_crew_for_category(self, category: str, inputs: Dict[str, Any]) -> Crew:
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
         if category == "research":
@@ -101,10 +102,11 @@ class AICrewManager:
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # Ensure delegation tools are correctly initialized
+        # Instantiate delegation tools, passing the AICrewManager instance (self) and inputs
         manager_tools = [
             DelegatingMathTool(crew_manager=self, inputs=inputs),
             ResearchDelegationTool(crew_manager=self, inputs=inputs),
+            # Add other delegating tools here
         ]
 
         customer_service_task = Task(
@@ -117,7 +119,7 @@ class AICrewManager:
             **CRITICAL:** If any delegation fails or a specialist agent cannot provide a satisfactory response, you **must** fall back to providing a simple, direct answer to the customer yourself.
             """,
             agent=customer_service_agent,
-            tools=manager_tools,
+            tools=manager_tools, # Provide tools to the manager agent
             expected_output="A polite and direct final answer to the customer's query."
         )
 
