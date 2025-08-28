@@ -1,191 +1,82 @@
-import uvicorn
-from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
-from pathlib import Path
-from rich.console import Console
+#!/usr/bin/env python3
+"""
+API Crew for Customer Service
+
+This crew demonstrates a customer service agent that can handle inquiries and,
+if necessary, delegate complex issues to specialized crews.
+"""
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import sys
-import shutil
-import base64
 import os
-from crewai import CrewOutput  # Import CrewOutput
+from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add the src directory to the Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from peer_discovery import PeerDiscovery
-from distributed_router import DistributedRouter
 from ai_crew import AICrewManager
 from cache_manager import cache
+from distributed_router import distributed_router
+from rich.console import Console
+
+# Import necessary CrewAI components for creating agents and tasks
+from crewai import Crew
 
 console = Console()
 
-peer_discovery_instance = PeerDiscovery()
-distributed_router = DistributedRouter(peer_discovery_instance)
+def main():
+    """Run the customer service crew example."""
+    console.print("🤖 [bold blue]Self-Hosted Agentic AI - Customer Service Crew[/bold blue]")
+    console.print("=" * 60)
 
-app = FastAPI(
-    title="CrewAI Endpoint API",
-    description="API to expose CrewAI crews as endpoints.",
-    version="1.0.0",
-)
-
-
-class FileData(BaseModel):
-    name: str
-    type: str
-    base64_data: str
-
-
-class CrewRequest(BaseModel):
-    inputs: Dict[str, Any]
-
-
-def get_distributed_router():
-    return distributed_router
-
-
-def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
-    """
-    Handles the core logic for running the AI crew, with added capability to read
-    uploaded file content and include it in the inputs.
-    """
     try:
-        topic = inputs.get("topic")
-        category = inputs.get("category", "general")
-
+        # Define the customer inquiry
+        topic = input("\n📝 Enter your customer inquiry: ").strip()
         if not topic:
-            raise ValueError("Missing required 'topic' input.")
+            topic = "I have a question about my last payment and want to know my account balance."
 
-        # Read content of the first uploaded file and add to inputs
-        inputs['file_content'] = ""
-        if uploaded_files_paths:
-            try:
-                # Assuming only one file for simplicity in this example
-                with open(uploaded_files_paths[0], 'r') as f:
-                    inputs['file_content'] = f.read()
-            except Exception as e:
-                console.print(f"❌ Error reading file: {e}", style="red")
-                inputs['file_content'] = "Error reading uploaded file."
+        # Initialize the AI Crew Manager with category and inputs
+        console.print("🔧 Initializing AI Crew Manager...")
+        inputs = {"topic": topic}
+        manager = AICrewManager(distributed_router, category="customer_service", inputs=inputs)
 
-        inputs['files'] = uploaded_files_paths  # Store file paths for potential other uses
+        # Corrected call: Pass the inputs dictionary to create_crew_for_category
+        console.print("👥 Creating customer service crew...")
+        crew = manager.create_crew_for_category(inputs=inputs)
 
-        console.print(f"✅ Received API Request:", style="green")
-        console.print(f"   Topic: {topic}")
-        console.print(f"   Category: {category}")
-        console.print(f"   AI Provider: {inputs.get('ai_provider')}")
-        console.print(f"   Model Name: {inputs.get('model_name')}")
-        console.print(f"   Uploaded Files: {[os.path.basename(f) for f in uploaded_files_paths]}")
+        console.print(f"\n🔍 Processing inquiry: [bold green]{topic}[/bold green]")
 
-        # The AICrewManager is initialized with all inputs AND the category
-        manager = AICrewManager(distributed_router, inputs=inputs, category=category)
+        # Execute the crew
+        result = manager.execute_crew(crew, inputs=inputs)
 
-        # create_crew_for_category is now smart enough to call the correct function
-        crew = manager.create_crew_for_category(inputs)
+        # Display results
+        console.print("\n" + "=" * 60)
+        console.print("📊 [bold green]Inquiry Results:[/bold green]")
+        console.print("=" * 60)
+        console.print(result)
 
-        cache_key = f"{category}_{topic}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}_{inputs.get('ai_provider', '')}_{inputs.get('model_name', '')}"
-        cached_response = cache.get(cache_key, "crew_result")
+        # Save results to file
+        output_file = Path("output") / f"customer_service_{topic.replace(' ', '_')[:30]}.txt"
+        output_file.parent.mkdir(exist_ok=True)
 
-        if cached_response:
-            response_data = cached_response
-        else:
-            response_data = manager.execute_crew(crew, inputs)
-            cache.set(cache_key, "crew_result", response_data)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(f"Customer Inquiry: {topic}\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(str(result))
 
-        # Convert CrewOutput object to a serializable dictionary
-        if isinstance(response_data, CrewOutput):
-            # This is a safe way to extract data without relying on __dict__
-            response_data = {
-                "raw": response_data.raw,
-                "tasks_output": [task.__dict__ for task in response_data.tasks_output],
-                "token_usage": response_data.token_usage.__dict__
-            }
+        console.print(f"\n💾 Results saved to: [bold blue]{output_file}[/bold blue]")
 
-        return response_data
+    except KeyboardInterrupt:
+        console.print("\n⚠️  Operation cancelled by user.")
     except Exception as e:
-        console.print(f"❌ API Call Failed: {e}", style="red")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/run_crew_ai_form/")
-async def run_crew_ai_form(
-        topic: str = Form(...),
-        category: str = Form("general"),
-        context: Optional[str] = Form(""),
-        research_focus: Optional[str] = Form(""),
-        ai_provider: Optional[str] = Form(None),
-        server_endpoint: Optional[str] = Form(None),
-        model_name: Optional[str] = Form(None),
-        files: List[UploadFile] = File([])
-):
-    """
-    Endpoint to trigger a self-hosted CrewAI crew using multipart/form-data.
-    """
-    temp_dir = Path("/tmp/uploads_form")
-    temp_dir.mkdir(exist_ok=True)
-    uploaded_files_paths = []
-
-    try:
-        inputs = {
-            'topic': topic,
-            'category': category,
-            'context': context,
-            'research_focus': research_focus,
-            'ai_provider': ai_provider,
-            'server_endpoint': server_endpoint,
-            'model_name': model_name,
-        }
-
-        for file in files:
-            file_location = temp_dir / file.filename
-            with open(file_location, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            uploaded_files_paths.append(str(file_location))
-
-        response_data = process_crew_request(inputs, uploaded_files_paths)
-        return response_data
-    finally:
-        for file_path in uploaded_files_paths:
-            Path(file_path).unlink(missing_ok=True)
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir, ignore_errors=True)
-
-
-@app.post("/run_crew_ai_json/")
-def run_crew_ai_json(
-        request: CrewRequest,
-        router: DistributedRouter = Depends(get_distributed_router)
-):
-    """
-    Endpoint to trigger a self-hosted CrewAI crew using a JSON payload with Base64 files.
-    """
-    temp_dir = Path("/tmp/uploads_json")
-    temp_dir.mkdir(exist_ok=True)
-    uploaded_files_paths = []
-
-    try:
-        inputs = request.inputs
-
-        if inputs.get('files'):
-            for file_info in inputs['files']:
-                file_name = file_info['name']
-                base64_data = file_info['base64_data']
-
-                file_bytes = base64.b64decode(base64_data)
-                file_location = temp_dir / file_name
-                with open(file_location, "wb") as buffer:
-                    buffer.write(file_bytes)
-                uploaded_files_paths.append(str(file_location))
-
-        response_data = process_crew_request(inputs, uploaded_files_paths)
-        return response_data
-    except Exception as e:
-        console.print(f"❌ API Call Failed: {e}", style="red")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        for file_path in uploaded_files_paths:
-            Path(file_path).unlink(missing_ok=True)
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        console.print(f"\n❌ Error: {e}")
+        console.print("💡 Make sure Ollama is running: `ollama serve`")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=3939)
+    main()
