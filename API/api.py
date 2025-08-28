@@ -8,7 +8,7 @@ import sys
 import shutil
 import base64
 import os
-from crewai import CrewOutput
+from crewai import CrewOutput, TaskOutput  # Import CrewOutput and TaskOutput
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -60,7 +60,7 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if uploaded_files_paths:
             try:
                 # Assuming only one file for simplicity in this example
-                with open(uploaded_files_paths, 'r') as f:
+                with open(uploaded_files_paths[0], 'r') as f:
                     inputs['file_content'] = f.read()
             except Exception as e:
                 console.print(f"❌ Error reading file: {e}", style="red")
@@ -87,22 +87,47 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if cached_response:
             response_data = cached_response
         else:
-            response_data = manager.execute_crew(crew, inputs)
+            crew_output = manager.execute_crew(crew, inputs)
+            # Convert CrewOutput object to a serializable dictionary
+            response_data = crew_output_to_dict(crew_output)
             cache.set(cache_key, "crew_result", response_data)
-
-        # Convert CrewOutput object to a serializable dictionary
-        if isinstance(response_data, CrewOutput):
-            # This is a safe way to extract data
-            response_data = {
-                "raw": response_data.raw,
-                "tasks_output": [task.__dict__ for task in response_data.tasks_output],
-                "token_usage": response_data.token_usage.__dict__
-            }
 
         return response_data
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
+    """Converts a CrewOutput object to a dictionary for JSON serialization."""
+    if not isinstance(crew_output, CrewOutput):
+        # Already a dictionary or other serializable type
+        return crew_output
+
+    # Extract serializable data
+    serialized_output = {
+        "raw": crew_output.raw,
+        "pydantic": crew_output.pydantic,
+        "json_dict": crew_output.json_dict,
+        "tasks_output": [task_output_to_dict(task) for task in crew_output.tasks_output],
+        "token_usage": crew_output.token_usage.__dict__
+    }
+    return serialized_output
+
+
+def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
+    """Converts a TaskOutput object to a dictionary."""
+    return {
+        "description": task_output.description,
+        "name": task_output.name,
+        "expected_output": task_output.expected_output,
+        "summary": task_output.summary,
+        "raw": task_output.raw,
+        "pydantic": task_output.pydantic,
+        "json_dict": task_output.json_dict,
+        "agent": task_output.agent,
+        "output_format": task_output.output_format.name if task_output.output_format else None
+    }
 
 
 @app.post("/run_crew_ai_form/")
@@ -189,3 +214,4 @@ def run_crew_ai_json(
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3939)
+
