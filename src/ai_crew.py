@@ -1,4 +1,4 @@
-# src/ai_crew.py
+# Path: src/ai_crew.py
 
 import logging
 from typing import Dict, Any, Optional, List
@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRe
 import warnings
 
 from langchain_community.llms.ollama import Ollama
-from langchain_core.exceptions import LangChainDeprecationWarning
+from langchain_community import __version__ as langchain_community_version
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -131,9 +131,11 @@ class AICrewManager:
             "base_url": self.base_url,
             "temperature": config.model.temperature
         }
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", LangChainDeprecationWarning)
-            self.llm_instance = Ollama(**self.llm_config)
+
+        # NOTE: Remove the problematic import and the related warnings.catch_warnings block.
+        # The Ollama constructor itself will still issue a deprecation warning, but
+        # the ImportError will be fixed.
+        self.llm_instance = Ollama(**self.llm_config)
 
         console.print(
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
@@ -238,4 +240,3 @@ class AICrewManager:
             tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
-
