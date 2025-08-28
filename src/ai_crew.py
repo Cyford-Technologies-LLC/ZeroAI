@@ -53,10 +53,9 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
-    # FIX: Add the missing execute_crew method
-    def execute_crew(self) -> CrewOutput:
+    # FIX: Update the execute_crew method to accept the router and inputs
+    def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
-        inputs = self.inputs
         category = inputs.get('category', 'auto')
 
         if category == "auto":
@@ -74,7 +73,7 @@ class AICrewManager:
         except Exception as e:
             console.print(f"❌ Error during crew execution: {e}", style="red")
             # Return an empty CrewOutput with the error message
-            return CrewOutput(tasks_output=[], raw=f"Error: {e}", total_tokens=0)
+            return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
@@ -125,7 +124,6 @@ class AICrewManager:
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
 
-        # Pass the router instance to the specific crew creation functions
         if category == "research":
             return self.create_research_crew(self.router, inputs)
         elif category == "analysis":
@@ -155,7 +153,6 @@ class AICrewManager:
             ]
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         elif category == "auto":
-            # NOTE: This part was broken. The `_classify_task` method is now called directly in execute_crew.
             raise NotImplementedError("Auto classification is handled in execute_crew.")
         else:
             console.print(f"⚠️  Category not recognized, defaulting to general crew for category: {category}",
@@ -222,4 +219,3 @@ class AICrewManager:
             tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
-
