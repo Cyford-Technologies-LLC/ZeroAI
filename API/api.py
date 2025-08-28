@@ -58,12 +58,21 @@ async def log_requests(request: Request, call_next):
     # Log the request body for JSON endpoints
     if request.url.path == "/run_crew_ai_json/":
         try:
-            body = await request.json()
-            console.print(f"[yellow]Body:[/yellow] {json.dumps(body, indent=2)}")
-        except json.JSONDecodeError:
-            console.print(f"[yellow]Body:[/yellow] Could not decode JSON body", style="dim")
+            # We must handle the body with care to not consume it before the route handler
+            body_bytes = await request.body()
+            body_decoded = body_bytes.decode("utf-8")
+            console.print(f"[yellow]Body:[/yellow] {body_decoded}")
+
+            # Re-wrap the body for the route handler
+            async def receive() -> dict:
+                return {"type": "http.request", "body": body_bytes}
+
+            request._receive = receive
+        except Exception as e:
+            console.print(f"[yellow]Body:[/yellow] Error decoding body: {e}", style="dim")
 
     response = await call_next(request)
+
     process_time = time.time() - start_time
     response_body = b""
     async for chunk in response.body_iterator:
@@ -71,16 +80,20 @@ async def log_requests(request: Request, call_next):
 
     try:
         response_data = json.loads(response_body.decode("utf-8"))
+        console.print(f"[bold green]--- Outgoing Response ---[/bold green]")
+        console.print(f"[green]Status Code:[/green] {response.status_code}")
+        console.print(f"[green]Processing Time:[/green] {process_time:.4f}s")
+        console.print(f"[green]Response Body:[/green] {json.dumps(response_data, indent=2)}")
+        console.print(f"[bold yellow]-------------------------[/bold yellow]")
+        return JSONResponse(content=response_data, status_code=response.status_code)
     except (json.JSONDecodeError, UnicodeDecodeError):
-        response_data = response_body.decode("utf-8", errors="ignore")
-
-    console.print(f"[bold green]--- Outgoing Response ---[/bold green]")
-    console.print(f"[green]Status Code:[/green] {response.status_code}")
-    console.print(f"[green]Processing Time:[/green] {process_time:.4f}s")
-    console.print(f"[green]Response Body:[/green] {json.dumps(response_data, indent=2)}")
-    console.print(f"[bold yellow]-------------------------[/bold yellow]")
-
-    return JSONResponse(content=response_data, status_code=response.status_code)
+        console.print(f"[bold green]--- Outgoing Response ---[/bold green]")
+        console.print(f"[green]Status Code:[/green] {response.status_code}")
+        console.print(f"[green]Processing Time:[/green] {process_time:.4f}s")
+        console.print(f"[green]Response Body:[/green] {response_body.decode('utf-8', errors='ignore')}")
+        console.print(f"[bold yellow]-------------------------[/bold yellow]")
+        return JSONResponse(content=response_body.decode('utf-8', errors='ignore'), status_code=response.status_code,
+                            media_type="text/plain")
 
 
 class FileData(BaseModel):
@@ -151,15 +164,18 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
+        # Read content of uploaded files and add to inputs
         inputs['file_content'] = ""
         if uploaded_files_paths:
-            try:
-                # Correctly read the first uploaded file
-                with open(uploaded_files_paths[0], 'r') as f:
-                    inputs['file_content'] = f.read()
-            except Exception as e:
-                console.print(f"❌ Error reading file: {e}", style="red")
-                inputs['file_content'] = "Error reading uploaded file."
+            file_contents = []
+            for file_path in uploaded_files_paths:
+                try:
+                    with open(file_path, 'r') as f:
+                        file_contents.append(f.read())
+                except Exception as e:
+                    console.print(f"❌ Error reading file {file_path}: {e}", style="red")
+                    file_contents.append(f"Error reading uploaded file: {os.path.basename(file_path)}")
+            inputs['file_content'] = "\n\n".join(file_contents)
 
         inputs['files'] = uploaded_files_paths
 
@@ -179,12 +195,10 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
 
         if cached_response:
             console.print(f"✅ Cache Hit. Using cached data.", style="blue")
-            # The cached object is already a dictionary, so no conversion is needed.
             response_data = cached_response
         else:
             console.print(f"⚠️ Cache Miss. Executing AI Crew.", style="yellow")
             crew_output = manager.execute_crew(crew, inputs)
-            # Convert the new result to a dictionary and cache the dictionary
             response_data = crew_output_to_dict(crew_output)
             cache.set(cache_key, "crew_result", response_data)
 
@@ -278,5 +292,4 @@ def run_crew_ai_json(
 
 
 if __name__ == "__main__":
-    # Add reload=True for automatic reloading during development
     uvicorn.run(app, host="0.0.0.0", port=3939, reload=True)
