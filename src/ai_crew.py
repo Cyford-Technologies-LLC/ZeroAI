@@ -121,6 +121,8 @@ class AICrewManager:
         Helper method to run the classification crew and return the category.
         """
         logging.info(f"AICrewManager._classify_task: inputs type={type(inputs)}, content={inputs}")
+
+        # Fix: Explicitly pass the correct router instance
         try:
             classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
@@ -227,4 +229,3 @@ class AICrewManager:
             verbose=config.agents.verbose,
             full_output=True
         )
-
