@@ -41,6 +41,10 @@ def get_distributed_router():
     return distributed_router
 
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
+    """
+    Handles the core logic for running the AI crew, with added capability to read
+    uploaded file content and include it in the inputs.
+    """
     try:
         topic = inputs.get("topic")
         category = inputs.get("category", "general")
@@ -48,7 +52,18 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        inputs['files'] = uploaded_files_paths
+        # Read content of the first uploaded file and add to inputs
+        inputs['file_content'] = ""
+        if uploaded_files_paths:
+            try:
+                # Assuming only one file for simplicity in this example
+                with open(uploaded_files_paths[0], 'r') as f:
+                    inputs['file_content'] = f.read()
+            except Exception as e:
+                console.print(f"❌ Error reading file: {e}", style="red")
+                inputs['file_content'] = "Error reading uploaded file."
+
+        inputs['files'] = uploaded_files_paths # Store file paths for potential other uses
 
         console.print(f"✅ Received API Request:", style="green")
         console.print(f"   Topic: {topic}")
