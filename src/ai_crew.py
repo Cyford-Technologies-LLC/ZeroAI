@@ -173,6 +173,25 @@ class AICrewManager:
             verbose=config.agents.verbose
         )
 
+    def execute_crew(self, category: str, query: str) -> str:
+        """
+        Creates and executes a specialized crew, returning the final result.
+        """
+        console.print(f"🔄 Executing specialized crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+
+        # Prepare inputs for the sub-crew
+        inputs = self.inputs.copy()
+        inputs['topic'] = query
+        inputs['category'] = category
+
+        try:
+            crew = self._create_specialized_crew(category, inputs)
+            crew_output = crew.kickoff()
+            return crew_output.result
+        except Exception as e:
+            console.print(f"❌ Error during specialized crew execution: {e}", style="red")
+            return f"Error executing {category} crew: {e}"
+
     def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
         analyst = create_analyst(self.llm_instance, inputs)

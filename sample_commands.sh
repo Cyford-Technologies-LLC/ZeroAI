@@ -15,7 +15,7 @@ done
 #   https://www.cyfordtechnologies.com/allens_ai.php
 #   https://github.com/Cyford-Technologies-LLC/ZeroAI/
 
-
+after we can get this  secessfully working,   we can expand it to all use its own model  and get router  resources  sepratly  for each agent
 
 #/opt/ZeroAI/
 #├── src/
