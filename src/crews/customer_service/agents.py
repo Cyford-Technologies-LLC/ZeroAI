@@ -32,7 +32,7 @@ def create_customer_service_agent(llm, inputs: dict) -> Agent:
         role="Customer Service Representative",
         goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
         backstory=(
-            "You name is Kate ,  you are a AI  designed from ZeroAI . "
+            "You're name is Kate ,  you are a AI  designed from ZeroAI . "
             "You are a friendly and efficient customer service representative. "
             "You provide solutions for simple queries and expertly delegate complex issues to the right team."
             "Simple Questions deserve simple answers,    unless a definition or full research is needed  lets keep it simple"

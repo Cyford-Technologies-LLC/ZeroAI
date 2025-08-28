@@ -1,3 +1,4 @@
+# ... (all your existing imports)
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File, Request
 from fastapi.responses import JSONResponse
@@ -138,28 +139,44 @@ def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
     }
 
 
+def parse_raw_output(raw_string: str) -> str:
+    """
+    Extracts the 'Final Answer' from the raw output string.
+    If no 'Final Answer' marker is found, returns the original string.
+    """
+    if not isinstance(raw_string, str):
+        return str(raw_string)
+
+    if "Final Answer:" in raw_string:
+        # Find the text after the 'Final Answer:' marker
+        return raw_string.split("Final Answer:", 1)[-1].strip()
+    return raw_string
+
+
 def format_crew_output(crew_output: CrewOutput, output_format: str) -> Dict[str, Any]:
     """
     Formats the CrewOutput object into a JSON-serializable dictionary
-    based on the requested output format.
+    based on the requested output format, with improved raw parsing.
     """
-    if output_format == "json":
-        if crew_output.json_dict:
-            console.print("✅ Returning JSON dictionary output.", style="blue")
-            return crew_output.json_dict
-        else:
-            console.print("⚠️ No JSON dictionary found. Returning raw string in a dictionary.", style="yellow")
-            return {"result": crew_output.raw}
-    elif output_format == "pydantic":
-        if crew_output.pydantic:
-            console.print("✅ Returning Pydantic output as a dictionary.", style="blue")
-            return jsonable_encoder(crew_output.pydantic)
-        else:
-            console.print("⚠️ No Pydantic output found. Returning raw string in a dictionary.", style="yellow")
-            return {"result": crew_output.raw}
-    else:  # default to raw
-        console.print("✅ Returning raw string output.", style="blue")
-        return {"result": crew_output.raw}
+    response_data = {
+        "raw_output": parse_raw_output(crew_output.raw) if hasattr(crew_output, 'raw') else None,
+        "token_usage": usage_metrics_to_dict(crew_output.token_usage) if hasattr(crew_output,
+                                                                                 'token_usage') and crew_output.token_usage else None,
+        "tasks_output": [task_output_to_dict(t) for t in crew_output.tasks_output] if hasattr(crew_output,
+                                                                                              'tasks_output') and crew_output.tasks_output else []
+    }
+
+    if output_format == "json" and hasattr(crew_output, 'json_dict') and crew_output.json_dict:
+        console.print("✅ Returning JSON dictionary output.", style="blue")
+        response_data["final_result"] = crew_output.json_dict
+    elif output_format == "pydantic" and hasattr(crew_output, 'pydantic') and crew_output.pydantic:
+        console.print("✅ Returning Pydantic output as a dictionary.", style="blue")
+        response_data["final_result"] = jsonable_encoder(crew_output.pydantic)
+    else:  # Fallback to raw output
+        console.print("✅ Returning raw string output with parsing.", style="blue")
+        response_data["final_result"] = response_data["raw_output"]
+
+    return response_data
 
 
 def handle_crew_result(crew_result: Any, cache_key: str, output_format: str):
@@ -215,23 +232,15 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         console.print(f"   Uploaded Files: {[os.path.basename(f) for f in uploaded_files_paths]}")
 
         manager = AICrewManager(distributed_router, inputs=inputs, category=category)
-        crew = manager.create_crew_for_category(inputs)
+
+        # NOTE: The AICrewManager's execute_crew now returns the full CrewOutput object.
+        # This is where we call the new method.
+        crew_result = manager.execute_crew(category, topic)
 
         cache_key = f"{category}_{topic}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}_{inputs.get('ai_provider', '')}_{inputs.get('model_name', '')}"
 
-        cached_response = cache.get(cache_key, "crew_result")
-
-        response_data = None
-        if cached_response:
-            console.print(f"✅ Cache Hit. Processing result...", style="blue")
-            response_data = handle_crew_result(cached_response, cache_key, output_format)
-        else:
-            console.print(f"🚀 Cache Miss. Running CrewAI process...", style="green")
-            start_time = time.time()
-            crew_result = crew.kickoff()
-            end_time = time.time()
-            console.print(f"✅ Crew execution completed in {end_time - start_time:.2f}s", style="green")
-            response_data = handle_crew_result(crew_result, cache_key, output_format)
+        # We handle the caching and serialization here
+        response_data = handle_crew_result(crew_result, cache_key, output_format)
 
         return response_data
     except Exception as e:
@@ -248,13 +257,6 @@ async def run_crew_ai_json(
     try:
         inputs = crew_request.inputs
 
-        # Ensure the crew's task is set to produce structured JSON output if requested
-        if output_format == "json":
-            # This is a placeholder. The actual task creation in AICrewManager
-            # would need to be updated to support this.
-            # Example: crew = manager.create_crew_for_category(inputs, output_format='json')
-            pass
-
         # Since no files were uploaded in this request, pass an empty list
         response_data = process_crew_request(inputs, [], output_format)
 
@@ -264,3 +266,4 @@ async def run_crew_ai_json(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
