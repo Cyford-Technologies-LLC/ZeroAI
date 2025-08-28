@@ -117,7 +117,7 @@ class AICrewManager:
         console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow}", style="blue")
+        console.print(f"📦 Creating a crew for category: [bold yellow]{self.category}[/bold yellow]", style="blue")
         if self.category == "research":
             return self.create_research_crew(inputs)
         elif self.category == "analysis":
