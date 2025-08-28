@@ -49,40 +49,32 @@ from distributed_router import DistributedRouter
 console = Console()
 
 
-def create_classifier_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    """
-    Creates a classifier agent that prioritizes dynamic LLM selection via the router.
-    It falls back to a local model if the dynamic routing fails.
-    """
-    llm = None
-    try:
-        # **FIX:** Prioritize the dynamic router to select the optimal LLM
-        # for the classifier's prompt, similar to other agents.
-        llm = router.get_llm_for_task(inputs.get('topic'))
-    except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for classifier via router: {e}", style="yellow")
-        # Fallback to local LLM if routing fails
-        llm = router.get_local_llm("llama3.2:1b")
+def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
+    category = inputs.get('category', self.category)
+    console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
-    if not llm:
-        raise ValueError("Failed to get LLM for classifier agent.")
+    # Assume the classifier crew is created here
+    if category == "auto":
+        from crews.classifier.crew import create_classifier_crew
+        return create_classifier_crew(self.router, inputs)  # Pass the inputs here
 
-    console.print(
-        f"🔗 Classifier Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
-        style="blue")
-
-    return Agent(
-        role='Task Classifier',
-        goal='Accurately classify the user query into categories: math, coding, research, or general.',
-        backstory=(
-            "As a Task Classifier, the primary role is to analyze the incoming user query "
-            "and determine the most suitable crew to handle it. Accuracy is critical "
-            "to ensure the correct crew is activated for the job."
-        ),
-        llm=llm,
-        verbose=config.agents.verbose,
-        allow_delegation=False,
-    )
+    elif category == "customer_service":
+        specialist_agents = [
+            create_mathematician_agent(self.llm_instance, inputs),
+            create_tech_support_agent(self.llm_instance, inputs),
+            create_coding_developer_agent(self.llm_instance, inputs),
+            create_researcher(self.llm_instance, inputs)
+        ]
+        return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
+    else:
+        console.print(f"⚠️  Category not recognized, defaulting to customer service crew for category: {category}",
+                      style="yellow")
+        specialist_agents = [
+            create_mathematician_agent(self.llm_instance, inputs),
+            create_tech_support_agent(self.llm_instance, inputs),
+            create_coding_developer_agent(self.llm_instance, inputs),
+            create_researcher(self.llm_instance, inputs)
+        ]
 
 
 class AICrewManager:
