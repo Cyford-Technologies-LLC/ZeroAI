@@ -1,3 +1,4 @@
+# Corrected Tool classes (revisiting the prior fix)
 from crewai.tools import BaseTool
 
 class DelegatingMathTool(BaseTool):
@@ -5,7 +6,6 @@ class DelegatingMathTool(BaseTool):
     description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
 
     def __init__(self, crew_manager_instance, **kwargs):
-        # Pass all keyword arguments to the parent class
         super().__init__(**kwargs)
         self.crew_manager = crew_manager_instance
         self.inputs = kwargs.get('inputs', {})
@@ -20,7 +20,6 @@ class ResearchDelegationTool(BaseTool):
     description: str = "Use this tool to perform a research inquiry by delegating to the Research crew and retrieving the result."
 
     def __init__(self, crew_manager_instance, **kwargs):
-        # Pass all keyword arguments to the parent class
         super().__init__(**kwargs)
         self.crew_manager = crew_manager_instance
         self.inputs = kwargs.get('inputs', {})
