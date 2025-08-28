@@ -8,7 +8,8 @@ import sys
 import shutil
 import base64
 import os
-from crewai import CrewOutput, TaskOutput, UsageMetrics # Import necessary classes
+from crewai import CrewOutput, TaskOutput # Import necessary classes
+from crewai.utilities import UsageMetrics # Correct import for UsageMetrics
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -215,4 +216,3 @@ def run_crew_ai_json(
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3939)
-
