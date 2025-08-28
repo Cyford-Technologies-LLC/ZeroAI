@@ -15,5 +15,6 @@ def create_coding_crew(llm: Ollama, inputs: Dict[str, Any]) -> Crew:
     return Crew(
         agents=[coder, qa_engineer],
         tasks=[coding_task, review_task],
-        verbose=config.agents.verbose
+        verbose=config.agents.verbose,
+        full_output = full_output  # Pass the argument to the Crew constructor
     )
