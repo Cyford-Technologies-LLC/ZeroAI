@@ -3,6 +3,7 @@
 from typing import Dict, Any, Optional
 from crewai import LLM
 from rich.console import Console
+from typing import List
 
 from .env_loader import ENV
 from .providers.cloud_providers import CloudProviderManager
