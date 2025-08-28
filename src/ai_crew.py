@@ -196,3 +196,4 @@ class AICrewManager:
             final_output = fallback_crew.kickoff(inputs=inputs)
 
         return {"output": final_output}
+
