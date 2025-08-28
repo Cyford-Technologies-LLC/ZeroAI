@@ -30,15 +30,13 @@ research_delegation_tool = ResearchDelegationTool()
 def create_customer_service_agent(llm, inputs: dict) -> Agent:
     return Agent(
         role="Customer Service Representative",
-        goal="Route customer inquiries to the correct specialist crew and provide the final answer.",
+        goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
         backstory=(
-            "You are the manager of a multi-specialty customer service team. "
-            "Your main task is to identify the type of customer inquiry "
-            "(e.g., technical, mathematical, research) and delegate it to the appropriate specialist agent for processing. "
-            "Once a specialist provides an answer, you summarize it for the customer."
+            "You are a friendly and efficient customer service representative. "
+            "You provide solutions for simple queries and expertly delegate complex issues to the right team."
         ),
         llm=llm,
-        tools=[],  # The Ask question to coworker tool is added automatically in hierarchical process
+        tools=[tech_support_tool, math_delegation_tool, research_delegation_tool],
         verbose=True,
         allow_delegation=True
     )

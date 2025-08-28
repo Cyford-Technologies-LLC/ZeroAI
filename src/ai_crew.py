@@ -77,13 +77,12 @@ class AICrewManager:
         elif self.category == "coding":
             return create_coding_crew(self.llm_instance, inputs)
         elif self.category == "customer_service":
-            # Pass all potential worker agents for hierarchical delegation
-            specialist_agents = [
-                create_mathematician_agent(self.llm_instance, inputs),
-                create_tech_support_agent(self.llm_instance, inputs),
-                create_coding_developer_agent(self.llm_instance, inputs),
-                create_researcher(self.llm_instance, inputs)
-            ]
+                specialist_agents = [
+                    create_mathematician_agent(self.llm_instance, inputs),
+                    create_tech_support_agent(self.llm_instance, inputs),
+                    create_coding_developer_agent(self.llm_instance, inputs),
+                    create_researcher(self.llm_instance, inputs)
+                ]
             return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
         elif self.category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs)
