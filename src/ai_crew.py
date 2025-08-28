@@ -21,6 +21,7 @@ from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
 # Assuming `create_customer_service_crew` is updated
 from crews.customer_service.crew import create_customer_service_crew
+from crews.customer_service.tasks import create_customer_service_task
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -129,6 +130,18 @@ class AICrewManager:
                 category = classified_category
                 # FIX: Update the inputs dictionary for create_crew_for_category
                 inputs['category'] = classified_category
+            if category == "general" and len(query.split()) < 5:  # Arbitrary check for simplicity
+                console.print("📦 Creating a simple sequential crew for general inquiry.", style="blue")
+                customer_service_agent = create_customer_service_agent(self.llm_instance, self.inputs)
+                customer_service_task = create_customer_service_task(customer_service_agent, self.inputs)
+                crew = Crew(
+                    agents=[customer_service_agent],
+                    tasks=[customer_service_task],
+                    process=Process.sequential,
+                    verbose=config.agents.verbose,
+                    full_output=True
+                )
+                return crew.kickoff()
 
             # Create and execute the specialized crew
             crew = self.create_crew_for_category(inputs)
