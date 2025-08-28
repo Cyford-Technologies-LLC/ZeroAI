@@ -43,10 +43,9 @@ logger = logging.getLogger(__name__)
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
-    def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
+    def __init__(self, distributed_router_instance: DistributedRouter, inputs: Dict[str, Any], **kwargs):
         self.router = distributed_router_instance
-        # FIX: Correctly extract the inputs from kwargs
-        self.inputs = kwargs.get('inputs', {})
+        self.inputs = inputs
         self.category = self.inputs.get('category', 'general')
         self.task_description = self.inputs.get('topic', '')
         self.llm_instance = None
@@ -54,7 +53,6 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
-    # FIX: Update the execute_crew method to accept the router and inputs
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
         self.router = router
@@ -75,7 +73,6 @@ class AICrewManager:
                 return result
         except Exception as e:
             console.print(f"❌ Error during crew execution: {e}", style="red")
-            # Return an empty CrewOutput with the error message
             return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
@@ -83,7 +80,6 @@ class AICrewManager:
         Helper method to run the classification crew and return the category.
         """
         try:
-            # Pass the router and inputs to the classifier agent creation function
             classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
             console.print(f"❌ Failed to create classifier agent: {e}", style="red")
