@@ -12,7 +12,7 @@ import os
 import time
 import json
 from crewai import CrewOutput, TaskOutput
-from pydantic import json as pydantic_json  # Import Pydantic's JSON tool
+from pydantic import json as pydantic_json
 
 
 # Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
@@ -138,9 +138,28 @@ def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
     }
 
 
+def handle_crew_result(crew_result: Any, cache_key: str):
+    """
+    Standardizes the handling of AI crew results, ensuring a JSON-serializable
+    dictionary is always returned and cached.
+    """
+    if isinstance(crew_result, CrewOutput):
+        console.print(f"🔄 Converting CrewOutput to dictionary for serialization.", style="yellow")
+        response_data = crew_output_to_dict(crew_result)
+        cache.set(cache_key, "crew_result", response_data)
+        return response_data
+    elif isinstance(crew_result, dict):
+        console.print(f"✅ Cached data is already a dictionary.", style="blue")
+        return crew_result
+    else:
+        # Fallback for unexpected data types
+        console.print(f"❌ Unexpected data type from cache: {type(crew_result)}", style="red")
+        raise TypeError(f"Cannot serialize object of type {type(crew_result)}")
+
+
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
     """
-    Handles the core logic for running the AI crew and returns the complete CrewOutput as JSON.
+    Handles the core logic for running the AI crew and returns only the final answer.
     """
     try:
         topic = inputs.get("topic")
@@ -180,32 +199,19 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         response_data = None
         if cached_response:
             console.print(f"✅ Cache Hit. Processing result...", style="blue")
-            if isinstance(cached_response, dict):
-                response_data = cached_response
-            elif isinstance(cached_response, CrewOutput):
-                console.print(f"⚠️ Cache hit with non-serializable CrewOutput object. Converting.", style="yellow")
-                response_data = crew_output_to_dict(cached_response)
-                cache.set(cache_key, "crew_result", response_data)
-            else:
-                console.print(
-                    f"❌ Cache contained an unexpected data type: {type(cached_response)}. Executing new crew.",
-                    style="red")
-
-        if not response_data:
-            console.print(f"⚠️ No valid data from cache. Executing AI Crew...", style="yellow")
+            response_data = handle_crew_result(cached_response, cache_key)
+        else:
+            console.print(f"⚠️ Cache Miss. Executing AI Crew...", style="yellow")
             crew_output = manager.execute_crew(crew, inputs)
-            response_data = crew_output_to_dict(crew_output)
-            cache.set(cache_key, "crew_result", response_data)
+            response_data = handle_crew_result(crew_output, cache_key)
 
         if not isinstance(response_data, dict):
             console.print(f"❌ Final response data is not a dictionary. Type: {type(response_data)}", style="red")
             raise TypeError("Final response data is not a dictionary and cannot be serialized.")
 
-        console.print(f"[bold red]--- Final Return Data Type ---[/bold red]")
-        console.print(f"[red]Returning data type:[/red] {type(response_data)}")
-        console.print(f"[red]Returning data value starts with:[/red] {str(response_data)[:100]}...")
-
-        return JSONResponse(content=response_data)
+        # Return only the raw string
+        final_answer = response_data.get('raw', 'No final answer found.')
+        return JSONResponse(content={'final_answer': final_answer})
 
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
