@@ -4,7 +4,7 @@ from crewai import Agent, Task, Crew, Process
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from langchain_ollama import OllamaLLM
+# from langchain_community.llms.ollama import Ollama
 
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
