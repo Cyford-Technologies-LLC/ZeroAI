@@ -42,16 +42,17 @@ def main():
 
         # Initialize the AI Crew Manager with category and inputs
         console.print("🔧 Initializing AI Crew Manager...")
-        manager = AICrewManager(distributed_router, category="customer_service", inputs={"topic": topic})
+        inputs = {"topic": topic}
+        manager = AICrewManager(distributed_router, category="customer_service", inputs=inputs)
 
-        # Create the customer service crew via the unified method
+        # Corrected call: Pass the inputs dictionary to create_crew_for_category
         console.print("👥 Creating customer service crew...")
-        crew = manager.create_crew_for_category({"topic": topic})
+        crew = manager.create_crew_for_category(inputs=inputs)
 
         console.print(f"\n🔍 Processing inquiry: [bold green]{topic}[/bold green]")
 
         # Execute the crew
-        result = manager.execute_crew(crew, {"topic": topic})
+        result = manager.execute_crew(crew, inputs=inputs)
 
         # Display results
         console.print("\n" + "=" * 60)
