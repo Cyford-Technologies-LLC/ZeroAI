@@ -5,7 +5,6 @@ from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
 from rich.console import Console
 import warnings
-from fastapi.encoders import jsonable_encoder
 
 from langchain_community.llms.ollama import Ollama
 from langchain_community import __version__ as langchain_community_version
@@ -101,27 +100,6 @@ class AICrewManager:
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
 
-    def create_crew_for_category(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
-        category = inputs.get("category", self.category)
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
-                      style="blue")
-
-        if category == "research":
-            return self.create_research_crew(inputs, full_output=full_output)
-        elif category == "analysis":
-            return self.create_analysis_crew(inputs, full_output=full_output)
-        elif category == "coding":
-            return create_coding_crew(self.llm_instance, inputs, full_output=full_output)
-        elif category == "math":
-            # Assuming create_math_crew takes llm_instance, inputs, and full_output
-            return create_math_crew(self.llm_instance, inputs, full_output=full_output)
-        elif category == "tech_support":
-            return create_tech_support_crew(self.llm_instance, inputs, full_output=full_output)
-        else:
-            console.print(f"⚠️ Category '{category}' not recognized, falling back to general research crew.",
-                          style="yellow")
-            return self.create_research_crew(inputs, full_output=full_output)
-
     def execute_crew(self, category: str, query: str) -> CrewOutput:
         """
         Creates and executes a specialized crew, returning the full CrewOutput object.
@@ -135,23 +113,23 @@ class AICrewManager:
             if category == "auto":
                 category = self._classify_task(inputs)
                 if not category:
-                    raise Exception("Auto-classification failed.")
+                    # Fallback to general if auto-classification fails
+                    category = "general"
+                    console.print("⚠️ Auto-classification failed. Falling back to 'general'.", style="yellow")
 
             # Create and execute the specialized crew
-            crew = self.create_crew_for_category(inputs)
+            crew = self._create_specialized_crew(category, inputs)
             crew_output = crew.kickoff()
             return crew_output
         except Exception as e:
             console.print(f"❌ Error during specialized crew execution: {e}", style="red")
-            # Create a mock CrewOutput for consistent error handling
-            error_output = CrewOutput(
+            return CrewOutput(
                 raw=f"Failed to execute {category} crew: {e}",
                 tasks_output=[TaskOutput(raw=f"Failed to execute: {e}", description="Error in execution")],
                 pydantic=None,
                 json_dict=None,
                 token_usage=None
             )
-            return error_output
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
@@ -162,7 +140,7 @@ class AICrewManager:
             description=f"""
             Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
             Inquiry: {inputs.get('topic')}.
-            Provide only the category name as your output.
+            Provide ONLY the single word category name as your final output, do not include any other text or formatting.
             """,
             agent=classifier_agent,
             expected_output="A single word representing the category: math, coding, research, or general.",
@@ -172,7 +150,7 @@ class AICrewManager:
             agents=[classifier_agent],
             tasks=[classifier_task],
             verbose=config.agents.verbose,
-            full_output=True  # Also enable for the classifier crew
+            full_output=True  # Ensure full output is captured
         )
 
         try:
@@ -181,13 +159,44 @@ class AICrewManager:
             console.print(classification_result)
             console.print("[bold cyan]----------------------------[/bold cyan]")
 
-            if isinstance(classification_result.tasks_output, list) and classification_result.tasks_output:
-                return classification_result.tasks_output[-1].raw.strip().lower()
-            else:
-                raise Exception("Classification crew did not produce a valid output.")
+            if classification_result and classification_result.tasks_output:
+                # Use a more robust way to get the final output
+                last_task_output = classification_result.tasks_output[-1]
+                if last_task_output and last_task_output.raw:
+                    category = last_task_output.raw.strip().lower()
+                    if category in ['math', 'coding', 'research', 'general']:
+                        console.print(f"✅ Classified category: [bold yellow]{category}[/bold yellow]", style="green")
+                        return category
+                    else:
+                        console.print(f"❌ Invalid category '{category}' returned. Falling back to 'general'.",
+                                      style="red")
+                        return "general"
+
+            console.print("❌ Classification crew did not produce a valid output. Falling back to 'general'.",
+                          style="red")
+            return "general"
         except Exception as e:
-            console.print(f"❌ Classification failed: {e}", style="red")
-            return None
+            console.print(f"❌ Classification failed with an exception: {e}. Falling back to 'general'.", style="red")
+            return "general"
+
+    def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
+                      style="blue")
+        # All crew creations must pass the `full_output=True` flag
+        if category == "research":
+            return self.create_research_crew(inputs, full_output=True)
+        elif category == "analysis":
+            return self.create_analysis_crew(inputs, full_output=True)
+        elif category == "coding":
+            return create_coding_crew(self.llm_instance, inputs, full_output=True)
+        elif category == "math":
+            return create_math_crew(self.llm_instance, inputs, full_output=True)
+        elif category == "tech_support":
+            return create_tech_support_crew(self.llm_instance, inputs, full_output=True)
+        else:
+            console.print(f"⚠️ Category '{category}' not recognized, falling back to general research crew.",
+                          style="yellow")
+            return self.create_research_crew(inputs, full_output=True)
 
     def create_research_crew(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
