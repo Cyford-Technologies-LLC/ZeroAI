@@ -144,6 +144,13 @@ def handle_crew_result(crew_result: Any, cache_key: str):
     """
     if isinstance(crew_result, CrewOutput):
         console.print(f"🔄 Converting CrewOutput to dictionary for serialization.", style="yellow")
+
+        # --- DEBUGGING STEP ---
+        console.print("[bold cyan]--- CrewOutput Object Dump ---[/bold cyan]")
+        console.print(crew_result)  # Print the full object
+        console.print("[bold cyan]----------------------------[/bold cyan]")
+        # --- END DEBUGGING STEP ---
+
         response_data = crew_output_to_dict(crew_result)
         cache.set(cache_key, "crew_result", response_data)
         return response_data
