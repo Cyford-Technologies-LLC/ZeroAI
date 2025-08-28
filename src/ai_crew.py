@@ -90,14 +90,14 @@ class AICrewManager:
         elif self.category == "math":
             return create_math_crew(self.llm_instance, inputs)
         else:
-                console.print("⚠️  Category not recognized, defaulting to customer service crew.", style="yellow")
-                specialist_agents = [
-                    create_mathematician_agent(self.llm_instance, inputs),
-                    create_tech_support_agent(self.llm_instance, inputs),
-                    create_coding_developer_agent(self.llm_instance, inputs),
-                    create_researcher(self.llm_instance, inputs)
-                ]
-                return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
+            console.print("⚠️  Category not recognized, defaulting to customer service crew.", style="yellow")
+            specialist_agents = [
+                create_mathematician_agent(self.llm_instance, inputs),
+                create_tech_support_agent(self.llm_instance, inputs),
+                create_coding_developer_agent(self.llm_instance, inputs),
+                create_researcher(self.llm_instance, inputs)
+            ]
+            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
 
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
@@ -170,13 +170,15 @@ class AICrewManager:
                         agents=[fallback_agent],
                         tasks=[fallback_task],
                         process=Process.sequential,
-                        verbose=False
+                        verbose=False # Set verbose to False to prevent a nested rich display
                     )
                     fallback_output = fallback_crew.kickoff()
                     fallback_output_text = fallback_output.raw # Also extract the raw string here
+                    progress.update(task, description="✅ Fallback crew completed!")
                     return {"result": fallback_output_text, "llm_details": self.get_llm_details()}
                 except Exception as fallback_e:
                     logger.error("Fallback crew also failed.", exc_info=True)
+                    progress.update(task, description="❌ Fallback crew failed!")
                     return {"result": "An unexpected error occurred. Please try again later.", "llm_details": self.get_llm_details()}
 
     def get_llm_details(self) -> Dict[str, str]:
