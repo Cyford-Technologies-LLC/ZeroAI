@@ -83,6 +83,12 @@ class AICrewManager:
 
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
+        # Check if inputs is a dictionary before proceeding
+        if not isinstance(inputs, dict):
+            logging.error(f"Received non-dictionary inputs of type {type(inputs)}: {inputs}")
+            raise TypeError(f"Expected 'inputs' to be a dictionary, but received type: {type(inputs)}. "
+                            f"Received content: {inputs}")
+
         logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
         self.router = router
         self.inputs = inputs
@@ -184,11 +190,14 @@ class AICrewManager:
             ]
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         elif category == "auto":
-            raise NotImplementedError("Auto classification is handled in execute_crew.")
+            # NOTE: Auto-classification is now handled in `execute_crew`
+            # The category will be updated before this function is called.
+            # If for some reason it isn't, fall back to general.
+            return self._create_specialized_crew("general", inputs)
         else:
             console.print(f"⚠️  Category not recognized, defaulting to general crew for category: {category}",
                           style="yellow")
-            return self._create_specialized_crew("general", inputs)
+            return self._create_specialized_crew(category, inputs)
 
     def create_customer_service_crew_hierarchical(self, router: DistributedRouter, inputs: Dict[str, Any],
                                                   specialist_agents: List[Agent]) -> Crew:
@@ -198,7 +207,6 @@ class AICrewManager:
 
         manager_agent = create_customer_service_agent(router, inputs)
 
-        # A task for the manager to delegate to the specialists
         manager_task = Task(
             description=f"Manage the customer service inquiry related to: {inputs.get('topic')}",
             agent=manager_agent,
@@ -215,43 +223,3 @@ class AICrewManager:
             verbose=config.agents.verbose,
             full_output=True
         )
-
-
-# --- Example of how to use this class ---
-if __name__ == '__main__':
-    # You will need to mock or provide real instances of these classes
-    class MockRouter:
-        def get_llm_for_role(self, role):
-            # Return a mock LLM instance, or an actual Ollama instance
-            return Ollama(model="llama3")
-
-
-    class MockConfig:
-        class Agents:
-            verbose = True
-
-        agents = Agents()
-
-
-    config = MockConfig()
-    distributed_router_instance = MockRouter()
-
-    # --- Example 1: Math Task ---
-    math_inputs = {
-        'topic': 'Calculate the square root of 144.',
-        'category': 'auto'
-    }
-    print("--- Executing Math Task ---")
-    math_manager = AICrewManager(distributed_router_instance, inputs=math_inputs)
-    math_result = math_manager.execute_crew(distributed_router_instance, math_inputs)
-    print("Math Result:", math_result.raw)
-
-    # --- Example 2: Research Task (Fallback) ---
-    research_inputs = {
-        'topic': 'What is the capital of Japan?',
-        'category': 'auto'
-    }
-    print("\n--- Executing Research Task ---")
-    research_manager = AICrewManager(distributed_router_instance, inputs=research_inputs)
-    research_result = research_manager.execute_crew(distributed_router_instance, research_inputs)
-    print("Research Result:", research_result.raw)
