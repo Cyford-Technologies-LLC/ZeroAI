@@ -1,3 +1,5 @@
+# src/ai_crew_manager.py
+
 import logging
 from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput
@@ -69,6 +71,7 @@ class AICrewManager:
 
         console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
 
+    # Corrected method to accept 'category' and 'inputs'
     def create_crew_for_category(self, category: str, inputs: Dict[str, Any]) -> Crew:
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
         if category == "research":
@@ -197,4 +200,3 @@ class AICrewManager:
             final_output = fallback_crew.kickoff(inputs=inputs)
 
         return {"output": final_output}
-

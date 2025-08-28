@@ -1,5 +1,3 @@
-# src/crews/customer_service/tools.py
-
 from typing import Any, Dict
 from pydantic import PrivateAttr
 from crewai.tools import BaseTool
@@ -17,8 +15,10 @@ class DelegatingMathTool(BaseTool):
         self._inputs = inputs
 
     def _run(self, query: str):
-        # Pass category and inputs explicitly as keyword arguments
+        # Update the inputs with the new query
         self._inputs["topic"] = query
+
+        # Explicitly pass both category and inputs
         math_crew = self._crew_manager.create_crew_for_category(category="math", inputs=self._inputs)
 
         result = self._crew_manager.execute_crew(math_crew, self._inputs)
@@ -37,9 +37,12 @@ class ResearchDelegationTool(BaseTool):
         self._inputs = inputs
 
     def _run(self, query: str):
-        # Pass category and inputs explicitly as keyword arguments
+        # Update the inputs with the new query
         self._inputs["topic"] = query
+
+        # Explicitly pass both category and inputs
         research_crew = self._crew_manager.create_crew_for_category(category="research", inputs=self._inputs)
 
         result = self._crew_manager.execute_crew(research_crew, self._inputs)
         return result.get("output", "Could not complete the research task.")
+
