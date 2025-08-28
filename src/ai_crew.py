@@ -113,23 +113,31 @@ class AICrewManager:
             if category == "auto":
                 category = self._classify_task(inputs)
                 if not category:
-                    # Fallback to general if auto-classification fails
-                    category = "general"
-                    console.print("⚠️ Auto-classification failed. Falling back to 'general'.", style="yellow")
+                    raise Exception("Auto-classification failed.")
 
             # Create and execute the specialized crew
-            crew = self._create_specialized_crew(category, inputs)
+            crew = self.create_crew_for_category(inputs)
             crew_output = crew.kickoff()
             return crew_output
         except Exception as e:
             console.print(f"❌ Error during specialized crew execution: {e}", style="red")
-            return CrewOutput(
+            # Create a mock Agent for the TaskOutput
+            mock_agent = Agent(role="Error Handler", goal="Report an error", backstory="Handles exceptions.")
+
+            error_output = CrewOutput(
                 raw=f"Failed to execute {category} crew: {e}",
-                tasks_output=[TaskOutput(raw=f"Failed to execute: {e}", description="Error in execution")],
+                tasks_output=[
+                    TaskOutput(
+                        raw=f"Failed to execute: {e}",
+                        description="Error in execution",
+                        agent=mock_agent  # FIX: Add a valid agent to the TaskOutput
+                    )
+                ],
                 pydantic=None,
                 json_dict=None,
                 token_usage=None
             )
+            return error_output
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """

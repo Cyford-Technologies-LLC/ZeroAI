@@ -5,7 +5,8 @@ from config import config
 from .agents import create_mathematician_agent
 from .tasks import create_math_task
 
-def create_math_crew(llm: Ollama, inputs: Dict[str, Any]) -> Crew:
+# Add `full_output` to the function signature with a default value of False
+def create_math_crew(llm: Ollama, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     mathematician = create_mathematician_agent(llm, inputs)
     math_task = create_math_task(mathematician, inputs)
 
@@ -13,5 +14,6 @@ def create_math_crew(llm: Ollama, inputs: Dict[str, Any]) -> Crew:
         agents=[mathematician],
         tasks=[math_task],
         process=Process.sequential,
-        verbose=config.agents.verbose
+        verbose=config.agents.verbose,
+        full_output=full_output # Pass the argument to the Crew constructor
     )
