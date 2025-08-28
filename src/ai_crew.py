@@ -2,8 +2,8 @@
 
 import logging
 from typing import Dict, Any, Optional
-from crewai import Agent, Task, Crew, Process  # 3. Import crewai first
-from crewai.tools import BaseTool # Import BaseTool from crewai
+from crewai import Agent, Task, Crew, Process
+from crewai.tools import BaseTool
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -19,20 +19,20 @@ logger = logging.getLogger(__name__)
 
 # --- New functions for customer service and delegation ---
 
-# Define a placeholder function to simulate a delegation tool.
-def technical_support_tool_function(query: str):
-    """
-    Simulates delegating a query to a technical support crew.
-    In a real system, this would trigger another crew or external service.
-    """
-    return f"Delegated to Technical Support for inquiry: {query}"
+# Define a custom tool class that inherits from BaseTool
+class TechnicalSupportTool(BaseTool):
+    name: str = "Technical Support Delegation Tool"
+    description: str = "Tool to delegate technical support queries."
 
-# Define the Tool for delegation.
-tech_support_tool = BaseTool(
-    name="Technical Support Delegation Tool",
-    func=technical_support_tool_function,
-    description="Tool to delegate technical support queries."
-)
+    def _run(self, query: str):
+        """
+        Simulates delegating a query to a technical support crew.
+        In a real system, this would trigger another crew or external service.
+        """
+        return f"Delegated to Technical Support for inquiry: {query}"
+
+# Instantiate the custom tool class
+tech_support_tool = TechnicalSupportTool()
 
 def create_customer_service_agent(llm, inputs: Dict[str, Any]) -> Agent:
     return Agent(
@@ -89,7 +89,6 @@ class AICrewManager:
         elif self.category == "customer_service" and not self.task_description:
             # You may want a different default model for this category
             self.task_description = "llama3.2:latest"
-
 
         # Debug prints now correctly show the resolved task_description
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
@@ -235,4 +234,3 @@ class AICrewManager:
             "provider": self.provider,
             "endpoint": self.base_url
         }
-
