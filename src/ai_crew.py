@@ -50,6 +50,7 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
         try:
+            # Note: Assuming self.router is defined and has get_optimal_endpoint_and_model
             self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
             print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
         except Exception as e:
@@ -139,11 +140,11 @@ class AICrewManager:
         ) as progress:
             task = progress.add_task("Executing AI crew...", total=None)
             try:
-                            # Attempt to run the main crew
-                            crew_output_object = crew.kickoff(inputs=inputs)
-                            result_text = crew_output_object.raw  # Extract the raw string output
-                            progress.update(task, description="✅ Crew execution completed!")
-                            return {"result": result_text, "llm_details": self.get_llm_details()}
+                # Attempt to run the main crew
+                crew_output_object = crew.kickoff(inputs=inputs)
+                result_text = crew_output_object.raw  # Correctly extract the raw string
+                progress.update(task, description="✅ Crew execution completed!")
+                return {"result": result_text, "llm_details": self.get_llm_details()}
             except Exception as e:
                 progress.update(task, description=f"❌ Crew execution failed: {e}. Falling back to basic customer service.")
                 logger.error("Crew execution failed, falling back.", exc_info=True)
@@ -166,7 +167,8 @@ class AICrewManager:
                         verbose=False
                     )
                     fallback_output = fallback_crew.kickoff()
-                    return {"result": fallback_output, "llm_details": self.get_llm_details()}
+                    fallback_output_text = fallback_output.raw # Also extract the raw string here
+                    return {"result": fallback_output_text, "llm_details": self.get_llm_details()}
                 except Exception as fallback_e:
                     logger.error("Fallback crew also failed.", exc_info=True)
                     return {"result": "An unexpected error occurred. Please try again later.", "llm_details": self.get_llm_details()}
