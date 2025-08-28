@@ -1,4 +1,5 @@
 from crewai import Agent
+from crewai.tools import BaseTool
 from .tools import calculator_tool
 
 def create_mathematician_agent(llm, inputs: dict) -> Agent:

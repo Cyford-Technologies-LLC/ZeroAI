@@ -1,3 +1,4 @@
+from crewai import Agent
 from crewai.tools import BaseTool
 
 class CalculatorTool(BaseTool):

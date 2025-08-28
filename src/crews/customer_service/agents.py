@@ -1,4 +1,5 @@
-from crewai import Agent, BaseTool
+from crewai import Agent
+from crewai.tools import BaseTool
 
 class TechnicalSupportTool(BaseTool):
     name: str = "Technical Support Delegation Tool"

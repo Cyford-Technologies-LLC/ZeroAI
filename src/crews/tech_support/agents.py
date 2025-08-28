@@ -1,4 +1,5 @@
 from crewai import Agent
+from crewai.tools import BaseTool
 
 def create_tech_support_agent(llm, inputs: dict) -> Agent:
     return Agent(

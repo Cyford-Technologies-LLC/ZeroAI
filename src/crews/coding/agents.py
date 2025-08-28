@@ -1,4 +1,5 @@
 from crewai import Agent
+from crewai.tools import BaseTool
 
 def create_coding_developer_agent(llm, inputs: dict[str, any]) -> Agent:
     return Agent(
