@@ -1,5 +1,4 @@
 from crewai.tools import BaseTool
-from typing import Dict, Any
 
 class DelegatingMathTool(BaseTool):
     name: str = "Delegating Math Tool"
@@ -28,5 +27,3 @@ class ResearchDelegationTool(BaseTool):
         research_crew = self.crew_manager.create_research_crew(self.inputs)
         result = research_crew.kickoff(inputs=self.inputs)
         return result.raw
-
-# ... (other delegating tools)

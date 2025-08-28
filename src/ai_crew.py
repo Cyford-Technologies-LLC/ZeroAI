@@ -14,8 +14,8 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.customer_service.tasks import create_customer_service_task  # Import refined task
-from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool # Import delegation tools
+from crews.customer_service.tasks import create_customer_service_task
+from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -51,7 +51,6 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
         try:
-            # Note: Assuming self.router is defined and has get_optimal_endpoint_and_model
             self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
             print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
         except Exception as e:
@@ -103,11 +102,10 @@ class AICrewManager:
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # Instantiate delegation tools with the current AICrewManager instance (self)
+        # Define manager tools to use for delegation
         manager_tools = [
             DelegatingMathTool(self, inputs),
             ResearchDelegationTool(self, inputs),
-            # Add other delegating tools here, also instantiated with self and inputs
         ]
 
         customer_service_task = Task(
@@ -167,7 +165,6 @@ class AICrewManager:
         ) as progress:
             task = progress.add_task("Executing AI crew...", total=None)
             try:
-                # Attempt to run the main crew
                 crew_output_object = crew.kickoff(inputs=inputs)
                 result_text = crew_output_object.raw
                 progress.update(task, description="✅ Crew execution completed!")
@@ -176,22 +173,18 @@ class AICrewManager:
                 progress.update(task, description=f"❌ Crew execution failed: {e}. Falling back to basic customer service.")
                 logger.error("Crew execution failed, falling back.", exc_info=True)
 
-                # --- Fallback Logic ---
                 try:
-                    # Create a simple customer service agent for the fallback
                     fallback_agent = create_customer_service_agent(self.llm_instance, inputs)
-
                     fallback_task = Task(
                         description=f"A complex query delegation failed. Please provide a concise, polite fallback response to the user's inquiry: {inputs.get('topic')}. Apologize for the inconvenience.",
                         agent=fallback_agent,
                         expected_output="A polite fallback message for the customer."
                     )
-
                     fallback_crew = Crew(
                         agents=[fallback_agent],
                         tasks=[fallback_task],
                         process=Process.sequential,
-                        verbose=False # Set verbose to False to prevent a nested rich display
+                        verbose=False
                     )
                     fallback_output = fallback_crew.kickoff()
                     fallback_output_text = fallback_output.raw
