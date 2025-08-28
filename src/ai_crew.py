@@ -120,12 +120,15 @@ class AICrewManager:
         try:
             # Check for "auto" category and run classifier
             if category == "auto":
-                category = self._classify_task(inputs)
-                if not category:
+                classified_category = self._classify_task(inputs)
+                if not classified_category:
                     raise Exception("Auto-classification failed.")
+                # FIX: Use the classified category for the rest of the method
+                category = classified_category
+                # FIX: Update the inputs dictionary for create_crew_for_category
+                inputs['category'] = classified_category
 
             # Create and execute the specialized crew
-            # FIX: Call the correct method name
             crew = self.create_crew_for_category(inputs)
             crew_output = crew.kickoff()
             return crew_output
@@ -196,7 +199,6 @@ class AICrewManager:
             console.print(f"❌ Classification failed with an exception: {e}", style="red")
             return "general"
 
-    # FIX: Renamed _create_specialized_crew to create_crew_for_category and added full_output
     def create_crew_for_category(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
         category = inputs.get("category", self.category)
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
@@ -249,3 +251,4 @@ class AICrewManager:
             process=Process.sequential,
             full_output=full_output,
         )
+
