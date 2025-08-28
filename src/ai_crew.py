@@ -40,11 +40,15 @@ logger = logging.getLogger(__name__)
 def create_classifier_agent(router) -> Agent:
     llm = router.get_llm_for_role('classifier')
     if not llm:
+        # Fallback to a specific local model if role-based lookup fails
+        llm = router.get_local_llm("llama3.2:1b")
+    if not llm:
         raise ValueError("Failed to get LLM for classifier agent.")
-    # **FIX**: Add logging for the classifier's LLM
+
     console.print(
         f"🔗 Classifier Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
         style="blue")
+
     return Agent(
         role='Task Classifier',
         goal='Accurately classify the user query into categories: math, coding, research, or general.',
@@ -76,6 +80,7 @@ class AICrewManager:
         Helper method to run the classification crew and return the category.
         """
         try:
+            # Pass the router to the classifier agent creation function
             classifier_agent = create_classifier_agent(self.router)
         except ValueError as e:
             console.print(f"❌ Failed to create classifier agent: {e}", style="red")
@@ -119,6 +124,7 @@ class AICrewManager:
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
 
+        # Pass the router instance to the specific crew creation functions
         if category == "research":
             return self.create_research_crew(self.router, inputs)
         elif category == "analysis":
@@ -168,7 +174,7 @@ class AICrewManager:
         customer_service_agent = create_customer_service_agent(router, inputs)
         manager_llm = router.get_llm_for_role('manager')
 
-        # **FIX:** Add logging for the manager LLM
+        # Log the manager LLM's connection details
         if manager_llm:
             console.print(
                 f"🔗 Manager LLM connecting to model: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
