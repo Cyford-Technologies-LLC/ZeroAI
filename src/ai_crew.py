@@ -147,7 +147,8 @@ class AICrewManager:
         try:
             classification_result = classifier_crew.kickoff()
 
-            # Correct FIX: Access the result from the first item in the tasks_output list
+            # FIX: The output of a single-task crew is in the 'result' of the first item
+            # which is an element of the tasks_output list.
             if classification_result.tasks_output and isinstance(classification_result.tasks_output, list) and classification_result.tasks_output[0]:
                 return classification_result.tasks_output[0].result.strip().lower()
             else:
@@ -157,8 +158,7 @@ class AICrewManager:
             return None
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        console.print("📦 Creating a specialized crew for category: [bold yellow]{}[/bold yellow]".format(category),
-                      style="blue")
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
         # Prevent delegation tools from recursively creating customer service crews.
         if category == "customer_service":
@@ -191,7 +191,7 @@ class AICrewManager:
         console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow]", style="blue")
 
         # Route to the correct crew based on the classification result or user input
-        console.print("📦 Creating a crew for category: [bold yellow]{}[/bold yellow]".format(category), style="blue")
+        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
         if category == "math":
             return create_math_crew(self.llm_instance, inputs)
