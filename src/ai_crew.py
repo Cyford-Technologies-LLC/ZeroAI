@@ -36,6 +36,22 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
+# --- Task Classifier Agent ---
+def create_classifier_agent(llm: Ollama) -> Agent:
+    return Agent(
+        role='Task Classifier',
+        goal='Accurately classify the user query into categories: math, coding, research, or general.',
+        backstory=(
+            "As a Task Classifier, your primary role is to analyze the incoming user query "
+            "and determine the most suitable crew to handle it. You must be highly accurate "
+            "to ensure the correct crew is activated for the job."
+        ),
+        llm=llm,
+        verbose=config.agents.verbose,
+        allow_delegation=False,
+    )
+
+
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
@@ -55,6 +71,8 @@ class AICrewManager:
         elif self.category == "tech_support" and not self.task_description:
             self.task_description = "llama3.2:latest"
         elif self.category == "math" and not self.task_description:
+            self.task_description = "llama3.2:latest"
+        elif self.category == "auto" and not self.task_description:
             self.task_description = "llama3.2:latest"
 
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
@@ -80,6 +98,48 @@ class AICrewManager:
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
 
+    def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
+        """
+        Helper method to run the classification crew and return the category.
+        """
+        classifier_agent = create_classifier_agent(self.llm_instance)
+        classifier_task = Task(
+            description=f"""
+            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
+            Inquiry: {inputs.get('topic')}.
+            Provide ONLY the single word category name as your final output, do not include any other text or formatting.
+            """,
+            agent=classifier_agent,
+            expected_output="A single word representing the category: math, coding, research, or general.",
+        )
+
+        classifier_crew = Crew(
+            agents=[classifier_agent],
+            tasks=[classifier_task],
+            verbose=config.agents.verbose,
+            full_output=True
+        )
+
+        try:
+            classification_result = classifier_crew.kickoff()
+            if classification_result and classification_result.tasks_output:
+                last_task_output = classification_result.tasks_output[-1]
+                if last_task_output and last_task_output.raw:
+                    category = last_task_output.raw.strip().lower()
+                    if category in ['math', 'coding', 'research', 'general']:
+                        console.print(f"✅ Classified category: [bold yellow]{category}[/bold yellow]", style="green")
+                        return category
+                    else:
+                        console.print(f"❌ Invalid category '{category}' returned. Falling back to 'general'.",
+                                      style="red")
+
+            console.print("❌ Classification crew did not produce a valid output. Falling back to 'general'.",
+                          style="red")
+            return "general"
+        except Exception as e:
+            console.print(f"❌ Classification failed with an exception: {e}", style="red")
+            return "general"
+
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         """Helper method to create specialized crews based on category."""
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
@@ -94,6 +154,9 @@ class AICrewManager:
             return create_math_crew(self.llm_instance, inputs)
         elif category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs)
+        elif category == "general":
+            # Treat 'general' as a research task or another default if needed.
+            return self.create_research_crew(inputs)
         else:
             raise ValueError(f"Unknown category: {category}")
 
@@ -110,6 +173,11 @@ class AICrewManager:
                 create_researcher(self.llm_instance, inputs)
             ]
             return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
+        elif category == "auto":
+            classified_category = self._classify_task(inputs)
+            if not classified_category:
+                raise Exception("Auto-classification failed.")
+            return self._create_specialized_crew(classified_category, inputs)
         else:
             console.print(f"⚠️  Category not recognized, defaulting to customer service crew for category: {category}",
                           style="yellow")
@@ -156,7 +224,6 @@ class AICrewManager:
 
     def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
-        # **FIX:** Pass the topic to the create_writer function, as defined in base_agents.py
         writer = create_writer(self.llm_instance, inputs, topic=inputs.get('topic'))
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, inputs, context=[research_task])
@@ -169,12 +236,10 @@ class AICrewManager:
     def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
         analyst = create_analyst(self.llm_instance, inputs)
-        # **FIX:** Pass the topic to the create_writer function, as defined in base_agents.py
         writer = create_writer(self.llm_instance, inputs, topic=inputs.get('topic'))
         research_task = create_research_task(researcher, inputs)
         analysis_task = create_analysis_task(analyst, inputs)
         writing_task = create_writing_task(writer, inputs)
-        # **FIX:** Add a return statement for the crew
         return Crew(
             agents=[researcher, analyst, writer],
             tasks=[research_task, analysis_task, writing_task],
@@ -190,7 +255,15 @@ class AICrewManager:
             if not self.llm_instance:
                 raise ValueError("LLM instance is not initialized. Check router configuration.")
 
-            crew = self._create_specialized_crew(category, inputs)
+            # **FIX**: Handle 'auto' category here and call _create_specialized_crew with the classified category.
+            if category == "auto":
+                classified_category = self._classify_task(inputs)
+                if not classified_category:
+                    raise Exception("Auto-classification failed.")
+                crew = self._create_specialized_crew(classified_category, inputs)
+            else:
+                crew = self._create_specialized_crew(category, inputs)
+
             with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
@@ -217,19 +290,3 @@ class AICrewManager:
                 json_dict=None,
                 token_usage=UsageMetrics()
             )
-
-
-# --- Task Classifier Agent ---
-def create_classifier_agent(llm: Ollama) -> Agent:
-    return Agent(
-        role='Task Classifier',
-        goal='Accurately classify the user query into categories: math, coding, research, or general.',
-        backstory=(
-            "As a Task Classifier, your primary role is to analyze the incoming user query "
-            "and determine the most suitable crew to handle it. You must be highly accurate "
-            "to ensure the correct crew is activated for the job."
-        ),
-        llm=llm,
-        verbose=config.agents.verbose,
-        allow_delegation=False,
-    )
