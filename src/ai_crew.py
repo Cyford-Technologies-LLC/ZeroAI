@@ -74,8 +74,8 @@ class AICrewManager:
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
 
-    # Change method to be more explicit, accepts category and inputs
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
+        """Helper method to create specialized crews based on category."""
         console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
         if category == "research":
@@ -91,8 +91,8 @@ class AICrewManager:
         else:
             raise ValueError(f"Unknown category: {category}")
 
-    # Main crew creation method, accepts only inputs
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
+        """Main method for creating the top-level crew."""
         category = inputs.get('category', self.category)
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
@@ -105,8 +105,8 @@ class AICrewManager:
             ]
             return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
         else:
-            # Fallback to general crew or raise error
-            console.print("⚠️  Category not recognized, defaulting to customer service crew.", style="yellow")
+            console.print(f"⚠️  Category not recognized, defaulting to customer service crew for category: {category}",
+                          style="yellow")
             specialist_agents = [
                 create_mathematician_agent(self.llm_instance, inputs),
                 create_tech_support_agent(self.llm_instance, inputs),
