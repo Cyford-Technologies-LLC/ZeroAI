@@ -102,7 +102,7 @@ class AICrewManager:
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # Instantiate delegation tools with the AICrewManager instance (self) and inputs
+        # Instantiate delegation tools, passing the AICrewManager instance (self) and inputs
         manager_tools = [
             DelegatingMathTool(crew_manager=self, inputs=inputs),
             ResearchDelegationTool(crew_manager=self, inputs=inputs),
@@ -172,4 +172,3 @@ class AICrewManager:
             except Exception as e:
                 progress.update(task, description="[red]AI Crew execution failed.", completed=1)
                 return {"error": f"An error occurred during crew execution: {e}"}
-
