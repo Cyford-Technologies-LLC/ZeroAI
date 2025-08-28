@@ -36,7 +36,7 @@ class CrewDelegationInput(BaseModel):
     query: str = Field(description="The user's query or the task to delegate.")
 
 
-# --- NEW: Task Classifier Agent ---
+# --- Task Classifier Agent ---
 def create_classifier_agent(llm: Ollama, inputs: Dict[str, Any]) -> Agent:
     return Agent(
         role='Task Classifier',
@@ -139,35 +139,40 @@ class AICrewManager:
             raise ValueError(f"Unknown category: {category}")
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        # Create a classifier agent and task to determine the appropriate category
-        classifier_agent = create_classifier_agent(self.llm_instance, inputs)
-        classifier_task = Task(
-            description=f"""
-            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
-            Inquiry: {inputs.get('topic')}.
-            Provide only the category name as your output.
-            """,
-            agent=classifier_agent,
-            expected_output="A single word representing the category: math, coding, research, or general.",
-        )
+        category = inputs.get('category', 'auto')
 
-        # Create a small crew to run the classifier task
-        classifier_crew = Crew(
-            agents=[classifier_agent],
-            tasks=[classifier_task],
-            verbose=config.agents.verbose,
-        )
+        if category == "auto":
+            # Create a classifier agent and task to determine the appropriate category
+            classifier_agent = create_classifier_agent(self.llm_instance, inputs)
+            classifier_task = Task(
+                description=f"""
+                Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
+                Inquiry: {inputs.get('topic')}.
+                Provide only the category name as your output.
+                """,
+                agent=classifier_agent,
+                expected_output="A single word representing the category: math, coding, research, or general.",
+            )
 
-        # Execute the classifier crew to get the category
-        try:
-            classification_result = classifier_crew.kickoff()
-            category = classification_result.result.strip().lower()
-            console.print(f"Classifier identified category: [bold cyan]{category}[/bold cyan]", style="green")
-        except Exception as e:
-            console.print(f"❌ Classification failed, defaulting to general: {e}", style="red")
-            category = 'general'
+            # Create a small crew to run the classifier task
+            classifier_crew = Crew(
+                agents=[classifier_agent],
+                tasks=[classifier_task],
+                verbose=config.agents.verbose,
+            )
 
-        # Route to the correct crew based on the classification result
+            # Execute the classifier crew to get the category
+            try:
+                classification_result = classifier_crew.kickoff()
+                category = classification_result.result.strip().lower()
+                console.print(f"Classifier identified category: [bold cyan]{category}[/bold cyan]", style="green")
+            except Exception as e:
+                console.print(f"❌ Classification failed, defaulting to general: {e}", style="red")
+                category = 'general'
+        else:
+            console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow]", style="blue")
+
+        # Route to the correct crew based on the classification result or user input
         console.print("📦 Creating a crew for category: [bold yellow]{}[/bold yellow]".format(category), style="blue")
 
         if category == "math":
@@ -177,31 +182,15 @@ class AICrewManager:
         elif category == "research":
             # Direct to the research crew if explicitly classified
             return self.create_research_crew(inputs)
-        elif category == "general":
-            # For general inquiries, route to the customer service crew
-            specialist_agents = [
-                create_mathematician_agent(self.llm_instance, inputs),
-                create_tech_support_agent(self.llm_instance, inputs),
-                create_coding_developer_agent(self.llm_instance, inputs),
-                create_researcher(self.llm_instance, inputs)
-            ]
-            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
+        elif category == "tech_support":
+            return create_tech_support_crew(self.llm_instance, inputs)
         else:
-            console.print(f"⚠️  Category '{category}' not recognized, defaulting to customer service crew.",
-                          style="yellow")
-            specialist_agents = [
-                create_mathematician_agent(self.llm_instance, inputs),
-                create_tech_support_agent(self.llm_instance, inputs),
-                create_coding_developer_agent(self.llm_instance, inputs),
-                create_researcher(self.llm_instance, inputs)
-            ]
-            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
+            # For general or unrecognized inquiries, route to the customer service crew
+            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs)
 
-    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any],
-                                                  specialist_agents: List[Agent]) -> Crew:
+    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # The manager should now have fewer delegation tools since the classifier handles direct routing
         # For general tasks, it can still delegate to research or other specialized sub-crews if needed
         manager_tools = [
             ResearchDelegationTool(crew_manager=self, inputs=inputs),
@@ -219,7 +208,7 @@ class AICrewManager:
             expected_output="A polite and direct final answer to the customer's query."
         )
 
-        all_agents = [customer_service_agent] + specialist_agents
+        all_agents = [customer_service_agent]
 
         return Crew(
             agents=all_agents,
@@ -239,4 +228,3 @@ class AICrewManager:
             tasks=[research_task, writing_task],
             verbose=config.agents.verbose
         )
-

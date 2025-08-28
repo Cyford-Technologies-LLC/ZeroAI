@@ -1,6 +1,3 @@
-#  API/api.py
-
-
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File, Request
 from fastapi.responses import JSONResponse
@@ -165,7 +162,8 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
     """
     try:
         topic = inputs.get("topic")
-        category = inputs.get("category", "general")
+        # Ensure 'auto' is the default category if not provided
+        category = inputs.get("category", "auto")
 
         if not topic:
             raise ValueError("Missing required 'topic' input.")
