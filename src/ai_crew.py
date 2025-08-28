@@ -27,6 +27,7 @@ from crews.customer_service.agents import create_customer_service_agent
 console = Console()
 logger = logging.getLogger(__name__)
 
+
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
@@ -52,7 +53,8 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
         try:
-            self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(self.task_description)
+            self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(
+                self.task_description)
             print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
         except Exception as e:
             print(f"❌ Error during router call in AICrewManager: {e}")
@@ -68,17 +70,33 @@ class AICrewManager:
         }
         self.llm_instance = Ollama(**self.llm_config)
 
-        console.print(f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]", style="blue")
+        console.print(
+            f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
+            style="blue")
 
-    def create_crew_for_category(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+    # Change method to be more explicit, accepts category and inputs
+    def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
+                      style="blue")
         if category == "research":
             return self.create_research_crew(inputs)
         elif category == "analysis":
             return self.create_analysis_crew(inputs)
         elif category == "coding":
             return create_coding_crew(self.llm_instance, inputs)
-        elif category == "customer_service":
+        elif category == "math":
+            return create_math_crew(self.llm_instance, inputs)
+        elif category == "tech_support":
+            return create_tech_support_crew(self.llm_instance, inputs)
+        else:
+            raise ValueError(f"Unknown category: {category}")
+
+    # Main crew creation method, accepts only inputs
+    def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
+        category = inputs.get('category', self.category)
+        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+
+        if category == "customer_service":
             specialist_agents = [
                 create_mathematician_agent(self.llm_instance, inputs),
                 create_tech_support_agent(self.llm_instance, inputs),
@@ -86,11 +104,8 @@ class AICrewManager:
                 create_researcher(self.llm_instance, inputs)
             ]
             return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
-        elif category == "tech_support":
-            return create_tech_support_crew(self.llm_instance, inputs)
-        elif category == "math":
-            return create_math_crew(self.llm_instance, inputs)
         else:
+            # Fallback to general crew or raise error
             console.print("⚠️  Category not recognized, defaulting to customer service crew.", style="yellow")
             specialist_agents = [
                 create_mathematician_agent(self.llm_instance, inputs),
@@ -100,7 +115,8 @@ class AICrewManager:
             ]
             return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
 
-    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
+    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any],
+                                                  specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
         manager_tools = [
@@ -162,11 +178,11 @@ class AICrewManager:
         final_output = None
         try:
             with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TimeRemainingColumn(),
-                console=console
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(),
+                    TimeRemainingColumn(),
+                    console=console
             ) as progress:
                 task_id = progress.add_task(f"[yellow]Executing {self.category} crew...", total=None)
                 result = crew.kickoff(inputs=inputs)
@@ -196,4 +212,3 @@ class AICrewManager:
             final_output = fallback_crew.kickoff(inputs=inputs)
 
         return {"output": final_output}
-
