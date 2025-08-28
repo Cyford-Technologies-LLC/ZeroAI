@@ -2,7 +2,7 @@
 
 import logging
 from typing import Dict, Any, Optional, List
-from crewai import Agent, Task, Crew, Process, CrewOutput
+from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
 from rich.console import Console
 import warnings
 
@@ -37,7 +37,7 @@ class CrewDelegationInput(BaseModel):
 
 
 # --- Task Classifier Agent ---
-def create_classifier_agent(llm: Ollama, inputs: Dict[str, Any]) -> Agent:
+def create_classifier_agent(llm: Ollama) -> Agent:
     return Agent(
         role='Task Classifier',
         goal='Accurately classify the user query into categories: math, coding, research, or general.',
@@ -109,7 +109,7 @@ class AICrewManager:
         inputs['category'] = category
 
         try:
-            crew = self._create_specialized_crew(category, inputs)
+            crew = self.create_crew_for_category(inputs)
             crew_output = crew.kickoff()
             # Ensure the returned result is a string, not the full CrewOutput object
             return crew_output.result
@@ -143,7 +143,7 @@ class AICrewManager:
 
         if category == "auto":
             # Create a classifier agent and task to determine the appropriate category
-            classifier_agent = create_classifier_agent(self.llm_instance, inputs)
+            classifier_agent = create_classifier_agent(self.llm_instance)
             classifier_task = Task(
                 description=f"""
                 Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
@@ -164,8 +164,15 @@ class AICrewManager:
             # Execute the classifier crew to get the category
             try:
                 classification_result = classifier_crew.kickoff()
-                category = classification_result.result.strip().lower()
-                console.print(f"Classifier identified category: [bold cyan]{category}[/bold cyan]", style="green")
+
+                # FIX: Access the result correctly from the CrewOutput object
+                # The output is in the .result attribute of the first (and only) item of tasks_output
+                if classification_result.tasks_output and isinstance(classification_result.tasks_output[0], TaskOutput):
+                    category = classification_result.tasks_output[0].result.strip().lower()
+                    console.print(f"Classifier identified category: [bold cyan]{category}[/bold cyan]", style="green")
+                else:
+                    raise Exception("Classification crew did not produce a valid output.")
+
             except Exception as e:
                 console.print(f"❌ Classification failed, defaulting to general: {e}", style="red")
                 category = 'general'
@@ -186,9 +193,16 @@ class AICrewManager:
             return create_tech_support_crew(self.llm_instance, inputs)
         else:
             # For general or unrecognized inquiries, route to the customer service crew
-            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs)
+            specialist_agents = [
+                create_mathematician_agent(self.llm_instance, inputs),
+                create_tech_support_agent(self.llm_instance, inputs),
+                create_coding_developer_agent(self.llm_instance, inputs),
+                create_researcher(self.llm_instance, inputs)
+            ]
+            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
 
-    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any]) -> Crew:
+    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any],
+                                                  specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
         # For general tasks, it can still delegate to research or other specialized sub-crews if needed
@@ -208,7 +222,7 @@ class AICrewManager:
             expected_output="A polite and direct final answer to the customer's query."
         )
 
-        all_agents = [customer_service_agent]
+        all_agents = [customer_service_agent] + specialist_agents
 
         return Crew(
             agents=all_agents,
