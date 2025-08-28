@@ -34,11 +34,12 @@ def create_classifier_agent(router: DistributedRouter, inputs: Dict[str, Any]) -
 
     return Agent(
         role='Task Classifier',
-        goal='Accurately classify the user query into categories: math, coding, research, or general.',
+        # Emphasize the output format in the goal
+        goal='Accurately classify the user query into a single category word: math, coding, research, or general.',
         backstory=(
-            "As a Task Classifier, the primary role is to analyze the incoming user query "
-            "and determine the most suitable crew to handle it. Accuracy is critical "
-            "to ensure the correct crew is activated for the job."
+            "As a Task Classifier, the purpose is to analyze the user inquiry "
+            "and output ONLY the single, correct category word. This is a critical function for "
+            "determining the correct crew to handle the request."
         ),
         llm=llm,
         verbose=config.agents.verbose,

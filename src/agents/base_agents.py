@@ -38,7 +38,6 @@ def create_writer(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
         max_iter=3
     )
 
-
 def create_analyst(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
     """Create a data analyst agent using the distributed router."""
     task_description = "Analyze data patterns, trends, and insights to provide actionable recommendations"
