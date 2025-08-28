@@ -1,3 +1,5 @@
+# src/ai_crew.py
+
 import logging
 from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput
@@ -5,6 +7,8 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 
 from langchain_community.llms.ollama import Ollama
+from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
@@ -14,7 +18,6 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -24,6 +27,72 @@ from crews.customer_service.agents import create_customer_service_agent
 
 console = Console()
 logger = logging.getLogger(__name__)
+
+
+# --- Input Schema for Delegating Tools ---
+class CrewDelegationInput(BaseModel):
+    query: str = Field(description="The user's query or the task to delegate.")
+
+
+class DelegatingMathTool(BaseTool):
+    """
+    A tool that delegates math queries to a specialized math crew.
+    """
+    name: str = "Delegating Math Tool"
+    description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
+    args_schema: type[BaseModel] = CrewDelegationInput
+    crew_manager: Any = None
+    inputs: Dict[str, Any] = {}
+
+    def _run(self, query: str) -> str:
+        console.print(f"Delegate Math Tool triggered for query: [bold green]{query}[/bold green]", style="yellow")
+        try:
+            # Create a math crew with the new query
+            math_inputs = self.inputs.copy()
+            math_inputs['topic'] = query
+            math_crew = self.crew_manager._create_specialized_crew("math", math_inputs)
+
+            math_output: CrewOutput = math_crew.kickoff()
+
+            # The error 'CrewOutput' object has no attribute 'get' occurred here.
+            # The correct way is to access the 'raw' attribute of the CrewOutput object.
+            final_output = math_output.raw
+
+            console.print(f"Math delegation successful. Result: {final_output}", style="green")
+            return final_output
+        except Exception as e:
+            console.print(f"❌ Error in DelegatingMathTool: {e}", style="red")
+            return f"Error: Could not solve the math problem. Delegation failed. Details: {e}"
+
+
+class ResearchDelegationTool(BaseTool):
+    """
+    A tool that delegates research queries to a specialized research crew.
+    """
+    name: str = "Research Delegation Tool"
+    description: str = "Use this tool to perform research by delegating to a research crew."
+    args_schema: type[BaseModel] = CrewDelegationInput
+    crew_manager: Any = None
+    inputs: Dict[str, Any] = {}
+
+    def _run(self, query: str) -> str:
+        console.print(f"Delegate Research Tool triggered for query: [bold green]{query}[/bold green]", style="yellow")
+        try:
+            # Create a research crew with the new query
+            research_inputs = self.inputs.copy()
+            research_inputs['topic'] = query
+            research_crew = self.crew_manager._create_specialized_crew("research", research_inputs)
+
+            research_output: CrewOutput = research_crew.kickoff()
+
+            # Use the raw attribute for the final output string.
+            final_output = research_output.raw
+
+            console.print(f"Research delegation successful. Result: {final_output}", style="green")
+            return final_output
+        except Exception as e:
+            console.print(f"❌ Error in ResearchDelegationTool: {e}", style="red")
+            return f"Error: Could not perform research. Delegation failed. Details: {e}"
 
 
 class AICrewManager:
@@ -161,29 +230,13 @@ class AICrewManager:
         researcher = create_researcher(self.llm_instance, inputs)
         analyst = create_analyst(self.llm_instance, inputs)
         writer = create_writer(self.llm_instance, inputs)
+
         research_task = create_research_task(researcher, inputs)
-        analysis_task = create_analysis_task(analyst, inputs)
-        writing_task = create_writing_task(writer, inputs)
+        analysis_task = create_analysis_task(analyst, inputs, context=[research_task])
+        writing_task = create_writing_task(writer, inputs, context=[analysis_task])
+
         return Crew(
             agents=[researcher, analyst, writer],
             tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
-
-    def execute_crew(self, crew: Crew, inputs: Dict[str, Any]) -> CrewOutput:
-        """Executes the given crew with the provided inputs."""
-        with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TimeRemainingColumn(),
-                console=console,
-                transient=True,
-        ) as progress:
-            task = progress.add_task("Executing crew...", total=1)
-            result = crew.kickoff(inputs=inputs)
-            progress.update(task, completed=1)
-
-        console.print(f"🚀 Execution of {self.category} crew complete. ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", style="bold green")
-        return result
-
