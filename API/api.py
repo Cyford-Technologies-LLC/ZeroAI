@@ -150,6 +150,25 @@ def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
     }
 
 
+def handle_crew_result(crew_result: Any, cache_key: str):
+    """
+    Standardizes the handling of AI crew results, ensuring a JSON-serializable
+    dictionary is always returned and cached.
+    """
+    if isinstance(crew_result, CrewOutput):
+        console.print(f"🔄 Converting CrewOutput to dictionary for serialization.", style="yellow")
+        response_data = crew_output_to_dict(crew_result)
+        cache.set(cache_key, "crew_result", response_data)
+        return response_data
+    elif isinstance(crew_result, dict):
+        console.print(f"✅ Cached data is already a dictionary.", style="blue")
+        return crew_result
+    else:
+        # Fallback for unexpected data types
+        console.print(f"❌ Unexpected data type from cache: {type(crew_result)}", style="red")
+        raise TypeError(f"Cannot serialize object of type {type(crew_result)}")
+
+
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
     """
     Handles the core logic for running the AI crew and returns the complete CrewOutput as JSON.
@@ -189,25 +208,15 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
 
         cached_response = cache.get(cache_key, "crew_result")
 
-        if cached_response and not isinstance(cached_response, CrewOutput):
-            console.print(f"✅ Cache Hit. Using cached dictionary data.", style="blue")
-            response_data = cached_response
+        if cached_response:
+            console.print(f"✅ Cache Hit. Processing result...", style="blue")
+            response_data = handle_crew_result(cached_response, cache_key)
         else:
-            if cached_response and isinstance(cached_response, CrewOutput):
-                console.print(f"⚠️ Cache Hit, but data was a non-serializable object. Forcing execution.",
-                              style="yellow")
-            else:
-                console.print(f"⚠️ Cache Miss. Executing AI Crew.", style="yellow")
-
+            console.print(f"⚠️ Cache Miss. Executing AI Crew...", style="yellow")
             crew_output = manager.execute_crew(crew, inputs)
-            response_data = crew_output_to_dict(crew_output)
-            cache.set(cache_key, "crew_result", response_data)
+            response_data = handle_crew_result(crew_output, cache_key)
 
-        console.print(f"[bold red]--- Final Return Data Type ---[/bold red]")
-        console.print(f"[red]Returning data type:[/red] {type(response_data)}")
-        console.print(f"[red]Returning data value starts with:[/red] {str(response_data)[:100]}...")
-
-        return response_data
+        return JSONResponse(content=response_data)
 
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
@@ -249,8 +258,8 @@ async def run_crew_ai_form(
                 shutil.copyfileobj(file.file, buffer)
             uploaded_files_paths.append(str(file_location))
 
-        response_data = process_crew_request(inputs, uploaded_files_paths)
-        return response_data
+        response = process_crew_request(inputs, uploaded_files_paths)
+        return response
     finally:
         for file_path in uploaded_files_paths:
             Path(file_path).unlink(missing_ok=True)
@@ -284,8 +293,8 @@ def run_crew_ai_json(
                     buffer.write(file_bytes)
                 uploaded_files_paths.append(str(file_location))
 
-        response_data = process_crew_request(inputs, uploaded_files_paths)
-        return response_data
+        response = process_crew_request(inputs, uploaded_files_paths)
+        return response
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
