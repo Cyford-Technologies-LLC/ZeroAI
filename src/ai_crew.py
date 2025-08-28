@@ -15,6 +15,7 @@ from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
 from crews.customer_service.tasks import create_customer_service_task  # Import refined task
+from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool # Import delegation tools
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -101,7 +102,27 @@ class AICrewManager:
 
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
-        customer_service_task = create_customer_service_task(customer_service_agent, inputs) # Use imported task
+
+        # Define manager tools to use for delegation
+        manager_tools = [
+            DelegatingMathTool(self, inputs),
+            ResearchDelegationTool(self, inputs),
+            # Add other delegating tools here
+        ]
+
+        customer_service_task = Task(
+            description=f"""
+            Analyze the customer inquiry: {inputs.get('topic')}.
+            If the inquiry is a math problem, use the 'Delegating Math Tool' to solve it.
+            If it requires research, use the 'Research Delegation Tool' to get the information.
+            Otherwise, answer the inquiry directly.
+
+            **CRITICAL:** If any delegation fails or a specialist agent cannot provide a satisfactory response, you **must** fall back to providing a simple, direct answer to the customer yourself.
+            """,
+            agent=customer_service_agent,
+            tools=manager_tools, # Provide tools to the manager agent
+            expected_output="A polite and direct final answer to the customer's query."
+        )
 
         all_agents = [customer_service_agent] + specialist_agents
 
@@ -170,10 +191,10 @@ class AICrewManager:
                         agents=[fallback_agent],
                         tasks=[fallback_task],
                         process=Process.sequential,
-                        verbose=False # Set verbose to False to prevent a nested rich display
+                        verbose=False
                     )
                     fallback_output = fallback_crew.kickoff()
-                    fallback_output_text = fallback_output.raw # Also extract the raw string here
+                    fallback_output_text = fallback_output.raw
                     progress.update(task, description="✅ Fallback crew completed!")
                     return {"result": fallback_output_text, "llm_details": self.get_llm_details()}
                 except Exception as fallback_e:
