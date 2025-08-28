@@ -103,11 +103,11 @@ class AICrewManager:
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
 
-        # Define manager tools to use for delegation
+        # Instantiate delegation tools with the current AICrewManager instance (self)
         manager_tools = [
             DelegatingMathTool(self, inputs),
             ResearchDelegationTool(self, inputs),
-            # Add other delegating tools here
+            # Add other delegating tools here, also instantiated with self and inputs
         ]
 
         customer_service_task = Task(
@@ -191,7 +191,7 @@ class AICrewManager:
                         agents=[fallback_agent],
                         tasks=[fallback_task],
                         process=Process.sequential,
-                        verbose=False
+                        verbose=False # Set verbose to False to prevent a nested rich display
                     )
                     fallback_output = fallback_crew.kickoff()
                     fallback_output_text = fallback_output.raw
