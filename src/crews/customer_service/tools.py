@@ -7,8 +7,7 @@ class DelegatingMathTool(BaseTool):
     description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
 
     def __init__(self, crew_manager, **kwargs):
-        # Call the parent's __init__ method, passing necessary arguments.
-        # This is the most robust way to ensure inheritance works correctly.
+        # Call the parent's __init__ method without passing the custom argument.
         super().__init__(**kwargs)
 
         print(f"DEBUG: Initializing DelegatingMathTool from: {__file__}")
