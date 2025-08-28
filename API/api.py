@@ -1,5 +1,3 @@
-# /opt/ZeroAI/API/api.py
-
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File
 from pydantic import BaseModel
@@ -72,7 +70,10 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         console.print(f"   Model Name: {inputs.get('model_name')}")
         console.print(f"   Uploaded Files: {[os.path.basename(f) for f in uploaded_files_paths]}")
 
-        manager = AICrewManager(distributed_router, inputs=inputs)
+        # The AICrewManager is initialized with all inputs AND the category
+        manager = AICrewManager(distributed_router, inputs=inputs, category=category)
+
+        # create_crew_for_category is now smart enough to call the correct function
         crew = manager.create_crew_for_category(inputs)
 
         cache_key = f"{category}_{topic}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}_{inputs.get('ai_provider', '')}_{inputs.get('model_name', '')}"
@@ -171,4 +172,3 @@ def run_crew_ai_json(
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3939)
-

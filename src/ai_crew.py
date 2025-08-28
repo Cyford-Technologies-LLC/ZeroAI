@@ -12,12 +12,12 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from providers.cloud_providers import CloudProviderManager
 
 # --- New Crew Imports ---
-from crews.customer_service.crew import create_customer_service_crew
+# NOTE: The customer service crew is treated differently for hierarchical delegation
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
 
-# --- Import Agents from Sub-Crews for Hierarchical Process ---
+# --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
 from crews.coding.agents import create_coding_developer_agent, create_qa_engineer_agent
 from crews.tech_support.agents import create_tech_support_agent
@@ -45,7 +45,6 @@ class AICrewManager:
             self.task_description = "llama3.2:latest"
         elif self.category == "math" and not self.task_description:
             self.task_description = "llama3.2:latest"
-
 
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
@@ -78,13 +77,14 @@ class AICrewManager:
         elif self.category == "coding":
             return create_coding_crew(self.llm_instance, inputs)
         elif self.category == "customer_service":
+            # Pass all potential worker agents for hierarchical delegation
             specialist_agents = [
                 create_mathematician_agent(self.llm_instance, inputs),
                 create_tech_support_agent(self.llm_instance, inputs),
                 create_coding_developer_agent(self.llm_instance, inputs),
                 create_researcher(self.llm_instance, inputs)
             ]
-            return create_customer_service_crew(self.llm_instance, inputs, specialist_agents)
+            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
         elif self.category == "tech_support":
             return create_tech_support_crew(self.llm_instance, inputs)
         elif self.category == "math":
@@ -92,6 +92,21 @@ class AICrewManager:
         else:
             console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
             return self.create_research_crew(inputs)
+
+    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
+        customer_service_agent = create_customer_service_agent(llm, inputs)
+        customer_service_task = Task(
+            description=f"Handle customer inquiry: {inputs.get('topic')}",
+            agent=customer_service_agent,
+            expected_output="A polite and helpful response that addresses the customer's query, including answers from specialist agents if needed."
+        )
+        return Crew(
+            agents=[customer_service_agent] + specialist_agents,
+            tasks=[customer_service_task],
+            process=Process.hierarchical,
+            manager_llm=llm,
+            verbose=config.agents.verbose
+        )
 
     def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
