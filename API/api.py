@@ -12,6 +12,7 @@ import os
 import time
 import json
 from crewai import CrewOutput, TaskOutput
+from fastapi.encoders import jsonable_encoder
 
 
 # Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
@@ -116,8 +117,8 @@ def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
         return crew_output
 
     data = crew_output.model_dump()
-    if hasattr(crew_output, 'result'):
-        data['result'] = crew_output.result
+    # It's better to use the correct attributes based on context
+    # instead of adding a custom 'result' key here.
     return data
 
 
@@ -137,21 +138,38 @@ def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
     }
 
 
-def handle_crew_result(crew_result: Any, cache_key: str):
+def format_crew_output(crew_output: CrewOutput, output_format: str) -> Dict[str, Any]:
+    """
+    Formats the CrewOutput object into a JSON-serializable dictionary
+    based on the requested output format.
+    """
+    if output_format == "json":
+        if crew_output.json_dict:
+            console.print("✅ Returning JSON dictionary output.", style="blue")
+            return crew_output.json_dict
+        else:
+            console.print("⚠️ No JSON dictionary found. Returning raw string in a dictionary.", style="yellow")
+            return {"result": crew_output.raw}
+    elif output_format == "pydantic":
+        if crew_output.pydantic:
+            console.print("✅ Returning Pydantic output as a dictionary.", style="blue")
+            return jsonable_encoder(crew_output.pydantic)
+        else:
+            console.print("⚠️ No Pydantic output found. Returning raw string in a dictionary.", style="yellow")
+            return {"result": crew_output.raw}
+    else:  # default to raw
+        console.print("✅ Returning raw string output.", style="blue")
+        return {"result": crew_output.raw}
+
+
+def handle_crew_result(crew_result: Any, cache_key: str, output_format: str):
     """
     Standardizes the handling of AI crew results, ensuring a JSON-serializable
     dictionary is always returned and cached.
     """
     if isinstance(crew_result, CrewOutput):
         console.print(f"🔄 Converting CrewOutput to dictionary for serialization.", style="yellow")
-
-        # --- DEBUGGING STEP ---
-        console.print("[bold cyan]--- CrewOutput Object Dump ---[/bold cyan]")
-        console.print(crew_result)  # Print the full object
-        console.print("[bold cyan]----------------------------[/bold cyan]")
-        # --- END DEBUGGING STEP ---
-
-        response_data = crew_output_to_dict(crew_result)
+        response_data = format_crew_output(crew_result, output_format)
         cache.set(cache_key, "crew_result", response_data)
         return response_data
     elif isinstance(crew_result, dict):
@@ -160,7 +178,7 @@ def handle_crew_result(crew_result: Any, cache_key: str):
     else:
         # Fallback for unexpected data types
         console.print(f"❌ Unexpected data type from cache: {type(crew_result)}", style="red")
-        raise TypeError(f"Cannot serialize object of type {type(crew_result)}")
+        return {"result": str(crew_result)}
 
 
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str], output_format: str):
@@ -206,66 +224,43 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         response_data = None
         if cached_response:
             console.print(f"✅ Cache Hit. Processing result...", style="blue")
-            response_data = handle_crew_result(cached_response, cache_key)
+            response_data = handle_crew_result(cached_response, cache_key, output_format)
         else:
-            console.print(f"⚠️ Cache Miss. Executing AI Crew...", style="yellow")
-            crew_output = crew.kickoff()
-            response_data = handle_crew_result(crew_output, cache_key)
+            console.print(f"🚀 Cache Miss. Running CrewAI process...", style="green")
+            start_time = time.time()
+            crew_result = crew.kickoff()
+            end_time = time.time()
+            console.print(f"✅ Crew execution completed in {end_time - start_time:.2f}s", style="green")
+            response_data = handle_crew_result(crew_result, cache_key, output_format)
 
-        if output_format == "json":
-            return {"result": response_data.get("result", "No result available.")}
-        elif output_format == "text":
-            return {"result": response_data.get("result", "No result available.")}
-        else:
-            return response_data
-
+        return response_data
     except Exception as e:
-        console.print(f"❌ API Call Failed: {e}", style="red")
+        console.print(f"❌ Error during crew execution: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/run_crew_ai_json/")
-async def run_crew_ai_json(crew_request: CrewRequest,
-                           distributed_router_dep: PeerDiscovery = Depends(get_distributed_router)):
-    """Run a specific AI crew with inputs provided in a JSON payload."""
-    return process_crew_request(crew_request.inputs, [], "json")
-
-
-@app.post("/run_crew_ai_text/")
-async def run_crew_ai_text(crew_request: CrewRequest,
-                           distributed_router_dep: PeerDiscovery = Depends(get_distributed_router)):
-    """Run a specific AI crew with inputs provided in a JSON payload and return text output."""
-    return process_crew_request(crew_request.inputs, [], "text")
-
-
-@app.post("/run_crew_ai_multipart/")
-async def run_crew_ai_multipart(
-        inputs: str = Form(...),
-        files: Optional[List[UploadFile]] = File(None),
-        distributed_router_dep: PeerDiscovery = Depends(get_distributed_router)
+async def run_crew_ai_json(
+        crew_request: CrewRequest,
+        output_format: str = "raw",  # Default to 'raw' if not specified
+        distributed_router_instance: DistributedRouter = Depends(get_distributed_router)
 ):
-    """Run a specific AI crew with inputs and file uploads from a multipart/form-data payload."""
-    inputs_dict = json.loads(inputs)
-    uploaded_files_paths = []
-    temp_dir = Path("uploads")
-    temp_dir.mkdir(exist_ok=True)
-
-    if files:
-        for file in files:
-            file_path = temp_dir / file.filename
-            with file_path.open("wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            uploaded_files_paths.append(str(file_path))
-
     try:
-        response = process_crew_request(inputs_dict, uploaded_files_paths, "json")
-    finally:
-        # Clean up uploaded files
-        for file_path in uploaded_files_paths:
-            os.remove(file_path)
+        inputs = crew_request.inputs
 
-    return response
+        # Ensure the crew's task is set to produce structured JSON output if requested
+        if output_format == "json":
+            # This is a placeholder. The actual task creation in AICrewManager
+            # would need to be updated to support this.
+            # Example: crew = manager.create_crew_for_category(inputs, output_format='json')
+            pass
 
+        # Since no files were uploaded in this request, pass an empty list
+        response_data = process_crew_request(inputs, [], output_format)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        return JSONResponse(content=response_data, status_code=200)
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
