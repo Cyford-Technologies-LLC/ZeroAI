@@ -1,38 +1,21 @@
-# Path: crews/coding/agents.py
+# Path: crews/coding/crew.py
 
-from crewai import Agent
+from crewai import Crew, Process
+from typing import Dict, Any
 from config import config
+from .agents import create_coding_developer_agent, create_qa_engineer_agent
+from .tasks import create_coding_task
 from distributed_router import DistributedRouter # Import router
-from langchain_community.llms.ollama import Ollama # If you use it for the Agent llm
 
-def create_coding_developer_agent(router: DistributedRouter, inputs: dict) -> Agent:
-    task_description = "Generate and refine coding solutions."
-    llm = router.get_llm_for_task(task_description)
+def create_coding_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
+    coding_developer = create_coding_developer_agent(router, inputs)
+    qa_engineer = create_qa_engineer_agent(router, inputs)
+    coding_task = create_coding_task(coding_developer, inputs)
 
-    return Agent(
-        role='Senior Software Developer',
-        goal='Develop and refine code based on specifications.',
-        backstory=(
-            "Experienced software developer specializing in efficient and scalable code. "
-            "You are a master of clean and maintainable code."
-        ),
-        llm=llm,
+    return Crew(
+        agents=[coding_developer, qa_engineer],
+        tasks=[coding_task],
+        process=Process.sequential,
         verbose=config.agents.verbose,
-        allow_delegation=False
-    )
-
-def create_qa_engineer_agent(router: DistributedRouter, inputs: dict) -> Agent:
-    task_description = "Write test cases for code."
-    llm = router.get_llm_for_task(task_description)
-
-    return Agent(
-        role='Quality Assurance Engineer',
-        goal='Ensure the quality and reliability of the code by writing comprehensive test cases.',
-        backstory=(
-            "A meticulous and detail-oriented QA engineer responsible for quality control. "
-            "You write robust and effective tests to ensure code quality."
-        ),
-        llm=llm,
-        verbose=config.agents.verbose,
-        allow_delegation=False
+        full_output=full_output
     )
