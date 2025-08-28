@@ -45,9 +45,9 @@ class AICrewManager:
 
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         self.router = distributed_router_instance
-        self.category = kwargs.pop('category', 'general')
-        self.task_description = kwargs.get('topic', kwargs.get('task', ''))
-        self.inputs = kwargs
+        self.inputs = kwargs.get('inputs', {})
+        self.category = self.inputs.get('category', 'general')
+        self.task_description = self.inputs.get('topic', '')
         self.llm_instance = None
 
         print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
@@ -56,6 +56,8 @@ class AICrewManager:
     # FIX: Update the execute_crew method to accept the router and inputs
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
+        self.inputs = inputs
+        self.router = router
         category = inputs.get('category', 'auto')
 
         if category == "auto":
@@ -219,3 +221,4 @@ class AICrewManager:
             tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
+
