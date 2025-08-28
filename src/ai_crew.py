@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, Optional, List
-from crewai import Agent, Task, Crew, Process, BaseTool
+from crewai import Agent, Task, Crew, Process
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
