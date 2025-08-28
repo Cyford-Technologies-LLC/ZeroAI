@@ -1,12 +1,14 @@
-# Path: src/ai_crew.py
+# src/ai_crew.py
 
 import logging
 from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+import warnings
 
 from langchain_community.llms.ollama import Ollama
+from langchain_core.exceptions import LangChainDeprecationWarning
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -129,15 +131,17 @@ class AICrewManager:
             "base_url": self.base_url,
             "temperature": config.model.temperature
         }
-        self.llm_instance = Ollama(**self.llm_config)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", LangChainDeprecationWarning)
+            self.llm_instance = Ollama(**self.llm_config)
 
         console.print(
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        # The fix is here: double the closing curly brace
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]}}",
+        # Corrected f-string, using standard string format
+        console.print("📦 Creating a specialized crew for category: [bold yellow]{}[/bold yellow]".format(category),
                       style="blue")
         if category == "research":
             return self.create_research_crew(inputs)
@@ -154,8 +158,8 @@ class AICrewManager:
 
     def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
         category = inputs.get('category', self.category)
-        # Another f-string with an unescaped closing brace
-        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]}}", style="blue")
+        # Corrected f-string
+        console.print("📦 Creating a crew for category: [bold yellow]{}[/bold yellow]".format(category), style="blue")
 
         if category == "customer_service":
             specialist_agents = [
@@ -234,3 +238,4 @@ class AICrewManager:
             tasks=[research_task, analysis_task, writing_task],
             verbose=config.agents.verbose
         )
+
