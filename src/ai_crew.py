@@ -19,9 +19,7 @@ from tasks.base_tasks import create_research_task, create_writing_task, create_a
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-# Assuming `create_customer_service_crew` is updated
 from crews.customer_service.crew import create_customer_service_crew
-from crews.customer_service.tasks import create_customer_service_task
 
 # --- Import ALL specialist agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -29,6 +27,9 @@ from crews.coding.agents import create_coding_developer_agent, create_qa_enginee
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
 from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
+
+# Assuming `DistributedRouter` is imported correctly
+from distributed_router import DistributedRouter
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -67,11 +68,12 @@ def create_classifier_agent(llm: Ollama) -> Agent:
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
-    def __init__(self, distributed_router_instance, **kwargs):
+    def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         self.router = distributed_router_instance
         self.category = kwargs.pop('category', 'general')
         self.task_description = kwargs.get('topic', kwargs.get('task', ''))
         self.inputs = kwargs
+        self.llm_instance = None  # Moved to agent-specific router calls
 
         if self.category == "chat" and not self.task_description:
             self.task_description = "llama3.2:latest"
@@ -88,6 +90,7 @@ class AICrewManager:
         print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
 
         try:
+            # We no longer get an LLM instance here. Agents will get it from the router.
             self.base_url, self.peer_name, self.model_name = self.router.get_optimal_endpoint_and_model(
                 self.task_description)
             print(f"DEBUG: Router returned URL: {self.base_url}, Peer: {self.peer_name}, Model: {self.model_name}")
@@ -95,22 +98,7 @@ class AICrewManager:
             print(f"❌ Error during router call in AICrewManager: {e}")
             raise
 
-        prefixed_model_name = f"ollama/{self.model_name}"
-        self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
-        self.provider = "local"
-        self.llm_config = {
-            "model": prefixed_model_name,
-            "base_url": self.base_url,
-            "temperature": config.model.temperature
-        }
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            self.llm_instance = Ollama(**self.llm_config)
-
-        console.print(
-            f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
-            style="blue")
+        console.print(f"✅ Preparing LLM routing...", style="blue")
 
     def execute_crew(self, category: str, query: str) -> CrewOutput:
         """
@@ -121,38 +109,20 @@ class AICrewManager:
         inputs['category'] = category
 
         try:
-            # Check for "auto" category and run classifier
             if category == "auto":
                 classified_category = self._classify_task(inputs)
                 if not classified_category:
                     raise Exception("Auto-classification failed.")
-                # FIX: Use the classified category for the rest of the method
                 category = classified_category
-                # FIX: Update the inputs dictionary for create_crew_for_category
                 inputs['category'] = classified_category
-            if category == "general" and len(query.split()) < 5:  # Arbitrary check for simplicity
-                console.print("📦 Creating a simple sequential crew for general inquiry.", style="blue")
-                customer_service_agent = create_customer_service_agent(self.llm_instance, self.inputs)
-                customer_service_task = create_customer_service_task(customer_service_agent, self.inputs)
-                crew = Crew(
-                    agents=[customer_service_agent],
-                    tasks=[customer_service_task],
-                    process=Process.sequential,
-                    verbose=config.agents.verbose,
-                    full_output=True
-                )
-                return crew.kickoff()
 
-            # Create and execute the specialized crew
             crew = self.create_crew_for_category(inputs)
             crew_output = crew.kickoff()
             return crew_output
         except Exception as e:
             console.print(f"❌ Error during specialized crew execution: {e}", style="red")
 
-            # Create a mock agent role for the TaskOutput object.
             mock_agent = "Error Handler"
-
             error_output = CrewOutput(
                 raw=f"Failed to execute {category} crew: {e}",
                 tasks_output=[
@@ -172,7 +142,9 @@ class AICrewManager:
         """
         Helper method to run the classification crew and return the category.
         """
-        classifier_agent = create_classifier_agent(self.llm_instance)
+        # The classifier still uses a single LLM instance
+        classifier_llm = self.router.get_llm_for_task(inputs.get('topic'))
+        classifier_agent = create_classifier_agent(classifier_llm)
         classifier_task = Task(
             description=f"""
             Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
@@ -222,32 +194,27 @@ class AICrewManager:
         if category == "customer_service":
             raise ValueError("Recursive call to create_customer_service_crew detected. This is not allowed.")
 
-        # FIX: Explicitly check for the "general" category and route it
         if category == "general":
-            # Assuming you have a list of specialists for delegation in the hierarchical crew
-            # For simplicity, we'll pass an empty list here, but you should adjust this as needed
             specialist_agents = []
-            return create_customer_service_crew(self.llm_instance, inputs, specialist_agents, full_output=full_output)
+            return create_customer_service_crew(self.router, inputs, specialist_agents, full_output=full_output)
         elif category == "research":
             return self.create_research_crew(inputs, full_output=full_output)
         elif category == "analysis":
             return self.create_analysis_crew(inputs, full_output=full_output)
         elif category == "coding":
-            return create_coding_crew(self.llm_instance, inputs, full_output=full_output)
+            return create_coding_crew(self.router, inputs, full_output=full_output)
         elif category == "math":
-            # return create_math_crew(self.llm_instance, inputs, full_output=full_output)
             return create_math_crew(self.router, inputs, full_output=full_output)
         elif category == "tech_support":
-            return create_tech_support_crew(self.llm_instance, inputs, full_output=full_output)
+            return create_tech_support_crew(self.router, inputs, full_output=full_output)
         else:
-            # Fallback to general research crew if category is not recognized
             console.print(f"⚠️ Category '{category}' not recognized, falling back to general research crew.",
                           style="yellow")
             return self.create_research_crew(inputs, full_output=full_output)
 
     def create_research_crew(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
-        researcher = create_researcher(self.llm_instance, inputs)
-        writer = create_writer(self.llm_instance, inputs)
+        researcher = create_researcher(self.router, inputs)
+        writer = create_writer(self.router, inputs)
 
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, [research_task], inputs)
@@ -261,8 +228,8 @@ class AICrewManager:
         )
 
     def create_analysis_crew(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
-        researcher = create_researcher(self.llm_instance, inputs)
-        analyst = create_analyst(self.llm_instance, inputs)
+        researcher = create_researcher(self.router, inputs)
+        analyst = create_analyst(self.router, inputs)
 
         research_task = create_research_task(researcher, inputs)
         analysis_task = create_analysis_task(analyst, [research_task], inputs)
@@ -274,4 +241,3 @@ class AICrewManager:
             process=Process.sequential,
             full_output=full_output,
         )
-
