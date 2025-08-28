@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
 from rich.console import Console
 import warnings
+from fastapi.encoders import jsonable_encoder
 
 from langchain_community.llms.ollama import Ollama
 from langchain_community import __version__ as langchain_community_version
@@ -100,9 +101,30 @@ class AICrewManager:
             f"✅ Preparing LLM config for Ollama: [bold yellow]{self.llm_config['model']}[/bold yellow] at [bold green]{self.base_url}[/bold green]",
             style="blue")
 
-    def execute_crew(self, category: str, query: str) -> str:
+    def create_crew_for_category(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
+        category = inputs.get("category", self.category)
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
+                      style="blue")
+
+        if category == "research":
+            return self.create_research_crew(inputs, full_output=full_output)
+        elif category == "analysis":
+            return self.create_analysis_crew(inputs, full_output=full_output)
+        elif category == "coding":
+            return create_coding_crew(self.llm_instance, inputs, full_output=full_output)
+        elif category == "math":
+            # Assuming create_math_crew takes llm_instance, inputs, and full_output
+            return create_math_crew(self.llm_instance, inputs, full_output=full_output)
+        elif category == "tech_support":
+            return create_tech_support_crew(self.llm_instance, inputs, full_output=full_output)
+        else:
+            console.print(f"⚠️ Category '{category}' not recognized, falling back to general research crew.",
+                          style="yellow")
+            return self.create_research_crew(inputs, full_output=full_output)
+
+    def execute_crew(self, category: str, query: str) -> CrewOutput:
         """
-        Creates and executes a specialized crew, returning the final result.
+        Creates and executes a specialized crew, returning the full CrewOutput object.
         """
         inputs = self.inputs.copy()
         inputs['topic'] = query
@@ -113,15 +135,23 @@ class AICrewManager:
             if category == "auto":
                 category = self._classify_task(inputs)
                 if not category:
-                    return "Auto-classification failed."
+                    raise Exception("Auto-classification failed.")
 
             # Create and execute the specialized crew
-            crew = self._create_specialized_crew(category, inputs)
+            crew = self.create_crew_for_category(inputs)
             crew_output = crew.kickoff()
-            return crew_output.result
+            return crew_output
         except Exception as e:
             console.print(f"❌ Error during specialized crew execution: {e}", style="red")
-            return f"Failed to execute {category} crew: {e}"
+            # Create a mock CrewOutput for consistent error handling
+            error_output = CrewOutput(
+                raw=f"Failed to execute {category} crew: {e}",
+                tasks_output=[TaskOutput(raw=f"Failed to execute: {e}", description="Error in execution")],
+                pydantic=None,
+                json_dict=None,
+                token_usage=None
+            )
+            return error_output
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
@@ -142,114 +172,49 @@ class AICrewManager:
             agents=[classifier_agent],
             tasks=[classifier_task],
             verbose=config.agents.verbose,
+            full_output=True  # Also enable for the classifier crew
         )
 
         try:
             classification_result = classifier_crew.kickoff()
-
-            # --- DEBUGGING STEP ---
             console.print("[bold cyan]--- Classifier Crew Output Dump ---[/bold cyan]")
-            console.print(classification_result.tasks_output)
+            console.print(classification_result)
             console.print("[bold cyan]----------------------------[/bold cyan]")
-            # --- END DEBUGGING STEP ---
 
-            # FIX: Access the result from the first item in the tasks_output list
-            # and check if it exists before accessing its 'raw' attribute.
             if isinstance(classification_result.tasks_output, list) and classification_result.tasks_output:
-                return classification_result.tasks_output[0].raw.strip().lower()
+                return classification_result.tasks_output[-1].raw.strip().lower()
             else:
                 raise Exception("Classification crew did not produce a valid output.")
         except Exception as e:
             console.print(f"❌ Classification failed: {e}", style="red")
             return None
 
-    def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
-                      style="blue")
-
-        # Prevent delegation tools from recursively creating customer service crews.
-        if category == "customer_service":
-            raise ValueError("Recursive call to create_customer_service_crew detected. This is not allowed.")
-
-        if category == "research":
-            return self.create_research_crew(inputs)
-        elif category == "analysis":
-            return self.create_analysis_crew(inputs)
-        elif category == "coding":
-            return create_coding_crew(self.llm_instance, inputs)
-        elif category == "math":
-            return create_math_crew(self.llm_instance, inputs)
-        elif category == "tech_support":
-            return create_tech_support_crew(self.llm_instance, inputs)
-        else:
-            # Fallback to general crew creation if category is not recognized
-            console.print(f"⚠️ Category '{category}' not recognized, defaulting to general purpose.", style="yellow")
-            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs)
-
-    def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        category = inputs.get('category', 'auto')
-
-        if category == "auto":
-            category = self._classify_task(inputs)
-            if not category:
-                # Crash as requested if auto-classification fails
-                raise Exception("Auto-classification failed. Crashing.")
-
-        console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow]", style="blue")
-
-        # Route to the correct crew based on the classification result or user input
-        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
-
-        if category == "math":
-            return create_math_crew(self.llm_instance, inputs)
-        elif category == "coding":
-            return create_coding_crew(self.llm_instance, inputs)
-        elif category == "research":
-            # Direct to the research crew if explicitly classified
-            return self.create_research_crew(inputs)
-        elif category == "tech_support":
-            return create_tech_support_crew(self.llm_instance, inputs)
-        else:
-            # For general or unrecognized inquiries, route to the customer service crew
-            return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs)
-
-    def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any]) -> Crew:
-        customer_service_agent = create_customer_service_agent(llm, inputs)
-
-        # For general tasks, it can still delegate to research or other specialized sub-crews if needed
-        manager_tools = [
-            ResearchDelegationTool(crew_manager=self, inputs=inputs),
-        ]
-
-        customer_service_task = Task(
-            description=f"""
-            Analyze the customer inquiry: {inputs.get('topic')}.
-            If the inquiry requires research, use the 'Research Delegation Tool' to get the information.
-            Otherwise, answer the inquiry directly based on internal knowledge or the context provided.
-            **CRITICAL:** If any delegation fails or a specialist agent cannot provide a satisfactory response, you **must** fall back to providing a simple, direct answer to the customer yourself.
-            """,
-            agent=customer_service_agent,
-            tools=manager_tools,
-            expected_output="A polite and direct final answer to the customer's query."
-        )
-
-        all_agents = [customer_service_agent]
-
-        return Crew(
-            agents=all_agents,
-            tasks=[customer_service_task],
-            process=Process.hierarchical,
-            manager_llm=llm,
-            verbose=config.agents.verbose
-        )
-
-    def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
+    def create_research_crew(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
         writer = create_writer(self.llm_instance, inputs)
+
         research_task = create_research_task(researcher, inputs)
-        writing_task = create_writing_task(writer, inputs, context=[research_task])
+        writing_task = create_writing_task(writer, [research_task], inputs)
+
         return Crew(
             agents=[researcher, writer],
             tasks=[research_task, writing_task],
-            verbose=config.agents.verbose
+            verbose=config.agents.verbose,
+            process=Process.sequential,
+            full_output=full_output,
+        )
+
+    def create_analysis_crew(self, inputs: Dict[str, Any], full_output: bool = True) -> Crew:
+        researcher = create_researcher(self.llm_instance, inputs)
+        analyst = create_analyst(self.llm_instance, inputs)
+
+        research_task = create_research_task(researcher, inputs)
+        analysis_task = create_analysis_task(analyst, [research_task], inputs)
+
+        return Crew(
+            agents=[researcher, analyst],
+            tasks=[research_task, analysis_task],
+            verbose=config.agents.verbose,
+            process=Process.sequential,
+            full_output=full_output,
         )
