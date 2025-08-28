@@ -55,15 +55,12 @@ async def log_requests(request: Request, call_next):
     console.print(f"[yellow]Method:[/yellow] {request.method}")
     console.print(f"[yellow]Headers:[/yellow] {dict(request.headers)}")
 
-    # Log the request body for JSON endpoints
     if request.url.path == "/run_crew_ai_json/":
         try:
-            # We must handle the body with care to not consume it before the route handler
             body_bytes = await request.body()
             body_decoded = body_bytes.decode("utf-8")
             console.print(f"[yellow]Body:[/yellow] {body_decoded}")
 
-            # Re-wrap the body for the route handler
             async def receive() -> dict:
                 return {"type": "http.request", "body": body_bytes}
 
@@ -164,7 +161,6 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        # Read content of uploaded files and add to inputs
         inputs['file_content'] = ""
         if uploaded_files_paths:
             file_contents = []
@@ -193,14 +189,23 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
 
         cached_response = cache.get(cache_key, "crew_result")
 
-        if cached_response:
-            console.print(f"✅ Cache Hit. Using cached data.", style="blue")
+        if cached_response and not isinstance(cached_response, CrewOutput):
+            console.print(f"✅ Cache Hit. Using cached dictionary data.", style="blue")
             response_data = cached_response
         else:
-            console.print(f"⚠️ Cache Miss. Executing AI Crew.", style="yellow")
+            if cached_response and isinstance(cached_response, CrewOutput):
+                console.print(f"⚠️ Cache Hit, but data was a non-serializable object. Forcing execution.",
+                              style="yellow")
+            else:
+                console.print(f"⚠️ Cache Miss. Executing AI Crew.", style="yellow")
+
             crew_output = manager.execute_crew(crew, inputs)
             response_data = crew_output_to_dict(crew_output)
             cache.set(cache_key, "crew_result", response_data)
+
+        console.print(f"[bold red]--- Final Return Data Type ---[/bold red]")
+        console.print(f"[red]Returning data type:[/red] {type(response_data)}")
+        console.print(f"[red]Returning data value starts with:[/red] {str(response_data)[:100]}...")
 
         return response_data
 
