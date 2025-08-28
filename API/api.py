@@ -8,16 +8,17 @@ import sys
 import shutil
 import base64
 import os
-# Remove the invalid telemetry import
 from crewai import CrewOutput, TaskOutput
 
-# Define a placeholder class to avoid the NameError in usage_metrics_to_dict.
+
+# Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
 class UsageMetrics:
     def __init__(self, total_tokens=0, prompt_tokens=0, completion_tokens=0, successful_requests=0):
         self.total_tokens = total_tokens
         self.prompt_tokens = prompt_tokens
         self.completion_tokens = completion_tokens
         self.successful_requests = successful_requests
+
 
 # Disable CrewAI telemetry by setting the environment variable
 os.environ['CREWAI_DISABLE_TELEMETRY'] = "true"
@@ -40,16 +41,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
 class FileData(BaseModel):
     name: str
     type: str
     base64_data: str
 
+
 class CrewRequest(BaseModel):
     inputs: Dict[str, Any]
 
+
 def get_distributed_router():
     return distributed_router
+
 
 def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
     """Converts a CrewOutput object to a dictionary for JSON serialization."""
@@ -57,8 +62,9 @@ def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
         return crew_output
 
     tasks_output = [task_output_to_dict(task) for task in crew_output.tasks_output]
-    # Telemetry data will not be available, so we set it to a dummy value
-    token_usage_dict = usage_metrics_to_dict(crew_output.token_usage) if hasattr(crew_output, 'token_usage') else usage_metrics_to_dict(UsageMetrics())
+    # Handle the case where token_usage might be None or a different type
+    token_usage = getattr(crew_output, 'token_usage', UsageMetrics())
+    token_usage_dict = usage_metrics_to_dict(token_usage)
 
     return {
         "raw": crew_output.raw,
@@ -67,6 +73,7 @@ def crew_output_to_dict(crew_output: CrewOutput) -> Dict[str, Any]:
         "tasks_output": tasks_output,
         "token_usage": token_usage_dict
     }
+
 
 def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
     """Converts a TaskOutput object to a dictionary for JSON serialization."""
@@ -82,6 +89,7 @@ def task_output_to_dict(task_output: TaskOutput) -> Dict[str, Any]:
         "output_format": task_output.output_format.name if task_output.output_format else None
     }
 
+
 def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
     """Converts a UsageMetrics object to a dictionary for JSON serialization."""
     return {
@@ -94,8 +102,7 @@ def usage_metrics_to_dict(usage_metrics: UsageMetrics) -> Dict[str, Any]:
 
 def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
     """
-    Handles the core logic for running the AI crew, with added capability to read
-    uploaded file content and include it in the inputs.
+    Handles the core logic for running the AI crew and returns the complete CrewOutput as JSON.
     """
     try:
         topic = inputs.get("topic")
@@ -104,18 +111,16 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        # Read content of the first uploaded file and add to inputs
         inputs['file_content'] = ""
         if uploaded_files_paths:
             try:
-                # Assuming only one file for simplicity in this example
-                with open(uploaded_files_paths[0], 'r') as f: # Corrected logic to handle list
+                with open(uploaded_files_paths[0], 'r') as f:
                     inputs['file_content'] = f.read()
             except Exception as e:
                 console.print(f"❌ Error reading file: {e}", style="red")
                 inputs['file_content'] = "Error reading uploaded file."
 
-        inputs['files'] = uploaded_files_paths # Store file paths for potential other uses
+        inputs['files'] = uploaded_files_paths
 
         console.print(f"✅ Received API Request:", style="green")
         console.print(f"   Topic: {topic}")
@@ -124,38 +129,36 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
         console.print(f"   Model Name: {inputs.get('model_name')}")
         console.print(f"   Uploaded Files: {[os.path.basename(f) for f in uploaded_files_paths]}")
 
-        # The AICrewManager is initialized with all inputs AND the category
         manager = AICrewManager(distributed_router, inputs=inputs, category=category)
-
-        # Corrected call to pass the inputs dictionary
         crew = manager.create_crew_for_category(inputs)
 
         cache_key = f"{category}_{topic}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}_{inputs.get('ai_provider', '')}_{inputs.get('model_name', '')}"
-        cached_response = cache.get(cache_key, "crew_result")
 
-        if cached_response:
-            response_data = cached_response
+        cached_response = cache.get(cache_key, "crew_result")
+        if cached_response and isinstance(cached_response, CrewOutput):
+            crew_output = cached_response
         else:
             crew_output = manager.execute_crew(crew, inputs)
-            # Convert CrewOutput object to a serializable dictionary
-            response_data = crew_output_to_dict(crew_output)
-            cache.set(cache_key, "crew_result", response_data)
+            cache.set(cache_key, "crew_result", crew_output)
 
-        return response_data
+        # Convert the CrewOutput object to a serializable dictionary and return it.
+        return crew_output_to_dict(crew_output)
+
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/run_crew_ai_form/")
 async def run_crew_ai_form(
-    topic: str = Form(...),
-    category: str = Form("general"),
-    context: Optional[str] = Form(""),
-    research_focus: Optional[str] = Form(""),
-    ai_provider: Optional[str] = Form(None),
-    server_endpoint: Optional[str] = Form(None),
-    model_name: Optional[str] = Form(None),
-    files: List[UploadFile] = File([])
+        topic: str = Form(...),
+        category: str = Form("general"),
+        context: Optional[str] = Form(""),
+        research_focus: Optional[str] = Form(""),
+        ai_provider: Optional[str] = Form(None),
+        server_endpoint: Optional[str] = Form(None),
+        model_name: Optional[str] = Form(None),
+        files: List[UploadFile] = File([])
 ):
     """
     Endpoint to trigger a self-hosted CrewAI crew using multipart/form-data.
@@ -189,10 +192,11 @@ async def run_crew_ai_form(
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
 
+
 @app.post("/run_crew_ai_json/")
 def run_crew_ai_json(
-    request: CrewRequest,
-    router: DistributedRouter = Depends(get_distributed_router)
+        request: CrewRequest,
+        router: DistributedRouter = Depends(get_distributed_router)
 ):
     """
     Endpoint to trigger a self-hosted CrewAI crew using a JSON payload with Base64 files.
@@ -225,6 +229,7 @@ def run_crew_ai_json(
             Path(file_path).unlink(missing_ok=True)
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3939)
