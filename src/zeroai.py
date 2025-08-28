@@ -8,10 +8,10 @@ from typing import Dict, Any, Optional, List
 from crewai import Crew
 from rich.console import Console
 
-from .intelligent_router import IntelligentAIRouter
-from .smart_ai_manager import SmartAIManager
-from .agents.base_agents import create_researcher, create_writer, create_analyst
-from .tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
+from src.intelligent_router import IntelligentAIRouter
+from src.smart_ai_manager import SmartAIManager
+from src.agents.base_agents import create_researcher, create_writer, create_analyst
+from src.tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
 
 console = Console()
 
