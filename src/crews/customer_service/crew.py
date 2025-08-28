@@ -3,7 +3,7 @@ from typing import Dict, Any
 from langchain_community.llms.ollama import Ollama
 from config import config
 
-from .agents import create_customer_service_agent, create_math_delegation_tool, create_research_delegation_tool, create_technical_support_tool
+from .agents import create_customer_service_agent, math_delegation_tool, research_delegation_tool, tech_support_tool
 from .tasks import create_customer_service_task
 
 # Import other crew creation functions here
