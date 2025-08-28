@@ -209,8 +209,14 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
             console.print(f"❌ Final response data is not a dictionary. Type: {type(response_data)}", style="red")
             raise TypeError("Final response data is not a dictionary and cannot be serialized.")
 
-        # Return only the raw string
-        final_answer = response_data.get('raw', 'No final answer found.')
+        # --- FIX: Extract final answer from the last task output ---
+        final_answer = "No final answer found."
+        tasks_output = response_data.get('tasks_output', [])
+        if tasks_output:
+            # Assuming the last task output contains the final answer
+            final_answer = tasks_output[-1].get('raw', final_answer)
+        # --- END FIX ---
+
         return JSONResponse(content={'final_answer': final_answer})
 
     except Exception as e:
