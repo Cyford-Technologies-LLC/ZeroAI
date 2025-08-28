@@ -153,10 +153,10 @@ class AICrewManager:
             console.print("[bold cyan]----------------------------[/bold cyan]")
             # --- END DEBUGGING STEP ---
 
-            # Correct FIX: Access the result from the first item in the tasks_output list
-            # and check if it exists before accessing its 'result' attribute.
-            if classification_result.tasks_output and isinstance(classification_result.tasks_output, list) and classification_result.tasks_output[0]:
-                return classification_result.tasks_output[0].result.strip().lower()
+            # FIX: Access the result from the first item in the tasks_output list
+            # and check if it exists before accessing its 'raw' attribute.
+            if isinstance(classification_result.tasks_output, list) and classification_result.tasks_output:
+                return classification_result.tasks_output[0].raw.strip().lower()
             else:
                 raise Exception("Classification crew did not produce a valid output.")
         except Exception as e:
@@ -164,7 +164,8 @@ class AICrewManager:
             return None
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
+                      style="blue")
 
         # Prevent delegation tools from recursively creating customer service crews.
         if category == "customer_service":
