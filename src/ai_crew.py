@@ -90,8 +90,14 @@ class AICrewManager:
         elif self.category == "math":
             return create_math_crew(self.llm_instance, inputs)
         else:
-            console.print("⚠️  Category not recognized, defaulting to general crew.", style="yellow")
-            return self.create_research_crew(inputs)
+                console.print("⚠️  Category not recognized, defaulting to customer service crew.", style="yellow")
+                specialist_agents = [
+                    create_mathematician_agent(self.llm_instance, inputs),
+                    create_tech_support_agent(self.llm_instance, inputs),
+                    create_coding_developer_agent(self.llm_instance, inputs),
+                    create_researcher(self.llm_instance, inputs)
+                ]
+                return self.create_customer_service_crew_hierarchical(self.llm_instance, inputs, specialist_agents)
 
     def create_customer_service_crew_hierarchical(self, llm: Ollama, inputs: Dict[str, Any], specialist_agents: List[Agent]) -> Crew:
         customer_service_agent = create_customer_service_agent(llm, inputs)
