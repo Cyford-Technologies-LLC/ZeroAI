@@ -12,8 +12,10 @@ import json
 import warnings
 from functools import lru_cache
 
-from peer_discovery import peer_discovery, PeerNode
+# FIX: Correct the import to get the PeerDiscovery class directly
+from peer_discovery import PeerDiscovery, PeerNode
 from langchain_community.llms.ollama import Ollama
+from config import config
 
 console = Console()
 
@@ -28,9 +30,11 @@ MODEL_MEMORY_MAP = {
     "llava:7b": 5.0,
 }
 
+
 # --- Shared instance of PeerDiscovery for the entire application lifecycle ---
-# This remains a long-lived instance to manage network state, but is not the router itself.
-peer_discovery_instance = peer_discovery.PeerDiscovery()
+# FIX: Instantiate the class directly
+peer_discovery_instance = PeerDiscovery()
+
 
 class DistributedRouter:
     """Manages routing logic based on network state and model requirements."""
@@ -127,6 +131,19 @@ class DistributedRouter:
             return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
 
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
+
+    def get_llm_for_task(self, prompt: str) -> Ollama:
+        """Gets an Ollama LLM instance based on the prompt using the router's logic."""
+        base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
+        prefixed_model_name = f"ollama/{model_name}"
+        llm_config = {
+            "model": prefixed_model_name,
+            "base_url": base_url,
+            "temperature": config.model.temperature
+        }
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return Ollama(**llm_config)
 
 # --- Use @lru_cache for dependency to reuse the same instance ---
 @lru_cache()
