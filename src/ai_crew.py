@@ -68,7 +68,6 @@ class AICrewManager:
             print(f"❌ Error during router call in AICrewManager: {e}")
             raise
 
-        # **FIX:** Correct LLM instantiation. The LangChain Ollama wrapper does not need the "ollama/" prefix.
         self.max_tokens = kwargs.get('max_tokens', config.model.max_tokens)
         self.llm_config = {
             "model": self.model_name,
@@ -83,7 +82,7 @@ class AICrewManager:
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         """Helper method to create specialized crews based on category."""
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow}",
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
                       style="blue")
         if category == "research":
             return self.create_research_crew(inputs)
@@ -157,7 +156,8 @@ class AICrewManager:
 
     def create_research_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
-        writer = create_writer(self.llm_instance, inputs)
+        # **FIX:** Pass the topic to the create_writer function, as defined in base_agents.py
+        writer = create_writer(self.llm_instance, inputs, topic=inputs.get('topic'))
         research_task = create_research_task(researcher, inputs)
         writing_task = create_writing_task(writer, inputs, context=[research_task])
         return Crew(
@@ -169,10 +169,12 @@ class AICrewManager:
     def create_analysis_crew(self, inputs: Dict[str, Any]) -> Crew:
         researcher = create_researcher(self.llm_instance, inputs)
         analyst = create_analyst(self.llm_instance, inputs)
-        writer = create_writer(self.llm_instance, inputs)
+        # **FIX:** Pass the topic to the create_writer function, as defined in base_agents.py
+        writer = create_writer(self.llm_instance, inputs, topic=inputs.get('topic'))
         research_task = create_research_task(researcher, inputs)
         analysis_task = create_analysis_task(analyst, inputs)
         writing_task = create_writing_task(writer, inputs)
+        # **FIX:** Add a return statement for the crew
         return Crew(
             agents=[researcher, analyst, writer],
             tasks=[research_task, analysis_task, writing_task],
@@ -185,11 +187,10 @@ class AICrewManager:
         inputs['category'] = category
 
         try:
-            # Check if llm_instance is properly initialized
             if not self.llm_instance:
                 raise ValueError("LLM instance is not initialized. Check router configuration.")
 
-            crew = self.create_crew_for_category(inputs)
+            crew = self._create_specialized_crew(category, inputs)
             with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
@@ -203,7 +204,6 @@ class AICrewManager:
             return crew_output
         except Exception as e:
             console.print(f"❌ Error during crew execution: {e}", style="red")
-            # Return a valid CrewOutput with error information
             return CrewOutput(
                 raw=f"Error during crew execution: {e}",
                 tasks_output=[
