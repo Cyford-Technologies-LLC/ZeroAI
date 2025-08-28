@@ -8,7 +8,6 @@ import warnings
 from langchain_community.llms.ollama import Ollama
 
 # --- Assuming these modules exist based on your imports ---
-# (You will need to provide the content for these files)
 from config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
@@ -39,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 
 # --- Plausible definitions for missing agent and task creators ---
-# NOTE: These are examples; adjust them to match your actual logic.
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
     researcher = create_researcher(router, inputs)
     writer = create_writer(router, inputs)
@@ -83,11 +81,19 @@ class AICrewManager:
 
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
-        # Check if inputs is a dictionary before proceeding
+
+        # --- Compatibility Layer to handle string inputs from older API calls ---
+        if isinstance(inputs, str):
+            logging.warning(f"Received string input from API, converting to dictionary: {inputs}")
+            inputs = {"topic": inputs, "category": "auto"}
+
+        # Check if inputs is a dictionary before proceeding (stricter type check)
         if not isinstance(inputs, dict):
             logging.error(f"Received non-dictionary inputs of type {type(inputs)}: {inputs}")
             raise TypeError(f"Expected 'inputs' to be a dictionary, but received type: {type(inputs)}. "
                             f"Received content: {inputs}")
+
+        # --- End Compatibility Layer ---
 
         logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
         self.router = router
@@ -191,8 +197,6 @@ class AICrewManager:
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         elif category == "auto":
             # NOTE: Auto-classification is now handled in `execute_crew`
-            # The category will be updated before this function is called.
-            # If for some reason it isn't, fall back to general.
             return self._create_specialized_crew("general", inputs)
         else:
             console.print(f"⚠️  Category not recognized, defaulting to general crew for category: {category}",
@@ -223,3 +227,4 @@ class AICrewManager:
             verbose=config.agents.verbose,
             full_output=True
         )
+
