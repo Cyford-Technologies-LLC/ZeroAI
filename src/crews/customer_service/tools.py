@@ -7,11 +7,13 @@ class DelegatingMathTool(BaseTool):
     description: str = "Use this tool to solve a math query by delegating to the Math crew and retrieving the result."
 
     def __init__(self, crew_manager, **kwargs):
-        print(f"DEBUG: Initializing DelegatingMathTool from: {__file__}") # Add this line
-
-        # Pass all keyword arguments to the parent class
+        # Call the parent's __init__ method, passing necessary arguments.
+        # This is the most robust way to ensure inheritance works correctly.
         super().__init__(**kwargs)
-        # Correctly assign the crew_manager to the instance
+
+        print(f"DEBUG: Initializing DelegatingMathTool from: {__file__}")
+
+        # After the parent is initialized, set your custom attributes.
         self.crew_manager = crew_manager
         self.inputs = kwargs.get('inputs', {})
 
@@ -25,9 +27,10 @@ class ResearchDelegationTool(BaseTool):
     description: str = "Use this tool to perform a research inquiry by delegating to the Research crew and retrieving the result."
 
     def __init__(self, crew_manager, **kwargs):
-        # Pass all keyword arguments to the parent class
+        # Call the parent's __init__ method.
         super().__init__(**kwargs)
-        # Correctly assign the crew_manager to the instance
+
+        # Set custom attributes.
         self.crew_manager = crew_manager
         self.inputs = kwargs.get('inputs', {})
 
