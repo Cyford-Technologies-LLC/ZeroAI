@@ -101,7 +101,7 @@ class AICrewManager:
                 result = crew.kickoff()
                 return result
         except Exception as e:
-            console.print(f"❌ Error during crew execution: {e}", style="red")
+            console.print(f"❌ Error during crew execution AI : {e}", style="red")
             return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:

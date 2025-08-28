@@ -244,7 +244,7 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
 
         return response_data
     except Exception as e:
-        console.print(f"❌ Error during crew execution: {e}", style="red")
+        console.print(f"❌ Error during crew execution API: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
 
 
