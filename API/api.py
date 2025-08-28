@@ -1,70 +1,68 @@
 # /opt/ZeroAI/API/api.py
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Depends # Import Depends
+from fastapi import FastAPI, HTTPException, Depends, Form, UploadFile, File
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 from rich.console import Console
-
-# Fix: Adjust sys.path for robust import resolution
 import sys
+import shutil
+import base64
+import os
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-# Fix: Import specific components
-from peer_discovery import PeerDiscovery # Correct PeerDiscovery import
+from peer_discovery import PeerDiscovery
 from distributed_router import DistributedRouter
 from ai_crew import AICrewManager
 from cache_manager import cache
 
-# Initialize a console for logging
 console = Console()
 
-# --- FIX: Initialize complex objects once globally ---
-# This is the key change to ensure the router and its components are set up correctly.
 peer_discovery_instance = PeerDiscovery()
 distributed_router = DistributedRouter(peer_discovery_instance)
-# --- END FIX ---
 
-# Initialize FastAPI app
 app = FastAPI(
     title="CrewAI Endpoint API",
     description="API to expose CrewAI crews as endpoints.",
     version="1.0.0",
 )
 
-# Define a Pydantic model for request validation
+class FileData(BaseModel):
+    name: str
+    type: str
+    base64_data: str
+
 class CrewRequest(BaseModel):
     inputs: Dict[str, Any]
 
-# Define a dependency provider for the router
 def get_distributed_router():
     return distributed_router
 
-@app.post("/run_crew_ai/")
-def run_crew_ai(
-    request: CrewRequest,
-    router: DistributedRouter = Depends(get_distributed_router) # Inject the router here
-):
-    """
-    Endpoint to trigger a self-hosted CrewAI crew using AICrewManager.
-    """
+# Helper function to process the core logic
+def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]):
     try:
-        inputs = request.inputs
         topic = inputs.get("topic")
         category = inputs.get("category", "general")
 
         if not topic:
             raise ValueError("Missing required 'topic' input.")
 
-        # Fix: Pass the injected router instance to the AICrewManager constructor
-        manager = AICrewManager(router, inputs=inputs)
+        # Update inputs with file paths for the AICrewManager
+        inputs['files'] = uploaded_files_paths
 
-        # The rest of your code remains largely the same
+        console.print(f"✅ Received API Request:", style="green")
+        console.print(f"   Topic: {topic}")
+        console.print(f"   Category: {category}")
+        console.print(f"   AI Provider: {inputs.get('ai_provider')}")
+        console.print(f"   Model Name: {inputs.get('model_name')}")
+        console.print(f"   Uploaded Files: {[os.path.basename(f) for f in uploaded_files_paths]}")
+
+        manager = AICrewManager(distributed_router, inputs=inputs)
         crew = manager.create_crew_for_category(inputs)
 
-        # Check cache first
-        cache_key = f"{category}_{topic}_{inputs.get('max_tokens', '')}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}"
+        cache_key = f"{category}_{topic}_{inputs.get('context', '')}_{inputs.get('research_focus', '')}_{inputs.get('ai_provider', '')}_{inputs.get('model_name', '')}"
         cached_response = cache.get(cache_key, "crew_result")
 
         if cached_response:
@@ -77,6 +75,91 @@ def run_crew_ai(
     except Exception as e:
         console.print(f"❌ API Call Failed: {e}", style="red")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/run_crew_ai_form/")
+async def run_crew_ai_form(
+    # Using Annotated for Python 3.9+ for clearer type hints
+    topic: str = Form(...),
+    category: str = Form("general"),
+    context: Optional[str] = Form(""),
+    research_focus: Optional[str] = Form(""),
+    ai_provider: Optional[str] = Form(None),
+    server_endpoint: Optional[str] = Form(None),
+    model_name: Optional[str] = Form(None),
+    files: List[UploadFile] = File([])
+):
+    """
+    Endpoint to trigger a self-hosted CrewAI crew using multipart/form-data.
+    """
+    temp_dir = Path("/tmp/uploads_form")
+    temp_dir.mkdir(exist_ok=True)
+    uploaded_files_paths = []
+
+    try:
+        inputs = {
+            'topic': topic,
+            'category': category,
+            'context': context,
+            'research_focus': research_focus,
+            'ai_provider': ai_provider,
+            'server_endpoint': server_endpoint,
+            'model_name': model_name,
+        }
+
+        # Process uploaded files and save them temporarily
+        for file in files:
+            file_location = temp_dir / file.filename
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            uploaded_files_paths.append(str(file_location))
+
+        response_data = process_crew_request(inputs, uploaded_files_paths)
+        return response_data
+    finally:
+        # Clean up temporary files
+        for file_path in uploaded_files_paths:
+            Path(file_path).unlink(missing_ok=True)
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+@app.post("/run_crew_ai_json/")
+def run_crew_ai_json(
+    request: CrewRequest,
+    router: DistributedRouter = Depends(get_distributed_router)
+):
+    """
+    Endpoint to trigger a self-hosted CrewAI crew using a JSON payload with Base64 files.
+    """
+    temp_dir = Path("/tmp/uploads_json")
+    temp_dir.mkdir(exist_ok=True)
+    uploaded_files_paths = []
+
+    try:
+        inputs = request.inputs
+
+        # Process Base64 encoded files
+        if inputs.get('files'):
+            for file_info in inputs['files']:
+                file_name = file_info['name']
+                base64_data = file_info['base64_data']
+
+                file_bytes = base64.b64decode(base64_data)
+                file_location = temp_dir / file_name
+                with open(file_location, "wb") as buffer:
+                    buffer.write(file_bytes)
+                uploaded_files_paths.append(str(file_location))
+
+        response_data = process_crew_request(inputs, uploaded_files_paths)
+        return response_data
+    except Exception as e:
+        console.print(f"❌ API Call Failed: {e}", style="red")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Clean up temporary files
+        for file_path in uploaded_files_paths:
+            Path(file_path).unlink(missing_ok=True)
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
