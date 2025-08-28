@@ -147,10 +147,9 @@ class AICrewManager:
         try:
             classification_result = classifier_crew.kickoff()
 
-            # Correct FIX: The output of a single-task crew is in the 'result' of the single TaskOutput object
-            # which is an attribute of the crew output.
-            if classification_result.tasks_output and isinstance(classification_result.tasks_output, TaskOutput):
-                return classification_result.tasks_output.result.strip().lower()
+            # Correct FIX: Access the result from the first item in the tasks_output list
+            if classification_result.tasks_output and isinstance(classification_result.tasks_output, list) and classification_result.tasks_output[0]:
+                return classification_result.tasks_output[0].result.strip().lower()
             else:
                 raise Exception("Classification crew did not produce a valid output.")
         except Exception as e:
@@ -189,7 +188,7 @@ class AICrewManager:
                 # Crash as requested if auto-classification fails
                 raise Exception("Auto-classification failed. Crashing.")
 
-        console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow}", style="blue")
+        console.print(f"Manual category selected: [bold yellow]{category}[/bold yellow]", style="blue")
 
         # Route to the correct crew based on the classification result or user input
         console.print("📦 Creating a crew for category: [bold yellow]{}[/bold yellow]".format(category), style="blue")
@@ -247,4 +246,3 @@ class AICrewManager:
             tasks=[research_task, writing_task],
             verbose=config.agents.verbose
         )
-
