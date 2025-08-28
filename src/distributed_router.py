@@ -57,9 +57,10 @@ class DistributedRouter:
     # Add the get_local_llm() method here
     def get_local_llm(self, model_name: str) -> Optional[Ollama]:
         """Gets an Ollama LLM instance for a specific model running on localhost."""
-        local_peer_info = next((peer for peer in self.peer_discovery.get_peers() if peer.name == "local-node"), None)
-        if local_peer_info and model_name in self._get_local_ollama_models():
-            base_url = f"http://{local_peer_info.ip}:11434"
+        # Assuming _get_local_ollama_models() handles the logic for available models
+        if model_name in self._get_local_ollama_models():
+            # Use the OLLAMA_HOST environment variable set in docker-compose.yml
+            base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
             llm_config = {
                 "model": model_name,
                 "base_url": base_url,
@@ -67,7 +68,8 @@ class DistributedRouter:
             }
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]", style="blue")
+                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]",
+                              style="blue")
                 return Ollama(**llm_config)
         return None
 
