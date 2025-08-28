@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, Any, Optional
 from crewai import Agent, Task, Crew, Process  # 3. Import crewai first
-from crewai_tools.tools.base_tool import Tool # 4. Import crewai_tools after
+from crewai.tools import BaseTool # Import BaseTool from crewai
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -28,7 +28,7 @@ def technical_support_tool_function(query: str):
     return f"Delegated to Technical Support for inquiry: {query}"
 
 # Define the Tool for delegation.
-tech_support_tool = Tool(
+tech_support_tool = BaseTool(
     name="Technical Support Delegation Tool",
     func=technical_support_tool_function,
     description="Tool to delegate technical support queries."
