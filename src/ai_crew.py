@@ -181,31 +181,9 @@ class AICrewManager:
 
             if classification_result and classification_result.tasks_output:
                 last_task_output = classification_result.tasks_output[-1]
-                # CORRECTED LINE: Access 'raw' attribute, not 'output'
                 if isinstance(last_task_output, TaskOutput) and last_task_output.raw:
                     return last_task_output.raw.strip().lower()
             return "general"
         except Exception as e:
             console.print(f"❌ Error during classification: {e}", style="red")
             return "general"
-
-
-def create_customer_service_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-    # Dummy implementation for illustration
-    customer_service_agent = create_customer_service_agent(router, inputs)
-    task = Task(
-        description="Handle customer service inquiry.",
-        agent=customer_service_agent,
-        expected_output="A polite and helpful response to the customer."
-    )
-    return Crew(agents=[customer_service_agent], tasks=[task], verbose=config.agents.verbose, full_output=True)
-
-
-def create_general_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-    # Dummy implementation for illustration
-    researcher = create_researcher(router, inputs)
-    writer = create_writer(router, inputs)
-    research_task = create_research_task(inputs, researcher)
-    writing_task = create_writing_task(inputs, writer)
-    return Crew(agents=[researcher, writer], tasks=[research_task, writing_task], verbose=config.agents.verbose,
-                full_output=True)
