@@ -58,8 +58,15 @@ crewai_settings:
 # Environment and development settings
 environment:
   container_orchestration: "docker-compose"
-  docker_compose_file: "docker-compose.test.yml"
+  # Changed from docker-compose.test.yml to docker-compose.learning.yml
+  docker_compose_file: "docker-compose.learning.yml"
   dependencies:
     - "requirements.txt"
   testing_framework: "pytest"
   testing_script: "pytest src/"
+  # New section for managing dynamic ports
+  port_mapping:
+    # A base port for the application, the AI can increment this for each test run
+    base_app_port: 8000
+    # Any other services that need dynamic ports can be added here
+    # e.g., base_db_port: 5432
