@@ -6,6 +6,7 @@ from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
 from rich.console import Console
 from pydantic import BaseModel, Field
 import warnings
+import json
 
 from langchain_community.llms.ollama import Ollama
 
@@ -114,7 +115,6 @@ class AICrewManager:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 result = crew.kickoff()
-                console.print(f"📊 [bold green]Crew Output Object:[/bold green] {result}") # ADDED: Dump object
                 return result
         except Exception as e:
             console.print(f"❌ Error during crew execution AI : {e}", style="red")
@@ -154,6 +154,20 @@ class AICrewManager:
         )
         try:
             classification_result = classifier_crew.kickoff()
+
+            # FIX: Dump the communication object here
+            console.print("\n" + "=" * 60)
+            console.print("📊 [bold green]Classifier Communication Object:[/bold green]")
+
+            # Attempt to dump using a more robust method
+            try:
+                console.print(json.dumps(classification_result.model_dump(), indent=2))
+            except Exception as e:
+                console.print(f"Failed to dump as JSON: {e}", style="yellow")
+                console.print(classification_result)
+
+            console.print("=" * 60 + "\n")
+
             if classification_result and classification_result.tasks_output:
                 last_task_output = classification_result.tasks_output[-1]
                 if isinstance(last_task_output, TaskOutput) and last_task_output.output:
@@ -203,11 +217,10 @@ class AICrewManager:
         ]
         return Agent(
             role="Customer Service Representative",
-                goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
-                backstory="You are an AI customer service representative designed to handle inquiries.",
-                llm=llm,
-                tools=tools,
-                verbose=True,
-                allow_delegation=False
+            goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
+            backstory="You are an AI customer service representative designed to handle inquiries.",
+            llm=llm,
+            tools=tools,
+            verbose=True,
+            allow_delegation=False
         )
-
