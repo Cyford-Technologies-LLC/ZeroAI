@@ -151,8 +151,8 @@ class AICrewManager:
             classification_result = classifier_crew.kickoff()
             if classification_result and classification_result.tasks_output:
                 last_task_output = classification_result.tasks_output[-1]
-                if isinstance(last_task_output, TaskOutput) and last_task_output.raw_output:
-                    return last_task_output.raw_output.strip().lower()
+                if isinstance(last_task_output, TaskOutput) and last_task_output.output:  # FIX: Use .output
+                    return last_task_output.output.strip().lower()  # FIX: Use .output
             return "general"
         except Exception as e:
             console.print(f"❌ Error during classification: {e}", style="red")
