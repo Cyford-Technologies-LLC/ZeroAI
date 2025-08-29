@@ -20,7 +20,6 @@ MODEL_PREFERENCES = {
     "devops_orchestrator": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
     "repo_manager": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
     "general": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llava:7b", "llama3.2:1b"],
-    # FIX: Add 'general' category
     "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
 }
 
@@ -41,7 +40,6 @@ class DevOpsDistributedRouter(DistributedRouter):
         Internal method to handle LLM retrieval with fallback logic and model preferences.
         """
         try:
-            # FIX: Get the preference list from the provided category or use the default
             preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
                                                                                                 MODEL_PREFERENCES[
                                                                                                     "default"])
@@ -83,9 +81,7 @@ class DevOpsDistributedRouter(DistributedRouter):
         return self._get_llm_with_fallback(prompt, category=role_category, model_preferences=model_preferences)
 
     def _get_local_llm(self, model_name: str) -> Optional[Ollama]:
-        # Existing implementation for getting local LLM
         try:
-            # FIX: Ensure proper LiteLLM prefixing
             prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
                 "model": prefixed_model_name,
@@ -102,15 +98,12 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
 
-    # FIX: Update get_optimal_endpoint_and_model to accept the model_preference_list parameter
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
                                        model_preference_list: Optional[List[str]] = None) -> Tuple[
         Optional[str], Optional[str], Optional[str]]:
-        # Existing implementation for finding optimal peer, but now uses model_preference_list
         if failed_peers is None:
             failed_peers = []
         if model_preference_list is None:
-            # FIX: Use the 'general' list if no specific list is provided
             model_preference_list = MODEL_PREFERENCES.get("general")
 
         all_peers = self.peer_discovery.get_peers()
@@ -136,7 +129,9 @@ class DevOpsDistributedRouter(DistributedRouter):
                                       style="yellow")
                         continue
 
-                    if required_memory <= peer.capabilities.memory:
+                    required_memory_gb = (
+                                peer.capabilities.gpu_memory * 10) if peer.capabilities.gpu_available else peer.capabilities.memory
+                    if required_memory <= required_memory_gb:
                         all_candidates.append({
                             "peer": peer,
                             "model": model
@@ -146,8 +141,10 @@ class DevOpsDistributedRouter(DistributedRouter):
                             style="green")
                     else:
                         console.print(
-                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer.capabilities.memory} GiB available).",
+                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {required_memory_gb} GiB available).",
                             style="red")
+                else:
+                    console.print(f"      - 🚫 Model {model} not available on peer {peer.name}.", style="red")
 
         def get_score(candidate):
             peer = candidate['peer']
@@ -169,7 +166,7 @@ class DevOpsDistributedRouter(DistributedRouter):
             return f"http://{peer.ip}:11434", peer.name, model
 
         console.print("❌ No suitable peer/model combination found. Routing failed.", style="red")
-        return None, None, None
+        raise RuntimeError("No suitable peer or model found. All attempts failed.")
 
 
 def get_router():
