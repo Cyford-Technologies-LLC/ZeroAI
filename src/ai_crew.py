@@ -126,18 +126,23 @@ class AICrewManager:
 
     def create_crew_for_category(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
         category = inputs.get('category', 'general')
+
         if category == 'coding':
             return create_coding_crew(router, inputs)
         elif category == 'math':
             return create_math_crew(router, inputs)
         elif category == 'research':
             return create_research_crew(router, inputs)
-        elif category == 'customer_service' or category == 'general':
+        elif category in ['customer_service', 'general']:
+            # Call without specialist_agents
             return create_customer_service_crew(router, inputs)
         elif category == 'tech_support':
             return create_tech_support_crew(router, inputs)
         else:
+            # Fallback to customer service crew for any other unhandled category
             return create_customer_service_crew(router, inputs)
+
+
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
