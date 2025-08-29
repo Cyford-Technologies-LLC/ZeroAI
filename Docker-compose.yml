@@ -29,7 +29,9 @@ services:
     volumes:
       - ./src:/app/src
       - ./config:/app/config
-      - ./prepare_resources.py:/app/prepare_resources.py # Add the new script
+      - ./API:/app/API  # Add this line
+      - ./prepare_resources.py:/app/prepare_resources.py
+
     entrypoint: ["/bin/bash", "-c", "sleep 5 && python /app/prepare_resources.py && uvicorn API.api:app --host 0.0.0.0 --port 3939"]
     networks:
       - zeroai_network
