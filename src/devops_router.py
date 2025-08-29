@@ -89,7 +89,7 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
 
-    # FIX: Override the get_optimal_endpoint_and_model method to add robust logging and handling
+    # FIX: Override get_optimal_endpoint_and_model with more detailed logging and checks
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
                                        model_preference_list: Optional[List[str]] = None) -> Tuple[
         Optional[str], Optional[str], Optional[str]]:
@@ -112,6 +112,11 @@ class DevOpsDistributedRouter(DistributedRouter):
             available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
             console.print(f"   Peer [bold cyan]{peer.name}[/bold cyan] reports available models: {available_models}",
                           style="dim")
+
+            # FIX: Add a check for peer availability before proceeding
+            if not available_models:
+                console.print(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", style="red")
+                continue
 
             for model in model_preference_list:
                 if model in available_models:
