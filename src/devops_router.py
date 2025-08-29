@@ -5,14 +5,13 @@ import os
 import warnings
 from typing import Optional, List, Tuple
 from rich.console import Console
-from distributed_router import DistributedRouter, PeerDiscovery
+from distributed_router import DistributedRouter, PeerDiscovery, MODEL_MEMORY_MAP
 from langchain_community.llms.ollama import Ollama
 from config import config
 
 console = Console()
 logger = logging.getLogger(__name__)
 
-# --- Model preference lists based on agent roles ---
 MODEL_PREFERENCES = {
     "developer": ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
     "research": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
@@ -25,10 +24,6 @@ MODEL_PREFERENCES = {
 
 
 class DevOpsDistributedRouter(DistributedRouter):
-    """
-    An enhanced DistributedRouter with a fallback to a local model and role-based model preference.
-    """
-
     def __init__(self, peer_discovery_instance: PeerDiscovery, fallback_model_name: str = "llama3.2:1b"):
         super().__init__(peer_discovery_instance)
         self.fallback_model_name = fallback_model_name
@@ -36,9 +31,6 @@ class DevOpsDistributedRouter(DistributedRouter):
 
     def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None,
                                model_preferences: Optional[List[str]] = None) -> Optional[Ollama]:
-        """
-        Internal method to handle LLM retrieval with fallback logic and model preferences.
-        """
         try:
             preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
                                                                                                 MODEL_PREFERENCES[
@@ -76,7 +68,6 @@ class DevOpsDistributedRouter(DistributedRouter):
             role_category = "repo_manager"
 
         model_preferences = MODEL_PREFERENCES.get(role_category, MODEL_PREFERENCES["default"])
-
         prompt = f"LLM selection for a {role} role."
         return self._get_llm_with_fallback(prompt, category=role_category, model_preferences=model_preferences)
 
@@ -98,6 +89,7 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
 
+    # FIX: Override the get_optimal_endpoint_and_model method to add robust logging and handling
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
                                        model_preference_list: Optional[List[str]] = None) -> Tuple[
         Optional[str], Optional[str], Optional[str]]:
@@ -129,9 +121,9 @@ class DevOpsDistributedRouter(DistributedRouter):
                                       style="yellow")
                         continue
 
-                    required_memory_gb = (
-                                peer.capabilities.gpu_memory * 10) if peer.capabilities.gpu_available else peer.capabilities.memory
-                    if required_memory <= required_memory_gb:
+                    # FIX: Correct memory comparison logic
+                    peer_memory = peer.capabilities.gpu_memory if peer.capabilities.gpu_available else peer.capabilities.memory
+                    if required_memory <= peer_memory:
                         all_candidates.append({
                             "peer": peer,
                             "model": model
@@ -141,7 +133,7 @@ class DevOpsDistributedRouter(DistributedRouter):
                             style="green")
                     else:
                         console.print(
-                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {required_memory_gb} GiB available).",
+                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).",
                             style="red")
                 else:
                     console.print(f"      - 🚫 Model {model} not available on peer {peer.name}.", style="red")
