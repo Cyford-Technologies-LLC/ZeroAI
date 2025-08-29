@@ -1,3 +1,5 @@
+# ai_crew.py
+
 import logging
 from typing import Dict, Any, Optional, List
 from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
@@ -24,7 +26,6 @@ from crews.coding.agents import create_coding_developer_agent, create_qa_enginee
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
 
-
 # --- Needed for CrewOutput token_usage compatibility ---
 class UsageMetrics(BaseModel):
     total_tokens: Optional[int] = 0
@@ -32,22 +33,17 @@ class UsageMetrics(BaseModel):
     completion_tokens: Optional[int] = 0
     successful_requests: Optional[int] = 0
 
-
 console = Console()
 logger = logging.getLogger(__name__)
-
 
 # --- Plausible definitions for missing agent and task creators ---
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
     researcher = create_researcher(router, inputs)
     writer = create_writer(router, inputs)
-
-    # FIX: Add checks to ensure agent creation was successful
     if not researcher or not isinstance(researcher, Agent):
         raise ValueError("Failed to create researcher agent.")
     if not writer or not isinstance(writer, Agent):
         raise ValueError("Failed to create writer agent.")
-
     research_task = create_research_task(inputs, researcher)
     writing_task = create_writing_task(inputs, writer)
     return Crew(
@@ -57,7 +53,6 @@ def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> C
         verbose=config.agents.verbose,
         full_output=True
     )
-
 
 def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
     analyst = create_analyst(router, inputs)
@@ -70,63 +65,46 @@ def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> C
         full_output=True
     )
 
-
 # --- The core AICrewManager class, now complete ---
 class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
-        # FIX: Ensure the router instance is of the correct type at initialization
         if not isinstance(distributed_router_instance, DistributedRouter):
             logging.error(
                 f"FATAL: Router is not a DistributedRouter instance. Type: {type(distributed_router_instance)}, Value: {distributed_router_instance}")
             raise TypeError(
                 f"Expected router to be a DistributedRouter instance, but got {type(distributed_router_instance)}")
-
         self.router = distributed_router_instance
         self.inputs = kwargs.get('inputs', {})
         self.category = self.inputs.get('category', 'general')
         self.task_description = self.inputs.get('topic', '')
         self.llm_instance = None
-
         logging.info(f"AICrewManager.__init__: self.inputs type={type(self.inputs)}, content={self.inputs}")
         logging.info(f"AICrewManager.__init__: self.router instance stored. Type: {type(self.router)}")
 
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
-
-        # --- Compatibility Layer to handle string inputs from older API calls ---
         if isinstance(inputs, str):
             logging.warning(f"Received string input from API, converting to dictionary: {inputs}")
             inputs = {"topic": inputs, "category": "auto"}
-
-        # Check if inputs is a dictionary before proceeding (stricter type check)
         if not isinstance(inputs, dict):
             logging.error(f"Received non-dictionary inputs of type {type(inputs)}: {inputs}")
             raise TypeError(f"Expected 'inputs' to be a dictionary, but received type: {type(inputs)}. "
                             f"Received content: {inputs}")
-
-        # --- End Compatibility Layer ---
-
         logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
-
-        # LOGGING: Check router instance just before it's used for classification
         logging.info(
             f"AICrewManager.execute_crew: router instance check before classification. Type: {type(self.router)}")
-
-        # FIX: Remove this line. It is overwriting the correct self.router with a potentially corrupted value.
-        # self.router = router
         self.inputs = inputs
         category = inputs.get('category', 'auto')
-
         if category == "auto":
             category = self._classify_task(inputs)
             if not category:
                 raise Exception("Auto-classification failed.")
-            # FIX: Update the inputs dictionary with the classified category
             inputs['category'] = category
 
-        crew = self.create_crew_for_category(inputs)
+        # FIX: Pass the distributed router instance to create_crew_for_category
+        crew = self.create_crew_for_category(self.router, inputs)
 
         try:
             with warnings.catch_warnings():
@@ -142,24 +120,18 @@ class AICrewManager:
         Helper method to run the classification crew and return the category.
         """
         logging.info(f"AICrewManager._classify_task: inputs type={type(inputs)}, content={inputs}")
-
-        # LOGGING: Check router instance before calling create_classifier_agent
         logging.info(
             f"AICrewManager._classify_task: router instance check before agent creation. Type: {type(self.router)}")
-
-        # FIX: Add a safeguard check for router instance
         if not isinstance(self.router, DistributedRouter):
             console.print(
                 "⚠️ Failed to get optimal LLM for classifier via router: 'self.router' is not a DistributedRouter instance.",
                 style="yellow")
             return "general"
-
         try:
             classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
             console.print(f"❌ Failed to create classifier agent: {e}", style="red")
             return "general"
-
         classifier_task = Task(
             description=f"""
             Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', 'customer_service', or 'general'.
@@ -169,91 +141,66 @@ class AICrewManager:
             agent=classifier_agent,
             expected_output="A single word representing the category: math, coding, research, or general.",
         )
-
         classifier_crew = Crew(
             agents=[classifier_agent],
             tasks=[classifier_task],
             verbose=config.agents.verbose,
             full_output=True
         )
-
         try:
             classification_result = classifier_crew.kickoff()
             if classification_result and classification_result.tasks_output:
                 last_task_output = classification_result.tasks_output[-1]
-                if isinstance(last_task_output, TaskOutput) and last_task_output.raw:
-                    category = last_task_output.raw.strip().lower()
-                    if category in ['math', 'coding', 'research', 'general', 'customer_service']:
-                        console.print(f"✅ Classified category: [bold yellow]{category}[/bold yellow]", style="green")
-                        return category
-            console.print("❌ Classification crew did not produce a valid output. Falling back to 'general'.",
-                          style="red")
+                if isinstance(last_task_output, TaskOutput) and last_task_output.raw_output:
+                    return last_task_output.raw_output.strip().lower()
             return "general"
         except Exception as e:
-            console.print(f"❌ Classification failed with an exception: {e}", style="red")
+            console.print(f"❌ Error during classification: {e}", style="red")
             return "general"
 
+    def create_crew_for_category(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+        """Create a specialized crew based on the category, or default to general."""
+        category = inputs.get('category', 'general')
 
-    def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
-        """Helper method to create specialized crews based on category."""
-        logging.info(f"AICrewManager._create_specialized_crew: inputs type={type(inputs)}, content={inputs}")
-        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
-                      style="blue")
-
-        if category == "research":
-            return create_research_crew(self.router, inputs)
-        elif category == "analysis":
-            return create_analysis_crew(self.router, inputs)
-        elif category == "coding":
-            return create_coding_crew(self.router, inputs)
+        if category in ["general", "customer_service"]:
+            return create_customer_service_crew(router, inputs)
         elif category == "math":
-            return create_math_crew(self.router, inputs)
+            return create_math_crew(router, inputs)
+        elif category == "coding":
+            return create_coding_crew(router, inputs)
         elif category == "tech_support":
-            return create_tech_support_crew(self.router, inputs)
-        elif category == "general":
-            return create_research_crew(self.router, inputs)
-        elif category == "customer_service":
-            # Call the specialized hierarchical crew for customer service
-            specialist_agents = [
-                create_mathematician_agent(self.router, inputs),
-                create_tech_support_agent(self.router, inputs),
-                create_coding_developer_agent(self.router, inputs),
-                create_researcher(self.router, inputs)
-            ]
-            return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
+            return create_tech_support_crew(router, inputs)
+        elif category == "research":
+            return create_research_crew(router, inputs)
+        elif category == "analysis":
+            return create_analysis_crew(router, inputs)
         else:
-            raise ValueError(f"Unknown category: {category}")
+            raise ValueError(f"Unknown crew category: {category}")
 
-    def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
-        """Main method for creating the top-level crew."""
-        logging.info(f"AICrewManager.create_crew_for_category: inputs type={type(inputs)}, content={inputs}")
-        category = inputs.get('category', self.category)
-        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+# FIX: Add a plausible definition for create_customer_service_crew
+def create_customer_service_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    agent = create_customer_service_agent(router, inputs)
+    task = Task(
+        description=inputs.get("topic", "Handle a general customer inquiry."),
+        agent=agent
+    )
+    return Crew(
+        agents=[agent],
+        tasks=[task],
+        process=Process.sequential,
+        verbose=True
+    )
 
-        # FIX: Call the correct specialized crew based on the category
-        return self._create_specialized_crew(category, inputs)
-
-
-    def create_customer_service_crew_hierarchical(self, router: DistributedRouter, inputs: Dict[str, Any],
-                                                  specialist_agents: List[Agent]) -> Crew:
-        manager_llm = router.get_llm_for_role('manager')
-        if not manager_llm:
-            raise ValueError("Failed to get LLM for manager agent.")
-
-        manager_agent = create_customer_service_agent(router, inputs)
-
-        manager_task = Task(
-            description=f"Manage the customer service inquiry related to: {inputs.get('topic')}",
-            agent=manager_agent,
-            expected_output="A final answer to the customer's inquiry.",
-            context=[Task(description="Get help from the appropriate specialist.", agent=agent) for agent in specialist_agents]
-        )
-
-        return Crew(
-            agents=[manager_agent] + specialist_agents,
-            tasks=[manager_task],
-            process=Process.hierarchical,
-            manager_llm=manager_llm,
-            verbose=config.agents.verbose,
-            full_output=True
-        )
+# FIX: Add a plausible definition for create_customer_service_agent
+def create_customer_service_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+    task_description = "Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew."
+    llm = router.get_llm_for_task(task_description)
+    return Agent(
+        role="Customer Service Representative",
+        goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
+        backstory="You are an AI customer service representative designed to handle inquiries.",
+        llm=llm,
+        tools=[DelegatingMathTool(), ResearchDelegationTool()],
+        verbose=True,
+        allow_delegation=False
+    )
