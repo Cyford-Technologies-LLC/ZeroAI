@@ -41,6 +41,13 @@ logger = logging.getLogger(__name__)
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
     researcher = create_researcher(router, inputs)
     writer = create_writer(router, inputs)
+
+    # FIX: Add checks to ensure agent creation was successful
+    if not researcher or not isinstance(researcher, Agent):
+        raise ValueError("Failed to create researcher agent.")
+    if not writer or not isinstance(writer, Agent):
+        raise ValueError("Failed to create writer agent.")
+
     research_task = create_research_task(inputs, researcher)
     writing_task = create_writing_task(inputs, writer)
     return Crew(
@@ -50,6 +57,7 @@ def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> C
         verbose=config.agents.verbose,
         full_output=True
     )
+
 
 
 def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
@@ -219,6 +227,15 @@ class AICrewManager:
                 create_researcher(self.router, inputs)
             ]
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
+        # FIX: The `elif category == "auto"` branch should not default to general.
+        # It should rely on the category that was determined by `_classify_task`.
+        # The logic is simpler without this branch, as the classified category is already in `inputs`.
+        # The `execute_crew` method already re-populates `category` after classification.
+        else: # This block is now the default for all other categories
+            console.print(f"📦 Creating a specialized crew for category: {category}", style="blue")
+            return self._create_specialized_crew(category, inputs)
+
+
         elif category == "auto":
             return self._create_specialized_crew("general", inputs)
         else:
