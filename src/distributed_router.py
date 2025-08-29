@@ -159,9 +159,12 @@ class DistributedRouter:
         """Gets an Ollama LLM instance based on the prompt using the router's logic."""
         base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
 
+        # FIX: Add the 'ollama/' prefix for LiteLLM compatibility
+        prefixed_model_name = f"ollama/{model_name}"
+
         # CORRECTED: Pass the model name directly, without the "ollama/" prefix
         llm_config = {
-            "model": model_name,
+            "model": prefixed_model_name,
             "base_url": base_url,
             "temperature": config.model.temperature
         }
