@@ -106,9 +106,27 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
 
 
 def main():
-    # ... (parser setup) ...
+    parser = argparse.ArgumentParser(description="Test different LLM routing strategies.")
+
+    router_group = parser.add_mutually_exclusive_group(required=True)
+    router_group.add_argument('-d', '--distributed', action='store_true', help="Test the standard distributed router.")
+    router_group.add_argument('-dv', '--devops', action='store_true', help="Test the new devops router (default).")
+    router_group.add_argument('-m', '--manual', action='store_true',
+                              help="Test a manual configuration with IP and model.")
+
+    parser.add_argument('--ip', type=str, help="IP address for manual testing.")
+    parser.add_argument('--model', type=str, help="Model name for manual testing.")
+
+    parser.add_argument('--prompt', type=str, required=True, help="The prompt to test the LLM with.")
+
     args = parser.parse_args()
-    # ... (determine router_type) ...
+
+    router_type = 'devops'
+    if args.distributed:
+        router_type = 'distributed'
+    elif args.manual:
+        router_type = 'manual'
+
     run_test(router_type, args.prompt, args.ip, args.model)
 
 
