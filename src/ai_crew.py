@@ -132,7 +132,7 @@ class AICrewManager:
             return create_math_crew(router, inputs)
         elif category == 'research':
             return create_research_crew(router, inputs)
-        elif category == 'customer_service':
+        elif category == 'customer_service' or category == 'general':
             return create_customer_service_crew(router, inputs)
         elif category == 'tech_support':
             return create_tech_support_crew(router, inputs)
