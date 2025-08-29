@@ -41,17 +41,19 @@ def create_customer_service_agent(router: DistributedRouter, inputs: Dict[str, A
 
     return Agent(
         role="Customer Service Representative",
-        goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
+        # Updated goal to reflect non-delegating role
+        goal="Handle customer inquiries and resolve issues within their scope.",
         backstory=(
             "Your name is Kate. You are an AI designed by ZeroAI. "
             "You are a friendly and efficient customer service representative. "
-            "You provide solutions for simple queries and expertly delegate complex issues to the right team. "
+            "You provide solutions for simple queries and expertly resolve issues that are within your capability. "
             "Simple questions deserve simple answers. "
             "When asked for your name, you MUST respond as 'My name is Kate'."
             "Unless a definition or full research is needed, let's keep it simple."
         ),
         llm=llm,
-        tools=[tech_support_tool, math_delegation_tool, research_delegation_tool],
+        # Remove all delegation tools
+        tools=[],
         verbose=True,
         allow_delegation=False
     )
