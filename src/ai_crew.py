@@ -162,7 +162,7 @@ class AICrewManager:
 
         classifier_task = Task(
             description=f"""
-            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', or 'general'.
+            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', 'customer_service', or 'general'.
             Inquiry: {inputs.get('topic')}.
             Provide ONLY the single word category name as your final output, do not include any other text or formatting.
             """,
@@ -183,7 +183,7 @@ class AICrewManager:
                 last_task_output = classification_result.tasks_output[-1]
                 if isinstance(last_task_output, TaskOutput) and last_task_output.raw:
                     category = last_task_output.raw.strip().lower()
-                    if category in ['math', 'coding', 'research', 'general']:
+                    if category in ['math', 'coding', 'research', 'general', 'customer_service']:
                         console.print(f"✅ Classified category: [bold yellow]{category}[/bold yellow]", style="green")
                         return category
             console.print("❌ Classification crew did not produce a valid output. Falling back to 'general'.",
@@ -192,6 +192,7 @@ class AICrewManager:
         except Exception as e:
             console.print(f"❌ Classification failed with an exception: {e}", style="red")
             return "general"
+
 
     def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
         """Helper method to create specialized crews based on category."""
@@ -211,6 +212,15 @@ class AICrewManager:
             return create_tech_support_crew(self.router, inputs)
         elif category == "general":
             return create_research_crew(self.router, inputs)
+        elif category == "customer_service":
+            # Call the specialized hierarchical crew for customer service
+            specialist_agents = [
+                create_mathematician_agent(self.router, inputs),
+                create_tech_support_agent(self.router, inputs),
+                create_coding_developer_agent(self.router, inputs),
+                create_researcher(self.router, inputs)
+            ]
+            return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         else:
             raise ValueError(f"Unknown category: {category}")
 
@@ -220,18 +230,8 @@ class AICrewManager:
         category = inputs.get('category', self.category)
         console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
 
-        if category == "customer_service":
-            specialist_agents = [
-                create_mathematician_agent(self.router, inputs),
-                create_tech_support_agent(self.router, inputs),
-                create_coding_developer_agent(self.router, inputs),
-                create_researcher(self.router, inputs)
-            ]
-            return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
-        else:
-            # FIX: Use the classified or default category
-            console.print(f"📦 Creating a specialized crew for category: {category}", style="blue")
-            return self._create_specialized_crew(category, inputs)
+        # FIX: Call the correct specialized crew based on the category
+        return self._create_specialized_crew(category, inputs)
 
 
     def create_customer_service_crew_hierarchical(self, router: DistributedRouter, inputs: Dict[str, Any],
