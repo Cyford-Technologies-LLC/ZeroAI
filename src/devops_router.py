@@ -22,6 +22,15 @@ MODEL_PREFERENCES = {
     "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
 }
 
+# FIX: Define keyword to category mapping for general tasks
+GENERAL_KEYWORDS_MAPPING = {
+    "maintenance": "general",
+    "health": "general",
+    "project health": "general",
+    "dependencies": "general",
+    "test suites": "general",
+}
+
 
 class DevOpsDistributedRouter(DistributedRouter):
     def __init__(self, peer_discovery_instance: PeerDiscovery, fallback_model_name: str = "llama3.2:1b"):
@@ -29,9 +38,22 @@ class DevOpsDistributedRouter(DistributedRouter):
         self.fallback_model_name = fallback_model_name
         self.local_ollama_base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 
+    def _determine_category_from_prompt(self, prompt: str) -> str:
+        """
+        Determines the category based on keywords in the prompt.
+        """
+        prompt_lower = prompt.lower()
+        for keyword, category in GENERAL_KEYWORDS_MAPPING.items():
+            if keyword in prompt_lower:
+                return category
+        return "general"
+
     def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None,
                                model_preferences: Optional[List[str]] = None) -> Optional[Ollama]:
         try:
+            if not category:
+                category = self._determine_category_from_prompt(prompt)
+
             preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
                                                                                                 MODEL_PREFERENCES[
                                                                                                     "default"])
@@ -52,7 +74,7 @@ class DevOpsDistributedRouter(DistributedRouter):
             return self._get_local_llm(self.fallback_model_name)
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
-        return self._get_llm_with_fallback(prompt, category="general")
+        return self._get_llm_with_fallback(prompt)
 
     def get_llm_for_role(self, role: str) -> Optional[Ollama]:
         role_category = "default"
@@ -89,7 +111,6 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
 
-    # FIX: Override get_optimal_endpoint_and_model with more detailed logging and checks
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
                                        model_preference_list: Optional[List[str]] = None) -> Tuple[
         Optional[str], Optional[str], Optional[str]]:
@@ -113,7 +134,6 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"   Peer [bold cyan]{peer.name}[/bold cyan] reports available models: {available_models}",
                           style="dim")
 
-            # FIX: Add a check for peer availability before proceeding
             if not available_models:
                 console.print(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", style="red")
                 continue
@@ -126,7 +146,6 @@ class DevOpsDistributedRouter(DistributedRouter):
                                       style="yellow")
                         continue
 
-                    # FIX: Correct memory comparison logic
                     peer_memory = peer.capabilities.gpu_memory if peer.capabilities.gpu_available else peer.capabilities.memory
                     if required_memory <= peer_memory:
                         all_candidates.append({
@@ -154,7 +173,7 @@ class DevOpsDistributedRouter(DistributedRouter):
         all_candidates.sort(key=get_score, reverse=True)
 
         if all_candidates:
-            best_candidate = all_candidates[0]
+            best_candidate = all_candidates
             peer = best_candidate['peer']
             model = best_candidate['model']
             console.print(
