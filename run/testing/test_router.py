@@ -5,15 +5,7 @@ from rich.console import Console
 from typing import Optional, List
 import warnings
 import json
-
-
-#examples
-#python run/testing/test_router.py -d --prompt "What is a distributed system?"
-#python run/testing/test_router.py -dv --prompt "Perform general maintenance and check project health."
-#python run/testing/test_router.py -m --ip 149.36.1.65 --model llama3.1:8b --prompt "Explain the concept of LLM."
-
-
-
+from time import sleep
 
 # Adjust the Python path to import modules from the parent directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
@@ -25,9 +17,10 @@ from config import config
 
 console = Console()
 
-# Instantiate the PeerDiscovery once for consistent peer data
-# This is a good practice to ensure all router instances have the same view of the network
+# Instantiate the PeerDiscovery once and allow time for discovery
 peer_discovery_instance = PeerDiscovery()
+console.print("Waiting for peer discovery to complete...", style="yellow")
+sleep(3)  # Wait for the discovery cycle to potentially find the peer
 
 
 def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Optional[str] = None):
@@ -40,6 +33,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     llm_instance = None
     try:
         if router_type == 'distributed':
+            # Use the single, persistent peer_discovery_instance
             router = DistributedRouter(peer_discovery_instance)
             # Use a default category for the test if not specified
             preference_list = MODEL_PREFERENCES.get("default")
@@ -87,14 +81,12 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
 def main():
     parser = argparse.ArgumentParser(description="Test different LLM routing strategies.")
 
-    # Use a mutually exclusive group for router selection
     router_group = parser.add_mutually_exclusive_group(required=True)
     router_group.add_argument('-d', '--distributed', action='store_true', help="Test the standard distributed router.")
     router_group.add_argument('-dv', '--devops', action='store_true', help="Test the new devops router (default).")
     router_group.add_argument('-m', '--manual', action='store_true',
                               help="Test a manual configuration with IP and model.")
 
-    # Arguments for manual testing
     parser.add_argument('--ip', type=str, help="IP address for manual testing.")
     parser.add_argument('--model', type=str, help="Model name for manual testing.")
 
@@ -102,8 +94,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Determine router type based on arguments
-    router_type = 'devops'  # Defaulting to devops
+    router_type = 'devops'
     if args.distributed:
         router_type = 'distributed'
     elif args.manual:
@@ -114,3 +105,13 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+#examples
+#python run/testing/test_router.py -d --prompt "What is a distributed system?"
+#python run/testing/test_router.py -dv --prompt "Perform general maintenance and check project health."
+#python run/testing/test_router.py -m --ip 149.36.1.65 --model llama3.1:8b --prompt "Explain the concept of LLM."
+
