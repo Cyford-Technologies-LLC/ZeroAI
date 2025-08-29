@@ -41,7 +41,7 @@ def create_classifier_agent(router: DistributedRouter, inputs: Dict[str, Any]) -
             "determining the correct crew to handle the request."
         ),
         llm=llm,
-        tools=[DelegatingMathTool(crew_manager=crew_manager, inputs=inputs)],
+        #tools=[DelegatingMathTool(crew_manager=crew_manager, inputs=inputs)],
         verbose=config.agents.verbose,
         allow_delegation=False,
     )
