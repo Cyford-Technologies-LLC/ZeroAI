@@ -1,0 +1,72 @@
+# knowledge/internal_crew/zeroai/project_config.yaml
+
+# General project information
+project:
+  name: "Zero AI Tool Suite"
+  id: "zeroai"
+  description: "A Python-based AI tool suite using CrewAI, LangChain, and Ollama for distributed, modular agent workflows."
+
+# Repository details for the Git tools
+repository:
+  url: "https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
+  # The branch to clone and pull the latest changes from
+  pull_from_branch: "rl-core"
+  # The convention for the branch the AI will create and push to
+  work_and_push_to_branch: "feature/{task_id}" # Dynamic branch name pattern
+  # Paths relevant to the project structure
+  source_path: "src/"
+  tests_path: "tests/"
+  docs_path: "docs/"
+
+# Configuration for the AI dev ops crew's overall interaction with the project
+dev_ops_config:
+  # Instructions for general maintenance
+  general_maintenance:
+    instructions: "When performing general maintenance, prioritize checking for and updating dependencies, and running standard test suites."
+
+  # Defines common tasks and their structure
+  task_templates:
+    bug_fix:
+      summary: "Analyze, fix, and test a reported bug."
+      flow: ["analyze_codebase", "fix_bug", "run_tests", "update_docs", "commit_and_push"]
+    feature_add:
+      summary: "Add a new feature, including coding, testing, and documentation."
+      flow: ["analyze_codebase", "implement_feature", "run_tests", "update_docs", "commit_and_push"]
+    docs_update:
+      summary: "Update existing documentation based on new information or changes."
+      flow: ["read_docs", "update_docs", "commit_and_push"]
+
+# CrewAI-specific settings for this project
+crewai_settings:
+  # Isolated temporary working directory for this project
+  working_directory: "/tmp/internal_crew/zeroai/"
+
+  # Specific sub-crew configurations for project context
+  sub_crews_config:
+    developer:
+      extra_instructions: "Adhere to the project's existing code style. Use `ruff` and `black` for formatting. All new features must include unit tests."
+      code_style_guide: "Follow PEP 8 standards and project-specific linting rules."
+    documentation:
+      files_to_update:
+        - "README.md"
+        - "docs/"
+    repo_management:
+      safe_branches: ["develop", "main"] # Branches for push validation
+      commit_conventions: "Use conventional commits (e.g., 'feat: add new feature', 'fix: bug fix')"
+      pr_template: "templates/pull_request_template.md"
+
+# Environment and development settings
+environment:
+  container_orchestration: "docker-compose"
+  # Changed from docker-compose.test.yml to docker-compose.learning.yml
+  docker_compose_file: "docker-compose.learning.yml"
+  dependencies:
+    - "requirements.txt"
+  testing_framework: "pytest"
+  testing_script: "pytest src/"
+  # New section for managing dynamic ports
+  port_mapping:
+    # A base port for the application, the AI can increment this for each test run
+    base_app_port: 8000
+    # Any other services that need dynamic ports can be added here
+    # e.g., base_db_port: 5432

@@ -4,7 +4,7 @@ from crewai import Task, Agent
 from typing import Optional, Dict, Any
 
 
-def create_research_task(agent: Agent, context: Optional[str] = None) -> Task:
+def create_research_task(agent: Agent, inputs: Dict[str, Any], context: Optional[list[Task]] = None) -> Task:
     """Create a comprehensive research task."""
     return Task(
         description="""Conduct thorough research on the given topic: {topic}
@@ -23,10 +23,10 @@ def create_research_task(agent: Agent, context: Optional[str] = None) -> Task:
     )
 
 
-def create_writing_task(agent: Agent, context: Optional[str] = None) -> Task:
+def create_writing_task(agent: Agent, inputs: Dict[str, Any], context: Optional[list[Task]] = None) -> Task:
     """Create a professional writing task."""
     return Task(
-        description="""Based on the research provided, create a well-structured, engaging article about: {topic}
+        description=f"""Based on the research provided, create a well-structured, engaging article about: {inputs.get("topic")}.
         
         Your article should:
         1. Have a compelling introduction that hooks the reader
@@ -43,7 +43,7 @@ def create_writing_task(agent: Agent, context: Optional[str] = None) -> Task:
     )
 
 
-def create_analysis_task(agent: Agent, context: Optional[str] = None) -> Task:
+def create_analysis_task(agent: Agent, inputs: Dict[str, Any], context: Optional[list[Task]] = None) -> Task:
     """Create a data analysis task."""
     return Task(
         description="""Analyze the research data and information about: {topic}
@@ -63,7 +63,7 @@ def create_analysis_task(agent: Agent, context: Optional[str] = None) -> Task:
     )
 
 
-def create_strategy_task(agent: Agent, context: Optional[str] = None) -> Task:
+def create_strategy_task(agent: Agent, inputs: Dict[str, Any], context: Optional[list[Task]] = None) -> Task:
     """Create a strategic planning task."""
     return Task(
         description="""Develop a comprehensive strategy for: {topic}

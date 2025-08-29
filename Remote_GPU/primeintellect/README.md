@@ -18,8 +18,8 @@ cd ZeroAI/Remote_GPU/primeintellect
 
 ### 2. Run Setup Script:
 ```bash
-chmod +x setup.sh
-./setup.sh
+chmod +x setup-ubuntu.sh
+./setup-ubuntu.sh
 ```
 
 ### 3. GPU Bridge will start on port 8001

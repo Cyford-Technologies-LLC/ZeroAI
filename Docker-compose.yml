@@ -1,0 +1,65 @@
+# docker-compose.yml
+
+services:
+  ollama:
+    container_name: ollama-prod
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: always
+    networks:
+      - zeroai_network
+
+  zeroai_api:
+    container_name: zeroai_api-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    ports:
+      - "3939:3939"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL_NAME=llama3.2:1b
+      - PYTHONPATH=/app/src
+      - ZEROAI_CONFIG_DIR=config
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./API:/app/API  # Add this line
+      - ./prepare_resources.py:/app/prepare_resources.py
+
+    entrypoint: ["/bin/bash", "-c", "sleep 5 && python /app/prepare_resources.py && uvicorn API.api:app --host 0.0.0.0 --port 3939"]
+    networks:
+      - zeroai_network
+
+  zeroai_peer:
+    container_name: zeroai_peer-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+      - ./prepare_resources.py:/app/prepare_resources.py # Add the new script
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - PYTHONPATH=/app/src
+      - ZEROAI_CONFIG_DIR=config
+    working_dir: /app
+    entrypoint: ["/bin/bash", "-c", "sleep 5 && python prepare_resources.py && python3.11 run/internal/start_peer_service_docker.py"]
+    networks:
+      - zeroai_network
+
+volumes:
+  ollama_data:
+
+networks:
+  zeroai_network:
+    driver: bridge

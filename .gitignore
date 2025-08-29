@@ -21,6 +21,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+peers.json
+config/peers.json
+
+
 
 # Virtual environments
 .env

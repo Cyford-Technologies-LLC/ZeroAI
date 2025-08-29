@@ -1,0 +1,43 @@
+services:
+  ollama:
+    container_name: ollama-learning
+    image: ollama/ollama:latest
+    # No ports section, so no host port is bound
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: always
+
+  zeroai_api:
+    container_name: zeroai_api-learning
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    # No ports section
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL_NAME=llama3.2:1b
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src
+    entrypoint: /bin/bash -c "sleep 5 && curl -s http://ollama:11434/api/pull -d '{\"name\":\"llama3.1:8b\"}' && uvicorn API.api:app --host 0.0.0.0 --port 3939"
+
+  zeroai_peer:
+    container_name: zeroai_peer-learning
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    # No ports section
+    volumes:
+      - ./src:/app/src
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - PYTHONPATH=/app/src
+    working_dir: /app
+    command: ["python3.11", "run/internal/start_peer_service_docker.py"]
+
+volumes:
+  ollama_data:

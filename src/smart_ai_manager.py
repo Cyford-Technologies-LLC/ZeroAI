@@ -4,9 +4,10 @@ from typing import Dict, Any, Optional
 from crewai import Crew
 from rich.console import Console
 
-from .intelligent_router import IntelligentAIRouter
-from .agents.base_agents import create_researcher, create_writer, create_analyst
-from .tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
+from src.intelligent_router import IntelligentAIRouter
+from src.agents.base_agents import create_researcher, create_writer, create_analyst
+from src.tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
+
 
 console = Console()
 
@@ -137,20 +138,28 @@ class SmartAIManager:
         console.print("\n📊 [bold]Smart AI Manager Status[/bold]")
         console.print("=" * 40)
         
-        if status["local_only_mode"]:
+        # Safely check for the key using .get() to prevent KeyError
+        if status.get("local_only_mode"):
             console.print("🏠 Mode: Local Only (Budget Mode)", style="blue")
-        elif status["thunder_enabled"]:
-            if status["thunder_auto_start"]:
-                console.print(f"⚡ Mode: Smart Thunder (Auto-start at {status['complexity_threshold']}/10)", style="green")
+        # Safely check for the key using .get()
+        elif status.get("thunder_enabled"):
+            # Safely check for the key using .get()
+            if status.get("thunder_auto_start"):
+                # Safely get the threshold with a default value
+                threshold_value = status.get('complexity_threshold', 'N/A')
+                console.print(f"⚡ Mode: Smart Thunder (Auto-start at {threshold_value}/10)", style="green")
             else:
                 console.print("🔧 Mode: Manual Thunder", style="yellow")
         else:
             console.print("🏠 Mode: Local Processing", style="blue")
-        
-        console.print(f"🎯 Complexity Threshold: {status['complexity_threshold']}/10")
-        console.print(f"🚀 Thunder Auto-start: {status['thunder_auto_start']}")
-        console.print(f"⚡ Thunder Enabled: {status['thunder_enabled']}")
-        console.print(f"🏠 Local Only: {status['local_only_mode']}")
+
+        # Display other status values safely
+        console.print(f"🎯 Complexity Threshold: {status.get('complexity_threshold', 'N/A')}/10")
+        console.print(f"🚀 Thunder Auto-start: {status.get('thunder_auto_start', 'N/A')}")
+        console.print(f"⚡ Thunder Enabled: {status.get('thunder_enabled', 'N/A')}")
+        console.print(f"🏠 Local Only: {status.get('local_only_mode', 'N/A')}")
+
+
 
 
 # Convenience functions for backward compatibility
