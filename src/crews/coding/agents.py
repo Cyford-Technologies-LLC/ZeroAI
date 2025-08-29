@@ -11,12 +11,13 @@ from distributed_router import DistributedRouter
 
 console = Console()
 
+
 def create_coding_developer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     """Creates a coding developer agent with dynamic LLM selection."""
     llm = None
     try:
         # Use the dynamic router to select the optimal LLM for the 'coding' role
-        # FIX: Use `get_llm_for_role` instead of the non-existent `get_llm_for_model`
+        # The router methods now return a correctly configured Ollama instance
         llm = router.get_llm_for_role("coding")
     except Exception as e:
         console.print(f"⚠️ Failed to get optimal LLM for coding developer via router: {e}", style="yellow")
@@ -25,6 +26,11 @@ def create_coding_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     if not llm:
         raise ValueError("Failed to get LLM for coding developer agent.")
+
+    # FIX: Ensure the LLM instance is created with the LiteLLM prefix
+    # The `router.get_llm_for_role` should already handle this, but adding a failsafe check
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
 
     console.print(
         f"🔗 Coding Developer Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
@@ -42,12 +48,12 @@ def create_coding_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         allow_delegation=False,
     )
 
+
 def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     """Creates a QA engineer agent with dynamic LLM selection."""
     llm = None
     try:
         # Use the dynamic router to select the optimal LLM for the 'qa' role
-        # FIX: Use `get_llm_for_role` instead of the non-existent `get_llm_for_model`
         llm = router.get_llm_for_role("qa")
     except Exception as e:
         console.print(f"⚠️ Failed to get optimal LLM for QA engineer via router: {e}", style="yellow")
@@ -56,6 +62,10 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any]) 
 
     if not llm:
         raise ValueError("Failed to get LLM for QA engineer agent.")
+
+    # FIX: Ensure the LLM instance is created with the LiteLLM prefix
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
 
     console.print(
         f"🔗 QA Engineer Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
