@@ -69,6 +69,11 @@ class AICrewManager:
     """Manages AI crew creation and execution with a robust fallback."""
 
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
+        # FIX: Ensure the router instance is of the correct type at initialization
+        if not isinstance(distributed_router_instance, DistributedRouter):
+            raise TypeError(
+                f"Expected router to be a DistributedRouter instance, but got {type(distributed_router_instance)}")
+
         self.router = distributed_router_instance
         self.inputs = kwargs.get('inputs', {})
         self.category = self.inputs.get('category', 'general')
@@ -94,6 +99,11 @@ class AICrewManager:
                             f"Received content: {inputs}")
 
         # --- End Compatibility Layer ---
+
+        # FIX: Ensure self.router is not a string before proceeding
+        if not isinstance(self.router, DistributedRouter):
+            logging.error(f"Router has been corrupted: type is {type(self.router)}")
+            raise TypeError("Router instance is corrupted. Expected DistributedRouter.")
 
         logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
         self.router = router
@@ -122,7 +132,13 @@ class AICrewManager:
         """
         logging.info(f"AICrewManager._classify_task: inputs type={type(inputs)}, content={inputs}")
 
-        # Fix: Explicitly pass the correct router instance
+        # FIX: Add a safeguard check for router instance
+        if not isinstance(self.router, DistributedRouter):
+            console.print(
+                "⚠️ Failed to get optimal LLM for classifier via router: 'self.router' is not a DistributedRouter instance.",
+                style="yellow")
+            return "general"
+
         try:
             classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
