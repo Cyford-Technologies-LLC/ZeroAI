@@ -40,10 +40,15 @@ class DevOpsDistributedRouter(DistributedRouter):
             preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
                                                                                                 MODEL_PREFERENCES[
                                                                                                     "default"])
+            # Temporary debug log
+            console.print(f"Attempting distributed routing for category '{category}' with preferences: {preference_list}", style="blue")
 
             # FIX: Call the parent's get_optimal_endpoint_and_model with the correct parameters
             base_url, _, model_name = super().get_optimal_endpoint_and_model(prompt,
                                                                              model_preference_list=preference_list)
+            # Temporary debug log
+            console.print(f"Distributed routing result: base_url={base_url}, model_name={model_name}", style="blue")
+
 
             if model_name:
                 prefixed_model_name = f"ollama/{model_name}"
@@ -59,6 +64,7 @@ class DevOpsDistributedRouter(DistributedRouter):
                 f"⚠️ Distributed routing failed for category '{category or 'general'}': {e}. Falling back to local model '{self.fallback_model_name}'.",
                 style="yellow")
             return self._get_local_llm(self.fallback_model_name)
+
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
         return self._get_llm_with_fallback(prompt)
