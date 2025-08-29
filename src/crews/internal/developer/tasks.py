@@ -1,8 +1,7 @@
 # src/crews/developer/tasks.py
 from crewai import Task
-from typing import Dict, Any
+from typing import Dict, Any, List # Combined imports
 from crewai import Agent
-from typing import Dict, Any, List # <-- Add this import
 
 def analyze_codebase_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     return Task(
