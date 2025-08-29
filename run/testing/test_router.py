@@ -33,23 +33,24 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     llm_instance = None
     base_url, model_name = None, None
 
+    # Determine the router instance
+    router = None
+    if router_type == 'distributed':
+        router = DistributedRouter(peer_discovery_instance)
+    elif router_type == 'devops':
+        router = get_devops_router()
+
+    # --- START DEBUG DUMP: Data sent to router ---
+    console.print("\n--- DEBUG: Data Sent to Router ---", style="bold blue")
+    console.print(f"  Prompt: '{prompt}'")
+    preference_list = MODEL_PREFERENCES.get("default")
+    console.print(f"  Model Preferences: {preference_list}")
+    console.print(f"  PeerDiscovery Peers: {[p.name for p in peer_discovery_instance.get_peers()]}")
+    console.print("--- END DEBUG: Data Sent to Router ---\n", style="bold blue")
+    # --- END DEBUG DUMP ---
+
     try:
-        # Determine the router instance and call the appropriate method
-        router = None
-        if router_type == 'distributed':
-            router = DistributedRouter(peer_discovery_instance)
-        elif router_type == 'devops':
-            router = get_devops_router()
-
         if router:
-            # --- START DEBUG DUMP: Data sent to router ---
-            console.print("\n--- DEBUG: Data Sent to Router ---", style="bold blue")
-            console.print(f"  Prompt: '{prompt}'")
-            preference_list = MODEL_PREFERENCES.get("default")
-            console.print(f"  Model Preferences: {preference_list}")
-            console.print("--- END DEBUG: Data Sent to Router ---\n", style="bold blue")
-            # --- END DEBUG DUMP ---
-
             if router_type == 'distributed':
                 base_url, _, model_name = router.get_optimal_endpoint_and_model(prompt,
                                                                                 model_preference_list=preference_list)
@@ -64,30 +65,29 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
                 console.print("[bold red]Error:[/bold red] Manual test requires an IP and model.", style="red")
                 return
 
+            base_url = f"http://{ip}:11434"
+            model_name = model
             console.print(
                 f"Attempting manual connection to IP: [bold green]{ip}[/bold green], Model: [bold yellow]{model}[/bold yellow]")
             llm_config = {
                 "model": model,
-                "base_url": f"http://{ip}:11434",
+                "base_url": base_url,
                 "temperature": config.model.temperature
             }
             llm_instance = Ollama(**llm_config)
-            base_url = llm_instance.base_url
-            model_name = llm_instance.model
-
-        # --- START DEBUG DUMP: Data returned by router (or manual) ---
-        console.print("\n--- DEBUG: Data Returned by Router ---", style="bold yellow")
-        console.print(f"  Base URL: {base_url}")
-        console.print(f"  Model Name: {model_name}")
-        console.print("--- END DEBUG: Data Returned by Router ---\n", style="bold yellow")
-        # --- END DEBUG DUMP ---
-
-        if not llm_instance and model_name:
-            llm_instance = Ollama(model=model_name, base_url=base_url, temperature=config.model.temperature)
 
     except Exception as e:
         console.print(f"[bold red]Router or Connection Error:[/bold red] {e}", style="red")
-        return
+
+    # --- START DEBUG DUMP: Data returned by router (or manual) ---
+    console.print("\n--- DEBUG: Data Returned by Router ---", style="bold yellow")
+    console.print(f"  Base URL: {base_url}")
+    console.print(f"  Model Name: {model_name}")
+    console.print("--- END DEBUG: Data Returned by Router ---\n", style="bold yellow")
+    # --- END DEBUG DUMP ---
+
+    if not llm_instance and model_name:
+        llm_instance = Ollama(model=model_name, base_url=base_url, temperature=config.model.temperature)
 
     if llm_instance:
         console.print(
@@ -106,27 +106,9 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Test different LLM routing strategies.")
-
-    router_group = parser.add_mutually_exclusive_group(required=True)
-    router_group.add_argument('-d', '--distributed', action='store_true', help="Test the standard distributed router.")
-    router_group.add_argument('-dv', '--devops', action='store_true', help="Test the new devops router (default).")
-    router_group.add_argument('-m', '--manual', action='store_true',
-                              help="Test a manual configuration with IP and model.")
-
-    parser.add_argument('--ip', type=str, help="IP address for manual testing.")
-    parser.add_argument('--model', type=str, help="Model name for manual testing.")
-
-    parser.add_argument('--prompt', type=str, required=True, help="The prompt to test the LLM with.")
-
+    # ... (parser setup) ...
     args = parser.parse_args()
-
-    router_type = 'devops'
-    if args.distributed:
-        router_type = 'distributed'
-    elif args.manual:
-        router_type = 'manual'
-
+    # ... (determine router_type) ...
     run_test(router_type, args.prompt, args.ip, args.model)
 
 
