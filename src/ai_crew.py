@@ -120,6 +120,21 @@ class AICrewManager:
             console.print(f"❌ Error during crew execution AI : {e}", style="red")
             return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
 
+    def create_crew_for_category(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+        category = inputs.get('category', 'general')
+        if category == 'coding':
+            return create_coding_crew(router, inputs)
+        elif category == 'math':
+            return create_math_crew(router, inputs)
+        elif category == 'research':
+            return create_research_crew(router, inputs)
+        elif category == 'customer_service':
+            return create_customer_service_crew(router, inputs)
+        elif category == 'tech_support':
+            return create_tech_support_crew(router, inputs)
+        else:
+            return create_general_crew(router, inputs)
+
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
         Helper method to run the classification crew and return the category.
@@ -134,25 +149,21 @@ class AICrewManager:
             return "general"
         try:
             classifier_agent = create_classifier_agent(self.router, inputs)
-        except ValueError as e:
-            console.print(f"❌ Failed to create classifier agent: {e}", style="red")
-            return "general"
-        classifier_task = Task(
-            description=f"""
-            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', 'customer_service', or 'general'.
-            Inquiry: {inputs.get('topic')}.
-            Provide ONLY the single word category name as your final output, do not include any other text or formatting.
-            """,
-            agent=classifier_agent,
-            expected_output="A single word representing the category: math, coding, research, or general.",
-        )
-        classifier_crew = Crew(
-            agents=[classifier_agent],
-            tasks=[classifier_task],
-            verbose=config.agents.verbose,
-            full_output=True
-        )
-        try:
+            classifier_task = Task(
+                description=f"""
+                Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', 'customer_service', or 'general'.
+                Inquiry: {inputs.get('topic')}.
+                Provide ONLY the single word category name as your final output, do not include any other text or formatting.
+                """,
+                agent=classifier_agent,
+                expected_output="A single word representing the category: math, coding, research, or general.",
+            )
+            classifier_crew = Crew(
+                agents=[classifier_agent],
+                tasks=[classifier_task],
+                verbose=config.agents.verbose,
+                full_output=True
+            )
             classification_result = classifier_crew.kickoff()
 
             # FIX: Dump the communication object here
@@ -170,57 +181,31 @@ class AICrewManager:
 
             if classification_result and classification_result.tasks_output:
                 last_task_output = classification_result.tasks_output[-1]
-                if isinstance(last_task_output, TaskOutput) and last_task_output.output:
-                    return last_task_output.output.strip().lower()
+                # CORRECTED LINE: Access 'raw' attribute, not 'output'
+                if isinstance(last_task_output, TaskOutput) and last_task_output.raw:
+                    return last_task_output.raw.strip().lower()
             return "general"
         except Exception as e:
             console.print(f"❌ Error during classification: {e}", style="red")
             return "general"
 
-    def create_crew_for_category(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-        """Create a specialized crew based on the category, or default to general."""
-        category = inputs.get('category', 'general')
 
-        if category in ["general", "customer_service"]:
-            return self.create_customer_service_crew(router, inputs)
-        elif category == "math":
-            return create_math_crew(router, inputs)
-        elif category == "coding":
-            return create_coding_crew(router, inputs)
-        elif category == "tech_support":
-            return create_tech_support_crew(router, inputs)
-        elif category == "research":
-            return create_research_crew(router, inputs)
-        elif category == "analysis":
-            return create_analysis_crew(router, inputs)
-        else:
-            raise ValueError(f"Unknown crew category: {category}")
+def create_customer_service_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    # Dummy implementation for illustration
+    customer_service_agent = create_customer_service_agent(router, inputs)
+    task = Task(
+        description="Handle customer service inquiry.",
+        agent=customer_service_agent,
+        expected_output="A polite and helpful response to the customer."
+    )
+    return Crew(agents=[customer_service_agent], tasks=[task], verbose=config.agents.verbose, full_output=True)
 
-    def create_customer_service_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-        agent = self.create_customer_service_agent(router, inputs)
-        task = Task(
-            description=inputs.get("topic", "Handle a general customer inquiry."),
-            agent=agent
-        )
-        return Crew(
-            agents=[agent],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=True
-        )
 
-    def create_customer_service_agent(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-        task_description = "Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew."
-        llm = router.get_llm_for_task(task_description)
-        tools = [
-            ResearchDelegationTool(crew_manager=self, inputs=inputs)
-        ]
-        return Agent(
-            role="Customer Service Representative",
-            goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
-            backstory="You are an AI customer service representative designed to handle inquiries.",
-            llm=llm,
-            tools=tools,
-            verbose=True,
-            allow_delegation=False
-        )
+def create_general_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    # Dummy implementation for illustration
+    researcher = create_researcher(router, inputs)
+    writer = create_writer(router, inputs)
+    research_task = create_research_task(inputs, researcher)
+    writing_task = create_writing_task(inputs, writer)
+    return Crew(agents=[researcher, writer], tasks=[research_task, writing_task], verbose=config.agents.verbose,
+                full_output=True)
