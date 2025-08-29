@@ -133,7 +133,7 @@ class AICrewManager:
         elif category == 'tech_support':
             return create_tech_support_crew(router, inputs)
         else:
-            return create_general_crew(router, inputs)
+            return create_customer_service_crew(router, inputs)
 
     def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
         """
