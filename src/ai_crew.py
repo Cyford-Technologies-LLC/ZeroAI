@@ -59,7 +59,6 @@ def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> C
     )
 
 
-
 def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
     analyst = create_analyst(router, inputs)
     analysis_task = create_analysis_task(inputs, analyst)
@@ -227,21 +226,11 @@ class AICrewManager:
                 create_researcher(self.router, inputs)
             ]
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
-        # FIX: The `elif category == "auto"` branch should not default to general.
-        # It should rely on the category that was determined by `_classify_task`.
-        # The logic is simpler without this branch, as the classified category is already in `inputs`.
-        # The `execute_crew` method already re-populates `category` after classification.
-        else: # This block is now the default for all other categories
+        else:
+            # FIX: Use the classified or default category
             console.print(f"📦 Creating a specialized crew for category: {category}", style="blue")
             return self._create_specialized_crew(category, inputs)
 
-
-        elif category == "auto":
-            return self._create_specialized_crew("general", inputs)
-        else:
-            console.print(f"⚠️  Category not recognized, defaulting to general crew for category: {category}",
-                          style="yellow")
-            return self._create_specialized_crew(category, inputs)
 
     def create_customer_service_crew_hierarchical(self, router: DistributedRouter, inputs: Dict[str, Any],
                                                   specialist_agents: List[Agent]) -> Crew:
