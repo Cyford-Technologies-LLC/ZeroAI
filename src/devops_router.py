@@ -58,8 +58,12 @@ class DevOpsDistributedRouter(DistributedRouter):
                     warnings.simplefilter("ignore", DeprecationWarning)
                     return Ollama(**llm_config)
             else:
+                # This branch is executed when the parent method returns no model,
+                # but does so without raising an exception.
                 raise RuntimeError("Distributed routing failed and no model name was returned.")
+
         except Exception as e:
+            # Catch the RuntimeError and perform the fallback
             console.print(
                 f"⚠️ Distributed routing failed for category '{category or 'general'}': {e}. Falling back to local model '{self.fallback_model_name}'.",
                 style="yellow")
