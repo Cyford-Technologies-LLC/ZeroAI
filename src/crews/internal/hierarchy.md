@@ -94,7 +94,31 @@ The next step is to begin implementing the contents of these sub-crews and tools
 └── src/
     └── ai_dev_ops_crew.py              # Reads YAML files to configure crew tasks
 
-
+1. Developer Crew (Code Researcher, Senior Developer, QA Engineer)
+Best: codellama:13b (specialized for code generation)
+Next: llama3.1:8b (strong generalist with good coding)
+Fallback: llama3.2:latest (capable generalist)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+2. Research Crew (Internal Research Agent)
+Best: llama3.1:8b (powerful reasoning and analysis)
+Next: llama3.2:latest (strong generalist for research)
+Fallback: gemma2:2b (smaller, still capable for many research tasks)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+3. Documentation Crew (Documentation Agent)
+Best: llama3.2:latest (strong language generation and summarization)
+Next: llama3.1:8b (good alternative for text generation)
+Fallback: gemma2:2b (efficient for text tasks)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+4. DevOps Orchestrator Agent
+Best: llama3.2:latest (superior reasoning and task delegation)
+Next: llama3.1:8b (powerful alternative for orchestration)
+Fallback: gemma2:2b (capable of coordinating simpler tasks)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+5. Repo Management Crew (Repo Manager Agent)
+Best: llama3.2:latest (well-rounded for general repo tasks)
+Next: llama3.1:8b (capable for standard instructions)
+Fallback: gemma2:2b (efficient for basic operations)
+Slowest: llama3.2:1b (lightweight, local fallback)
 
 #  test example
 python run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."

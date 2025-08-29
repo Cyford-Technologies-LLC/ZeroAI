@@ -12,11 +12,21 @@ from config import config
 console = Console()
 logger = logging.getLogger(__name__)
 
+# --- Model preference lists based on agent roles ---
+MODEL_PREFERENCES = {
+    "developer": ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
+    "research": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "documentation": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "devops_orchestrator": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "repo_manager": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+}
 
+
+# FIX: Define a new class that inherits from DistributedRouter
 class DevOpsDistributedRouter(DistributedRouter):
     """
-    An enhanced DistributedRouter with a fallback to a local model.
-    This class is specific to the DevOps crew to ensure resilience.
+    An enhanced DistributedRouter with a fallback to a local model and role-based model preference.
     """
 
     def __init__(self, peer_discovery_instance: PeerDiscovery, fallback_model_name: str = "llama3.2:1b"):
@@ -24,15 +34,14 @@ class DevOpsDistributedRouter(DistributedRouter):
         self.fallback_model_name = fallback_model_name
         self.local_ollama_base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 
-    def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None) -> Optional[Ollama]:
+    def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None,
+                               model_preferences: Optional[List[str]] = None) -> Optional[Ollama]:
         """
-        Internal method to handle LLM retrieval with fallback logic.
+        Internal method to handle LLM retrieval with fallback logic and model preferences.
         """
-        # Embed the category hint into the prompt for the parent method
-        enriched_prompt = f"{category or 'general'}: {prompt}" if category else prompt
-
         try:
-            base_url, _, model_name = super().get_optimal_endpoint_and_model(enriched_prompt)
+            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt,
+                                                                          model_preference_list=model_preferences)
             if model_name:
                 prefixed_model_name = f"ollama/{model_name}"
                 llm_config = {"model": prefixed_model_name, "base_url": base_url,
@@ -48,22 +57,28 @@ class DevOpsDistributedRouter(DistributedRouter):
                 style="yellow")
             return self._get_local_llm(self.fallback_model_name)
 
+    # FIX: Override get_llm_for_task to use the updated fallback logic
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
-        # For tasks, the category is implicitly in the prompt or inferred.
-        # This implementation lets the parent's logic handle model preference based on prompt keywords.
-        return self._get_llm_with_fallback(prompt)
+        return self._get_llm_with_fallback(prompt, category="general")
 
+    # FIX: Override get_llm_for_role to use role-based preferences
     def get_llm_for_role(self, role: str) -> Optional[Ollama]:
-        category = ""
-        if "coding" in role.lower() or "developer" in role.lower():
-            category = "coding"
-        elif "qa" in role.lower() or "quality" in role.lower():
-            category = "qa"
-        else:
-            category = "general"
+        role_category = "default"
+        if any(r in role.lower() for r in ["coding", "developer"]):
+            role_category = "developer"
+        elif "research" in role.lower():
+            role_category = "research"
+        elif "documentation" in role.lower():
+            role_category = "documentation"
+        elif "orchestrator" in role.lower():
+            role_category = "devops_orchestrator"
+        elif "repo_manager" in role.lower():
+            role_category = "repo_manager"
+
+        model_preferences = MODEL_PREFERENCES.get(role_category, MODEL_PREFERENCES["default"])
 
         prompt = f"LLM selection for a {role} role."
-        return self._get_llm_with_fallback(prompt, category)
+        return self._get_llm_with_fallback(prompt, category=role_category, model_preferences=model_preferences)
 
     def _get_local_llm(self, model_name: str) -> Optional[Ollama]:
         """Gets an Ollama LLM instance for a specific model running on localhost."""
@@ -84,11 +99,85 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
 
+    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
+                                       model_preference_list: Optional[List[str]] = None) -> Tuple[
+        Optional[str], Optional[str], Optional[str]]:
+        if failed_peers is None:
+            failed_peers = []
+        if model_preference_list is None:
+            # Revert to the old logic if no specific list is provided
+            is_coding_task = any(
+                keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
+            )
+            model_preference_list = [
+                "codellama:13b", "llama3.1:8b", "codellama:7b", "gemma2:2b",
+                "llama3.2:latest", "llava:7b", "llama3.2:1b"
+            ] if is_coding_task else [
+                "llama3.1:8b", "llama3.2:latest", "gemma2:2b",
+                "llava:7b", "llama3.2:1b"
+            ]
 
+        all_peers = self.peer_discovery.get_peers()
+        all_candidates = []
+        local_ollama_models = self._get_local_ollama_models()
+
+        console.print(f"🔎 Analyzing peers for task with model preference: {model_preference_list}", style="blue")
+
+        for peer in all_peers:
+            if peer.name in failed_peers:
+                console.print(f"   🚫 Skipping failed peer: {peer.name}", style="yellow")
+                continue
+
+            available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
+            console.print(f"   Peer [bold cyan]{peer.name}[/bold cyan] reports available models: {available_models}",
+                          style="dim")
+
+            for model in model_preference_list:
+                if model in available_models:
+                    required_memory = MODEL_MEMORY_MAP.get(model)
+                    if required_memory is None:
+                        console.print(f"      - ⚠️ Skipping model {model}: memory requirements unknown.",
+                                      style="yellow")
+                        continue
+
+                    if required_memory <= peer.capabilities.memory:
+                        all_candidates.append({
+                            "peer": peer,
+                            "model": model
+                        })
+                        console.print(
+                            f"      - ✅ Candidate found: Model=[bold yellow]{model}[/bold yellow] on Peer=[bold cyan]{peer.name}[/bold cyan]",
+                            style="green")
+                    else:
+                        console.print(
+                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer.capabilities.memory} GiB available).",
+                            style="red")
+
+        def get_score(candidate):
+            peer = candidate['peer']
+            gpu_score = 1000 if peer.capabilities.gpu_available else 0
+            memory_score = peer.capabilities.gpu_memory * 10 + peer.capabilities.memory
+            load_score = max(0, 100 - peer.capabilities.load_avg)
+            model_index_score = len(model_preference_list) - model_preference_list.index(candidate['model'])
+            return (gpu_score + memory_score + load_score + model_index_score)
+
+        all_candidates.sort(key=get_score, reverse=True)
+
+        if all_candidates:
+            best_candidate = all_candidates[0]
+            peer = best_candidate['peer']
+            model = best_candidate['model']
+            console.print(
+                f"✅ Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]",
+                style="green")
+            return f"http://{peer.ip}:11434", peer.name, model
+
+        console.print("❌ No suitable peer/model combination found. Routing failed.", style="red")
+        raise RuntimeError("No suitable peer or model found. All attempts failed.")
+
+
+# FIX: Keep the get_router function to return DevOpsDistributedRouter
 def get_router():
-    """
-    Instantiates and returns a DevOpsDistributedRouter configured for internal, secure use.
-    """
     try:
         peer_discovery_instance = PeerDiscovery()
         router = DevOpsDistributedRouter(peer_discovery_instance, fallback_model_name="llama3.2:1b")
@@ -99,6 +188,7 @@ def get_router():
         raise RuntimeError("Failed to get secure internal router setup.") from e
 
 
+# FIX: Keep the if __name__ == '__main__': block for testing
 if __name__ == '__main__':
     try:
         router = get_router()
