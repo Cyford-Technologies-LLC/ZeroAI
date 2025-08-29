@@ -71,6 +71,8 @@ class AICrewManager:
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         # FIX: Ensure the router instance is of the correct type at initialization
         if not isinstance(distributed_router_instance, DistributedRouter):
+            logging.error(
+                f"FATAL: Router is not a DistributedRouter instance. Type: {type(distributed_router_instance)}, Value: {distributed_router_instance}")
             raise TypeError(
                 f"Expected router to be a DistributedRouter instance, but got {type(distributed_router_instance)}")
 
@@ -80,9 +82,8 @@ class AICrewManager:
         self.task_description = self.inputs.get('topic', '')
         self.llm_instance = None
 
-        print(f"DEBUG: AICrewManager initialized with task_description: '{self.task_description}'")
-        print(f"DEBUG: AICrewManager initialized with category: '{self.category}'")
         logging.info(f"AICrewManager.__init__: self.inputs type={type(self.inputs)}, content={self.inputs}")
+        logging.info(f"AICrewManager.__init__: self.router instance stored. Type: {type(self.router)}")
 
     def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
         """Executes the appropriate crew based on the category."""
@@ -100,13 +101,14 @@ class AICrewManager:
 
         # --- End Compatibility Layer ---
 
-        # FIX: Ensure self.router is not a string before proceeding
-        if not isinstance(self.router, DistributedRouter):
-            logging.error(f"Router has been corrupted: type is {type(self.router)}")
-            raise TypeError("Router instance is corrupted. Expected DistributedRouter.")
-
         logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
-        self.router = router
+
+        # LOGGING: Check router instance just before it's used for classification
+        logging.info(
+            f"AICrewManager.execute_crew: router instance check before classification. Type: {type(self.router)}")
+
+        # FIX: Remove this line. It is overwriting the correct self.router with a potentially corrupted value.
+        # self.router = router
         self.inputs = inputs
         category = inputs.get('category', 'auto')
 
@@ -131,6 +133,10 @@ class AICrewManager:
         Helper method to run the classification crew and return the category.
         """
         logging.info(f"AICrewManager._classify_task: inputs type={type(inputs)}, content={inputs}")
+
+        # LOGGING: Check router instance before calling create_classifier_agent
+        logging.info(
+            f"AICrewManager._classify_task: router instance check before agent creation. Type: {type(self.router)}")
 
         # FIX: Add a safeguard check for router instance
         if not isinstance(self.router, DistributedRouter):
@@ -214,7 +220,6 @@ class AICrewManager:
             ]
             return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         elif category == "auto":
-            # NOTE: Auto-classification is now handled in `execute_crew`
             return self._create_specialized_crew("general", inputs)
         else:
             console.print(f"⚠️  Category not recognized, defaulting to general crew for category: {category}",
@@ -233,8 +238,7 @@ class AICrewManager:
             description=f"Manage the customer service inquiry related to: {inputs.get('topic')}",
             agent=manager_agent,
             expected_output="A final answer to the customer's inquiry.",
-            context=[Task(description="Get help from the appropriate specialist.", agent=agent) for agent in
-                     specialist_agents]
+            context=[Task(description="Get help from the appropriate specialist.", agent=agent) for agent in specialist_agents]
         )
 
         return Crew(

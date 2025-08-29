@@ -9,7 +9,6 @@ from distributed_router import DistributedRouter
 
 console = Console()
 
-
 def create_classifier_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     """Creates a classifier agent with dynamic LLM selection."""
     llm = None
