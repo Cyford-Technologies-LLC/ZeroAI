@@ -9,6 +9,7 @@ from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENC
     MODEL_MEMORY_MAP
 from langchain_community.llms.ollama import Ollama
 from config import config
+import json  # Import json for pretty-printing
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -33,8 +34,6 @@ class DevOpsDistributedRouter(DistributedRouter):
 
     def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None,
                                model_preferences: Optional[List[str]] = None) -> Optional[Ollama]:
-        # This try/except block remains in place to handle unexpected errors,
-        # but we will handle the expected failure from distributed routing more gracefully.
         try:
             if not category:
                 category = self._determine_category_from_prompt(prompt) or "general"
@@ -47,15 +46,28 @@ class DevOpsDistributedRouter(DistributedRouter):
                 style="blue")
 
             # Attempt distributed routing
-            base_url, _, model_name = super().get_optimal_endpoint_and_model(prompt,
-                                                                             model_preference_list=preference_list)
+            try:
+                base_url, _, model_name = super().get_optimal_endpoint_and_model(prompt,
+                                                                                 model_preference_list=preference_list)
+            except Exception as e:
+                console.print(f"DEBUG: Call to parent's distributed routing method failed: {e}", style="red")
+                base_url, model_name = None, None
 
-            console.print(f"Distributed routing result: base_url={base_url}, model_name={model_name}", style="blue")
+            console.print(f"DEBUG: Distributed routing result: base_url={base_url}, model_name={model_name}",
+                          style="blue")
 
             if model_name:
                 prefixed_model_name = f"ollama/{model_name}"
                 llm_config = {"model": prefixed_model_name, "base_url": base_url,
                               "temperature": config.model.temperature}
+
+                # --- START DEBUG DUMP ---
+                console.print("\n--- DEBUG: Successful Distributed Call ---", style="bold green")
+                console.print(f"  Attempting to create Ollama instance with config:")
+                console.print(f"  {json.dumps(llm_config, indent=2)}")
+                console.print("--- END DEBUG: Successful Distributed Call ---\n", style="bold green")
+                # --- END DEBUG DUMP ---
+
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", DeprecationWarning)
                     return Ollama(**llm_config)
@@ -106,6 +118,14 @@ class DevOpsDistributedRouter(DistributedRouter):
                 "base_url": self.local_ollama_base_url,
                 "temperature": config.model.temperature
             }
+
+            # --- START DEBUG DUMP ---
+            console.print("\n--- DEBUG: Local Fallback Call ---", style="bold yellow")
+            console.print(f"  Creating Ollama instance with local config:")
+            console.print(f"  {json.dumps(llm_config, indent=2)}")
+            console.print("--- END DEBUG: Local Fallback Call ---\n", style="bold yellow")
+            # --- END DEBUG DUMP ---
+
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 console.print(
@@ -119,7 +139,6 @@ class DevOpsDistributedRouter(DistributedRouter):
 
 def get_router():
     try:
-        # **REVERTED:** Restore the original instantiation of PeerDiscovery
         peer_discovery_instance = PeerDiscovery()
         router = DevOpsDistributedRouter(peer_discovery_instance, fallback_model_name="llama3.2:1b")
         logger.info("Secure internal DevOps router successfully instantiated with local fallback.")
