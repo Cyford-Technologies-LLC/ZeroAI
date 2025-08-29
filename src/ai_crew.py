@@ -18,7 +18,7 @@ from crews.classifier.agents import create_classifier_agent
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
+from crews.customer_service.tools import ResearchDelegationTool # FIX: Removed DelegatingMathTool
 
 # --- Import ALL specialized agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -103,7 +103,6 @@ class AICrewManager:
                 raise Exception("Auto-classification failed.")
             inputs['category'] = category
 
-        # FIX: Pass the distributed router instance to create_crew_for_category
         crew = self.create_crew_for_category(self.router, inputs)
 
         try:
@@ -128,7 +127,8 @@ class AICrewManager:
                 style="yellow")
             return "general"
         try:
-            classifier_agent = create_classifier_agent(self.router, inputs)
+            # FIX: Pass 'self' and inputs to create_classifier_agent
+            classifier_agent = create_classifier_agent(self, self.router, inputs)
         except ValueError as e:
             console.print(f"❌ Failed to create classifier agent: {e}", style="red")
             return "general"
@@ -163,7 +163,8 @@ class AICrewManager:
         category = inputs.get('category', 'general')
 
         if category in ["general", "customer_service"]:
-            return create_customer_service_crew(router, inputs)
+            # FIX: Pass 'self' to create_customer_service_crew
+            return self.create_customer_service_crew(router, inputs)
         elif category == "math":
             return create_math_crew(router, inputs)
         elif category == "coding":
@@ -177,30 +178,33 @@ class AICrewManager:
         else:
             raise ValueError(f"Unknown crew category: {category}")
 
-# FIX: Add a plausible definition for create_customer_service_crew
-def create_customer_service_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-    agent = create_customer_service_agent(router, inputs)
-    task = Task(
-        description=inputs.get("topic", "Handle a general customer inquiry."),
-        agent=agent
-    )
-    return Crew(
-        agents=[agent],
-        tasks=[task],
-        process=Process.sequential,
-        verbose=True
-    )
+    def create_customer_service_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+        # FIX: Pass 'self' to the agent creation function
+        agent = self.create_customer_service_agent(router, inputs)
+        task = Task(
+            description=inputs.get("topic", "Handle a general customer inquiry."),
+            agent=agent
+        )
+        return Crew(
+            agents=[agent],
+            tasks=[task],
+            process=Process.sequential,
+            verbose=True
+        )
 
-# FIX: Add a plausible definition for create_customer_service_agent
-def create_customer_service_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    task_description = "Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew."
-    llm = router.get_llm_for_task(task_description)
-    return Agent(
-        role="Customer Service Representative",
-        goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
-        backstory="You are an AI customer service representative designed to handle inquiries.",
-        llm=llm,
-        tools=[DelegatingMathTool(), ResearchDelegationTool()],
-        verbose=True,
-        allow_delegation=False
-    )
+    def create_customer_service_agent(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+        task_description = "Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew."
+        llm = router.get_llm_for_task(task_description)
+        # FIX: Remove DelegatingMathTool from tools
+        tools = [
+            ResearchDelegationTool(crew_manager=self, inputs=inputs)
+        ]
+        return Agent(
+            role="Customer Service Representative",
+            goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
+            backstory="You are an AI customer service representative designed to handle inquiries.",
+            llm=llm,
+            tools=tools,
+            verbose=True,
+            allow_delegation=False
+        )
