@@ -81,6 +81,20 @@ The next step is to begin implementing the contents of these sub-crews and tools
 
 
 
+/opt/ZeroAI/
+├── knowledge/
+│   └── internal_crew/
+│       ├── project_1/
+│       │   ├── project_config.yaml     # Main config file for project_1
+│       │   ├── issue_123.yaml          # Specific instructions for bug #123
+│       │   └── style_guide.yaml        # Coding standards for project_1
+│       └── project_2/
+│           ├── project_config.yaml     # Main config file for project_2
+│           └── api_docs.yaml           # API documentation details for project_2
+└── src/
+    └── ai_dev_ops_crew.py              # Reads YAML files to configure crew tasks
+
+
 
 #  test example
 python run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
