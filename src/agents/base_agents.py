@@ -4,11 +4,26 @@ from crewai import Agent, LLM
 from typing import Optional, List
 from distributed_router import DistributedRouter # Import router
 from config import config # Assuming your config is accessible
+from rich.console import Console
+
+console = Console()
 
 def create_researcher(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
     """Create a research specialist agent using the distributed router."""
     task_description = "Conduct thorough research and gather comprehensive information on any given topic"
-    llm = router.get_llm_for_task(task_description)
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for researcher via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for researcher agent.")
+
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
+
     return Agent(
         role="Senior Research Specialist",
         goal="Conduct thorough research and gather comprehensive information on any given topic",
@@ -25,7 +40,19 @@ def create_researcher(router: DistributedRouter, inputs: dict[str, any]) -> Agen
 def create_writer(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
     """Create a professional writer agent using the distributed router."""
     task_description = "Create clear, engaging, and well-structured written content based on research findings"
-    llm = router.get_llm_for_task(task_description)
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for writer via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for writer agent.")
+
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
+
     return Agent(
         role="Professional Content Writer",
         goal="Create clear, engaging, and well-structured written content based on research findings",
@@ -41,7 +68,19 @@ def create_writer(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
 def create_analyst(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
     """Create a data analyst agent using the distributed router."""
     task_description = "Analyze data patterns, trends, and insights to provide actionable recommendations"
-    llm = router.get_llm_for_task(task_description)
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for analyst via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for analyst agent.")
+
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
+
     return Agent(
         role="Senior Data Analyst",
         goal="Analyze data patterns, trends, and insights to provide actionable recommendations",
@@ -58,7 +97,19 @@ def create_analyst(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
 def create_strategist(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
     """Create a strategic planning agent using the distributed router."""
     task_description = "Develop comprehensive strategies and actionable plans based on research and analysis"
-    llm = router.get_llm_for_task(task_description)
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for strategist via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for strategist agent.")
+
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
+
     return Agent(
         role="Strategic Planning Consultant",
         goal="Develop comprehensive strategies and actionable plans based on research and analysis",
@@ -84,7 +135,19 @@ def create_custom_agent(
 ) -> Agent:
     """Create a custom agent with specified parameters using the distributed router."""
     task_description = goal # Use the goal as the task description for the router
-    llm = router.get_llm_for_task(task_description)
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for custom agent via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError(f"Failed to get LLM for custom agent with role: {role}.")
+
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
+
     return Agent(
         role=role,
         goal=goal,
