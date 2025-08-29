@@ -18,13 +18,14 @@ from crews.classifier.agents import create_classifier_agent
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.customer_service.tools import ResearchDelegationTool # FIX: Removed DelegatingMathTool
+from crews.customer_service.tools import ResearchDelegationTool  # FIX: Removed DelegatingMathTool
 
 # --- Import ALL specialized agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
 from crews.coding.agents import create_coding_developer_agent, create_qa_engineer_agent
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
+
 
 # --- Needed for CrewOutput token_usage compatibility ---
 class UsageMetrics(BaseModel):
@@ -33,8 +34,10 @@ class UsageMetrics(BaseModel):
     completion_tokens: Optional[int] = 0
     successful_requests: Optional[int] = 0
 
+
 console = Console()
 logger = logging.getLogger(__name__)
+
 
 # --- Plausible definitions for missing agent and task creators ---
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
@@ -54,6 +57,7 @@ def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> C
         full_output=True
     )
 
+
 def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
     analyst = create_analyst(router, inputs)
     analysis_task = create_analysis_task(inputs, analyst)
@@ -64,6 +68,7 @@ def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> C
         verbose=config.agents.verbose,
         full_output=True
     )
+
 
 # --- The core AICrewManager class, now complete ---
 class AICrewManager:
@@ -127,8 +132,8 @@ class AICrewManager:
                 style="yellow")
             return "general"
         try:
-            # FIX: Pass 'self' and inputs to create_classifier_agent
-            classifier_agent = create_classifier_agent(self, self.router, inputs)
+            # FIX: Pass router and inputs to create_classifier_agent
+            classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
             console.print(f"❌ Failed to create classifier agent: {e}", style="red")
             return "general"
@@ -163,7 +168,6 @@ class AICrewManager:
         category = inputs.get('category', 'general')
 
         if category in ["general", "customer_service"]:
-            # FIX: Pass 'self' to create_customer_service_crew
             return self.create_customer_service_crew(router, inputs)
         elif category == "math":
             return create_math_crew(router, inputs)
@@ -208,3 +212,4 @@ class AICrewManager:
             verbose=True,
             allow_delegation=False
         )
+
