@@ -19,11 +19,12 @@ MODEL_PREFERENCES = {
     "documentation": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
     "devops_orchestrator": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
     "repo_manager": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    "general": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llava:7b", "llama3.2:1b"],
+    # FIX: Add 'general' category
+    "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
 }
 
 
-# FIX: Define a new class that inherits from DistributedRouter
 class DevOpsDistributedRouter(DistributedRouter):
     """
     An enhanced DistributedRouter with a fallback to a local model and role-based model preference.
@@ -40,8 +41,11 @@ class DevOpsDistributedRouter(DistributedRouter):
         Internal method to handle LLM retrieval with fallback logic and model preferences.
         """
         try:
-            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt,
-                                                                          model_preference_list=model_preferences)
+            # FIX: Get the preference list from the provided category or use the default
+            preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
+                                                                                                MODEL_PREFERENCES[
+                                                                                                    "default"])
+            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt, model_preference_list=preference_list)
             if model_name:
                 prefixed_model_name = f"ollama/{model_name}"
                 llm_config = {"model": prefixed_model_name, "base_url": base_url,
@@ -57,11 +61,9 @@ class DevOpsDistributedRouter(DistributedRouter):
                 style="yellow")
             return self._get_local_llm(self.fallback_model_name)
 
-    # FIX: Override get_llm_for_task to use the updated fallback logic
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
         return self._get_llm_with_fallback(prompt, category="general")
 
-    # FIX: Override get_llm_for_role to use role-based preferences
     def get_llm_for_role(self, role: str) -> Optional[Ollama]:
         role_category = "default"
         if any(r in role.lower() for r in ["coding", "developer"]):
@@ -81,8 +83,9 @@ class DevOpsDistributedRouter(DistributedRouter):
         return self._get_llm_with_fallback(prompt, category=role_category, model_preferences=model_preferences)
 
     def _get_local_llm(self, model_name: str) -> Optional[Ollama]:
-        """Gets an Ollama LLM instance for a specific model running on localhost."""
+        # Existing implementation for getting local LLM
         try:
+            # FIX: Ensure proper LiteLLM prefixing
             prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
                 "model": prefixed_model_name,
@@ -99,23 +102,16 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
 
+    # FIX: Update get_optimal_endpoint_and_model to accept the model_preference_list parameter
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
                                        model_preference_list: Optional[List[str]] = None) -> Tuple[
         Optional[str], Optional[str], Optional[str]]:
+        # Existing implementation for finding optimal peer, but now uses model_preference_list
         if failed_peers is None:
             failed_peers = []
         if model_preference_list is None:
-            # Revert to the old logic if no specific list is provided
-            is_coding_task = any(
-                keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
-            )
-            model_preference_list = [
-                "codellama:13b", "llama3.1:8b", "codellama:7b", "gemma2:2b",
-                "llama3.2:latest", "llava:7b", "llama3.2:1b"
-            ] if is_coding_task else [
-                "llama3.1:8b", "llama3.2:latest", "gemma2:2b",
-                "llava:7b", "llama3.2:1b"
-            ]
+            # FIX: Use the 'general' list if no specific list is provided
+            model_preference_list = MODEL_PREFERENCES.get("general")
 
         all_peers = self.peer_discovery.get_peers()
         all_candidates = []
@@ -173,10 +169,9 @@ class DevOpsDistributedRouter(DistributedRouter):
             return f"http://{peer.ip}:11434", peer.name, model
 
         console.print("❌ No suitable peer/model combination found. Routing failed.", style="red")
-        raise RuntimeError("No suitable peer or model found. All attempts failed.")
+        return None, None, None
 
 
-# FIX: Keep the get_router function to return DevOpsDistributedRouter
 def get_router():
     try:
         peer_discovery_instance = PeerDiscovery()
@@ -188,7 +183,6 @@ def get_router():
         raise RuntimeError("Failed to get secure internal router setup.") from e
 
 
-# FIX: Keep the if __name__ == '__main__': block for testing
 if __name__ == '__main__':
     try:
         router = get_router()
