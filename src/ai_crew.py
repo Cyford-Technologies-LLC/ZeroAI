@@ -123,6 +123,8 @@ class AICrewManager:
             category = self._classify_task(inputs)
             if not category:
                 raise Exception("Auto-classification failed.")
+            # FIX: Update the inputs dictionary with the classified category
+            inputs['category'] = category
 
         crew = self.create_crew_for_category(inputs)
 
