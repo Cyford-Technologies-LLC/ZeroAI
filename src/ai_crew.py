@@ -1,199 +1,259 @@
-import sys
-from pathlib import Path
-from typing import Optional, List, Tuple, Dict, Any
+import logging
+from typing import Dict, Any, Optional, List
+from crewai import Agent, Task, Crew, Process, CrewOutput, TaskOutput
 from rich.console import Console
-import requests
-import time
-import litellm
-import os
-import json
+from pydantic import BaseModel, Field
 import warnings
-from functools import lru_cache
 
-# FIX: Correct the import to get the PeerDiscovery class directly
-from peer_discovery import PeerDiscovery, PeerNode
 from langchain_community.llms.ollama import Ollama
+
+# --- Assuming these modules exist based on your imports ---
 from config import config
+from agents.base_agents import create_researcher, create_writer, create_analyst
+from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
+from distributed_router import DistributedRouter
+from crews.classifier.agents import create_classifier_agent
+from crews.coding.crew import create_coding_crew
+from crews.math.crew import create_math_crew
+from crews.tech_support.crew import create_tech_support_crew
+from crews.customer_service.tools import DelegatingMathTool, ResearchDelegationTool
+
+# --- Import ALL specialized agents for Hierarchical Process ---
+from crews.math.agents import create_mathematician_agent
+from crews.coding.agents import create_coding_developer_agent, create_qa_engineer_agent
+from crews.tech_support.agents import create_tech_support_agent
+from crews.customer_service.agents import create_customer_service_agent
+
+
+# --- Needed for CrewOutput token_usage compatibility ---
+class UsageMetrics(BaseModel):
+    total_tokens: Optional[int] = 0
+    prompt_tokens: Optional[int] = 0
+    completion_tokens: Optional[int] = 0
+    successful_requests: Optional[int] = 0
+
 
 console = Console()
-
-# Mapping model names to their approximate system memory requirements in GB
-MODEL_MEMORY_MAP = {
-    "llama3.1:8b": 5.6,
-    "llama3.2:latest": 3.0,
-    "llama3.2:1b": 2.3,
-    "codellama:13b": 8.0,
-    "codellama:7b": 5.0,
-    "gemma2:2b": 3.5,
-    "llava:7b": 5.0,
-}
-
-# --- Shared instance of PeerDiscovery for the entire application lifecycle ---
-# FIX: Instantiate the class directly
-peer_discovery_instance = PeerDiscovery()
+logger = logging.getLogger(__name__)
 
 
-class DistributedRouter:
-    """Manages routing logic based on network state and model requirements."""
+# --- Plausible definitions for missing agent and task creators ---
+def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    researcher = create_researcher(router, inputs)
+    writer = create_writer(router, inputs)
 
-    def __init__(self, peer_discovery_instance):
-        self.peer_discovery = peer_discovery_instance
-        self.peer_discovery.start_discovery_service()
+    # FIX: Add checks to ensure agent creation was successful
+    if not researcher or not isinstance(researcher, Agent):
+        raise ValueError("Failed to create researcher agent.")
+    if not writer or not isinstance(writer, Agent):
+        raise ValueError("Failed to create writer agent.")
 
-    def _get_local_ollama_models(self) -> List[str]:
-        """
-        Reads the pre-pulled models from the generated JSON file.
-        This list is already filtered for local memory requirements.
-        """
+    research_task = create_research_task(inputs, researcher)
+    writing_task = create_writing_task(inputs, writer)
+    return Crew(
+        agents=[researcher, writer],
+        tasks=[research_task, writing_task],
+        process=Process.sequential,
+        verbose=config.agents.verbose,
+        full_output=True
+    )
+
+
+def create_analysis_crew(router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
+    analyst = create_analyst(router, inputs)
+    analysis_task = create_analysis_task(inputs, analyst)
+    return Crew(
+        agents=[analyst],
+        tasks=[analysis_task],
+        process=Process.sequential,
+        verbose=config.agents.verbose,
+        full_output=True
+    )
+
+
+# --- The core AICrewManager class, now complete ---
+class AICrewManager:
+    """Manages AI crew creation and execution with a robust fallback."""
+
+    def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
+        # FIX: Ensure the router instance is of the correct type at initialization
+        if not isinstance(distributed_router_instance, DistributedRouter):
+            logging.error(
+                f"FATAL: Router is not a DistributedRouter instance. Type: {type(distributed_router_instance)}, Value: {distributed_router_instance}")
+            raise TypeError(
+                f"Expected router to be a DistributedRouter instance, but got {type(distributed_router_instance)}")
+
+        self.router = distributed_router_instance
+        self.inputs = kwargs.get('inputs', {})
+        self.category = self.inputs.get('category', 'general')
+        self.task_description = self.inputs.get('topic', '')
+        self.llm_instance = None
+
+        logging.info(f"AICrewManager.__init__: self.inputs type={type(self.inputs)}, content={self.inputs}")
+        logging.info(f"AICrewManager.__init__: self.router instance stored. Type: {type(self.router)}")
+
+    def execute_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> CrewOutput:
+        """Executes the appropriate crew based on the category."""
+
+        # --- Compatibility Layer to handle string inputs from older API calls ---
+        if isinstance(inputs, str):
+            logging.warning(f"Received string input from API, converting to dictionary: {inputs}")
+            inputs = {"topic": inputs, "category": "auto"}
+
+        # Check if inputs is a dictionary before proceeding (stricter type check)
+        if not isinstance(inputs, dict):
+            logging.error(f"Received non-dictionary inputs of type {type(inputs)}: {inputs}")
+            raise TypeError(f"Expected 'inputs' to be a dictionary, but received type: {type(inputs)}. "
+                            f"Received content: {inputs}")
+
+        # --- End Compatibility Layer ---
+
+        logging.info(f"AICrewManager.execute_crew: inputs type={type(inputs)}, content={inputs}")
+
+        # LOGGING: Check router instance just before it's used for classification
+        logging.info(
+            f"AICrewManager.execute_crew: router instance check before classification. Type: {type(self.router)}")
+
+        # FIX: Remove this line. It is overwriting the correct self.router with a potentially corrupted value.
+        # self.router = router
+        self.inputs = inputs
+        category = inputs.get('category', 'auto')
+
+        if category == "auto":
+            category = self._classify_task(inputs)
+            if not category:
+                raise Exception("Auto-classification failed.")
+            # FIX: Update the inputs dictionary with the classified category
+            inputs['category'] = category
+
+        crew = self.create_crew_for_category(inputs)
+
         try:
-            with open("pulled_models.json", "r") as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
-            return []
-
-    # Add the get_local_llm() method here
-    def get_local_llm(self, model_name: str) -> Optional[Ollama]:
-        """Gets an Ollama LLM instance for a specific model running on localhost."""
-        if model_name in self._get_local_ollama_models():
-            base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-            # NOTE: LiteLLM is not necessary here if Ollama is handled directly
-            llm_config = {
-                "model": model_name,
-                "base_url": base_url,
-                "temperature": config.model.temperature
-            }
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]",
-                              style="blue")
-                return Ollama(**llm_config)
-        return None
+                result = crew.kickoff()
+                return result
+        except Exception as e:
+            console.print(f"❌ Error during crew execution AI : {e}", style="red")
+            return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
 
-    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[
-        str, str, str]:
-        if failed_peers is None:
-            failed_peers = []
+    def _classify_task(self, inputs: Dict[str, Any]) -> Optional[str]:
+        """
+        Helper method to run the classification crew and return the category.
+        """
+        logging.info(f"AICrewManager._classify_task: inputs type={type(inputs)}, content={inputs}")
 
-        all_peers = self.peer_discovery.get_peers()
-        is_coding_task = any(
-            keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
+        # LOGGING: Check router instance before calling create_classifier_agent
+        logging.info(
+            f"AICrewManager._classify_task: router instance check before agent creation. Type: {type(self.router)}")
+
+        # FIX: Add a safeguard check for router instance
+        if not isinstance(self.router, DistributedRouter):
+            console.print(
+                "⚠️ Failed to get optimal LLM for classifier via router: 'self.router' is not a DistributedRouter instance.",
+                style="yellow")
+            return "general"
+
+        try:
+            classifier_agent = create_classifier_agent(self.router, inputs)
+        except ValueError as e:
+            console.print(f"❌ Failed to create classifier agent: {e}", style="red")
+            return "general"
+
+        classifier_task = Task(
+            description=f"""
+            Classify the following user inquiry into one of these categories: 'math', 'coding', 'research', 'customer_service', or 'general'.
+            Inquiry: {inputs.get('topic')}.
+            Provide ONLY the single word category name as your final output, do not include any other text or formatting.
+            """,
+            agent=classifier_agent,
+            expected_output="A single word representing the category: math, coding, research, or general.",
         )
 
-        model_preference = [
-            "codellama:13b", "llama3.1:8b", "codellama:7b", "gemma2:2b",
-            "llama3.2:latest", "llava:7b", "llama3.2:1b"
-        ] if is_coding_task else [
-            "llama3.1:8b", "llama3.2:latest", "gemma2:2b",
-            "llava:7b", "llama3.2:1b"
-        ]
+        classifier_crew = Crew(
+            agents=[classifier_agent],
+            tasks=[classifier_task],
+            verbose=config.agents.verbose,
+            full_output=True
+        )
 
-        all_candidates = []
-        local_ollama_models = self._get_local_ollama_models()
-
-        for peer in all_peers:
-            if peer.name in failed_peers:
-                continue
-
-            available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
-
-            for model in model_preference:
-                if model in available_models:
-                    required_memory = MODEL_MEMORY_MAP.get(model)
-                    if required_memory is None:
-                        continue
-
-                    if required_memory <= peer.capabilities.memory:
-                        all_candidates.append({
-                            "peer": peer,
-                            "model": model
-                        })
-
-        # --- REVISED SORTING LOGIC ---
-        # Sort all candidates based on the specified priority using a more granular scoring system.
-        # Higher score is better.
-        def get_score(candidate):
-            peer = candidate['peer']
-
-            # Heavy weight for GPU, prioritizing peers with a GPU first.
-            gpu_score = 1000 if peer.capabilities.gpu_available else 0
-
-            # Prioritize higher GPU and system memory.
-            memory_score = peer.capabilities.gpu_memory * 10 + peer.capabilities.memory
-
-            # Strong penalty for high load average. Invert load_avg for sorting.
-            # A load_avg of 0 gets a high score, a high load_avg gets a low score.
-            load_score = max(0, 100 - peer.capabilities.load_avg)
-
-            # Prioritize better models as a tie-breaker.
-            model_index_score = len(model_preference) - model_preference.index(candidate['model'])
-
-            return (gpu_score + memory_score + load_score + model_index_score)
-
-        all_candidates.sort(key=get_score, reverse=True)
-
-        # Return the best candidate if found
-        if all_candidates:
-            best_candidate = all_candidates[0]
-            peer = best_candidate['peer']
-            model = best_candidate['model']
-            console.print(
-                f"Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]",
-                style="green")
-            return f"http://{peer.ip}:11434", peer.name, model
-
-        # If no candidates meet requirements, use a final fallback
-        console.print("❌ No suitable peer/model combination found. Falling back to smallest local model.", style="red")
-        local_peer_info = next((peer for peer in all_peers if peer.name == "local-node"), None)
-        if local_peer_info:
-            fallback_model = "llama3.2:1b"
-            return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
-
-        raise RuntimeError("No suitable peer or model found. All attempts failed.")
-
-    def get_llm_for_task(self, prompt: str) -> Ollama:
-        """Gets an Ollama LLM instance based on the prompt using the router's logic."""
         try:
-            base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
+            classification_result = classifier_crew.kickoff()
+            if classification_result and classification_result.tasks_output:
+                last_task_output = classification_result.tasks_output[-1]
+                if isinstance(last_task_output, TaskOutput) and last_task_output.raw:
+                    category = last_task_output.raw.strip().lower()
+                    if category in ['math', 'coding', 'research', 'general', 'customer_service']:
+                        console.print(f"✅ Classified category: [bold yellow]{category}[/bold yellow]", style="green")
+                        return category
+            console.print("❌ Classification crew did not produce a valid output. Falling back to 'general'.",
+                          style="red")
+            return "general"
         except Exception as e:
-            console.print(f"❌ Failed to get optimal endpoint/model: {e}. Falling back.", style="red")
-            # FIX: Fallback to local LLM with a known model
-            return self.get_local_llm("llama3.2:1b")
+            console.print(f"❌ Classification failed with an exception: {e}", style="red")
+            return "general"
 
-        # CORRECTED: Add the 'ollama/' prefix for LiteLLM compatibility
-        prefixed_model_name = f"ollama/{model_name}"
 
-        llm_config = {
-            "model": prefixed_model_name,
-            "base_url": base_url,
-            "temperature": config.model.temperature
-        }
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            return Ollama(**llm_config)
+    def _create_specialized_crew(self, category: str, inputs: Dict[str, Any]) -> Crew:
+        """Helper method to create specialized crews based on category."""
+        logging.info(f"AICrewManager._create_specialized_crew: inputs type={type(inputs)}, content={inputs}")
+        console.print(f"📦 Creating a specialized crew for category: [bold yellow]{category}[/bold yellow]",
+                      style="blue")
 
-    def get_llm_for_role(self, role: str) -> Optional[Ollama]:
-        """Gets an Ollama LLM instance based on the role using the router's logic."""
-        prompt = ""
-        if "coding" in role.lower() or "developer" in role.lower():
-            prompt = "Please provide code or resolve a coding issue."
-        elif "qa" in role.lower() or "quality" in role.lower():
-            prompt = "Please analyze and provide a critique of a code's functionality."
+        if category == "research":
+            return create_research_crew(self.router, inputs)
+        elif category == "analysis":
+            return create_analysis_crew(self.router, inputs)
+        elif category == "coding":
+            return create_coding_crew(self.router, inputs)
+        elif category == "math":
+            return create_math_crew(self.router, inputs)
+        elif category == "tech_support":
+            return create_tech_support_crew(self.router, inputs)
+        elif category == "general":
+            return create_research_crew(self.router, inputs)
+        elif category == "customer_service":
+            # Call the specialized hierarchical crew for customer service
+            specialist_agents = [
+                create_mathematician_agent(self.router, inputs),
+                create_tech_support_agent(self.router, inputs),
+                create_coding_developer_agent(self.router, inputs),
+                create_researcher(self.router, inputs)
+            ]
+            return self.create_customer_service_crew_hierarchical(self.router, inputs, specialist_agents)
         else:
-            prompt = "General purpose query."
+            raise ValueError(f"Unknown category: {category}")
 
-        try:
-            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt)
-            prefixed_model_name = f"ollama/{model_name}"
-            llm_config = {
-                "model": prefixed_model_name,
-                "base_url": base_url,
-                "temperature": config.model.temperature
-            }
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-                return Ollama(**llm_config)
-        except Exception as e:
-            console.print(f"❌ Failed to get LLM for role '{role}': {e}. Falling back.", style="red")
-            # FIX: Return a local LLM on failure
-            return self.get_local_llm("llama3.2:1b")
+    def create_crew_for_category(self, inputs: Dict[str, Any]) -> Crew:
+        """Main method for creating the top-level crew."""
+        logging.info(f"AICrewManager.create_crew_for_category: inputs type={type(inputs)}, content={inputs}")
+        category = inputs.get('category', self.category)
+        console.print(f"📦 Creating a crew for category: [bold yellow]{category}[/bold yellow]", style="blue")
+
+        # FIX: Call the correct specialized crew based on the category
+        return self._create_specialized_crew(category, inputs)
+
+
+    def create_customer_service_crew_hierarchical(self, router: DistributedRouter, inputs: Dict[str, Any],
+                                                  specialist_agents: List[Agent]) -> Crew:
+        manager_llm = router.get_llm_for_role('manager')
+        if not manager_llm:
+            raise ValueError("Failed to get LLM for manager agent.")
+
+        manager_agent = create_customer_service_agent(router, inputs)
+
+        manager_task = Task(
+            description=f"Manage the customer service inquiry related to: {inputs.get('topic')}",
+            agent=manager_agent,
+            expected_output="A final answer to the customer's inquiry.",
+            context=[Task(description="Get help from the appropriate specialist.", agent=agent) for agent in specialist_agents]
+        )
+
+        return Crew(
+            agents=[manager_agent] + specialist_agents,
+            tasks=[manager_task],
+            process=Process.hierarchical,
+            manager_llm=manager_llm,
+            verbose=config.agents.verbose,
+            full_output=True
+        )
