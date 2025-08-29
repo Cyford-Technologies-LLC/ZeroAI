@@ -5,58 +5,31 @@ import os
 import warnings
 from typing import Optional, List, Tuple
 from rich.console import Console
-from distributed_router import DistributedRouter, PeerDiscovery, MODEL_MEMORY_MAP
+from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY
 from langchain_community.llms.ollama import Ollama
 from config import config
 
 console = Console()
 logger = logging.getLogger(__name__)
 
-MODEL_PREFERENCES = {
-    "developer": ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
-    "research": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
-    "documentation": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "devops_orchestrator": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "repo_manager": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "general": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llava:7b", "llama3.2:1b"],
-    "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
-}
-
-# FIX: Define keyword to category mapping for general tasks
-GENERAL_KEYWORDS_MAPPING = {
-    "maintenance": "general",
-    "health": "general",
-    "project health": "general",
-    "dependencies": "general",
-    "test suites": "general",
-}
-
 
 class DevOpsDistributedRouter(DistributedRouter):
+    """
+    An enhanced DistributedRouter with a fallback to a local model and role-based model preference.
+    """
+
     def __init__(self, peer_discovery_instance: PeerDiscovery, fallback_model_name: str = "llama3.2:1b"):
         super().__init__(peer_discovery_instance)
         self.fallback_model_name = fallback_model_name
         self.local_ollama_base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 
-    def _determine_category_from_prompt(self, prompt: str) -> str:
-        """
-        Determines the category based on keywords in the prompt.
-        """
-        prompt_lower = prompt.lower()
-        for keyword, category in GENERAL_KEYWORDS_MAPPING.items():
-            if keyword in prompt_lower:
-                return category
-        return "general"
-
     def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None,
                                model_preferences: Optional[List[str]] = None) -> Optional[Ollama]:
         try:
-            if not category:
-                category = self._determine_category_from_prompt(prompt)
+            preference_list = model_preferences
+            if not preference_list:
+                preference_list = MODEL_PREFERENCES.get(category, MODEL_PREFERENCES["default"])
 
-            preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
-                                                                                                MODEL_PREFERENCES[
-                                                                                                    "default"])
             base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt, model_preference_list=preference_list)
             if model_name:
                 prefixed_model_name = f"ollama/{model_name}"
@@ -74,7 +47,9 @@ class DevOpsDistributedRouter(DistributedRouter):
             return self._get_local_llm(self.fallback_model_name)
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
-        return self._get_llm_with_fallback(prompt)
+        # FIX: The DistributedRouter now handles keyword mapping based on the prompt.
+        # This method can be simplified to rely on the parent's logic.
+        return self._get_llm_with_fallback(prompt, category=None)
 
     def get_llm_for_role(self, role: str) -> Optional[Ollama]:
         role_category = "default"
@@ -110,79 +85,6 @@ class DevOpsDistributedRouter(DistributedRouter):
         except Exception as e:
             console.print(f"❌ Failed to load local LLM '{model_name}': {e}", style="red")
             return None
-
-    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
-                                       model_preference_list: Optional[List[str]] = None) -> Tuple[
-        Optional[str], Optional[str], Optional[str]]:
-        if failed_peers is None:
-            failed_peers = []
-        if model_preference_list is None:
-            model_preference_list = MODEL_PREFERENCES.get("general")
-
-        all_peers = self.peer_discovery.get_peers()
-        all_candidates = []
-        local_ollama_models = self._get_local_ollama_models()
-
-        console.print(f"🔎 Analyzing peers for task with model preference: {model_preference_list}", style="blue")
-
-        for peer in all_peers:
-            if peer.name in failed_peers:
-                console.print(f"   🚫 Skipping failed peer: {peer.name}", style="yellow")
-                continue
-
-            available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
-            console.print(f"   Peer [bold cyan]{peer.name}[/bold cyan] reports available models: {available_models}",
-                          style="dim")
-
-            if not available_models:
-                console.print(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", style="red")
-                continue
-
-            for model in model_preference_list:
-                if model in available_models:
-                    required_memory = MODEL_MEMORY_MAP.get(model)
-                    if required_memory is None:
-                        console.print(f"      - ⚠️ Skipping model {model}: memory requirements unknown.",
-                                      style="yellow")
-                        continue
-
-                    peer_memory = peer.capabilities.gpu_memory if peer.capabilities.gpu_available else peer.capabilities.memory
-                    if required_memory <= peer_memory:
-                        all_candidates.append({
-                            "peer": peer,
-                            "model": model
-                        })
-                        console.print(
-                            f"      - ✅ Candidate found: Model=[bold yellow]{model}[/bold yellow] on Peer=[bold cyan]{peer.name}[/bold cyan]",
-                            style="green")
-                    else:
-                        console.print(
-                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).",
-                            style="red")
-                else:
-                    console.print(f"      - 🚫 Model {model} not available on peer {peer.name}.", style="red")
-
-        def get_score(candidate):
-            peer = candidate['peer']
-            gpu_score = 1000 if peer.capabilities.gpu_available else 0
-            memory_score = peer.capabilities.gpu_memory * 10 + peer.capabilities.memory
-            load_score = max(0, 100 - peer.capabilities.load_avg)
-            model_index_score = len(model_preference_list) - model_preference_list.index(candidate['model'])
-            return (gpu_score + memory_score + load_score + model_index_score)
-
-        all_candidates.sort(key=get_score, reverse=True)
-
-        if all_candidates:
-            best_candidate = all_candidates
-            peer = best_candidate['peer']
-            model = best_candidate['model']
-            console.print(
-                f"✅ Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]",
-                style="green")
-            return f"http://{peer.ip}:11434", peer.name, model
-
-        console.print("❌ No suitable peer/model combination found. Routing failed.", style="red")
-        raise RuntimeError("No suitable peer or model found. All attempts failed.")
 
 
 def get_router():
