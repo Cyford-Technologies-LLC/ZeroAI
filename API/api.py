@@ -209,7 +209,7 @@ def process_crew_request(inputs: Dict[str, Any], uploaded_files_paths: List[str]
     Handles the core logic for running the AI crew and returns output based on format.
     """
     try:
-        from ai_crew import AICrewManager
+       # from ai_crew import AICrewManager
         topic = inputs.get("topic")
         # Ensure 'auto' is the default category if not provided
         category = inputs.get("category", "auto")
