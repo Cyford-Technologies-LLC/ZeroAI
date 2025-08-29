@@ -52,8 +52,8 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     try:
         if router:
             if router_type == 'distributed':
-                base_url, _, model_name = router.get_optimal_endpoint_and_model(prompt,
-                                                                                model_preference_list=preference_list)
+                rejects = []
+                base_url, _, model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
             elif router_type == 'devops':
                 # DevOps router has its own internal handling
                 llm_instance = router.get_llm_for_task(prompt)
