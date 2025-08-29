@@ -18,7 +18,7 @@ from crews.classifier.agents import create_classifier_agent
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew
 from crews.tech_support.crew import create_tech_support_crew
-from crews.customer_service.tools import ResearchDelegationTool  # FIX: Removed DelegatingMathTool
+from crews.customer_service.tools import ResearchDelegationTool
 
 # --- Import ALL specialized agents for Hierarchical Process ---
 from crews.math.agents import create_mathematician_agent
@@ -114,6 +114,7 @@ class AICrewManager:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 result = crew.kickoff()
+                console.print(f"📊 [bold green]Crew Output Object:[/bold green] {result}") # ADDED: Dump object
                 return result
         except Exception as e:
             console.print(f"❌ Error during crew execution AI : {e}", style="red")
@@ -132,7 +133,6 @@ class AICrewManager:
                 style="yellow")
             return "general"
         try:
-            # FIX: Pass router and inputs to create_classifier_agent
             classifier_agent = create_classifier_agent(self.router, inputs)
         except ValueError as e:
             console.print(f"❌ Failed to create classifier agent: {e}", style="red")
@@ -156,8 +156,8 @@ class AICrewManager:
             classification_result = classifier_crew.kickoff()
             if classification_result and classification_result.tasks_output:
                 last_task_output = classification_result.tasks_output[-1]
-                if isinstance(last_task_output, TaskOutput) and last_task_output.output:  # FIX: Use .output
-                    return last_task_output.output.strip().lower()  # FIX: Use .output
+                if isinstance(last_task_output, TaskOutput) and last_task_output.output:
+                    return last_task_output.output.strip().lower()
             return "general"
         except Exception as e:
             console.print(f"❌ Error during classification: {e}", style="red")
@@ -183,7 +183,6 @@ class AICrewManager:
             raise ValueError(f"Unknown crew category: {category}")
 
     def create_customer_service_crew(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Crew:
-        # FIX: Pass 'self' to the agent creation function
         agent = self.create_customer_service_agent(router, inputs)
         task = Task(
             description=inputs.get("topic", "Handle a general customer inquiry."),
@@ -199,17 +198,16 @@ class AICrewManager:
     def create_customer_service_agent(self, router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
         task_description = "Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew."
         llm = router.get_llm_for_task(task_description)
-        # FIX: Remove DelegatingMathTool from tools
         tools = [
             ResearchDelegationTool(crew_manager=self, inputs=inputs)
         ]
         return Agent(
             role="Customer Service Representative",
-            goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
-            backstory="You are an AI customer service representative designed to handle inquiries.",
-            llm=llm,
-            tools=tools,
-            verbose=True,
-            allow_delegation=False
+                goal="Handle customer inquiries, answer questions, and delegate complex issues to the correct specialized crew.",
+                backstory="You are an AI customer service representative designed to handle inquiries.",
+                llm=llm,
+                tools=tools,
+                verbose=True,
+                allow_delegation=False
         )
 
