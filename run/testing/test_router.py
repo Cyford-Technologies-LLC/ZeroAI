@@ -31,19 +31,34 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     console.print(f"Prompt: [yellow]'{prompt}'[/yellow]")
 
     llm_instance = None
+    base_url, model_name = None, None
+
     try:
+        # Determine the router instance and call the appropriate method
+        router = None
         if router_type == 'distributed':
-            # Use the single, persistent peer_discovery_instance
             router = DistributedRouter(peer_discovery_instance)
-            # Use a default category for the test if not specified
-            preference_list = MODEL_PREFERENCES.get("default")
-            base_url, _, model_name = router.get_optimal_endpoint_and_model(prompt,
-                                                                            model_preference_list=preference_list)
-            if model_name:
-                llm_instance = Ollama(model=model_name, base_url=base_url, temperature=config.model.temperature)
         elif router_type == 'devops':
             router = get_devops_router()
-            llm_instance = router.get_llm_for_task(prompt)
+
+        if router:
+            # --- START DEBUG DUMP: Data sent to router ---
+            console.print("\n--- DEBUG: Data Sent to Router ---", style="bold blue")
+            console.print(f"  Prompt: '{prompt}'")
+            preference_list = MODEL_PREFERENCES.get("default")
+            console.print(f"  Model Preferences: {preference_list}")
+            console.print("--- END DEBUG: Data Sent to Router ---\n", style="bold blue")
+            # --- END DEBUG DUMP ---
+
+            if router_type == 'distributed':
+                base_url, _, model_name = router.get_optimal_endpoint_and_model(prompt,
+                                                                                model_preference_list=preference_list)
+            elif router_type == 'devops':
+                # DevOps router has its own internal handling
+                llm_instance = router.get_llm_for_task(prompt)
+                if llm_instance:
+                    base_url = llm_instance.base_url
+                    model_name = llm_instance.model
         elif router_type == 'manual':
             if not ip or not model:
                 console.print("[bold red]Error:[/bold red] Manual test requires an IP and model.", style="red")
@@ -53,10 +68,22 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
                 f"Attempting manual connection to IP: [bold green]{ip}[/bold green], Model: [bold yellow]{model}[/bold yellow]")
             llm_config = {
                 "model": model,
-                "base_url": f"http://{ip}:11434",  # Assuming port 11434 for manual Ollama
+                "base_url": f"http://{ip}:11434",
                 "temperature": config.model.temperature
             }
             llm_instance = Ollama(**llm_config)
+            base_url = llm_instance.base_url
+            model_name = llm_instance.model
+
+        # --- START DEBUG DUMP: Data returned by router (or manual) ---
+        console.print("\n--- DEBUG: Data Returned by Router ---", style="bold yellow")
+        console.print(f"  Base URL: {base_url}")
+        console.print(f"  Model Name: {model_name}")
+        console.print("--- END DEBUG: Data Returned by Router ---\n", style="bold yellow")
+        # --- END DEBUG DUMP ---
+
+        if not llm_instance and model_name:
+            llm_instance = Ollama(model=model_name, base_url=base_url, temperature=config.model.temperature)
 
     except Exception as e:
         console.print(f"[bold red]Router or Connection Error:[/bold red] {e}", style="red")
@@ -105,10 +132,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
 
 #examples
 #python run/testing/test_router.py -d --prompt "What is a distributed system?"
