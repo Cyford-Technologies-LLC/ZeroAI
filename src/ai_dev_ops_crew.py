@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import warnings
 
 # Import existing router and tools
+from distributed_router import DistributedRouter
 from devops_router import get_router
 router = get_router()
 
