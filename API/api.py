@@ -16,6 +16,18 @@ from crewai import CrewOutput, TaskOutput
 from fastapi.encoders import jsonable_encoder
 
 
+# Ensure src directory is in the Python path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from peer_discovery import PeerDiscovery
+from distributed_router import DistributedRouter
+from ai_crew import AICrewManager
+from cache_manager import cache
+
+
+
+
+
 # Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
 class UsageMetrics:
     def __init__(self, total_tokens=0, prompt_tokens=0, completion_tokens=0, successful_requests=0):
@@ -28,13 +40,7 @@ class UsageMetrics:
 # Disable CrewAI telemetry by setting the environment variable
 os.environ['CREWAI_DISABLE_TELEMETRY'] = "true"
 
-# Ensure src directory is in the Python path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from peer_discovery import PeerDiscovery
-from distributed_router import DistributedRouter
-from ai_crew import AICrewManager
-from cache_manager import cache
 
 console = Console()
 
