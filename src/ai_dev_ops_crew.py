@@ -9,9 +9,9 @@ import warnings
 
 # Import existing router and tools
 from distributed_router import DistributedRouter
-from devops_router import get_router
-router = get_router()
-
+# The router should be instantiated in the calling script, not here.
+# from devops_router import get_router
+# router = get_router()
 
 from config import config
 
@@ -77,7 +77,8 @@ class AIOpsCrewManager:
                 return result
         except Exception as e:
             console.print(f"❌ Error during DevOps crew execution: {e}", style="red")
-            return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
+            # FIX: Pass dictionary representation of UsageMetrics
+            return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics().model_dump())
 
     def _create_dev_ops_crew(self) -> Crew:
         """Creates the top-level hierarchical crew for development and maintenance."""
@@ -135,10 +136,16 @@ def run_ai_dev_ops_crew_securely(router: DistributedRouter, project_id: str, inp
         return result
     except Exception as e:
         logger.error(f"Error instantiating AI DevOps crew manager: {e}", exc_info=True)
-        return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics())
+        # FIX: Pass dictionary representation of UsageMetrics
+        return CrewOutput(tasks_output=[], raw=f"Error: {e}", token_usage=UsageMetrics().model_dump())
 
 
 if __name__ == '__main__':
+    # This block is for secure, internal testing only.
+    # The router should be obtained from the devops_router.py file
+    # by the calling script, run/internal/run_dev_ops.py.
+    # The logic below is for self-contained testing within this file only.
+    from devops_router import get_router
     router = get_router()
     # Example usage for testing
     project_id = "zeroai"  # Assumes a config file exists for 'zeroai'
