@@ -17,7 +17,7 @@ def create_customer_service_crew(router: DistributedRouter, inputs: Dict[str, An
     return Crew(
         agents=all_agents,
         tasks=[customer_service_task],
-        process=Process.hierarchical,
+        process=Process.hierarchical, # Hierarchical process
         manager_llm=router.get_llm_for_task("Manage hierarchical crew"),
         verbose=config.agents.verbose,
         full_output=full_output
