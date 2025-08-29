@@ -82,7 +82,8 @@ The next step is to begin implementing the contents of these sub-crews and tools
 
 
 
-
+#  test example
+python run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
 
 
 
