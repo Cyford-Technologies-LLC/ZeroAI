@@ -5,7 +5,8 @@ import os
 import warnings
 from typing import Optional, List, Tuple
 from rich.console import Console
-from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY
+from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY, \
+    MODEL_MEMORY_MAP
 from langchain_community.llms.ollama import Ollama
 from config import config
 
@@ -23,14 +24,27 @@ class DevOpsDistributedRouter(DistributedRouter):
         self.fallback_model_name = fallback_model_name
         self.local_ollama_base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 
+    def _determine_category_from_prompt(self, prompt: str) -> Optional[str]:
+        prompt_lower = prompt.lower()
+        for keyword, category in KEYWORDS_TO_CATEGORY.items():
+            if keyword in prompt_lower:
+                return category
+        return None
+
     def _get_llm_with_fallback(self, prompt: str, category: Optional[str] = None,
                                model_preferences: Optional[List[str]] = None) -> Optional[Ollama]:
         try:
-            preference_list = model_preferences
-            if not preference_list:
-                preference_list = MODEL_PREFERENCES.get(category, MODEL_PREFERENCES["default"])
+            if not category:
+                category = self._determine_category_from_prompt(prompt) or "general"
 
-            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt, model_preference_list=preference_list)
+            preference_list = model_preferences if model_preferences else MODEL_PREFERENCES.get(category,
+                                                                                                MODEL_PREFERENCES[
+                                                                                                    "default"])
+
+            # FIX: Call the parent's get_optimal_endpoint_and_model with the correct parameters
+            base_url, _, model_name = super().get_optimal_endpoint_and_model(prompt,
+                                                                             model_preference_list=preference_list)
+
             if model_name:
                 prefixed_model_name = f"ollama/{model_name}"
                 llm_config = {"model": prefixed_model_name, "base_url": base_url,
@@ -47,9 +61,7 @@ class DevOpsDistributedRouter(DistributedRouter):
             return self._get_local_llm(self.fallback_model_name)
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
-        # FIX: The DistributedRouter now handles keyword mapping based on the prompt.
-        # This method can be simplified to rely on the parent's logic.
-        return self._get_llm_with_fallback(prompt, category=None)
+        return self._get_llm_with_fallback(prompt)
 
     def get_llm_for_role(self, role: str) -> Optional[Ollama]:
         role_category = "default"
