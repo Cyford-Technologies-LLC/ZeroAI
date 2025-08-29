@@ -2,6 +2,7 @@
 from crewai import Task
 from typing import Dict, Any
 from crewai import Agent
+from typing import Dict, Any, List # <-- Add this import
 
 def analyze_codebase_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     return Task(
