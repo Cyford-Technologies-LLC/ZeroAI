@@ -138,8 +138,6 @@ def run_ai_dev_ops_crew_securely(router: DistributedRouter, project_id: str, inp
 
 
 if __name__ == '__main__':
-    from your_secure_internal_router_setup import get_router
-
     router = get_router()
     # Example usage for testing
     project_id = "zeroai"  # Assumes a config file exists for 'zeroai'

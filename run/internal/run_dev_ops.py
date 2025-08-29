@@ -12,7 +12,7 @@ sys.path.insert(0, str(project_root))
 # ----------------------------------------------------
 
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
-from your_secure_internal_router_setup import get_router
+from src.devops_router import get_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
