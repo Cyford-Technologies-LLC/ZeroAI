@@ -7,7 +7,7 @@ from crewai import Crew, Process, Task
 from pathlib import Path
 from rich.console import Console
 
-from .agent import create_team_manager_agent, ErrorLogger, format_agent_list
+from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
 
 # Configure console for rich output
 console = Console()
