@@ -13,6 +13,7 @@ import json
 import time
 import uuid
 import logging
+import traceback
 from pathlib import Path
 from rich.console import Console
 
@@ -40,17 +41,32 @@ def ensure_dir_exists(directory_path):
     directory_path.mkdir(parents=True, exist_ok=True)
     return directory_path
 
-# Import required modules
+# Import required modules with detailed error tracking
+console.print("\n🔍 Starting import process with detailed debugging...")
+
 try:
+    # Try individual imports to isolate where the failure is happening
+    console.print("Importing PeerDiscovery...")
     from src.peer_discovery import PeerDiscovery
+    console.print("✅ Successfully imported PeerDiscovery")
+
+    console.print("Importing get_router...")
     from src.devops_router import get_router
+    console.print("✅ Successfully imported get_router")
+
+    console.print("Importing load_yaml_config...")
     from src.utils.yaml_utils import load_yaml_config
+    console.print("✅ Successfully imported load_yaml_config")
 
     # Try to import learning components
     try:
+        console.print("Importing record_task_result...")
         from src.learning import record_task_result
-    except ImportError:
-        console.print("⚠️ Learning module not found. Task results won't be recorded.", style="yellow")
+        console.print("✅ Successfully imported record_task_result")
+    except ImportError as e:
+        console.print(f"⚠️ Learning module not found: {e}", style="yellow")
+        console.print("Traceback:", style="yellow")
+        console.print(traceback.format_exc())
 
         # Create a dummy record_task_result function
         def record_task_result(*args, **kwargs):
@@ -60,6 +76,8 @@ try:
 except ImportError as e:
     console.print(f"Failed to import required modules: {e}", style="red")
     console.print("Make sure you're running from the project root directory.")
+    console.print("Detailed error:", style="red")
+    console.print(traceback.format_exc())
     sys.exit(1)
 
 # Configure logging
@@ -198,10 +216,56 @@ def execute_devops_task(router, args, project_config):
             console.print(f"❌ Could not find ai_dev_ops_crew.py at {ai_dev_ops_crew_path}", style="red")
 
         try:
-            # Import the manager correctly using the full path
-            console.print("Attempting to import src.ai_dev_ops_crew...")
-            from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely, AIOpsCrewManager
-            console.print("✅ Successfully imported AIOpsCrewManager", style="green")
+            # Import the manager correctly using the full path with detailed debugging
+            console.print("\n🔍 Attempting to import src.ai_dev_ops_crew with detailed debugging...")
+
+            # Try the actual import with traceback capturing
+            try:
+                import src.ai_dev_ops_crew
+                console.print("✅ Basic import of src.ai_dev_ops_crew succeeded", style="green")
+
+                # Now try importing specific functions
+                console.print("🔍 Attempting to import specific functions from ai_dev_ops_crew...")
+                from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely, AIOpsCrewManager
+                console.print("✅ Successfully imported AIOpsCrewManager", style="green")
+
+            except ImportError as ie:
+                # Print detailed import error information
+                console.print(f"❌ Import error: {ie}", style="red")
+                console.print(f"  Error name: {ie.name if hasattr(ie, 'name') else 'N/A'}")
+                console.print(f"  Error path: {ie.path if hasattr(ie, 'path') else 'N/A'}")
+                console.print(f"  Error args: {ie.args}")
+                console.print("Full traceback:", style="red")
+                console.print(traceback.format_exc())
+
+                # Check for specific import statements in the file
+                if ai_dev_ops_crew_path.exists():
+                    console.print("\n🔍 Examining ai_dev_ops_crew.py for import statements...")
+                    with open(ai_dev_ops_crew_path, 'r') as f:
+                        lines = f.readlines()
+                        for i, line in enumerate(lines):
+                            if 'import' in line:
+                                console.print(f"Line {i+1}: {line.strip()}")
+
+                # Try to see what's in the module
+                console.print("\n🔍 Attempting to inspect module contents...")
+                try:
+                    import importlib.util
+                    spec = importlib.util.find_spec("src.ai_dev_ops_crew")
+                    if spec:
+                        module = importlib.util.module_from_spec(spec)
+                        console.print("✅ Found module spec, attempting to execute module...")
+                        try:
+                            spec.loader.exec_module(module)
+                            console.print("✅ Module executed successfully")
+                            console.print(f"Module contents: {dir(module)}")
+                        except Exception as exec_error:
+                            console.print(f"❌ Error executing module: {exec_error}", style="red")
+                            console.print(traceback.format_exc())
+                except Exception as inspect_error:
+                    console.print(f"❌ Error inspecting module: {inspect_error}", style="red")
+
+                raise
 
             # Execute the task
             result = run_ai_dev_ops_crew_securely(
@@ -272,6 +336,8 @@ def execute_devops_task(router, args, project_config):
 
     except Exception as e:
         console.print(f"\n❌ [bold red]Error executing task: {e}[/bold red]")
+        console.print("Detailed error:", style="red")
+        console.print(traceback.format_exc())
         logger.error(f"Error executing DevOps task: {e}")
 
         # Record the failure in the feedback loop
@@ -325,6 +391,7 @@ def main():
         return 130
     except Exception as e:
         console.print(f"\n❌ Fatal error: {e}", style="red")
+        console.print(traceback.format_exc())
         logger.critical(f"Fatal error in main function: {e}")
         return 1
 
