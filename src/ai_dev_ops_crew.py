@@ -5,45 +5,15 @@ import sys
 import uuid
 import time
 import logging
-import tempfile
+import traceback
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from rich.console import Console
-from crewai import Crew, Process, Agent, Task
-from src.utils.memory import Memory
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 console = Console()
-
-# Define the available agents in the system
-AVAILABLE_AGENTS = {
-    "DevOps Orchestrator": {
-        "description": "Coordinates and delegates tasks to specialized teams",
-        "capabilities": ["task coordination", "requirement analysis", "delegation", "monitoring"]
-    },
-    "Developer": {
-        "description": "Implements code solutions and fixes bugs",
-        "capabilities": ["coding", "debugging", "code optimization", "technical design"]
-    },
-    "Documentation Specialist": {
-        "description": "Creates and maintains technical documentation",
-        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams"]
-    },
-    "Testing Engineer": {
-        "description": "Designs and implements tests for code quality",
-        "capabilities": ["unit testing", "integration testing", "test automation", "QA"]
-    },
-    "Security Analyst": {
-        "description": "Analyzes and enhances security measures",
-        "capabilities": ["security audits", "vulnerability assessment", "secure coding practices"]
-    },
-    "DevOps Engineer": {
-        "description": "Handles deployment and infrastructure automation",
-        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup"]
-    }
-}
 
 class AIOpsCrewManager:
     """
@@ -131,7 +101,17 @@ class AIOpsCrewManager:
             return working_dir
         except Exception as e:
             console.print(f"❌ Failed to set up working directory: {e}", style="red")
+
+            # Log this error to the errors directory
+            from src.crews.internal.team_manager.agent import ErrorLogger
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                f"Failed to set up working directory: {str(e)}",
+                {"project_id": self.project_id, "task_id": self.task_id}
+            )
+
             # Return a temporary directory as fallback
+            import tempfile
             return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
 
     def _initialize_tools(self) -> List[Any]:
@@ -153,192 +133,83 @@ class AIOpsCrewManager:
         except Exception as e:
             console.print(f"❌ Error initializing tools: {e}", style="red")
 
-        return tools
-
-    def _format_agent_list(self) -> str:
-        """Format the list of available agents as a string."""
-        agent_list = "# Available Agents in the System\n\n"
-
-        for name, details in AVAILABLE_AGENTS.items():
-            agent_list += f"## {name}\n"
-            agent_list += f"- **Description**: {details['description']}\n"
-            agent_list += "- **Capabilities**:\n"
-            for capability in details['capabilities']:
-                agent_list += f"  - {capability}\n"
-            agent_list += "\n"
-
-        return agent_list
-
-    def _create_orchestrator_agent(self) -> Agent:
-        """Create the DevOps Orchestrator Agent that delegates tasks."""
-        try:
-            # Get LLM for the orchestrator role
-            llm = self.router.get_llm_for_role("devops_orchestrator")
-
-            # Track model information
-            if llm:
-                self.model_used = llm.model.replace("ollama/", "")
-                self.peer_used = getattr(llm, "_client", None)
-                if hasattr(self.peer_used, "base_url"):
-                    self.peer_used = self.peer_used.base_url
-                if hasattr(llm, 'base_url'):
-                    self.base_url = llm.base_url
-                    # Extract peer from base_url
-                    if self.base_url:
-                        try:
-                            peer_ip = self.base_url.split('//')[1].split(':')[0]
-                            self.peer_used = peer_ip
-                        except:
-                            self.peer_used = "unknown"
-
-            # Create a NEW dedicated memory instance for the orchestrator
-            orchestrator_memory = Memory(max_items=2000)
-
-            console.print(f"👩‍💼 Creating orchestrator agent with dedicated memory...", style="blue")
-
-            # Format the list of available agents
-            agent_list = self._format_agent_list()
-
-            # Create the orchestrator agent with explicit instructions about executing tasks directly
-            orchestrator = Agent(
-                role="DevOps Orchestrator",
-                name="Commander Nova",
-                memory=orchestrator_memory,
-                goal=f"Complete DevOps tasks for project {self.project_id}",
-                backstory=f"""You are the lead DevOps engineer responsible for executing
-                all types of development and operations tasks. You have expertise in multiple areas:
-
-                {agent_list}
-
-                Instead of endlessly asking questions, you're now empowered to directly solve problems.
-
-                For this Docker task:
-                1. Analyze what Docker configuration is needed
-                2. Create appropriate Dockerfile(s)
-                3. Add docker-compose.yml if needed
-                4. Implement necessary scripts
-                5. Test and verify everything works
-
-                All files should be created in the working directory: {self.working_dir}
-
-                DO NOT ask questions about "available agents" - you already have all the information.
-                FOCUS on completing the actual task rather than coordination.
-
-                Working on the ZeroAI project means you need to create Docker configs for this AI framework.""",
-                llm=llm,
-                tools=self.tools,
-                verbose=True,
-                allow_delegation=False  # Disable delegation to force direct execution
+            # Log this error to the errors directory
+            from src.crews.internal.team_manager.agent import ErrorLogger
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                f"Error initializing tools: {str(e)}",
+                {"project_id": self.project_id, "tools_attempted": "GitTool, FileTool"}
             )
 
-            return orchestrator
-        except Exception as e:
-            console.print(f"❌ Error creating orchestrator agent: {e}", style="red")
-            raise
-
-    def _get_crew_for_category(self, category: str) -> Optional[Crew]:
-        """Get the appropriate crew for the specified category."""
-        try:
-            # Create new memory instances for each agent in crews
-            # DO NOT use shared memory
-
-            if category == "developer":
-                # Import the developer crew
-                from src.crews.internal.developer.crew import get_developer_crew
-                # Pass a flag to indicate that new memory instances should be created for each agent
-                return get_developer_crew(self.router, self.tools, self.project_config, use_new_memory=True)
-
-            elif category == "documentation":
-                # Import the documentation crew
-                from src.crews.internal.documentation.crew import get_documentation_crew
-                # Pass a flag to indicate that new memory instances should be created for each agent
-                return get_documentation_crew(self.router, self.tools, self.project_config, use_new_memory=True)
-
-            elif category == "repo_manager":
-                # Import the repo manager crew
-                from src.crews.internal.repo_management.crew import get_repo_management_crew
-                # Pass a flag to indicate that new memory instances should be created for each agent
-                return get_repo_management_crew(self.router, self.tools, self.project_config, use_new_memory=True)
-
-            elif category == "research":
-                # Import the research crew
-                from src.crews.internal.research.crew import get_research_crew
-                # Pass a flag to indicate that new memory instances should be created for each agent
-                return get_research_crew(self.router, self.tools, self.project_config, use_new_memory=True)
-
-            console.print(f"⚠️ No specific crew found for category '{category}', using direct execution", style="yellow")
-            return None
-
-        except ImportError as e:
-            console.print(f"⚠️ Could not import crew for category '{category}': {e}", style="yellow")
-            return None
-        except Exception as e:
-            console.print(f"❌ Error getting crew for category '{category}': {e}", style="red")
-            return None
-
-    def _create_single_agent_crew(self) -> Crew:
-        """Create a crew with a single agent that directly executes the task."""
-        orchestrator = self._create_orchestrator_agent()
-
-        # Create a task specifically for Docker setup
-        docker_task = Task(
-            description=f"""
-            TASK: {self.prompt}
-
-            PROJECT: {self.project_id}
-            CATEGORY: {self.category}
-            REPOSITORY: {self.repository or 'Not specified'}
-            BRANCH: {self.branch}
-
-            Working directory: {self.working_dir}
-
-            As a DevOps Engineer, your task is to set up Docker for testing in the ZeroAI project:
-
-            1. Analyze the requirements for containerizing the ZeroAI project
-            2. Create a Dockerfile that builds the appropriate environment
-            3. Create a docker-compose.yml file if multiple services are needed
-            4. Add any necessary scripts for setup, testing, and execution
-            5. Document the Docker setup with clear usage instructions
-            6. Verify all required files are created in the working directory
-
-            Focus on creating the actual files needed for Docker containerization.
-            """,
-            agent=orchestrator,
-            expected_output="""
-            Complete Docker setup for the ZeroAI project, including:
-            1. Dockerfile
-            2. docker-compose.yml (if needed)
-            3. Any necessary scripts
-            4. Setup and usage instructions
-            """
-        )
-
-        # Create a simple, direct crew
-        docker_crew = Crew(
-            agents=[orchestrator],
-            tasks=[docker_task],
-            process=Process.sequential,  # Use sequential to just run the task directly
-            verbose=True
-        )
-
-        return docker_crew
+        return tools
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
             start_time = time.time()
 
-            # Try to get a specific crew for the category first
-            crew = self._get_crew_for_category(self.category)
+            # Extract and record LLM model information if we can get it
+            try:
+                llm = self.router.get_llm_for_role("general")
+                if llm:
+                    self.model_used = llm.model.replace("ollama/", "")
+                    if hasattr(llm, 'base_url'):
+                        self.base_url = llm.base_url
+                        # Extract peer from base_url
+                        if self.base_url:
+                            try:
+                                peer_ip = self.base_url.split('//')[1].split(':')[0]
+                                self.peer_used = peer_ip
+                            except:
+                                self.peer_used = "unknown"
+            except Exception as e:
+                console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
 
-            # If no specific crew is found, use the direct execution crew
-            if crew is None:
-                console.print(f"🔄 Creating direct execution crew for Docker task", style="blue")
-                crew = self._create_single_agent_crew()
+            # Import the Team Manager crew
+            try:
+                console.print("🔄 Importing Team Manager crew...", style="blue")
+                from src.crews.internal.team_manager.crew import get_team_manager_crew
 
-            # Execute the crew
-            console.print(f"🚀 Executing crew for task: {self.prompt}", style="blue")
-            result = crew.kickoff()
+                # Prepare task inputs
+                task_inputs = {
+                    "project_id": self.project_id,
+                    "prompt": self.prompt,
+                    "category": self.category,
+                    "repository": self.repository,
+                    "branch": self.branch,
+                    "task_id": self.task_id
+                }
+
+                # Create and execute the team manager crew
+                crew = get_team_manager_crew(
+                    router=self.router,
+                    tools=self.tools,
+                    project_config=self.project_config,
+                    task_inputs=task_inputs
+                )
+
+                # Execute the crew
+                console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
+                result = crew.kickoff()
+
+            except ImportError as e:
+                console.print(f"❌ Could not import Team Manager crew: {e}", style="red")
+                console.print("Traceback:", style="red")
+                console.print(traceback.format_exc())
+
+                # Log this error to the errors directory
+                from src.crews.internal.team_manager.agent import ErrorLogger
+                error_logger = ErrorLogger()
+                error_logger.log_error(
+                    f"Failed to import Team Manager crew: {str(e)}",
+                    {
+                        "project_id": self.project_id,
+                        "traceback": traceback.format_exc(),
+                        "sys_path": str(sys.path)
+                    }
+                )
+
+                raise
 
             # Process the result
             if result:
@@ -366,6 +237,22 @@ class AIOpsCrewManager:
 
         except Exception as e:
             console.print(f"❌ Error executing task: {e}", style="red")
+            console.print("Traceback:", style="red")
+            console.print(traceback.format_exc())
+
+            # Log this error to the errors directory
+            from src.crews.internal.team_manager.agent import ErrorLogger
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                f"Error executing task: {str(e)}",
+                {
+                    "project_id": self.project_id,
+                    "prompt": self.prompt,
+                    "category": self.category,
+                    "traceback": traceback.format_exc()
+                }
+            )
+
             return {
                 "success": False,
                 "error": str(e),
@@ -390,6 +277,23 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
         return manager.execute()
     except Exception as e:
         logger.error(f"Error running AI DevOps Crew: {e}")
+
+        # Log this error to the errors directory
+        try:
+            from src.crews.internal.team_manager.agent import ErrorLogger
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                f"Error running AI DevOps Crew: {str(e)}",
+                {
+                    "project_id": project_id,
+                    "inputs": str(inputs),
+                    "traceback": traceback.format_exc()
+                }
+            )
+        except ImportError:
+            # If we can't import the error logger, just log to the console
+            console.print(f"❌ Error running AI DevOps Crew and couldn't log to error directory: {e}", style="red")
+
         return {
             "success": False,
             "error": f"Error running AI DevOps Crew: {str(e)}",
