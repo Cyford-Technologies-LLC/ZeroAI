@@ -9,7 +9,7 @@ from .tasks import analyze_codebase_task, fix_bug_task, write_tests_task, run_te
 
 def create_developer_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     """Creates a developer crew using the distributed router."""
-    researcher = create_researcher_agent(router, inputs)
+    researcher = create_code_researcher(router, inputs)
     coder = create_coder_agent(router, inputs)
     tester = create_tester_agent(router, inputs)
 
