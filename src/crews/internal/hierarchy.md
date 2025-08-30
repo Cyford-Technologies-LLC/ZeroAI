@@ -120,6 +120,45 @@ Next: llama3.1:8b (capable for standard instructions)
 Fallback: gemma2:2b (efficient for basic operations)
 Slowest: llama3.2:1b (lightweight, local fallback)
 
+
+
+
+
+
+
+## Token-Based Learning
+The token-based learning you mentioned could be implemented as part of the feedback loop. Here's how it would work:
+1. **Token Collection**: Each task execution collects "tokens" (success points) based on:
+    - Task completion success
+    - Code quality (passing tests)
+    - Time efficiency
+    - Resource efficiency
+
+2. **Token Distribution**: Tokens are distributed to:
+    - The models used (to improve model preference rankings)
+    - The keyword mappings used (to improve category detection)
+    - The peers used (to improve routing)
+
+3. **Preference Adjustment**: As tokens accumulate, the system adjusts its preferences to favor higher-scoring components.
+
+This creates a reinforcement learning mechanism where successful strategies are rewarded and become more likely to be chosen in the future.
+Would you like me to focus on implementing any specific part of this system first?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #  test example
 python run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
 
