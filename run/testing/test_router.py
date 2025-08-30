@@ -44,7 +44,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     router = None
     if router_type == 'distributed':
         router = DistributedRouter(peer_discovery_instance)
-        console.print("allens test.", style="red")
+        console.print("allens1 test.", style="red")
     elif router_type == 'devops':
         router = get_devops_router()
 
@@ -64,7 +64,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
                 rejects = []
 
                 base_url, peer_name , model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
-                console.print(f"allens test. {base_url}", style="red")
+                console.print(f"allens2 test. {base_url}", style="red")
                 console.print(f"base url {base_url} {peer_name} {model_name}   {peer_discovery_instance.get_peers()}.", style="red")
             elif router_type == 'devops':
                 # DevOps router has its own internal handling
