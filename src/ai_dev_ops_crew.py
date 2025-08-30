@@ -167,7 +167,12 @@ class AIOpsCrewManager:
 
                 IMPORTANT: You can ONLY use two specific actions:
                 1. 'Delegate work to coworker' - Use this to assign tasks to specialized teams
+                       ALWAYS provide THREE STRING ARGUMENTS (not dictionaries):
+                       - coworker: The exact name of the coworker (e.g., "Developer Crew")
+                       - task: A clear description of the task as a simple string
+                       - context: All necessary details as a simple string
                 2. 'Ask question to coworker' - Use this to get information from team members
+                       ALWAYS provide STRING ARGUMENTS, not dictionaries
 
                 DO NOT try to perform tasks directly. ALWAYS use delegation or questions.
                 When you have a final result, DO NOT try to explain it yourself - delegate the explanation task.""",

@@ -8,6 +8,7 @@ It provides a secure command-line interface to trigger internal maintenance task
 
 import sys
 import os
+#  Important  for any crews outside the default,   to mak sure the proper crews are loaded src/__init__.py
 os.environ["CREW_TYPE"] = "internal"
 import argparse
 import json
