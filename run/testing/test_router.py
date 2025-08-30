@@ -5,7 +5,7 @@ from rich.console import Console
 from typing import Optional, List
 import warnings
 import json
-from time import sleep, time
+from time import sleep
 
 # Adjust the Python path to import modules from the parent directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
@@ -14,11 +14,21 @@ from langchain_community.llms.ollama import Ollama
 from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES
 from devops_router import DevOpsDistributedRouter, get_router as get_devops_router
 from config import config
+from peer_discovery import PeerDiscovery
+
+
 
 console = Console()
 
-# Instantiate the PeerDiscovery once
+# Instantiate the PeerDiscovery once and allow time for discovery
 peer_discovery_instance = PeerDiscovery()
+console.print("Waiting for peer discovery to complete...", style="yellow")
+
+
+
+
+sleep(3)  # Wait for the discovery cycle to potentially find the peer
+
 
 def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Optional[str] = None):
     """
@@ -33,18 +43,17 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     # Determine the router instance
     router = None
     if router_type == 'distributed':
-        # FIX: Create the router *after* waiting for peer discovery to complete
         router = DistributedRouter(peer_discovery_instance)
         console.print("allens test.", style="red")
     elif router_type == 'devops':
         router = get_devops_router()
+
 
     # --- START DEBUG DUMP: Data sent to router ---
     console.print("\n--- DEBUG: Data Sent to Router ---", style="bold blue")
     console.print(f"  Prompt: '{prompt}'")
     preference_list = MODEL_PREFERENCES.get("default")
     console.print(f"  Model Preferences: {preference_list}")
-    # FIX: Get the peers *after* the discovery has completed
     console.print(f"  PeerDiscovery Peers: {[p.name for p in peer_discovery_instance.get_peers()]}")
     console.print("--- END DEBUG: Data Sent to Router ---\n", style="bold blue")
     # --- END DEBUG DUMP ---
@@ -53,6 +62,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
         if router:
             if router_type == 'distributed':
                 rejects = []
+
                 base_url, peer_name , model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
                 console.print(f"allens test. {base_url}", style="red")
                 console.print(f"base url {base_url} {peer_name} {model_name}   {peer_discovery_instance.get_peers()}.", style="red")
@@ -123,16 +133,6 @@ def main():
 
     args = parser.parse_args()
 
-    # FIX: Add a reliable waiting loop for peers here
-    start_time = time()
-    console.print("Waiting for peer discovery to complete...", style="yellow")
-    while not peer_discovery_instance.get_peers() and (time() - start_time) < 10:  # Timeout after 10 seconds
-        sleep(1) # Wait for 1 second before checking again
-
-    if not peer_discovery_instance.get_peers():
-        console.print("[bold red]Error:[/bold red] Timed out waiting for peers to be discovered.", style="red")
-        return
-
     router_type = 'devops'
     if args.distributed:
         router_type = 'distributed'
@@ -144,3 +144,9 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+#examples
+#python run/testing/test_router.py -d --prompt "What is a distributed system?"
+#python run/testing/test_router.py -dv --prompt "Perform general maintenance and check project health."
+#python run/testing/test_router.py -m --ip 149.36.1.65 --model llama3.1:8b --prompt "Explain the concept of LLM."
+
