@@ -138,10 +138,19 @@ class AIOpsCrewManager:
                 if hasattr(self.peer_used, "base_url"):
                     self.peer_used = self.peer_used.base_url
 
+
+            # Create a memory instance
+                orchestrator_memory = Memory(
+                    max_tokens=2000,          # Store more context for the orchestrator
+                    importance_weight=1.5     # Weight important memories higher
+                )
+
+
             # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
                 role="DevOps Orchestrator",
                 name="Commander Nova",
+                memory=orchestrator_memory,
                 goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
                 backstory="""You are the lead DevOps engineer responsible for orchestrating
                 AI-driven development tasks. You analyze tasks, break them down into subtasks,

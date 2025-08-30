@@ -40,6 +40,34 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any])
     return Agent(
         role="Git Operator",
         name="Deon Sanders",
+        memory=memory,  # Add memory here
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
+        communication_style={
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
+        expertise=[
+                "GIT", "Bit Bucket"
+            ],
+        expertise_level=9.2,  # On a scale of 1-10
+
         goal="Execute Git commands and file manipulations to manage project repositories.",
         backstory="An automated system for performing repository management tasks.",
         llm=llm,

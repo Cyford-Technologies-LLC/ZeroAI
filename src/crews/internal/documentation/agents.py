@@ -24,6 +24,30 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Ag
     return Agent(
         role="Documentation Writer",
         name="William White",
+        memory=memory,  # Add memory here
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
+        communication_style={
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
+
         goal="Create clear and concise documentation for software projects.",
         backstory="A skilled technical writer who translates complex code into understandable documentation.",
         llm=llm,
