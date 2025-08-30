@@ -8,6 +8,7 @@ It provides a secure command-line interface to trigger internal maintenance task
 
 import sys
 import os
+os.environ["CREW_TYPE"] = "internal"
 import argparse
 import json
 import time
