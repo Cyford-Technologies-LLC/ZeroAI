@@ -193,30 +193,30 @@ class AIOpsCrewManager:
         orchestrator = self._create_orchestrator_agent()
 
         # Create the task for the orchestrator
-# In the _create_hierarchical_crew method:
-orchestrator_task = Task(
-    description=f"""
-    Analyze the following task and coordinate with sub-crews to complete it:
+        orchestrator_task = Task(
+            description=f"""
+            Analyze the following task and coordinate with sub-crews to complete it:
 
-    TASK: {self.prompt}
+            TASK: {self.prompt}
 
-    PROJECT: {self.project_id}
-    CATEGORY: {self.category}
-    REPOSITORY: {self.repository or 'Not specified'}
-    BRANCH: {self.branch}
+            PROJECT: {self.project_id}
+            CATEGORY: {self.category}
+            REPOSITORY: {self.repository or 'Not specified'}
+            BRANCH: {self.branch}
 
-    Working directory: {self.working_dir}
+            Working directory: {self.working_dir}
 
-    1. Analyze what needs to be done
-    2. Identify the appropriate sub-crew(s) for this task
-    3. Coordinate the execution of the task
-    4. Ensure all required files are created in the working directory
-    5. Verify the task was completed successfully
-    """,
-    agent=orchestrator,
-    # Add this required field:
-    expected_output="A detailed report of the task execution, including the actions taken, sub-crews involved, and the final outcome."
-)
+            1. Analyze what needs to be done
+            2. Identify the appropriate sub-crew(s) for this task
+            3. Coordinate the execution of the task
+            4. Ensure all required files are created in the working directory
+            5. Verify the task was completed successfully
+            """,
+            agent=orchestrator,
+            # Add this required field:
+            expected_output="A detailed report of the task execution, including the actions taken, sub-crews involved, and the final outcome."
+        )
+
 
         # Create the hierarchical crew
         dev_ops_crew = Crew(
