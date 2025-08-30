@@ -1,6 +1,6 @@
 # src/crews/developer/crew.py
 from crewai import Crew, Process
-from typing import Dict, Any
+from typing import Dict, Any, List
 from distributed_router import DistributedRouter
 from config import config
 from .agents import create_researcher_agent, create_coder_agent, create_tester_agent

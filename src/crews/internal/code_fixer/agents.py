@@ -1,6 +1,6 @@
 # src/crews/developer/agents.py
 from crewai import Agent
-from typing import Dict, Any
+from typing import Dict, Any, List
 from distributed_router import DistributedRouter
 from config import config
 from tools.file_tool import file_tool
