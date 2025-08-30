@@ -39,6 +39,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any])
     llm = router.get_llm_for_task(task_description)
     return Agent(
         role="Git Operator",
+        name="Deon Sanders",
         goal="Execute Git commands and file manipulations to manage project repositories.",
         backstory="An automated system for performing repository management tasks.",
         llm=llm,

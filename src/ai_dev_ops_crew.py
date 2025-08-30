@@ -138,16 +138,23 @@ class AIOpsCrewManager:
                 if hasattr(self.peer_used, "base_url"):
                     self.peer_used = self.peer_used.base_url
 
-            # Create the orchestrator agent WITHOUT tools - this is the key change
-            # The manager agent in a hierarchical process cannot have tools
+            # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
                 role="DevOps Orchestrator",
+                name="Commander Nova",
                 goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
                 backstory="""You are the lead DevOps engineer responsible for orchestrating
                 AI-driven development tasks. You analyze tasks, break them down into subtasks,
-                and delegate to specialized crews.""",
+                and delegate to specialized crews.
+
+                IMPORTANT: You can ONLY use two specific actions:
+                1. 'Delegate work to coworker' - Use this to assign tasks to specialized teams
+                2. 'Ask question to coworker' - Use this to get information from team members
+
+                DO NOT try to perform tasks directly. ALWAYS use delegation or questions.
+                When you have a final result, DO NOT try to explain it yourself - delegate the explanation task.""",
                 llm=llm,
-                tools=[],  # Empty list of tools instead of self.tools
+                tools=[],  # Empty list of tools is correct for manager agent
                 verbose=True
             )
 

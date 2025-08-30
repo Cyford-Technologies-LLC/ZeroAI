@@ -21,6 +21,7 @@ def create_code_researcher(router=None, inputs: Dict[str, Any] = None) -> Agent:
 
     return Agent(
         role="Code Researcher",
+        name="Dr. Alan Parse",
         goal="Research and understand code patterns and issues",
         backstory="""You are an expert at analyzing codebases, understanding
         complex systems, and identifying potential issues.""",
@@ -46,6 +47,7 @@ def create_senior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent
 
     return Agent(
         role="Senior Developer",
+        name="Tony Kyles",
         goal="Implement high-quality code solutions",
         backstory="""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.""",
@@ -71,6 +73,7 @@ def create_qa_engineer(router=None, inputs: Dict[str, Any] = None) -> Agent:
 
     return Agent(
         role="QA Engineer",
+        name="Anthony Gates",
         goal="Ensure code quality and functionality",
         backstory="""You are a meticulous quality assurance engineer who takes pride
         in finding edge cases and ensuring robust software.""",

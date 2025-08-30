@@ -23,6 +23,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Ag
     llm = router.get_llm_for_task(task_description)
     return Agent(
         role="Documentation Writer",
+        name="William White",
         goal="Create clear and concise documentation for software projects.",
         backstory="A skilled technical writer who translates complex code into understandable documentation.",
         llm=llm,
