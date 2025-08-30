@@ -29,7 +29,7 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
 
     # Try to import the ErrorLogger first
     try:
-        from src.crews.internal.team_manager.agent import ErrorLogger
+        from src.crews.internal.team_manager.agents import ErrorLogger
         error_logger = ErrorLogger()
     except ImportError as e:
         console.print(f"⚠️ Could not import ErrorLogger: {e}", style="yellow")
@@ -257,7 +257,7 @@ class AIOpsCrewManager:
 
             # Log this error to the errors directory
             try:
-                from src.crews.internal.team_manager.agent import ErrorLogger
+                from src.crews.internal.team_manager.agents import ErrorLogger
                 error_logger = ErrorLogger()
                 error_logger.log_error(
                     f"Failed to set up working directory: {str(e)}",
@@ -291,7 +291,7 @@ class AIOpsCrewManager:
 
             # Log this error to the errors directory
             try:
-                from src.crews.internal.team_manager.agent import ErrorLogger
+                from src.crews.internal.team_manager.agents import ErrorLogger
                 error_logger = ErrorLogger()
                 error_logger.log_error(
                     f"Error initializing tools: {str(e)}",
@@ -373,7 +373,7 @@ class AIOpsCrewManager:
 
                 # Log this error to the errors directory
                 try:
-                    from src.crews.internal.team_manager.agent import ErrorLogger
+                    from src.crews.internal.team_manager.agents import ErrorLogger
                     error_logger = ErrorLogger()
                     error_logger.log_error(
                         f"Failed to import Team Manager crew: {str(e)}",
@@ -421,7 +421,7 @@ class AIOpsCrewManager:
 
             # Log this error to the errors directory
             try:
-                from src.crews.internal.team_manager.agent import ErrorLogger
+                from src.crews.internal.team_manager.agents import ErrorLogger
                 error_logger = ErrorLogger()
                 error_logger.log_error(
                     f"Error executing task: {str(e)}",
@@ -471,7 +471,7 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
 
         # Log this error to the errors directory
         try:
-            from src.crews.internal.team_manager.agent import ErrorLogger
+            from src.crews.internal.team_manager.agents import ErrorLogger
             error_logger = ErrorLogger()
             error_logger.log_error(
                 f"Error running AI DevOps Crew: {str(e)}",
