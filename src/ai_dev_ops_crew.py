@@ -40,6 +40,56 @@ logger = logging.getLogger(__name__)
 class AIOpsCrewManager:
     """Manages the secure, internal DevOps crew creation and execution."""
 
+
+
+
+    def _create_devops_orchestrator(self, router):
+        """Create the DevOps Orchestrator agent."""
+        task_description = "Coordinate development operations and ensure high-quality code delivery."
+
+        # Model preference order: llama3.2:latest -> llama3.1:8b -> gemma2:2b -> llama3.2:1b
+        preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+
+        # Try to get learning-based model preference
+        try:
+            from learning.feedback_loop import feedback_loop
+            category_model = feedback_loop.get_model_preference("devops")
+            if category_model:
+                if category_model not in preferred_models:
+                    preferred_models.insert(0, category_model)
+        except ImportError:
+            pass
+
+        llm = None
+        try:
+            # Use the updated get_llm_for_task with preferred models
+            llm = router.get_llm_for_task(task_description, preferred_models)
+        except Exception as e:
+            console.print(f"⚠️ Failed to get optimal LLM for DevOps Orchestrator via router: {e}", style="yellow")
+            # Fall back to local model
+            llm = router.get_local_llm("llama3.2:1b")
+
+        if not llm:
+            raise ValueError("Failed to get LLM for DevOps Orchestrator after all attempts.")
+
+        console.print(
+            f"🔗 DevOps Orchestrator connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+            style="blue")
+
+        return Agent(
+            role="DevOps Orchestrator",
+            goal="Coordinate development operations and ensure high-quality code delivery",
+            backstory="""You are the lead DevOps engineer for this project.
+            Your expertise spans software development, operations, testing, and deployment.
+            You coordinate work across teams and ensure all components integrate seamlessly.""",
+            llm=llm,
+            verbose=config.agents.verbose,
+            allow_delegation=True,
+            # List all the available coworkers
+            allowed_delegation_targets=self.available_coworkers
+        )
+
+
     def __init__(self, distributed_router_instance: DistributedRouter, **kwargs):
         if not isinstance(distributed_router_instance, DistributedRouter):
             logger.error("FATAL: Router is not a DistributedRouter instance.")

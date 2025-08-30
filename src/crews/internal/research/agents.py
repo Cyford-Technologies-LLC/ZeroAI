@@ -7,7 +7,9 @@ from config import config
 from agents.base_agents import create_researcher, create_analyst
 
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    return create_researcher(router, inputs)
+    # Pass the specific category to ensure proper learning
+    return create_researcher(router, inputs, category="research")
 
 def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    return create_analyst(router, inputs)
+    # Pass the specific category to ensure proper learning
+    return create_analyst(router, inputs, category="research")
