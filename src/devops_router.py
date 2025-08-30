@@ -45,20 +45,25 @@ class DevOpsDistributedRouter(DistributedRouter):
                 f"Attempting distributed routing for category '{category}' with preferences: {preference_list}",
                 style="blue")
 
-            # --- ISOLATED CALL TO PARENT METHOD FOR DIAGNOSIS ---
-            base_url, _, model_name = None, None, None
+            # --- MODIFIED PARENT METHOD CALL ---
+            base_url, peer_name, model_name = None, None, None
             try:
-                base_url, _, model_name = super().get_optimal_endpoint_and_model(prompt,
-                                                                                 model_preference_list=preference_list)
+                # Fix: Pass empty failed_peers list and correctly pass model_preference_list
+                base_url, peer_name, model_name = super().get_optimal_endpoint_and_model(
+                    prompt=prompt,
+                    failed_peers=[],  # Empty list for failed peers
+                    model_preference_list=preference_list  # Pass the preference list correctly
+                )
+                console.print(f"Parent method returned: base_url={base_url}, peer_name={peer_name}, model_name={model_name}")
             except Exception as e:
                 # Log the specific exception from the parent method
                 console.print(f"DEBUG: Call to parent's distributed routing method failed with error: {e}", style="red")
-            # --- END ISOLATED CALL ---
+            # --- END MODIFIED PARENT METHOD CALL ---
 
             console.print(f"DEBUG: Distributed routing result: base_url={base_url}, model_name={model_name}",
                           style="blue")
 
-            if model_name:
+            if base_url and model_name:
                 prefixed_model_name = f"ollama/{model_name}"
                 llm_config = {"model": prefixed_model_name, "base_url": base_url,
                               "temperature": config.model.temperature}
@@ -73,13 +78,15 @@ class DevOpsDistributedRouter(DistributedRouter):
                     return Ollama(**llm_config)
             else:
                 # Trigger fallback if no model_name was returned
-                console.print("⚠️ Distributed router failed to find a model. Falling back...", style="yellow")
+                console.print("⚠️ Distributed router failed to find a model. Falling back to local model...", style="yellow")
                 return self._get_local_llm(self.fallback_model_name)
 
         except Exception as e:
             # Catch any other, unexpected exceptions.
-            console.print(f"❌ An unexpected error occurred: {e}", style="red")
-            return None
+            console.print(f"❌ An unexpected error occurred in _get_llm_with_fallback: {e}", style="red")
+            # Fall back to local model on any error
+            console.print("Attempting to use local fallback model...", style="yellow")
+            return self._get_local_llm(self.fallback_model_name)
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
         return self._get_llm_with_fallback(prompt)
@@ -129,6 +136,7 @@ class DevOpsDistributedRouter(DistributedRouter):
 def get_router():
     try:
         peer_discovery_instance = PeerDiscovery()
+        peer_discovery_instance.start_discovery_service()  # Ensure discovery is running
         router = DevOpsDistributedRouter(peer_discovery_instance, fallback_model_name="llama3.2:1b")
         logger.info("Secure internal DevOps router successfully instantiated with local fallback.")
         return router
@@ -143,4 +151,3 @@ if __name__ == '__main__':
         print("Secure internal router setup test successful.")
     except Exception as e:
         print(f"Secure internal router setup test failed: {e}")
-
