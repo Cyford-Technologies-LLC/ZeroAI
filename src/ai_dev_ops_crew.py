@@ -190,25 +190,25 @@ class AIOpsCrewManager:
 
             if category == "developer":
                 # Import the developer crew
-                from crews.internal.developer.crew import get_developer_crew
+                from src.crews.internal.developer.crew import get_developer_crew
                 # Pass a flag to indicate that new memory instances should be created for each agent
                 return get_developer_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             elif category == "documentation":
                 # Import the documentation crew
-                from crews.internal.documentation.crew import get_documentation_crew
+                from src.crews.internal.documentation.crew import get_documentation_crew
                 # Pass a flag to indicate that new memory instances should be created for each agent
                 return get_documentation_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             elif category == "repo_manager":
                 # Import the repo manager crew
-                from crews.internal.repo_management.crew import get_repo_management_crew
+                from src.crews.internal.repo_management.crew import get_repo_management_crew
                 # Pass a flag to indicate that new memory instances should be created for each agent
                 return get_repo_management_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             elif category == "research":
                 # Import the research crew
-                from crews.internal.research.crew import get_research_crew
+                from src.crews.internal.research.crew import get_research_crew
                 # Pass a flag to indicate that new memory instances should be created for each agent
                 return get_research_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
