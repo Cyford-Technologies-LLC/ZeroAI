@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from rich.console import Console
 from crewai import Crew, Process, Agent, Task
+from src.utils.memory import Memory
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
