@@ -8,10 +8,6 @@ from src.utils.memory import Memory
 
 
 
-# Create memory instance
-memory = Memory()
-
-
 
 
 
@@ -25,6 +21,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Ag
     task_description = "Generate or update documentation based on project changes."
     preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
 
+    agent_memory = Memory()
     # Try to get learning-based model preference
     try:
         from learning.feedback_loop import feedback_loop
@@ -40,7 +37,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Ag
     return Agent(
         role="Documentation Writer",
         name="William White",
-        memory=memory,  # Add memory here
+        memory=agent_memory,  # Add memory here
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,

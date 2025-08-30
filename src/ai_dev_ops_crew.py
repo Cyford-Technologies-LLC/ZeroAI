@@ -42,16 +42,17 @@ class AIOpsCrewManager:
         self.repository = inputs.get("repository")
         self.branch = inputs.get("branch", "main")
 
+        # Initialize tracking information
+        self.model_used = "unknown"
+        self.peer_used = "unknown"
+        self.token_usage = {"total_tokens": 0}
+        self.base_url = None
+
         # Load project configuration
         self.project_config = self._load_project_config()
 
         # Set up working directory from project configuration
         self.working_dir = self._setup_working_dir()
-
-        # Tracking information
-        self.model_used = "unknown"
-        self.peer_used = "unknown"
-        self.token_usage = {"total_tokens": 0}
 
         # Initialize the tools
         self.tools = self._initialize_tools()
@@ -138,15 +139,27 @@ class AIOpsCrewManager:
                 self.peer_used = getattr(llm, "_client", None)
                 if hasattr(self.peer_used, "base_url"):
                     self.peer_used = self.peer_used.base_url
+                if hasattr(llm, 'base_url'):
+                    self.base_url = llm.base_url
+                    # Extract peer from base_url
+                    if self.base_url:
+                        try:
+                            peer_ip = self.base_url.split('//')[1].split(':')[0]
+                            self.peer_used = peer_ip
+                        except:
+                            self.peer_used = "unknown"
 
-            # Create a memory instance - FIXED: Keep this inside the try block with proper indentation
-            orchestrator_memory = Memory(max_items=2000)  # Using the parameter that actually exists
+            # Create a NEW dedicated memory instance for the orchestrator
+            # CRITICAL: This is a separate memory instance just for the orchestrator
+            orchestrator_agent_memory = Memory()(max_items=2000)
+
+            console.print(f"👩‍💼 Creating orchestrator agent with dedicated memory...", style="blue")
 
             # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
                 role="DevOps Orchestrator",
                 name="Commander Nova",
-                memory=orchestrator_memory,
+                memory=orchestrator_memory,  # Using dedicated memory instance
                 goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
                 backstory="""You are the lead DevOps engineer responsible for orchestrating
                 AI-driven development tasks. You analyze tasks, break them down into subtasks,
@@ -160,7 +173,8 @@ class AIOpsCrewManager:
                 When you have a final result, DO NOT try to explain it yourself - delegate the explanation task.""",
                 llm=llm,
                 tools=[],  # Empty list of tools is correct for manager agent
-                verbose=True
+                verbose=True,
+                allow_delegation=True  # Ensure delegation is enabled for the orchestrator
             )
 
             return orchestrator
@@ -168,29 +182,35 @@ class AIOpsCrewManager:
             console.print(f"❌ Error creating orchestrator agent: {e}", style="red")
             raise
 
-
     def _get_crew_for_category(self, category: str) -> Optional[Crew]:
         """Get the appropriate crew for the specified category."""
         try:
+            # Create new memory instances for each agent in crews
+            # DO NOT use shared memory
+
             if category == "developer":
                 # Import the developer crew
                 from crews.internal.developer.crew import get_developer_crew
-                return get_developer_crew(self.router, self.tools, self.project_config)
+                # Pass a flag to indicate that new memory instances should be created for each agent
+                return get_developer_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             elif category == "documentation":
                 # Import the documentation crew
                 from crews.internal.documentation.crew import get_documentation_crew
-                return get_documentation_crew(self.router, self.tools, self.project_config)
+                # Pass a flag to indicate that new memory instances should be created for each agent
+                return get_documentation_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             elif category == "repo_manager":
                 # Import the repo manager crew
                 from crews.internal.repo_management.crew import get_repo_management_crew
-                return get_repo_management_crew(self.router, self.tools, self.project_config)
+                # Pass a flag to indicate that new memory instances should be created for each agent
+                return get_repo_management_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             elif category == "research":
                 # Import the research crew
                 from crews.internal.research.crew import get_research_crew
-                return get_research_crew(self.router, self.tools, self.project_config)
+                # Pass a flag to indicate that new memory instances should be created for each agent
+                return get_research_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
             console.print(f"⚠️ No specific crew found for category '{category}', using fallback delegation", style="yellow")
             return None

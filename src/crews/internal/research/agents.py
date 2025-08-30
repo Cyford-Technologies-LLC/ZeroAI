@@ -8,8 +8,7 @@ from agents.base_agents import create_researcher, create_analyst
 from utils.memory import Memory
 
 
-# Create memory instance
-memory = Memory()
+
 
 
 

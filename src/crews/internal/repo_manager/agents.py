@@ -7,14 +7,15 @@ from src.utils.memory import Memory
 
 
 
-# Create memory instance
-memory = Memory()
+
 
 
 
 def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     task_description = "Perform Git and file system operations."
     preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+
+    agent_memory = Memory()
 
     # Try to get learning-based model preference
     try:
@@ -48,7 +49,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any])
     return Agent(
         role="Git Operator",
         name="Deon Sanders",
-        memory=memory,  # Add memory here
+        memory=agent_memory,  # Add memory here
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,

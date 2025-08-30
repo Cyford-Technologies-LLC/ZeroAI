@@ -6,8 +6,7 @@ from src.utils.memory import Memory
 
 
 
-# Create memory instance
-memory = Memory()
+
 
 
 
@@ -18,6 +17,7 @@ def create_code_researcher(router=None, inputs: Dict[str, Any] = None) -> Agent:
     # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
     preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
 
+    agent_memory = Memory()
     # Check if we have learning-based model preference
     try:
         from learning.feedback_loop import feedback_loop
@@ -32,7 +32,7 @@ def create_code_researcher(router=None, inputs: Dict[str, Any] = None) -> Agent:
     return Agent(
         role="Code Researcher",
         name="Dr. Alan Parse",
-        memory=memory,  # Add memory here
+        memory=agent_memory,  # Add memory here
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,
@@ -74,6 +74,7 @@ def create_senior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent
     # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
     preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
 
+    agent_memory = Memory()
     # Try to get learning-based model preference
     try:
         from learning.feedback_loop import feedback_loop
@@ -87,7 +88,7 @@ def create_senior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent
     return Agent(
         role="Senior Developer",
         name="Tony Kyles",
-        memory=memory,  # Add memory here
+        memory=agent_memory,  # Add memory here
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,
@@ -123,6 +124,7 @@ def create_qa_engineer(router=None, inputs: Dict[str, Any] = None) -> Agent:
     # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
     preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
 
+    agent_memory = Memory()
     # Try to get learning-based model preference
     try:
         from learning.feedback_loop import feedback_loop
@@ -136,7 +138,7 @@ def create_qa_engineer(router=None, inputs: Dict[str, Any] = None) -> Agent:
     return Agent(
         role="QA Engineer",
         name="Anthony Gates",
-        memory=memory,  # Add memory here
+        memory=agent_memory,  # Add memory here
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,
