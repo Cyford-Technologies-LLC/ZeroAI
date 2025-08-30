@@ -3,7 +3,7 @@ from crewai import Crew, Process
 from typing import Dict, Any
 from distributed_router import DistributedRouter
 from config import config
-from .agents import create_researcher_agent, create_coder_agent, create_tester_agent
+from .agents import create_code_researcher, create_senior_developer, create_junior_developer ,  create_qa_engineer
 from .tasks import analyze_codebase_task, fix_bug_task, write_tests_task, run_tests_task
 
 
