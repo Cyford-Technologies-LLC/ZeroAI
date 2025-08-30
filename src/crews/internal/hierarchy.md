@@ -163,13 +163,14 @@ Would you like me to focus on implementing any specific part of this system firs
 python run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
 
 
+cd /opt/ZeroAI
+python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
 
 
+python run/internal/analyze_learning.py --action=summary
 
 
-
-
-
+python run/internal/analyze_learning.py --action=models
 
 
 
