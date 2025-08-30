@@ -139,9 +139,8 @@ class AIOpsCrewManager:
                 if hasattr(self.peer_used, "base_url"):
                     self.peer_used = self.peer_used.base_url
 
-            # Create a memory instance - FIXED: Move this outside the if block
-        orchestrator_memory = Memory(max_items=2000)  # Using the parameter that actually exists
-
+            # Create a memory instance - FIXED: Keep this inside the try block with proper indentation
+            orchestrator_memory = Memory(max_items=2000)  # Using the parameter that actually exists
 
             # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
