@@ -1,51 +1,27 @@
 # src/crews/internal/team_manager/agent.py
 
+import importlib
+import inspect
 import logging
+import sys
+import traceback
 import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime
-from rich.console import Console
+
 from crewai import Agent
-from src.utils.memory import Memory
+from rich.console import Console
 
 # Configure console for rich output
 console = Console()
-
-# Define the available agents in the system
-AVAILABLE_AGENTS = {
-    "Team Manager": {
-        "description": "Coordinates tasks and manages teams of specialists",
-        "capabilities": ["task coordination", "requirement analysis", "team management", "task delegation", "progress monitoring"]
-    },
-    "Developer": {
-        "description": "Implements code solutions and fixes bugs",
-        "capabilities": ["coding", "debugging", "code optimization", "technical design", "unit testing"]
-    },
-    "Documentation Specialist": {
-        "description": "Creates and maintains technical documentation",
-        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams", "markdown expertise"]
-    },
-    "Testing Engineer": {
-        "description": "Designs and implements tests for code quality",
-        "capabilities": ["unit testing", "integration testing", "test automation", "QA", "test case design"]
-    },
-    "Security Analyst": {
-        "description": "Analyzes and enhances security measures",
-        "capabilities": ["security audits", "vulnerability assessment", "secure coding practices", "threat modeling"]
-    },
-    "DevOps Engineer": {
-        "description": "Handles deployment and infrastructure automation",
-        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup", "cloud deployment"]
-    }
-}
 
 class ErrorLogger:
     """Logs errors to a file for later review."""
 
     def __init__(self):
-        self.error_dir = Path("errors")
-        self.error_dir.mkdir(exist_ok=True)
+        self.error_dir = Path("src/errors")
+        self.error_dir.mkdir(parents=True, exist_ok=True)
 
     def log_error(self, error_message: str, context: Dict[str, Any] = None) -> str:
         """
@@ -76,29 +52,118 @@ class ErrorLogger:
         console.print(f"📝 Error logged to {filepath}", style="yellow")
         return str(filepath)
 
-def format_agent_list() -> str:
-    """Format the list of available agents as a string."""
-    agent_list = "# Available Specialist Teams\n\n"
-
-    for name, details in AVAILABLE_AGENTS.items():
-        agent_list += f"## {name}\n"
-        agent_list += f"- **Description**: {details['description']}\n"
-        agent_list += "- **Capabilities**:\n"
-        for capability in details['capabilities']:
-            agent_list += f"  - {capability}\n"
-        agent_list += "\n"
-
-    return agent_list
-
-def create_team_manager_agent(router, project_id: str, working_dir: Path, tools: List = None) -> Agent:
+def discover_available_crews() -> Dict[str, Dict[str, str]]:
     """
-    Create the Team Manager Agent that executes and coordinates tasks.
+    Scan the project to discover available crews and their agents.
+    This provides a dynamic list of what's actually accessible.
+
+    Returns:
+        A dictionary mapping crew names to details
+    """
+    available_crews = {}
+    errors = []
+
+    # Check the internal crews directory
+    crews_path = Path("src/crews/internal")
+    if not crews_path.exists() or not crews_path.is_dir():
+        error_message = f"Internal crews directory not found at {crews_path}"
+        errors.append(error_message)
+        console.print(f"⚠️ {error_message}", style="yellow")
+        return {"errors": errors}
+
+    # Scan each subdirectory in the internal crews path
+    for crew_dir in crews_path.iterdir():
+        if crew_dir.is_dir() and crew_dir.name != "__pycache__" and crew_dir.name != "team_manager":
+            crew_name = crew_dir.name
+            crew_info = {"path": str(crew_dir)}
+
+            # Try to import the crew's agents module
+            try:
+                module_name = f"src.crews.internal.{crew_name}.agents"
+                agents_module = importlib.import_module(module_name)
+
+                # Look for agent creation functions
+                agent_creators = []
+                for name, obj in inspect.getmembers(agents_module):
+                    if inspect.isfunction(obj) and name.startswith("create_"):
+                        agent_creators.append(name)
+
+                if agent_creators:
+                    crew_info["agents"] = agent_creators
+                    crew_info["status"] = "available"
+                else:
+                    crew_info["status"] = "no_agents"
+                    crew_info["error"] = "No agent creation functions found"
+
+            except ImportError as e:
+                crew_info["status"] = "import_failed"
+                crew_info["error"] = str(e)
+                error_message = f"Failed to import {module_name}: {e}"
+                errors.append(error_message)
+            except Exception as e:
+                crew_info["status"] = "error"
+                crew_info["error"] = str(e)
+                error_message = f"Error examining {module_name}: {e}"
+                errors.append(error_message)
+
+            available_crews[crew_name] = crew_info
+
+    # Add any errors to the results
+    if errors:
+        available_crews["errors"] = errors
+
+    return available_crews
+
+def format_crew_list(crews_info: Dict[str, Dict[str, str]]) -> str:
+    """
+    Format the list of available crews as a string.
+
+    Args:
+        crews_info: Dictionary of crew information
+
+    Returns:
+        A formatted string listing the crews
+    """
+    if not crews_info or (len(crews_info) == 1 and "errors" in crews_info):
+        return "# No available crews were detected\n\nPlease check the implementation of the internal crews."
+
+    crew_list = "# Available Crews\n\n"
+
+    for crew_name, info in crews_info.items():
+        if crew_name == "errors":
+            continue
+
+        crew_list += f"## {crew_name.replace('_', ' ').title()}\n"
+
+        if info.get("status") == "available":
+            crew_list += "**Status**: ✅ Available\n\n"
+            crew_list += "**Agents**:\n"
+            for agent in info.get("agents", []):
+                # Format the agent name from create_xyz_agent to "XYZ Agent"
+                agent_name = agent.replace("create_", "").replace("_", " ").title()
+                crew_list += f"- {agent_name}\n"
+        else:
+            crew_list += f"**Status**: ❌ Not Available\n\n"
+            crew_list += f"**Error**: {info.get('error', 'Unknown error')}\n"
+
+        crew_list += "\n"
+
+    # Add any errors
+    if "errors" in crews_info:
+        crew_list += "## Errors Encountered\n\n"
+        for error in crews_info["errors"]:
+            crew_list += f"- {error}\n"
+
+    return crew_list
+
+def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Agent:
+    """
+    Create the Team Manager Agent that only delegates tasks (no direct tools).
 
     Args:
         router: The LLM router instance
         project_id: The project identifier
         working_dir: The working directory for file operations
-        tools: List of tools available to the agent
 
     Returns:
         An Agent instance configured as Team Manager
@@ -107,39 +172,28 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, tools:
         # Get LLM for the team manager role
         llm = router.get_llm_for_role("devops_orchestrator")  # Reusing existing role for compatibility
 
-        # Create a dedicated memory instance for the team manager
-        team_manager_memory = Memory(max_items=2000)
+        # Discover available crews
+        available_crews = discover_available_crews()
+        crew_list = format_crew_list(available_crews)
 
-        console.print(f"👨‍💼 Creating Team Manager agent with dedicated memory...", style="blue")
-
-        # Format the list of available agents
-        agent_list = format_agent_list()
+        console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
+        console.print(f"Found {len(available_crews) - (1 if 'errors' in available_crews else 0)} crews", style="blue")
 
         # Create the team manager agent
         team_manager = Agent(
             role="Team Manager",
             name="Project Coordinator",
-            memory=team_manager_memory,
-            goal=f"Complete tasks for project {project_id} by utilizing specialist expertise",
-            backstory=f"""I am the Team Manager for project {project_id}. I coordinate tasks and
-            ensure they're completed effectively by working with specialist teams when needed.
+            goal=f"Coordinate specialists to complete tasks for project {project_id}",
+            backstory=f"""I am the Team Manager for project {project_id}. My role is to analyze tasks and
+            delegate work to appropriate specialists. I don't perform technical work directly.
 
-            {agent_list}
-
-            When tasked with a challenge, I first analyze what needs to be done and which specialists
-            would be most suitable. I ensure all requirements are clear and that work is executed
-            to the highest quality standards.
-
-            I maintain clear communication about progress and any challenges encountered. I'm
-            responsible for ensuring the final deliverables meet all requirements and are properly
-            documented.
+            {crew_list}
 
             Working directory: {working_dir}
             """,
             llm=llm,
-            tools=tools or [],
             verbose=True,
-            allow_delegation=False  # Direct execution, no delegation
+            allow_delegation=True  # Allow delegation to other agents
         )
 
         return team_manager
@@ -148,7 +202,11 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, tools:
         error_logger = ErrorLogger()
         error_logger.log_error(
             f"Error creating team manager agent: {str(e)}",
-            {"project_id": project_id, "working_dir": str(working_dir)}
+            {
+                "project_id": project_id,
+                "working_dir": str(working_dir),
+                "traceback": traceback.format_exc()
+            }
         )
         console.print(f"❌ Error creating team manager agent: {e}", style="red")
         raise
