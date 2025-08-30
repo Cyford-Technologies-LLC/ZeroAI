@@ -5,7 +5,6 @@ from rich.console import Console
 from typing import Optional, List
 import warnings
 import json
-from time import sleep, time
 
 # Adjust the Python path to import modules from the parent directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
@@ -20,7 +19,8 @@ console = Console()
 
 # Instantiate the PeerDiscovery once
 peer_discovery_instance = PeerDiscovery()
-
+# Start discovery service immediately
+peer_discovery_instance.start_discovery_service()
 
 def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Optional[str] = None):
     """
@@ -36,12 +36,10 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     router = None
     if router_type == 'distributed':
         router = DistributedRouter(peer_discovery_instance)
-        console.print("allens1 test.", style="red")
     elif router_type == 'devops':
         router = get_devops_router()
 
     # --- START DEBUG DUMP: Data sent to router ---
-    # This dump now reflects the state *after* the wait, if successful.
     console.print("\n--- DEBUG: Data Sent to Router ---", style="bold blue")
     console.print(f"  Prompt: '{prompt}'")
     preference_list = MODEL_PREFERENCES.get("default")
@@ -54,11 +52,8 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
         if router:
             if router_type == 'distributed':
                 rejects = []
-                # FIX: Remove the debug print before the function call
                 base_url, peer_name, model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
-                console.print(f"allens2 test. {base_url}", style="red")
-                console.print(f"base url {base_url} {peer_name} {model_name}   {peer_discovery_instance.get_peers()}.",
-                              style="red")
+                console.print(f"base url {base_url} {peer_name} {model_name}   {peer_discovery_instance.get_peers()}.", style="red")
             elif router_type == 'devops':
                 # DevOps router has its own internal handling
                 llm_instance = router.get_llm_for_task(prompt)
@@ -126,17 +121,11 @@ def main():
 
     args = parser.parse_args()
 
-    # FIX: Replace fixed sleep with a robust polling loop.
-    start_time = time()
-    timeout = 15  # Wait for a maximum of 15 seconds
-    console.print(f"Waiting up to {timeout} seconds for peer discovery...", style="yellow")
-    while not peer_discovery_instance.get_peers() and (time() - start_time) < timeout:
-        sleep(1)
-
-    if not peer_discovery_instance.get_peers():
-        console.print(f"[bold red]Error:[/bold red] Peer discovery timed out. No peers available.", style="red")
-        return
-
+    # REMOVED: All waiting and timeout code is removed here
+    # Just directly check peers
+    peers = peer_discovery_instance.get_peers()
+    console.print(f"Current peers: {[p.name for p in peers]}", style="cyan")
+    
     router_type = 'devops'
     if args.distributed:
         router_type = 'distributed'
@@ -148,4 +137,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
