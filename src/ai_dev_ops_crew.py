@@ -17,6 +17,34 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 console = Console()
 
+# Define the available agents in the system
+AVAILABLE_AGENTS = {
+    "DevOps Orchestrator": {
+        "description": "Coordinates and delegates tasks to specialized teams",
+        "capabilities": ["task coordination", "requirement analysis", "delegation", "monitoring"]
+    },
+    "Developer": {
+        "description": "Implements code solutions and fixes bugs",
+        "capabilities": ["coding", "debugging", "code optimization", "technical design"]
+    },
+    "Documentation Specialist": {
+        "description": "Creates and maintains technical documentation",
+        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams"]
+    },
+    "Testing Engineer": {
+        "description": "Designs and implements tests for code quality",
+        "capabilities": ["unit testing", "integration testing", "test automation", "QA"]
+    },
+    "Security Analyst": {
+        "description": "Analyzes and enhances security measures",
+        "capabilities": ["security audits", "vulnerability assessment", "secure coding practices"]
+    },
+    "DevOps Engineer": {
+        "description": "Handles deployment and infrastructure automation",
+        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup"]
+    }
+}
+
 class AIOpsCrewManager:
     """
     Manager for the AI DevOps Crew.
@@ -127,6 +155,24 @@ class AIOpsCrewManager:
 
         return tools
 
+    def _format_agent_list(self) -> str:
+        """Format the list of available agents as a string."""
+        agent_list = "# Available Agents in the System\n\n"
+
+        for name, details in AVAILABLE_AGENTS.items():
+            agent_list += f"## {name}\n"
+            agent_list += f"- **Description**: {details['description']}\n"
+            agent_list += "- **Capabilities**:\n"
+            for capability in details['capabilities']:
+                agent_list += f"  - {capability}\n"
+            agent_list += "\n"
+
+        agent_list += "## Important Note About Delegation\n"
+        agent_list += "When delegating tasks, you MUST use 'DevOps Orchestrator' as the coworker name.\n"
+        agent_list += "Include the intended specialist team in the context field, not in the coworker field.\n"
+
+        return agent_list
+
     def _create_orchestrator_agent(self) -> Agent:
         """Create the DevOps Orchestrator Agent that delegates tasks."""
         try:
@@ -155,32 +201,37 @@ class AIOpsCrewManager:
 
             console.print(f"👩‍💼 Creating orchestrator agent with dedicated memory...", style="blue")
 
+            # Format the list of available agents
+            agent_list = self._format_agent_list()
+
             # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
                 role="DevOps Orchestrator",
                 name="Commander Nova",
                 memory=orchestrator_memory,
                 goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
-                backstory="""You are the lead DevOps engineer responsible for orchestrating
+                backstory=f"""You are the lead DevOps engineer responsible for orchestrating
                 AI-driven development tasks. You analyze tasks, break them down into subtasks,
                 and delegate to specialized crews.
 
+                {agent_list}
+
                 IMPORTANT: You can ONLY delegate tasks to "DevOps Orchestrator" - no other teams
                 are available in the current configuration. You must act as if you're coordinating
-                with specialized teams like "Containerization Team" or "Documentation Team", but
-                all delegation must be to "DevOps Orchestrator".
+                with specialized teams, but all delegation must be to "DevOps Orchestrator".
 
                 When using the 'Delegate work to coworker' or 'Ask question to coworker' tools:
                 1. ALWAYS set coworker to "DevOps Orchestrator"
                 2. Provide each argument as a SIMPLE STRING, not as JSON
                 3. Be clear and specific in your task descriptions and context
+                4. Include the intended specialized team name in the context field
 
                 Format your input to tools like this:
                 ```
                 Action: Delegate work to coworker
                 coworker: DevOps Orchestrator
                 task: Set up Docker environment for testing in ZeroAI
-                context: Project ZeroAI needs containerization
+                context: [DevOps Engineer] Project ZeroAI needs containerization
                 ```
 
                 DO NOT format arguments as JSON or dictionaries.
@@ -241,7 +292,7 @@ class AIOpsCrewManager:
         """Create the hierarchical crew with the orchestrator and sub-crews."""
         orchestrator = self._create_orchestrator_agent()
 
-        # Create the task for the orchestrator
+        # Create the main task for the orchestrator
         orchestrator_task = Task(
             description=f"""
             Analyze the following task and coordinate with sub-crews to complete it:
@@ -255,27 +306,42 @@ class AIOpsCrewManager:
 
             Working directory: {self.working_dir}
 
-            1. Analyze what needs to be done
-            2. Identify the appropriate sub-crew(s) for this task
-            3. Coordinate the execution of the task
-            4. Ensure all required files are created in the working directory
-            5. Verify the task was completed successfully
+            1. Start by listing all available agents in the system and their capabilities
+            2. Analyze what needs to be done
+            3. Identify the appropriate sub-crew(s) for this task
+            4. Coordinate the execution of the task
+            5. Ensure all required files are created in the working directory
+            6. Verify the task was completed successfully
             """,
             agent=orchestrator,
             expected_output="A detailed report of the task execution, including actions taken, sub-crews involved, and outcomes."
         )
 
+        # Create a second task that will handle delegated work
+        delegated_task = Task(
+            description=f"""
+            Execute the sub-task delegated by the orchestrator:
+
+            PROJECT: {self.project_id}
+            WORKING DIRECTORY: {self.working_dir}
+
+            Complete the specific task that was delegated to you as if you are the specialist indicated
+            in the context field. Provide a detailed implementation or solution.
+            """,
+            agent=orchestrator,
+            expected_output="Detailed implementation or solution for the delegated sub-task."
+        )
+
         # Create the hierarchical crew
-        # IMPORTANT: Don't include orchestrator in the agents list when it's set as manager_agent
         dev_ops_crew = Crew(
-            agents=[],  # Empty list or list of other agents, but NOT including orchestrator
-            tasks=[orchestrator_task],
+            agents=[orchestrator],  # Include the orchestrator in the agents list
+            tasks=[orchestrator_task, delegated_task],  # Include both tasks
             process=Process.hierarchical,
             verbose=True,
             manager_agent=orchestrator,
             # Add delegation config to ensure proper delegation
             delegation_config={
-                "DevOps Orchestrator": ["DevOps Orchestrator"]  # Allow delegation to self
+                "DevOps Orchestrator": ["delegated_task"]  # Allow delegation to the delegated_task
             }
         )
 
