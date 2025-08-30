@@ -1,3 +1,4 @@
+
 # src/crews/internal/team_manager/agent.py
 
 import importlib
@@ -174,7 +175,7 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
 
         # Discover available crews
         available_crews = discover_available_crews()
-        crew_list = format_crew_list()  # Use the static list for now
+        crew_list = format_agent_list()  # Fixed: changed format_crew_list to format_agent_list
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
 
