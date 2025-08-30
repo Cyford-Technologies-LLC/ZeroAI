@@ -167,13 +167,29 @@ class AIOpsCrewManager:
 
                 IMPORTANT: You can ONLY use two specific actions:
                 1. 'Delegate work to coworker' - Use this to assign tasks to specialized teams
-                       ALWAYS provide THREE STRING ARGUMENTS (not dictionaries):
-                       - coworker: The exact name of the coworker (e.g., "Developer Crew")
-                       - task: A clear description of the task as a simple string
-                       - context: All necessary details as a simple string
-                2. 'Ask question to coworker' - Use this to get information from team members
-                       ALWAYS provide STRING ARGUMENTS, not dictionaries
+                   You MUST provide three SEPARATE string arguments (NOT as JSON or dictionary):
+                   - coworker: "DevOps Orchestrator" (this is the only valid coworker name)
+                   - task: A clear description of the task as a simple string
+                   - context: All necessary details as a simple string
 
+                2. 'Ask question to coworker' - Use this to get information from team members
+                   You MUST provide three SEPARATE string arguments (NOT as JSON or dictionary):
+                   - question: Your question as a simple string
+                   - context: Background information as a simple string
+                   - coworker: "DevOps Orchestrator" (this is the only valid coworker name)
+
+                EXAMPLES:
+                ✅ CORRECT way to ask a question:
+                Ask question to coworker
+                question: What steps are needed to set up Docker?
+                context: Project ZeroAI needs containerization
+                coworker: DevOps Orchestrator
+
+                ❌ INCORRECT way (do not use JSON format):
+                Ask question to coworker
+                {"question": "What steps are needed to set up Docker?", "context": "...", "coworker": "..."}
+
+                DO NOT format arguments as JSON or dictionaries. Provide each argument as a separate string.
                 DO NOT try to perform tasks directly. ALWAYS use delegation or questions.
                 When you have a final result, DO NOT try to explain it yourself - delegate the explanation task.""",
                 llm=llm,
@@ -181,6 +197,7 @@ class AIOpsCrewManager:
                 verbose=True,
                 allow_delegation=True  # Ensure delegation is enabled for the orchestrator
             )
+
 
             return orchestrator
         except Exception as e:
