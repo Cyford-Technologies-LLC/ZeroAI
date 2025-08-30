@@ -159,45 +159,38 @@ class AIOpsCrewManager:
             orchestrator = Agent(
                 role="DevOps Orchestrator",
                 name="Commander Nova",
-                memory=orchestrator_memory,  # Using dedicated memory instance
+                memory=orchestrator_memory,
                 goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
                 backstory="""You are the lead DevOps engineer responsible for orchestrating
                 AI-driven development tasks. You analyze tasks, break them down into subtasks,
                 and delegate to specialized crews.
 
-                IMPORTANT: You can ONLY use two specific actions:
-                1. 'Delegate work to coworker' - Use this to assign tasks to specialized teams
-                   You MUST provide three SEPARATE string arguments (NOT as JSON or dictionary):
-                   - coworker: "DevOps Orchestrator" (this is the only valid coworker name)
-                   - task: A clear description of the task as a simple string
-                   - context: All necessary details as a simple string
+                IMPORTANT: You can ONLY delegate tasks to "DevOps Orchestrator" - no other teams
+                are available in the current configuration. You must act as if you're coordinating
+                with specialized teams like "Containerization Team" or "Documentation Team", but
+                all delegation must be to "DevOps Orchestrator".
 
-                2. 'Ask question to coworker' - Use this to get information from team members
-                   You MUST provide three SEPARATE string arguments (NOT as JSON or dictionary):
-                   - question: Your question as a simple string
-                   - context: Background information as a simple string
-                   - coworker: "DevOps Orchestrator" (this is the only valid coworker name)
+                When using the 'Delegate work to coworker' or 'Ask question to coworker' tools:
+                1. ALWAYS set coworker to "DevOps Orchestrator"
+                2. Provide each argument as a SIMPLE STRING, not as JSON
+                3. Be clear and specific in your task descriptions and context
 
-                EXAMPLES:
-                ✅ CORRECT way to ask a question:
-                Ask question to coworker
-                question: What steps are needed to set up Docker?
-                context: Project ZeroAI needs containerization
+                Format your input to tools like this:
+                ```
+                Action: Delegate work to coworker
                 coworker: DevOps Orchestrator
+                task: Set up Docker environment for testing in ZeroAI
+                context: Project ZeroAI needs containerization
+                ```
 
-                ❌ INCORRECT way (do not use JSON format):
-                Ask question to coworker
-                {"question": "What steps are needed to set up Docker?", "context": "...", "coworker": "..."}
-
-                DO NOT format arguments as JSON or dictionaries. Provide each argument as a separate string.
+                DO NOT format arguments as JSON or dictionaries.
                 DO NOT try to perform tasks directly. ALWAYS use delegation or questions.
                 When you have a final result, DO NOT try to explain it yourself - delegate the explanation task.""",
                 llm=llm,
-                tools=[],  # Empty list of tools is correct for manager agent
+                tools=[],
                 verbose=True,
-                allow_delegation=True  # Ensure delegation is enabled for the orchestrator
+                allow_delegation=True
             )
-
 
             return orchestrator
         except Exception as e:
@@ -279,7 +272,11 @@ class AIOpsCrewManager:
             tasks=[orchestrator_task],
             process=Process.hierarchical,
             verbose=True,
-            manager_agent=orchestrator
+            manager_agent=orchestrator,
+            # Add delegation config to ensure proper delegation
+            delegation_config={
+                "DevOps Orchestrator": ["DevOps Orchestrator"]  # Allow delegation to self
+            }
         )
 
         return dev_ops_crew
