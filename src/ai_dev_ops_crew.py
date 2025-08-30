@@ -334,12 +334,12 @@ class AIOpsCrewManager:
 
         # Create the hierarchical crew
         dev_ops_crew = Crew(
-            agents=[orchestrator],  # Include the orchestrator in the agents list
+            agents=[],  # Empty list - DO NOT include the orchestrator in the agents list
             tasks=[orchestrator_task, delegated_task],  # Include both tasks
             process=Process.hierarchical,
             verbose=True,
             manager_agent=orchestrator,
-            # Add delegation config to ensure proper delegation
+            # Configure delegation to the delegated_task
             delegation_config={
                 "DevOps Orchestrator": ["delegated_task"]  # Allow delegation to the delegated_task
             }
