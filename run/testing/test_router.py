@@ -61,7 +61,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
                 rejects = []
 
                 base_url, peer_name , model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
-                console.print("allens test.", style="red")
+                console.print(f"allens test. {base_url}", style="red")
                 console.print(f"base url {base_url} {peer_name} {model_name}   {peer_discovery_instance.get_peers()}.", style="red")
             elif router_type == 'devops':
                 # DevOps router has its own internal handling
