@@ -139,13 +139,11 @@ class AIOpsCrewManager:
                 if hasattr(self.peer_used, "base_url"):
                     self.peer_used = self.peer_used.base_url
 
-
-            # Create a memory instance
-                orchestrator_memory = Memory(
-                    max_tokens=2000,          # Store more context for the orchestrator
-                    importance_weight=1.5     # Weight important memories higher
-                )
-
+            # Create a memory instance - FIXED: Move this outside the if block
+            orchestrator_memory = Memory(
+                max_tokens=2000,          # Store more context for the orchestrator
+                importance_weight=1.5     # Weight important memories higher
+            )
 
             # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
@@ -172,6 +170,7 @@ class AIOpsCrewManager:
         except Exception as e:
             console.print(f"❌ Error creating orchestrator agent: {e}", style="red")
             raise
+
 
     def _get_crew_for_category(self, category: str) -> Optional[Crew]:
         """Get the appropriate crew for the specified category."""
