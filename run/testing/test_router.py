@@ -5,6 +5,7 @@ from rich.console import Console
 from typing import Optional, List
 import warnings
 import json
+import time
 
 # Adjust the Python path to import modules from the parent directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
@@ -21,6 +22,21 @@ console = Console()
 peer_discovery_instance = PeerDiscovery()
 # Start discovery service immediately
 peer_discovery_instance.start_discovery_service()
+
+def force_discovery_refresh():
+    """Force the peer discovery system to refresh"""
+    console.print("🔄 Forcing peer discovery refresh...", style="yellow")
+    # Call this method to trigger a refresh of peers
+    # This makes a direct request to the loaded peers rather than just reading from config
+    peer_discovery_instance.discover_peers()
+    
+    # Print the peers that are loaded from config
+    peers_loaded = peer_discovery_instance.get_peers_from_config()
+    if peers_loaded:
+        console.print(f"   Loaded peers:", style="cyan")
+        console.print(json.dumps(peers_loaded, indent=2), style="cyan")
+    else:
+        console.print("   No peers loaded from config.", style="yellow")
 
 def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Optional[str] = None):
     """
@@ -53,7 +69,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
             if router_type == 'distributed':
                 rejects = []
                 base_url, peer_name, model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
-                console.print(f"base url {base_url} {peer_name} {model_name}   {peer_discovery_instance.get_peers()}.", style="red")
+                console.print(f"base url {base_url} {peer_name} {model_name}", style="green")
             elif router_type == 'devops':
                 # DevOps router has its own internal handling
                 llm_instance = router.get_llm_for_task(prompt)
@@ -121,8 +137,10 @@ def main():
 
     args = parser.parse_args()
 
-    # REMOVED: All waiting and timeout code is removed here
-    # Just directly check peers
+    # Force peer discovery refresh
+    force_discovery_refresh()
+    
+    # Print current peers after refresh
     peers = peer_discovery_instance.get_peers()
     console.print(f"Current peers: {[p.name for p in peers]}", style="cyan")
     
