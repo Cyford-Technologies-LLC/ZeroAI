@@ -3,6 +3,13 @@ from typing import Dict, Any
 from distributed_router import DistributedRouter
 from config import config
 from tools.git_tool import git_tool, file_tool
+from utils.memory import Memory
+
+
+# Create memory instance
+memory = Memory()
+
+
 
 def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     task_description = "Perform Git and file system operations."

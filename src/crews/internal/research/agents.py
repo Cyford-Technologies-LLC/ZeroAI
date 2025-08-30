@@ -5,6 +5,13 @@ from typing import Dict, Any
 from distributed_router import DistributedRouter
 from config import config
 from agents.base_agents import create_researcher, create_analyst
+from utils.memory import Memory
+
+
+# Create memory instance
+memory = Memory()
+
+
 
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     # Pass the specific category to ensure proper learning

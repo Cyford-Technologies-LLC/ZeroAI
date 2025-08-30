@@ -2,6 +2,15 @@
 
 from crewai import Agent
 from typing import Dict, Any
+from utils.memory import Memory
+
+
+# Create memory instance
+memory = Memory()
+
+
+
+
 
 def create_code_researcher(router=None, inputs: Dict[str, Any] = None) -> Agent:
     """Create a Code Researcher agent."""

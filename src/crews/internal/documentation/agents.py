@@ -4,6 +4,21 @@ from typing import Dict, Any
 from distributed_router import DistributedRouter
 from config import config
 from tools.file_tool import file_tool
+from utils.memory import Memory
+
+
+# Create memory instance
+memory = Memory()
+
+
+
+
+
+
+
+
+
+
 
 def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     task_description = "Generate or update documentation based on project changes."
