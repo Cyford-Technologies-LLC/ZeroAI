@@ -2,7 +2,8 @@
 
 from crewai import Agent
 from typing import Dict, Any
-from utils.memory import Memory
+from src.utils.memory import Memory
+
 
 
 # Create memory instance
