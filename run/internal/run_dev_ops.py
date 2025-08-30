@@ -20,6 +20,10 @@ from rich.console import Console
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+# Add the internal crews path to sys.path to ensure we can import from there
+internal_crews_path = project_root / "src" / "crews" / "internal"
+sys.path.insert(0, str(internal_crews_path))
+
 # Configure console for rich output
 console = Console()
 
