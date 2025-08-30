@@ -140,10 +140,8 @@ class AIOpsCrewManager:
                     self.peer_used = self.peer_used.base_url
 
             # Create a memory instance - FIXED: Move this outside the if block
-            orchestrator_memory = Memory(
-                max_tokens=2000,          # Store more context for the orchestrator
-                importance_weight=1.5     # Weight important memories higher
-            )
+        orchestrator_memory = Memory(max_items=2000)  # Using the parameter that actually exists
+
 
             # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
             orchestrator = Agent(
