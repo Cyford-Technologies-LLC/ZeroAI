@@ -217,12 +217,12 @@ class AIOpsCrewManager:
         )
 
         # Create the hierarchical crew
+        # IMPORTANT: Don't include orchestrator in the agents list when it's set as manager_agent
         dev_ops_crew = Crew(
-            agents=[orchestrator],
+            agents=[],  # Empty list or list of other agents, but NOT including orchestrator
             tasks=[orchestrator_task],
             process=Process.hierarchical,
             verbose=True,
-            # Add this line to specify the manager agent:
             manager_agent=orchestrator
         )
 
