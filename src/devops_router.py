@@ -3,6 +3,7 @@
 import logging
 import os
 import warnings
+import time
 from typing import Optional, List, Tuple
 from rich.console import Console
 from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY, \
@@ -24,6 +25,24 @@ class DevOpsDistributedRouter(DistributedRouter):
         super().__init__(peer_discovery_instance)
         self.fallback_model_name = fallback_model_name
         self.local_ollama_base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+        
+        # Ensure peer discovery service is started
+        self.peer_discovery.start_discovery_service()
+        
+        # Wait briefly for initial peer discovery (added for reliability)
+        self._wait_for_peers(max_wait=5)  # Wait up to 5 seconds for initial peers
+
+    def _wait_for_peers(self, max_wait=5):
+        """Wait for peers to be discovered, up to max_wait seconds"""
+        start_time = time.time()
+        while not self.peer_discovery.get_peers() and (time.time() - start_time) < max_wait:
+            console.print(f"Waiting for peers... ({int(time.time() - start_time)}s)", style="yellow")
+            time.sleep(1)
+        
+        if self.peer_discovery.get_peers():
+            console.print(f"Found {len(self.peer_discovery.get_peers())} peers in {int(time.time() - start_time)}s", style="green")
+        else:
+            console.print(f"No peers found after {max_wait}s, will use local fallback if needed", style="yellow")
 
     def _determine_category_from_prompt(self, prompt: str) -> Optional[str]:
         prompt_lower = prompt.lower()
@@ -44,11 +63,15 @@ class DevOpsDistributedRouter(DistributedRouter):
             console.print(
                 f"Attempting distributed routing for category '{category}' with preferences: {preference_list}",
                 style="blue")
+            
+            # Check if we have any peers before attempting to route
+            if not self.peer_discovery.get_peers():
+                console.print("No peers available for routing. Using local fallback model.", style="yellow")
+                return self._get_local_llm(self.fallback_model_name)
 
-            # --- MODIFIED PARENT METHOD CALL ---
+            # --- PARENT METHOD CALL ---
             base_url, peer_name, model_name = None, None, None
             try:
-                # Fix: Pass empty failed_peers list and correctly pass model_preference_list
                 base_url, peer_name, model_name = super().get_optimal_endpoint_and_model(
                     prompt=prompt,
                     failed_peers=[],  # Empty list for failed peers
@@ -58,7 +81,9 @@ class DevOpsDistributedRouter(DistributedRouter):
             except Exception as e:
                 # Log the specific exception from the parent method
                 console.print(f"DEBUG: Call to parent's distributed routing method failed with error: {e}", style="red")
-            # --- END MODIFIED PARENT METHOD CALL ---
+                # Fall back to local model on routing error
+                return self._get_local_llm(self.fallback_model_name)
+            # --- END PARENT METHOD CALL ---
 
             console.print(f"DEBUG: Distributed routing result: base_url={base_url}, model_name={model_name}",
                           style="blue")
@@ -136,7 +161,22 @@ class DevOpsDistributedRouter(DistributedRouter):
 def get_router():
     try:
         peer_discovery_instance = PeerDiscovery()
-        peer_discovery_instance.start_discovery_service()  # Ensure discovery is running
+        # Start peer discovery service explicitly
+        peer_discovery_instance.start_discovery_service()
+        
+        # Add a brief waiting period to allow for initial peer discovery
+        start_time = time.time()
+        timeout = 5  # Wait up to 5 seconds for initial peers
+        console.print(f"Initializing DevOps router, waiting up to {timeout}s for initial peer discovery...", style="blue")
+        
+        while not peer_discovery_instance.get_peers() and (time.time() - start_time) < timeout:
+            time.sleep(0.5)
+        
+        if peer_discovery_instance.get_peers():
+            console.print(f"Found {len(peer_discovery_instance.get_peers())} peers during router initialization", style="green")
+        else:
+            console.print("No peers found during initialization, will use local fallbacks", style="yellow")
+        
         router = DevOpsDistributedRouter(peer_discovery_instance, fallback_model_name="llama3.2:1b")
         logger.info("Secure internal DevOps router successfully instantiated with local fallback.")
         return router
