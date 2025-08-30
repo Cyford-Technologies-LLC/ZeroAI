@@ -213,17 +213,17 @@ class AIOpsCrewManager:
             5. Verify the task was completed successfully
             """,
             agent=orchestrator,
-            # Add this required field:
-            expected_output="A detailed report of the task execution, including the actions taken, sub-crews involved, and the final outcome."
+            expected_output="A detailed report of the task execution, including actions taken, sub-crews involved, and outcomes."
         )
-
 
         # Create the hierarchical crew
         dev_ops_crew = Crew(
             agents=[orchestrator],
             tasks=[orchestrator_task],
             process=Process.hierarchical,
-            verbose=True
+            verbose=True,
+            # Add this line to specify the manager agent:
+            manager_agent=orchestrator
         )
 
         return dev_ops_crew
