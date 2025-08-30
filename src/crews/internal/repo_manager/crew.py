@@ -6,6 +6,8 @@ from distributed_router import DistributedRouter
 from config import config
 from .agents import create_git_operator_agent
 from .tasks import clone_repo_task, commit_and_push_task
+
+
 def get_repo_manager_crew(router, tools, project_config, use_new_memory=False):
     """
     Wrapper function to create the documentation crew using the existing create_documentation_crew function.

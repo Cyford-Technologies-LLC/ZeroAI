@@ -9,7 +9,9 @@ from utils.memory import Memory
 
 
 
-
+def create_writer(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+    # Pass the specific category to ensure proper learning
+    return create_researcher(router, inputs, category="research")
 
 
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
