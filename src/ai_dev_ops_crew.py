@@ -6,10 +6,10 @@ import uuid
 import time
 import logging
 import tempfile
-import subprocess
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from rich.console import Console
+from crewai import Crew, Process, Agent, Task
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +19,8 @@ console = Console()
 class AIOpsCrewManager:
     """
     Manager for the AI DevOps Crew.
-    Handles secure execution of internal development and maintenance tasks.
+    Orchestrates secure execution of internal development and maintenance tasks
+    by delegating to specialized sub-crews.
     """
 
     def __init__(self, router, project_id, inputs):
@@ -50,6 +51,9 @@ class AIOpsCrewManager:
         self.model_used = "unknown"
         self.peer_used = "unknown"
         self.token_usage = {"total_tokens": 0}
+
+        # Initialize the tools
+        self.tools = self._initialize_tools()
 
     def _load_project_config(self) -> Dict[str, Any]:
         """Load the project configuration from YAML file."""
@@ -100,147 +104,167 @@ class AIOpsCrewManager:
             # Return a temporary directory as fallback
             return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
 
-    def clone_repository(self) -> bool:
-        """Clone the repository to the working directory."""
-        if not self.repository:
-            console.print("⚠️ No repository specified, skipping clone", style="yellow")
-            return False
+    def _initialize_tools(self) -> List[Any]:
+        """Initialize and return the tools needed for the crews."""
+        tools = []
 
         try:
-            # Check if git is installed
-            subprocess.run(["git", "--version"], check=True, capture_output=True)
+            # Import the tools
+            from tools.git_tool import GitTool, FileTool
 
-            # Clone the repository
-            console.print(f"🔄 Cloning repository: {self.repository}", style="blue")
+            # Initialize the tools with the working directory
+            git_tool = GitTool(working_dir=str(self.working_dir))
+            file_tool = FileTool(working_dir=str(self.working_dir))
 
-            clone_cmd = ["git", "clone", self.repository, str(self.working_dir)]
-            result = subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
-
-            # Checkout specified branch if provided
-            if self.branch:
-                console.print(f"🔄 Checking out branch: {self.branch}", style="blue")
-                checkout_cmd = ["git", "-C", str(self.working_dir), "checkout", self.branch]
-                subprocess.run(checkout_cmd, check=True, capture_output=True, text=True)
-
-            console.print("✅ Repository cloned successfully", style="green")
-            return True
-        except subprocess.CalledProcessError as e:
-            console.print(f"❌ Git operation failed: {e.stderr}", style="red")
-            return False
+            tools = [git_tool, file_tool]
+            console.print("✅ Initialized tools for crews", style="green")
+        except ImportError as e:
+            console.print(f"⚠️ Could not import tools, crews will run without tools: {e}", style="yellow")
         except Exception as e:
-            console.print(f"❌ Failed to clone repository: {e}", style="red")
-            return False
+            console.print(f"❌ Error initializing tools: {e}", style="red")
 
-    def execute_file_tasks(self) -> Dict[str, Any]:
-        """
-        Execute simple file operations based on the task description.
-        This is a simplified implementation for basic file operations.
-        """
-        # Look for file creation/modification patterns in the prompt
-        prompt_lower = self.prompt.lower()
+        return tools
 
-        # Track results for reporting
-        results = {
-            "success": False,
-            "message": "",
-            "created_files": [],
-            "modified_files": []
-        }
-
+    def _create_orchestrator_agent(self) -> Agent:
+        """Create the DevOps Orchestrator Agent that delegates tasks."""
         try:
-            # Extract file path and content for simple creation tasks
-            if "create" in prompt_lower or "add" in prompt_lower or "make" in prompt_lower:
-                # Simple pattern matching for file creation tasks
+            # Get LLM for the orchestrator role
+            llm = self.router.get_llm_for_role("devops_orchestrator")
 
-                # Find file name in the prompt
-                file_name = None
-
-                # Look for "named X" pattern
-                if "named" in prompt_lower:
-                    parts = prompt_lower.split("named")
-                    if len(parts) > 1:
-                        # Get the word after "named"
-                        name_part = parts[1].strip().split()
-                        if name_part:
-                            file_name = name_part[0]
-
-                # Extract content if mentioned
-                content = "# File created by AI DevOps Crew\n"
-                if "content" in prompt_lower and "with content" in prompt_lower:
-                    parts = self.prompt.split("with content")
-                    if len(parts) > 1:
-                        content = parts[1].strip()
-                elif "with" in prompt_lower and "inside" in prompt_lower:
-                    parts = self.prompt.split("with")
-                    if len(parts) > 1:
-                        inner_parts = parts[1].split("inside")
-                        if len(inner_parts) > 0:
-                            content = inner_parts[0].strip()
-
-                # If file name was found, create the file
-                if file_name:
-                    # Determine where to create the file
-                    # Always use the working directory from project configuration
-                    file_path = self.working_dir / file_name
-
-                    # Create the file
-                    console.print(f"📝 Creating file: {file_path}", style="blue")
-                    with open(file_path, 'w') as f:
-                        f.write(content)
-
-                    results["created_files"].append(str(file_path))
-                    results["success"] = True
-                    results["message"] = f"Created file {file_path} with specified content"
-
-                    console.print(f"✅ File created successfully: {file_path}", style="green")
-                else:
-                    results["message"] = "Could not determine file name from the prompt"
-            else:
-                results["message"] = "No file operations detected in the prompt"
-
-            return results
-        except Exception as e:
-            console.print(f"❌ Error executing file tasks: {e}", style="red")
-            results["success"] = False
-            results["message"] = f"Error executing file tasks: {str(e)}"
-            return results
-
-    def execute(self) -> Dict[str, Any]:
-        """Execute the task specified in the prompt."""
-        try:
-            start_time = time.time()
-
-            # Get appropriate LLM based on the category
-            llm = self.router.get_llm_for_role(self.category)
+            # Track model information
             if llm:
                 self.model_used = llm.model.replace("ollama/", "")
                 self.peer_used = getattr(llm, "_client", None)
                 if hasattr(self.peer_used, "base_url"):
                     self.peer_used = self.peer_used.base_url
 
-                console.print(f"🤖 Using model: {self.model_used}", style="blue")
-                console.print(f"🖥️ Using peer: {self.peer_used}", style="blue")
+            # Create the orchestrator agent
+            orchestrator = Agent(
+                role="DevOps Orchestrator",
+                goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
+                backstory="""You are the lead DevOps engineer responsible for orchestrating
+                AI-driven development tasks. You analyze tasks, break them down into subtasks,
+                and delegate to specialized crews.""",
+                llm=llm,
+                tools=self.tools,
+                verbose=True
+            )
 
-            # For simple file operations, use direct implementation
-            if any(kw in self.prompt.lower() for kw in ["file", "create", "add", "write"]):
-                return self.execute_file_tasks()
+            return orchestrator
+        except Exception as e:
+            console.print(f"❌ Error creating orchestrator agent: {e}", style="red")
+            raise
 
-            # For git operations, clone repository first
-            if "repo" in self.prompt.lower() or "git" in self.prompt.lower():
-                if self.repository:
-                    self.clone_repository()
+    def _get_crew_for_category(self, category: str) -> Optional[Crew]:
+        """Get the appropriate crew for the specified category."""
+        try:
+            if category == "developer":
+                # Import the developer crew
+                from crews.internal.developer.crew import get_developer_crew
+                return get_developer_crew(self.router, self.tools, self.project_config)
 
-            # Add additional task implementations here...
+            elif category == "documentation":
+                # Import the documentation crew
+                from crews.internal.documentation.crew import get_documentation_crew
+                return get_documentation_crew(self.router, self.tools, self.project_config)
 
-            # If we reached here without executing anything specific,
-            # return a generic success message
-            return {
-                "success": True,
-                "message": f"Task '{self.prompt}' processed with category '{self.category}'",
-                "model_used": self.model_used,
-                "peer_used": self.peer_used,
-                "token_usage": self.token_usage
-            }
+            elif category == "repo_manager":
+                # Import the repo manager crew
+                from crews.internal.repo_management.crew import get_repo_management_crew
+                return get_repo_management_crew(self.router, self.tools, self.project_config)
+
+            elif category == "research":
+                # Import the research crew
+                from crews.internal.research.crew import get_research_crew
+                return get_research_crew(self.router, self.tools, self.project_config)
+
+            console.print(f"⚠️ No specific crew found for category '{category}', using fallback delegation", style="yellow")
+            return None
+
+        except ImportError as e:
+            console.print(f"⚠️ Could not import crew for category '{category}': {e}", style="yellow")
+            return None
+        except Exception as e:
+            console.print(f"❌ Error getting crew for category '{category}': {e}", style="red")
+            return None
+
+    def _create_hierarchical_crew(self) -> Crew:
+        """Create the hierarchical crew with the orchestrator and sub-crews."""
+        orchestrator = self._create_orchestrator_agent()
+
+        # Create the task for the orchestrator
+        orchestrator_task = Task(
+            description=f"""
+            Analyze the following task and coordinate with sub-crews to complete it:
+
+            TASK: {self.prompt}
+
+            PROJECT: {self.project_id}
+            CATEGORY: {self.category}
+            REPOSITORY: {self.repository or 'Not specified'}
+            BRANCH: {self.branch}
+
+            Working directory: {self.working_dir}
+
+            1. Analyze what needs to be done
+            2. Identify the appropriate sub-crew(s) for this task
+            3. Coordinate the execution of the task
+            4. Ensure all required files are created in the working directory
+            5. Verify the task was completed successfully
+            """,
+            agent=orchestrator
+        )
+
+        # Create the hierarchical crew
+        dev_ops_crew = Crew(
+            agents=[orchestrator],
+            tasks=[orchestrator_task],
+            process=Process.hierarchical,
+            verbose=True
+        )
+
+        return dev_ops_crew
+
+    def execute(self) -> Dict[str, Any]:
+        """Execute the task specified in the prompt using the appropriate crew."""
+        try:
+            start_time = time.time()
+
+            # Try to get a specific crew for the category first
+            crew = self._get_crew_for_category(self.category)
+
+            # If no specific crew is found, use the hierarchical crew
+            if crew is None:
+                console.print(f"🔄 Creating hierarchical crew with orchestrator for task", style="blue")
+                crew = self._create_hierarchical_crew()
+
+            # Execute the crew
+            console.print(f"🚀 Executing crew for task: {self.prompt}", style="blue")
+            result = crew.kickoff()
+
+            # Process the result
+            if result:
+                # Extract token usage if available
+                if hasattr(result, "token_usage"):
+                    self.token_usage = result.token_usage
+
+                # Return the result with additional metadata
+                return {
+                    "success": True,
+                    "message": "Task completed successfully",
+                    "result": result,
+                    "model_used": self.model_used,
+                    "peer_used": self.peer_used,
+                    "token_usage": self.token_usage,
+                    "execution_time": time.time() - start_time
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Crew execution did not return a result",
+                    "model_used": self.model_used,
+                    "peer_used": self.peer_used
+                }
 
         except Exception as e:
             console.print(f"❌ Error executing task: {e}", style="red")
@@ -276,6 +300,6 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
         }
 
 if __name__ == "__main__":
-    # This module should not be run directly
+    # This module should not be imported, not run directly
     print("This module should be imported, not run directly.")
     sys.exit(1)
