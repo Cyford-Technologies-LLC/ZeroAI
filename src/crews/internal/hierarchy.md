@@ -73,7 +73,8 @@ The next step is to begin implementing the contents of these sub-crews and tools
 │   │           └── crew.py
 │   ├── tools/
 │   │   └── git_tool.py           # Contains GitTool and FileTool
-│   └── your_secure_internal_router_setup.py # Secure router config
+│   ├── your_secure_internal_router_setup.py # Secure router config
+│   └── learning
 ├── run/
 │   └── internal/
 │       └── run_dev_ops.py        # Secure internal trigger script
@@ -197,3 +198,7 @@ python run/internal/run_dev_ops.py --project=zeroai --category=developer "Add er
 
 # Dry run for testing
 python run/internal/run_dev_ops.py --dry-run "Test task that won't make changes"
+
+
+python run/internal/analyze_learning.py --action=summary
+python run/internal/analyze_learning.py --action=models
