@@ -184,7 +184,7 @@ def execute_devops_task(router, args, project_config):
 
         try:
             # Import your actual implementation
-            from ai_dev_ops_crew import run_ai_dev_ops_crew_securely
+            from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 
             # Execute the task
             result = run_ai_dev_ops_crew_securely(
