@@ -14,7 +14,6 @@ from langchain_community.llms.ollama import Ollama
 from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES
 from devops_router import DevOpsDistributedRouter, get_router as get_devops_router
 from config import config
-from peer_discovery import PeerDiscovery
 
 console = Console()
 
@@ -24,25 +23,39 @@ peer_discovery_instance = PeerDiscovery()
 peer_discovery_instance.start_discovery_service()
 
 def force_discovery_refresh():
-    """Force the peer discovery system to refresh"""
+    """
+    Force a refresh of peer discovery by triggering the internal discovery cycle
+    """
     console.print("🔄 Forcing peer discovery refresh...", style="yellow")
-    # Call this method to trigger a refresh of peers
-    # This makes a direct request to the loaded peers rather than just reading from config
-    peer_discovery_instance.discover_peers()
-    
-    # Print the peers that are loaded from config
-    peers_loaded = peer_discovery_instance.get_peers_from_config()
-    if peers_loaded:
-        console.print(f"   Loaded peers:", style="cyan")
-        console.print(json.dumps(peers_loaded, indent=2), style="cyan")
+    # Use the internal method that actually does the discovery
+    if hasattr(peer_discovery_instance, "_discovery_cycle"):
+        peer_discovery_instance._discovery_cycle()
     else:
-        console.print("   No peers loaded from config.", style="yellow")
+        console.print("⚠️ Could not force discovery refresh - method not available", style="yellow")
+    
+    # Show the current peers after forcing refresh
+    peers = peer_discovery_instance.get_peers()
+    if peers:
+        console.print(f"✅ Loaded {len(peers)} peers from configuration.", style="green")
+        peer_info = [{"name": p.name, "ip": p.ip, "port": 8080} for p in peers]
+        console.print(f"Loaded peers:")
+        console.print(json.dumps(peer_info, indent=2))
+    else:
+        console.print("⚠️ No peers available after refresh.", style="yellow")
 
 def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Optional[str] = None):
     """
     Runs a test with the specified router configuration.
     """
     console.print(f"\n--- Running Test for Router: [bold cyan]{router_type}[/bold cyan] ---")
+    
+    # Print the current peers that might be used
+    peers = peer_discovery_instance.get_peers()
+    if peers:
+        console.print("   Available peers:", style="cyan")
+        peer_data = [{"name": p.name, "ip": p.ip, "port": 8080} for p in peers]
+        console.print(json.dumps(peer_data, indent=2), style="cyan")
+    
     console.print(f"Prompt: [yellow]'{prompt}'[/yellow]")
 
     llm_instance = None
@@ -137,12 +150,8 @@ def main():
 
     args = parser.parse_args()
 
-    # Force peer discovery refresh
+    # Force a refresh of peer discovery
     force_discovery_refresh()
-    
-    # Print current peers after refresh
-    peers = peer_discovery_instance.get_peers()
-    console.print(f"Current peers: {[p.name for p in peers]}", style="cyan")
     
     router_type = 'devops'
     if args.distributed:
