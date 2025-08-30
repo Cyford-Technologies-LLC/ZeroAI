@@ -16,6 +16,34 @@ from rich.console import Console
 # Configure console for rich output
 console = Console()
 
+# Define the available agents in the system
+AVAILABLE_AGENTS = {
+    "Team Manager": {
+        "description": "Coordinates tasks and manages teams of specialists",
+        "capabilities": ["task coordination", "requirement analysis", "team management", "task delegation", "progress monitoring"]
+    },
+    "Developer": {
+        "description": "Implements code solutions and fixes bugs",
+        "capabilities": ["coding", "debugging", "code optimization", "technical design", "unit testing"]
+    },
+    "Documentation Specialist": {
+        "description": "Creates and maintains technical documentation",
+        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams", "markdown expertise"]
+    },
+    "Testing Engineer": {
+        "description": "Designs and implements tests for code quality",
+        "capabilities": ["unit testing", "integration testing", "test automation", "QA", "test case design"]
+    },
+    "Security Analyst": {
+        "description": "Analyzes and enhances security measures",
+        "capabilities": ["security audits", "vulnerability assessment", "secure coding practices", "threat modeling"]
+    },
+    "DevOps Engineer": {
+        "description": "Handles deployment and infrastructure automation",
+        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup", "cloud deployment"]
+    }
+}
+
 class ErrorLogger:
     """Logs errors to a file for later review."""
 
@@ -51,6 +79,20 @@ class ErrorLogger:
 
         console.print(f"📝 Error logged to {filepath}", style="yellow")
         return str(filepath)
+
+def format_agent_list() -> str:
+    """Format the list of available agents as a string."""
+    agent_list = "# Available Specialist Teams\n\n"
+
+    for name, details in AVAILABLE_AGENTS.items():
+        agent_list += f"## {name}\n"
+        agent_list += f"- **Description**: {details['description']}\n"
+        agent_list += "- **Capabilities**:\n"
+        for capability in details['capabilities']:
+            agent_list += f"  - {capability}\n"
+        agent_list += "\n"
+
+    return agent_list
 
 def discover_available_crews() -> Dict[str, Dict[str, str]]:
     """
@@ -114,48 +156,6 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
 
     return available_crews
 
-def format_crew_list(crews_info: Dict[str, Dict[str, str]]) -> str:
-    """
-    Format the list of available crews as a string.
-
-    Args:
-        crews_info: Dictionary of crew information
-
-    Returns:
-        A formatted string listing the crews
-    """
-    if not crews_info or (len(crews_info) == 1 and "errors" in crews_info):
-        return "# No available crews were detected\n\nPlease check the implementation of the internal crews."
-
-    crew_list = "# Available Crews\n\n"
-
-    for crew_name, info in crews_info.items():
-        if crew_name == "errors":
-            continue
-
-        crew_list += f"## {crew_name.replace('_', ' ').title()}\n"
-
-        if info.get("status") == "available":
-            crew_list += "**Status**: ✅ Available\n\n"
-            crew_list += "**Agents**:\n"
-            for agent in info.get("agents", []):
-                # Format the agent name from create_xyz_agent to "XYZ Agent"
-                agent_name = agent.replace("create_", "").replace("_", " ").title()
-                crew_list += f"- {agent_name}\n"
-        else:
-            crew_list += f"**Status**: ❌ Not Available\n\n"
-            crew_list += f"**Error**: {info.get('error', 'Unknown error')}\n"
-
-        crew_list += "\n"
-
-    # Add any errors
-    if "errors" in crews_info:
-        crew_list += "## Errors Encountered\n\n"
-        for error in crews_info["errors"]:
-            crew_list += f"- {error}\n"
-
-    return crew_list
-
 def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Agent:
     """
     Create the Team Manager Agent that only delegates tasks (no direct tools).
@@ -174,10 +174,9 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
 
         # Discover available crews
         available_crews = discover_available_crews()
-        crew_list = format_crew_list(available_crews)
+        crew_list = format_crew_list()  # Use the static list for now
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
-        console.print(f"Found {len(available_crews) - (1 if 'errors' in available_crews else 0)} crews", style="blue")
 
         # Create the team manager agent
         team_manager = Agent(
@@ -188,6 +187,13 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
             delegate work to appropriate specialists. I don't perform technical work directly.
 
             {crew_list}
+
+            When tasked with a challenge, I:
+            1. Analyze the requirements
+            2. Identify which specialists would be best suited for each part
+            3. Delegate specific tasks to these specialists
+            4. Monitor their progress
+            5. Integrate their work into a cohesive solution
 
             Working directory: {working_dir}
             """,

@@ -3,12 +3,11 @@
 import logging
 import traceback
 from typing import Dict, Any, List, Optional
-from crewai import Crew, Process
+from crewai import Crew, Process, Task
 from pathlib import Path
 from rich.console import Console
 
-from .agent import create_team_manager_agent, ErrorLogger
-from .tasks import create_docker_task, create_project_task, create_agent_listing_task
+from .agent import create_team_manager_agent, ErrorLogger, format_agent_list
 
 # Configure console for rich output
 console = Console()
@@ -21,11 +20,11 @@ def get_team_manager_crew(
     task_inputs: Dict[str, Any]
 ) -> Crew:
     """
-    Create a crew with the Team Manager as the primary agent.
+    Create a crew with just the Team Manager agent.
 
     Args:
         router: The LLM router instance
-        tools: List of tools available to the agent
+        tools: List of tools (not used by Team Manager)
         project_config: The project configuration
         task_inputs: Dictionary of task inputs
 
@@ -47,46 +46,62 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create the team manager agent
+        # Create the team manager agent (without tools)
         team_manager = create_team_manager_agent(
             router=router,
             project_id=project_id,
-            working_dir=working_dir,
-            tools=tools
+            working_dir=working_dir
         )
 
-        # Determine the appropriate task based on the prompt
-        tasks = []
+        # Create introduction task
+        intro_task = Task(
+            description=f"""
+            You are the Team Manager for project {project_id}.
 
-        # Always start with agent introduction task
-        intro_task = create_agent_listing_task(team_manager)
-        tasks.append(intro_task)
+            First, introduce yourself and your capabilities. Then, list all available specialist teams
+            that you can delegate tasks to.
 
-        # Check if this is a Docker-related task
-        if any(keyword in prompt.lower() for keyword in
-               ["docker", "container", "containerize", "containerization", "dockerfile"]):
-            main_task = create_docker_task(
-                agent=team_manager,
-                project_id=project_id,
-                prompt=prompt,
-                working_dir=working_dir
-            )
-        else:
-            # Create a task based on the category
-            main_task = create_project_task(
-                agent=team_manager,
-                project_id=project_id,
-                prompt=prompt,
-                category=category,
-                working_dir=working_dir
-            )
+            {format_agent_list()}
 
-        tasks.append(main_task)
+            Finally, analyze the following task request and determine which specialist teams
+            would be best suited to handle it:
 
-        # Create the crew
+            TASK: {prompt}
+            CATEGORY: {category}
+
+            Provide a plan for how you would delegate this task to the appropriate specialists.
+            """,
+            agent=team_manager,
+            expected_output="Introduction, available teams listing, and task delegation plan."
+        )
+
+        # Create the main task execution task
+        execution_task = Task(
+            description=f"""
+            TASK: {prompt}
+
+            PROJECT: {project_id}
+            CATEGORY: {category}
+            WORKING DIRECTORY: {working_dir}
+
+            As the Team Manager, delegate and coordinate this task:
+
+            1. Break down the task into appropriate subtasks
+            2. Assign each subtask to the appropriate specialist team
+            3. Coordinate the execution of subtasks
+            4. Integrate the results into a cohesive solution
+            5. Provide a summary of what was accomplished
+
+            {format_agent_list()}
+            """,
+            agent=team_manager,
+            expected_output="Complete execution of the requested task through delegation."
+        )
+
+        # Create the crew with the team manager and tasks
         crew = Crew(
             agents=[team_manager],
-            tasks=tasks,
+            tasks=[intro_task, execution_task],
             process=Process.sequential,
             verbose=True
         )
