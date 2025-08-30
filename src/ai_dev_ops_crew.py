@@ -151,7 +151,7 @@ class AIOpsCrewManager:
 
             # Create a NEW dedicated memory instance for the orchestrator
             # CRITICAL: This is a separate memory instance just for the orchestrator
-            orchestrator_agent_memory = Memory()(max_items=2000)
+            orchestrator_memory = Memory(max_items=2000)
 
             console.print(f"👩‍💼 Creating orchestrator agent with dedicated memory...", style="blue")
 
