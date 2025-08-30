@@ -167,10 +167,6 @@ class AIOpsCrewManager:
                 agent_list += f"  - {capability}\n"
             agent_list += "\n"
 
-        agent_list += "## Important Note About Delegation\n"
-        agent_list += "When delegating tasks, you MUST use 'DevOps Orchestrator' as the coworker name.\n"
-        agent_list += "Include the intended specialist team in the context field, not in the coworker field.\n"
-
         return agent_list
 
     def _create_orchestrator_agent(self) -> Agent:
@@ -196,7 +192,6 @@ class AIOpsCrewManager:
                             self.peer_used = "unknown"
 
             # Create a NEW dedicated memory instance for the orchestrator
-            # CRITICAL: This is a separate memory instance just for the orchestrator
             orchestrator_memory = Memory(max_items=2000)
 
             console.print(f"👩‍💼 Creating orchestrator agent with dedicated memory...", style="blue")
@@ -204,43 +199,36 @@ class AIOpsCrewManager:
             # Format the list of available agents
             agent_list = self._format_agent_list()
 
-            # Create the orchestrator agent WITH EXPLICIT INSTRUCTIONS about available actions
+            # Create the orchestrator agent with explicit instructions about executing tasks directly
             orchestrator = Agent(
                 role="DevOps Orchestrator",
                 name="Commander Nova",
                 memory=orchestrator_memory,
-                goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
-                backstory=f"""You are the lead DevOps engineer responsible for orchestrating
-                AI-driven development tasks. You analyze tasks, break them down into subtasks,
-                and delegate to specialized crews.
+                goal=f"Complete DevOps tasks for project {self.project_id}",
+                backstory=f"""You are the lead DevOps engineer responsible for executing
+                all types of development and operations tasks. You have expertise in multiple areas:
 
                 {agent_list}
 
-                IMPORTANT: You can ONLY delegate tasks to "DevOps Orchestrator" - no other teams
-                are available in the current configuration. You must act as if you're coordinating
-                with specialized teams, but all delegation must be to "DevOps Orchestrator".
+                Instead of endlessly asking questions, you're now empowered to directly solve problems.
 
-                When using the 'Delegate work to coworker' or 'Ask question to coworker' tools:
-                1. ALWAYS set coworker to "DevOps Orchestrator"
-                2. Provide each argument as a SIMPLE STRING, not as JSON
-                3. Be clear and specific in your task descriptions and context
-                4. Include the intended specialized team name in the context field
+                For this Docker task:
+                1. Analyze what Docker configuration is needed
+                2. Create appropriate Dockerfile(s)
+                3. Add docker-compose.yml if needed
+                4. Implement necessary scripts
+                5. Test and verify everything works
 
-                Format your input to tools like this:
-                ```
-                Action: Delegate work to coworker
-                coworker: DevOps Orchestrator
-                task: Set up Docker environment for testing in ZeroAI
-                context: [DevOps Engineer] Project ZeroAI needs containerization
-                ```
+                All files should be created in the working directory: {self.working_dir}
 
-                DO NOT format arguments as JSON or dictionaries.
-                DO NOT try to perform tasks directly. ALWAYS use delegation or questions.
-                When you have a final result, DO NOT try to explain it yourself - delegate the explanation task.""",
+                DO NOT ask questions about "available agents" - you already have all the information.
+                FOCUS on completing the actual task rather than coordination.
+
+                Working on the ZeroAI project means you need to create Docker configs for this AI framework.""",
                 llm=llm,
-                tools=[],
+                tools=self.tools,
                 verbose=True,
-                allow_delegation=True
+                allow_delegation=False  # Disable delegation to force direct execution
             )
 
             return orchestrator
@@ -278,7 +266,7 @@ class AIOpsCrewManager:
                 # Pass a flag to indicate that new memory instances should be created for each agent
                 return get_research_crew(self.router, self.tools, self.project_config, use_new_memory=True)
 
-            console.print(f"⚠️ No specific crew found for category '{category}', using fallback delegation", style="yellow")
+            console.print(f"⚠️ No specific crew found for category '{category}', using direct execution", style="yellow")
             return None
 
         except ImportError as e:
@@ -288,15 +276,13 @@ class AIOpsCrewManager:
             console.print(f"❌ Error getting crew for category '{category}': {e}", style="red")
             return None
 
-    def _create_hierarchical_crew(self) -> Crew:
-        """Create the hierarchical crew with the orchestrator and sub-crews."""
+    def _create_single_agent_crew(self) -> Crew:
+        """Create a crew with a single agent that directly executes the task."""
         orchestrator = self._create_orchestrator_agent()
 
-        # Create the main task for the orchestrator
-        orchestrator_task = Task(
+        # Create a task specifically for Docker setup
+        docker_task = Task(
             description=f"""
-            Analyze the following task and coordinate with sub-crews to complete it:
-
             TASK: {self.prompt}
 
             PROJECT: {self.project_id}
@@ -306,46 +292,36 @@ class AIOpsCrewManager:
 
             Working directory: {self.working_dir}
 
-            1. Start by listing all available agents in the system and their capabilities
-            2. Analyze what needs to be done
-            3. Identify the appropriate sub-crew(s) for this task
-            4. Coordinate the execution of the task
-            5. Ensure all required files are created in the working directory
-            6. Verify the task was completed successfully
+            As a DevOps Engineer, your task is to set up Docker for testing in the ZeroAI project:
+
+            1. Analyze the requirements for containerizing the ZeroAI project
+            2. Create a Dockerfile that builds the appropriate environment
+            3. Create a docker-compose.yml file if multiple services are needed
+            4. Add any necessary scripts for setup, testing, and execution
+            5. Document the Docker setup with clear usage instructions
+            6. Verify all required files are created in the working directory
+
+            Focus on creating the actual files needed for Docker containerization.
             """,
             agent=orchestrator,
-            expected_output="A detailed report of the task execution, including actions taken, sub-crews involved, and outcomes."
+            expected_output="""
+            Complete Docker setup for the ZeroAI project, including:
+            1. Dockerfile
+            2. docker-compose.yml (if needed)
+            3. Any necessary scripts
+            4. Setup and usage instructions
+            """
         )
 
-        # Create a second task that will handle delegated work
-        delegated_task = Task(
-            description=f"""
-            Execute the sub-task delegated by the orchestrator:
-
-            PROJECT: {self.project_id}
-            WORKING DIRECTORY: {self.working_dir}
-
-            Complete the specific task that was delegated to you as if you are the specialist indicated
-            in the context field. Provide a detailed implementation or solution.
-            """,
-            agent=orchestrator,
-            expected_output="Detailed implementation or solution for the delegated sub-task."
+        # Create a simple, direct crew
+        docker_crew = Crew(
+            agents=[orchestrator],
+            tasks=[docker_task],
+            process=Process.sequential,  # Use sequential to just run the task directly
+            verbose=True
         )
 
-        # Create the hierarchical crew
-        dev_ops_crew = Crew(
-            agents=[],  # Empty list - DO NOT include the orchestrator in the agents list
-            tasks=[orchestrator_task, delegated_task],  # Include both tasks
-            process=Process.hierarchical,
-            verbose=True,
-            manager_agent=orchestrator,
-            # Configure delegation to the delegated_task
-            delegation_config={
-                "DevOps Orchestrator": ["delegated_task"]  # Allow delegation to the delegated_task
-            }
-        )
-
-        return dev_ops_crew
+        return docker_crew
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
@@ -355,10 +331,10 @@ class AIOpsCrewManager:
             # Try to get a specific crew for the category first
             crew = self._get_crew_for_category(self.category)
 
-            # If no specific crew is found, use the hierarchical crew
+            # If no specific crew is found, use the direct execution crew
             if crew is None:
-                console.print(f"🔄 Creating hierarchical crew with orchestrator for task", style="blue")
-                crew = self._create_hierarchical_crew()
+                console.print(f"🔄 Creating direct execution crew for Docker task", style="blue")
+                crew = self._create_single_agent_crew()
 
             # Execute the crew
             console.print(f"🚀 Executing crew for task: {self.prompt}", style="blue")
