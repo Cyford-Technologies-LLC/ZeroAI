@@ -126,26 +126,35 @@ class AIOpsCrewManager:
         return tools
 
     def _create_orchestrator_agent(self) -> Agent:
-        """Create the orchestrator agent that will manage the hierarchical crew."""
-        llm = self._get_llm_for_role("DevOps Orchestrator")
+        """Create the DevOps Orchestrator Agent that delegates tasks."""
+        try:
+            # Get LLM for the orchestrator role
+            llm = self.router.get_llm_for_role("devops_orchestrator")
 
-        # Create the orchestrator agent WITHOUT tools
-        orchestrator = Agent(
-            role="DevOps Orchestrator",
-            goal="Coordinate and manage development tasks by delegating to specialized crews",
-            backstory="""You are the lead orchestrator for an AI development team.
-            Your responsibility is to analyze tasks, delegate them to the appropriate specialized crews,
-            and ensure they are completed successfully. You have expertise in software development,
-            documentation, repository management, and research, allowing you to effectively coordinate
-            all aspects of development tasks.""",
-            llm=llm,
-            # Remove the tools parameter completely, or set it to an empty list
-            tools=[],  # Empty list of tools
-            verbose=True,
-            allow_delegation=True,
-        )
+            # Track model information
+            if llm:
+                self.model_used = llm.model.replace("ollama/", "")
+                self.peer_used = getattr(llm, "_client", None)
+                if hasattr(self.peer_used, "base_url"):
+                    self.peer_used = self.peer_used.base_url
 
-        return orchestrator
+            # Create the orchestrator agent WITHOUT tools - this is the key change
+            # The manager agent in a hierarchical process cannot have tools
+            orchestrator = Agent(
+                role="DevOps Orchestrator",
+                goal=f"Analyze the task and delegate to appropriate sub-crews for project {self.project_id}",
+                backstory="""You are the lead DevOps engineer responsible for orchestrating
+                AI-driven development tasks. You analyze tasks, break them down into subtasks,
+                and delegate to specialized crews.""",
+                llm=llm,
+                tools=[],  # Empty list of tools instead of self.tools
+                verbose=True
+            )
+
+            return orchestrator
+        except Exception as e:
+            console.print(f"❌ Error creating orchestrator agent: {e}", style="red")
+            raise
 
     def _get_crew_for_category(self, category: str) -> Optional[Crew]:
         """Get the appropriate crew for the specified category."""
