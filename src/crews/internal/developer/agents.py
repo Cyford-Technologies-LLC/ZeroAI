@@ -68,7 +68,55 @@ def create_code_researcher(router=None, inputs: Dict[str, Any] = None) -> Agent:
         llm=router.route_task("code research", preferred_models=preferred_models) if router else None,
         allow_delegation=False
     )
+def create_junior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent:
+    """Create a Senior Developer agent."""
+    # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
+    preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
 
+    agent_memory = Memory()
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference("developer")
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
+
+    return Agent(
+        role="Junior Developer",
+        name="tom Kyles",
+        memory=agent_memory,  # Add memory here
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
+        communication_style={
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
+        goal="Implement high-quality code solutions",
+        backstory="""You are a software developer with years of experience.
+        You create elegant, maintainable, and robust code solutions to complex problems.""",
+        verbose=True,
+        llm=router.route_task("code development", preferred_models=preferred_models) if router else None,
+        allow_delegation=False
+    )
 def create_senior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent:
     """Create a Senior Developer agent."""
     # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
