@@ -20,6 +20,10 @@ console = Console()
 # Instantiate the PeerDiscovery once and allow time for discovery
 peer_discovery_instance = PeerDiscovery()
 console.print("Waiting for peer discovery to complete...", style="yellow")
+
+
+
+
 sleep(3)  # Wait for the discovery cycle to potentially find the peer
 
 
@@ -37,6 +41,7 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
     router = None
     if router_type == 'distributed':
         router = DistributedRouter(peer_discovery_instance)
+
     elif router_type == 'devops':
         router = get_devops_router()
 
@@ -53,8 +58,8 @@ def run_test(router_type: str, prompt: str, ip: Optional[str] = None, model: Opt
         if router:
             if router_type == 'distributed':
                 rejects = []
-                base_url, _, model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
-                console.print(f"base url {base_url}  {model_name}.", style="red")
+                base_url, peer_name , model_name = router.get_optimal_endpoint_and_model(prompt, rejects)
+                console.print(f"base url {base_url} {peer_name} {model_name}.", style="red")
             elif router_type == 'devops':
                 # DevOps router has its own internal handling
                 llm_instance = router.get_llm_for_task(prompt)
