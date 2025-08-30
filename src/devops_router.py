@@ -44,6 +44,15 @@ class DevOpsDistributedRouter(DistributedRouter):
         else:
             console.print(f"No peers found after {max_wait}s, will use local fallback if needed", style="yellow")
 
+    def _get_local_ollama_models(self) -> List[str]:
+        """Fixed method to correctly handle exceptions when loading local models"""
+        try:
+            with open("pulled_models.json", "r") as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
+            return []
+
     def _determine_category_from_prompt(self, prompt: str) -> Optional[str]:
         prompt_lower = prompt.lower()
         for keyword, category in KEYWORDS_TO_CATEGORY.items():
@@ -68,6 +77,14 @@ class DevOpsDistributedRouter(DistributedRouter):
             if not self.peer_discovery.get_peers():
                 console.print("No peers available for routing. Using local fallback model.", style="yellow")
                 return self._get_local_llm(self.fallback_model_name)
+
+            # Force a peer discovery cycle to ensure we have the latest peers
+            if hasattr(self.peer_discovery, "_discovery_cycle"):
+                try:
+                    self.peer_discovery._discovery_cycle()
+                    console.print("Ran peer discovery cycle to refresh peer list", style="blue")
+                except Exception as e:
+                    console.print(f"Warning: Failed to refresh peers: {e}", style="yellow")
 
             # --- PARENT METHOD CALL ---
             base_url, peer_name, model_name = None, None, None
@@ -160,6 +177,7 @@ class DevOpsDistributedRouter(DistributedRouter):
 
 def get_router():
     try:
+        # Create a new peer discovery instance
         peer_discovery_instance = PeerDiscovery()
         # Start peer discovery service explicitly
         peer_discovery_instance.start_discovery_service()
@@ -169,11 +187,24 @@ def get_router():
         timeout = 5  # Wait up to 5 seconds for initial peers
         console.print(f"Initializing DevOps router, waiting up to {timeout}s for initial peer discovery...", style="blue")
         
+        # Force a discovery cycle to be sure we have the latest peers
+        if hasattr(peer_discovery_instance, "_discovery_cycle"):
+            try:
+                peer_discovery_instance._discovery_cycle()
+                console.print("Forced an immediate peer discovery cycle", style="blue")
+            except Exception as e:
+                console.print(f"Warning: Failed to run discovery cycle: {e}", style="yellow")
+        
+        # Wait a bit more to ensure the discovery cycle completes
         while not peer_discovery_instance.get_peers() and (time.time() - start_time) < timeout:
             time.sleep(0.5)
         
         if peer_discovery_instance.get_peers():
             console.print(f"Found {len(peer_discovery_instance.get_peers())} peers during router initialization", style="green")
+            for peer in peer_discovery_instance.get_peers():
+                console.print(f"  - Peer: {peer.name} ({peer.ip})")
+                if hasattr(peer, 'capabilities') and hasattr(peer.capabilities, 'models'):
+                    console.print(f"    Models: {peer.capabilities.models}")
         else:
             console.print("No peers found during initialization, will use local fallbacks", style="yellow")
         
