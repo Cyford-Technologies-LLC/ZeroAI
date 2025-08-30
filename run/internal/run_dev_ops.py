@@ -16,11 +16,16 @@ import logging
 from pathlib import Path
 from rich.console import Console
 
-# Add the src directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+# Add the parent directory to the Python path to make imports work
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 # Configure console for rich output
 console = Console()
+
+# Add debug information to help diagnose import issues
+console.print(f"Python path: {sys.path}")
+console.print(f"Current directory: {os.getcwd()}")
 
 # Helper function to ensure directory exists (since it's missing from yaml_utils)
 def ensure_dir_exists(directory_path):
@@ -33,13 +38,13 @@ def ensure_dir_exists(directory_path):
 
 # Import required modules
 try:
-    from peer_discovery import PeerDiscovery
-    from devops_router import get_router
-    from utils.yaml_utils import load_yaml_config
+    from src.peer_discovery import PeerDiscovery
+    from src.devops_router import get_router
+    from src.utils.yaml_utils import load_yaml_config
 
     # Try to import learning components
     try:
-        from learning import record_task_result
+        from src.learning import record_task_result
     except ImportError:
         console.print("⚠️ Learning module not found. Task results won't be recorded.", style="yellow")
 
@@ -179,12 +184,20 @@ def execute_devops_task(router, args, project_config):
             return {"success": True, "message": "Dry run completed"}
 
         # Here you would call your actual execution code
-        # This is a placeholder for your AIOpsCrewManager instantiation and execution
         console.print("\n⚙️ [bold blue]Processing task...[/bold blue]")
 
+        # Check if the file exists
+        ai_dev_ops_crew_path = project_root / "src" / "ai_dev_ops_crew.py"
+        if ai_dev_ops_crew_path.exists():
+            console.print(f"✅ Found ai_dev_ops_crew.py at {ai_dev_ops_crew_path}")
+        else:
+            console.print(f"❌ Could not find ai_dev_ops_crew.py at {ai_dev_ops_crew_path}", style="red")
+
         try:
-            # Import your actual implementation
-            from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
+            # Import the manager correctly using the full path
+            console.print("Attempting to import src.ai_dev_ops_crew...")
+            from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely, AIOpsCrewManager
+            console.print("✅ Successfully imported AIOpsCrewManager", style="green")
 
             # Execute the task
             result = run_ai_dev_ops_crew_securely(
@@ -198,8 +211,8 @@ def execute_devops_task(router, args, project_config):
                     "task_id": task_id
                 }
             )
-        except ImportError:
-            console.print("⚠️ Could not import AIOpsCrewManager, using fallback method", style="yellow")
+        except ImportError as e:
+            console.print(f"⚠️ Could not import AIOpsCrewManager: {e}", style="yellow")
 
             # Fallback to a simpler method if the manager is not available
             result = {
