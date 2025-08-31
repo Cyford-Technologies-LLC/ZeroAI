@@ -280,7 +280,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
+def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> dict[str, Any]:
     """
     Securely run the AI DevOps Crew.
     """
