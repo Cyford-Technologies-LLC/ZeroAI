@@ -309,113 +309,159 @@ class AIOpsCrewManager:
         return tools
 
     # The `execute` method is now correctly part of the AIOpsCrewManager class
-
-
-def execute(self) -> Dict[str, Any]:
-    """Execute the task specified in the prompt using the appropriate crew."""
-    try:
-        start_time = time.time()
-        log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
-        custom_logger = CustomLogger(output_file=str(log_output_path))
-
-        # ... (rest of the initial setup and model information extraction) ...
+    def execute(self) -> Dict[str, Any]:
+        """Execute the task specified in the prompt using the appropriate crew."""
         try:
-            llm = self.router.get_llm_for_role("general")
-            if llm:
-                self.model_used = llm.model.replace("ollama/", "")
-                if hasattr(llm, 'base_url'):
-                    self.base_url = llm.base_url
-                    # Extract peer from base_url
-                    if self.base_url:
-                        try:
-                            peer_ip = self.base_url.split('//')[1].split(':')[0]
-                            self.peer_used = peer_ip
-                        except:
-                            self.peer_used = "unknown"
-        except Exception as e:
-            console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
+            start_time = time.time()
+            log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
+            custom_logger = CustomLogger(output_file=str(log_output_path))
 
-        # Check if Team Manager is available
-        if "team_manager" not in self.crews_status or self.crews_status["team_manager"]["status"] != "available":
-            error_msg = "Team Manager crew is not available or has errors."
-            console.print(f"❌ {error_msg}", style="red")
-            if "team_manager" in self.crews_status and "error" in self.crews_status["team_manager"]:
-                error_msg += f" Error: {self.crews_status['team_manager']['error']}"
-            return {
-                "success": False,
-                "error": error_msg,
-                "model_used": self.model_used,
-                "peer_used": self.peer_used,
-                "crews_status": self.crews_status
-            }
+            # ... (rest of the initial setup and model information extraction) ...
+            try:
+                llm = self.router.get_llm_for_role("general")
+                if llm:
+                    self.model_used = llm.model.replace("ollama/", "")
+                    if hasattr(llm, 'base_url'):
+                        self.base_url = llm.base_url
+                        # Extract peer from base_url
+                        if self.base_url:
+                            try:
+                                peer_ip = self.base_url.split('//')[1].split(':')[0]
+                                self.peer_used = peer_ip
+                            except:
+                                self.peer_used = "unknown"
+            except Exception as e:
+                console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
 
-        # Import the Team Manager crew
-        try:
-            console.print("🔄 Importing Team Manager crew...", style="blue")
-            from src.crews.internal.team_manager.crew import get_team_manager_crew
-
-            # Prepare task inputs
-            task_inputs = {
-                "project_id": self.project_id,
-                "prompt": self.prompt,
-                "category": self.category,
-                "repository": self.repository,
-                "branch": self.branch,
-                "task_id": self.task_id,
-                "crews_status": self.crews_status,  # Include crews_status in task_inputs
-            }
-
-            # Create the team manager crew
-            # Create the team manager crew, passing the callback methods
-            crew = get_team_manager_crew(
-                router=self.router,
-                tools=self.tools,
-                project_config=self.project_config,
-                task_inputs=task_inputs,
-                crews_status=self.crews_status,
-                custom_logger=custom_logger
-            )
-
-            # Collect real agent roles from the crew (using .role instead of .name)
-            coworker_names = []
-            if crew and hasattr(crew, 'agents'):
-                coworker_names = [agent.role for agent in crew.agents]
-                console.print(f"DEBUG: Real coworker names (roles) from crew: {coworker_names}", style="blue")
-            else:
-                coworker_names = []
-
-            if crew:
-                # Ensure custom_logger is initialized and callbacks are set
-                # Note: `crew.callbacks` is the standard approach, `crew.step_callback` and `crew.task_callback` might be older syntax
-                crew.callbacks = [custom_logger]
-            # --- ADDED: Explicitly check for None before calling kickoff ---
-            if crew is None:
-                error_msg = "❌ Error: Crew not created because no worker agents were found."
-                console.print(error_msg, style="red")
+            # Check if Team Manager is available
+            if "team_manager" not in self.crews_status or self.crews_status["team_manager"]["status"] != "available":
+                error_msg = "Team Manager crew is not available or has errors."
+                console.print(f"❌ {error_msg}", style="red")
+                if "team_manager" in self.crews_status and "error" in self.crews_status["team_manager"]:
+                    error_msg += f" Error: {self.crews_status['team_manager']['error']}"
                 return {
                     "success": False,
                     "error": error_msg,
                     "model_used": self.model_used,
                     "peer_used": self.peer_used,
-                    "crews_status": self.crews_status,
-
+                    "crews_status": self.crews_status
                 }
 
-            # Execute the crew
-            console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
-            result = crew.kickoff()
+            # Import the Team Manager crew
+            try:
+                console.print("🔄 Importing Team Manager crew...", style="blue")
+                from src.crews.internal.team_manager.crew import get_team_manager_crew
 
-            # Save the log after kickoff
-            custom_logger.save_log()
+                # Prepare task inputs
+                task_inputs = {
+                    "project_id": self.project_id,
+                    "prompt": self.prompt,
+                    "category": self.category,
+                    "repository": self.repository,
+                    "branch": self.branch,
+                    "task_id": self.task_id,
+                    "crews_status": self.crews_status,  # Include crews_status in task_inputs
+                }
 
-            # The original code has two `kickoff` calls and a verbose check that's incomplete.
-            # Assuming you want verbose output if enabled, this is a better structure.
-            if self.project_config.get("crewai_settings", {}).get("verbose", 1):
-                console.print(f"\nFinal Result:\n{result}")
+                # Create the team manager crew
+                # Create the team manager crew, passing the callback methods
+                crew = get_team_manager_crew(
+                    router=self.router,
+                    tools=self.tools,
+                    project_config=self.project_config,
+                    task_inputs=task_inputs,
+                    crews_status=self.crews_status,
+                    custom_logger=custom_logger
+                )
 
-        except ImportError as e:
-            # ... (rest of the ImportError handling) ...
-            console.print(f"❌ Could not import Team Manager crew: {e}", style="red")
+                # Collect real agent roles from the crew (using .role instead of .name)
+                coworker_names = []
+                if crew and hasattr(crew, 'agents'):
+                    coworker_names = [agent.role for agent in crew.agents]
+                    console.print(f"DEBUG: Real coworker names (roles) from crew: {coworker_names}", style="blue")
+                else:
+                    coworker_names = []
+
+                if crew:
+                    # Ensure custom_logger is initialized and callbacks are set
+                    # Note: `crew.callbacks` is the standard approach, `crew.step_callback` and `crew.task_callback` might be older syntax
+                    crew.callbacks = [custom_logger]
+                # --- ADDED: Explicitly check for None before calling kickoff ---
+                if crew is None:
+                    error_msg = "❌ Error: Crew not created because no worker agents were found."
+                    console.print(error_msg, style="red")
+                    return {
+                        "success": False,
+                        "error": error_msg,
+                        "model_used": self.model_used,
+                        "peer_used": self.peer_used,
+                        "crews_status": self.crews_status,
+
+                    }
+
+                # Execute the crew
+                console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
+                result = crew.kickoff()
+
+                # Save the log after kickoff
+                custom_logger.save_log()
+
+                # The original code has two `kickoff` calls and a verbose check that's incomplete.
+                # Assuming you want verbose output if enabled, this is a better structure.
+                if self.project_config.get("crewai_settings", {}).get("verbose", 1):
+                    console.print(f"\nFinal Result:\n{result}")
+
+            except ImportError as e:
+                # ... (rest of the ImportError handling) ...
+                console.print(f"❌ Could not import Team Manager crew: {e}", style="red")
+                console.print("Traceback:", style="red")
+                console.print(traceback.format_exc())
+
+                try:
+                    from src.crews.internal.team_manager.agents import ErrorLogger
+                    error_logger = ErrorLogger()
+                    error_logger.log_error(
+                        f"Failed to import Team Manager crew: {str(e)}",
+                        {
+                            "project_id": self.project_id,
+                            "traceback": traceback.format_exc(),
+                            "sys_path": str(sys.path)
+                        }
+                    )
+                except ImportError:
+                    console.print("⚠️ Could not import ErrorLogger", style="yellow")
+
+                raise
+
+            # Process the result
+            if result:
+                # Extract token usage if available
+                if hasattr(crew, "usage_metrics"):
+                    self.token_usage = crew.usage_metrics
+
+                # Return the result with additional metadata
+                return {
+                    "success": True,
+                    "message": "Task completed successfully",
+                    "result": result,
+                    "model_used": self.model_used,
+                    "peer_used": self.peer_used,
+                    "token_usage": self.token_usage,
+                    "execution_time": time.time() - start_time,
+                    "crews_status": self.crews_status
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Crew execution did not return a result",
+                    "model_used": self.model_used,
+                    "peer_used": self.peer_used,
+                    "crews_status": self.crews_status
+                }
+
+        except Exception as e:
+            # ... (rest of the Exception handling) ...
+            console.print(f"❌ Error executing task: {e}", style="red")
             console.print("Traceback:", style="red")
             console.print(traceback.format_exc())
 
@@ -423,72 +469,24 @@ def execute(self) -> Dict[str, Any]:
                 from src.crews.internal.team_manager.agents import ErrorLogger
                 error_logger = ErrorLogger()
                 error_logger.log_error(
-                    f"Failed to import Team Manager crew: {str(e)}",
+                    f"Error executing task: {str(e)}",
                     {
                         "project_id": self.project_id,
-                        "traceback": traceback.format_exc(),
-                        "sys_path": str(sys.path)
+                        "prompt": self.prompt,
+                        "category": self.category,
+                        "traceback": traceback.format_exc()
                     }
                 )
             except ImportError:
                 console.print("⚠️ Could not import ErrorLogger", style="yellow")
 
-            raise
-
-        # Process the result
-        if result:
-            # Extract token usage if available
-            if hasattr(crew, "usage_metrics"):
-                self.token_usage = crew.usage_metrics
-
-            # Return the result with additional metadata
-            return {
-                "success": True,
-                "message": "Task completed successfully",
-                "result": result,
-                "model_used": self.model_used,
-                "peer_used": self.peer_used,
-                "token_usage": self.token_usage,
-                "execution_time": time.time() - start_time,
-                "crews_status": self.crews_status
-            }
-        else:
             return {
                 "success": False,
-                "error": "Crew execution did not return a result",
+                "error": str(e),
                 "model_used": self.model_used,
                 "peer_used": self.peer_used,
                 "crews_status": self.crews_status
             }
-
-    except Exception as e:
-        # ... (rest of the Exception handling) ...
-        console.print(f"❌ Error executing task: {e}", style="red")
-        console.print("Traceback:", style="red")
-        console.print(traceback.format_exc())
-
-        try:
-            from src.crews.internal.team_manager.agents import ErrorLogger
-            error_logger = ErrorLogger()
-            error_logger.log_error(
-                f"Error executing task: {str(e)}",
-                {
-                    "project_id": self.project_id,
-                    "prompt": self.prompt,
-                    "category": self.category,
-                    "traceback": traceback.format_exc()
-                }
-            )
-        except ImportError:
-            console.print("⚠️ Could not import ErrorLogger", style="yellow")
-
-        return {
-            "success": False,
-            "error": str(e),
-            "model_used": self.model_used,
-            "peer_used": self.peer_used,
-            "crews_status": self.crews_status
-        }
 
 
 def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
