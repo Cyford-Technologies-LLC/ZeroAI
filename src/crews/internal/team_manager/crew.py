@@ -11,6 +11,7 @@ from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
 console = Console()
 error_logger = ErrorLogger()
 
+
 def get_team_manager_crew(
     router,
     tools: List,
@@ -53,23 +54,24 @@ def get_team_manager_crew(
             if crew_name == "team_manager":
                 continue
 
-            console.print(f"DEBUG: Processing crew: {crew_name}", style="dim")
+            console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
                     # Exclude the manager agent creator itself
                     if func_name == "create_team_manager_agent":
                         continue
 
-                    console.print(f"DEBUG: Attempting to instantiate agent via: {func_name} from {crew_name}", style="dim")
+                    console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
                     try:
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
                         worker_agents.append(agent_creator_func(router=router, inputs=task_inputs))
-                        console.print(f"DEBUG: Successfully instantiated agent via: {func_name}", style="green")
+                        console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except (ImportError, AttributeError, Exception) as e:
-                        console.print(f"⚠️ Failed to import agent creator {func_name} from {crew_name}: {e}", style="yellow")
+                        console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
+                        # Log the error and continue to the next agent
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
@@ -86,10 +88,10 @@ def get_team_manager_crew(
 
         # 4. Create the crew with the correct process and manager agent
         return Crew(
-            agents=worker_agents,
-            manager_agent=team_manager,
+            agents=worker_agents,  # Pass ALL worker agents here
+            manager_agent=team_manager,  # Designate the manager
             tasks=[initial_task],
-            process=Process.hierarchical,
+            process=Process.hierarchical,  # **Crucial for delegation**
             verbose=True
         )
 
@@ -98,4 +100,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
