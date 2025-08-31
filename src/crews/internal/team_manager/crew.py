@@ -107,7 +107,7 @@ def get_team_manager_crew(
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
-            verbose=task_inputs.get("verbose", 2),
+            verbose=bool(task_inputs.get("verbose", 1)),
             callbacks=[custom_logger]  # ✅ Pass callbacks during initialization
         )
 
