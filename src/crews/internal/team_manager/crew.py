@@ -45,13 +45,10 @@ def get_team_manager_crew(
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
-                        # Correctly handle agent instantiation, passing `tools` if available
-                        try:
-                            # Try with tools first
-                            agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
-                        except TypeError:
-                            # Fallback without tools if a TypeError occurs
-                            agent = agent_creator_func(router=router, inputs=task_inputs)
+                        # Call the agent creation function with all known arguments
+                        # It's better to pass `tools` unconditionally if possible,
+                        # and rely on the agent's creator function to handle it.
+                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
 
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
@@ -65,7 +62,12 @@ def get_team_manager_crew(
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
-        initial_task = Task(description=f"Analyze and coordinate the following request: {prompt}", agent=team_manager)
+        # FIX: Add the required `expected_output` field
+        initial_task = Task(
+            description=f"Analyze and coordinate the following request: {prompt}",
+            agent=team_manager,
+            expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them."
+        )
 
         return Crew(
             agents=worker_agents,
