@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import logging
 import sys
 import traceback
 import uuid
@@ -60,13 +59,6 @@ class ErrorLogger:
     def log_error(self, error_message: str, context: Dict[str, Any] = None) -> str:
         """
         Log an error to a file for later review.
-
-        Args:
-            error_message: The error message to log
-            context: Additional context information
-
-        Returns:
-            The path to the error log file
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         error_id = str(uuid.uuid4())[:8]
@@ -106,14 +98,10 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
     """
     Scan the project to discover available crews and their agents.
     This provides a dynamic list of what's actually accessible.
-
-    Returns:
-        A dictionary mapping crew names to details
     """
     available_crews = {}
     errors = []
 
-    # Check the internal crews directory
     crews_path = Path("src/crews/internal")
     if not crews_path.exists() or not crews_path.is_dir():
         error_message = f"Internal crews directory not found at {crews_path}"
@@ -121,9 +109,8 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
         console.print(f"⚠️ {error_message}", style="yellow")
         return {"errors": errors}
 
-    # Scan each subdirectory in the internal crews path
     for crew_dir in crews_path.iterdir():
-        if crew_dir.is_dir() and crew_dir.name not in ["__pycache__", "team_manager"]:
+        if crew_dir.is_dir() and crew_dir.name not in ["__pycache__", "team_manager", "diagnostics"]:
             crew_name = crew_dir.name
             crew_info = {"path": str(crew_dir)}
 
@@ -164,55 +151,49 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
 
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
     """
-    Dynamically loads and instantiates all agents from discovered crews.
+    Dynamically loads and instantiates all agents from discovered crews,
+    correctly assigning their coworkers list.
     """
-    all_coworkers = []
     discovered_crews = discover_available_crews()
+    agent_creator_functions = {}
 
+    # Pass 1: Discover all agent creation functions
     for crew_name, crew_info in discovered_crews.items():
         if crew_info.get("status") == "available":
             module_name = f"src.crews.internal.{crew_name}.agents"
             try:
                 agents_module = importlib.import_module(module_name)
                 for agent_creator_name in crew_info["agents"]:
-                    agent_creator_func = getattr(agents_module, agent_creator_name)
-                    new_agent = agent_creator_func(router=router, inputs=inputs, tools=tools)
-                    all_coworkers.append(new_agent)
-                    console.print(f"✅ Loaded agent: [bold green]{new_agent.name}[/bold green] from {crew_name}",
-                                  style="blue")
+                    agent_creator_functions[agent_creator_name] = getattr(agents_module, agent_creator_name)
             except Exception as e:
-                console.print(f"❌ Failed to load agent from {module_name}: {e}", style="red")
-                traceback.print_exc()
+                console.print(f"❌ Failed to get agent creators from {module_name}: {e}", style="red")
+
+    all_coworkers = []
+
+    # Pass 2: Instantiate agents with placeholders for coworkers
+    for creator_func in agent_creator_functions.values():
+        temp_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=[])
+        all_coworkers.append(temp_agent)
+
+    # Pass 3: Update each agent with the complete list of coworkers
+    for agent in all_coworkers:
+        agent.coworkers = [coworker for coworker in all_coworkers if coworker != agent]
+        console.print(f"✅ Configured agent: [bold green]{agent.name}[/bold green] with coworkers", style="blue")
 
     return all_coworkers
 
 
-def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Agent:
+def create_team_manager_agent(router, project_id: str, working_dir: Path, coworkers: Optional[List] = None) -> Agent:
     """
     Create the Team Manager Agent that only delegates tasks (no direct tools).
-
-    Args:
-        router: The LLM router instance
-        project_id: The project identifier
-        working_dir: The working directory for file operations
-
-    Returns:
-        An Agent instance configured as Team Manager
     """
     try:
-        # Get LLM for the team manager role
         llm = router.get_llm_for_role("devops_orchestrator")
-
-        # Discover available crews and format for context
         available_crews = discover_available_crews()
         crew_list = format_agent_list()
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
 
-        # Load all potential coworkers
-        coworkers = load_all_coworkers(router=router, inputs={})
-
-        # Create the team manager agent with improved instructions
         team_manager = Agent(
             role="Team Manager",
             name="Project Coordinator",
@@ -252,4 +233,3 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
             }
         )
         raise e
-
