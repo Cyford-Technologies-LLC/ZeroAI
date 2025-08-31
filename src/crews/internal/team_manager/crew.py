@@ -12,13 +12,14 @@ from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
 
+
 def get_team_manager_crew(
-    router,
-    tools: List,
-    project_config: Dict[str, Any],
-    task_inputs: Dict[str, Any],
-    crews_status: Dict[str, Any],
-    custom_logger
+        router,
+        tools: List,
+        project_config: Dict[str, Any],
+        task_inputs: Dict[str, Any],
+        crews_status: Dict[str, Any],
+        custom_logger
 ) -> Optional[Crew]:
     """
     Creates and returns a hierarchical Crew for a team manager, dynamically
@@ -44,7 +45,7 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Collect all worker agents first
+        # 1. Dynamically instantiate worker agents from other available crews.
         worker_agents = []
         for crew_name, info in crews_status.items():
             if crew_name == "team_manager":
@@ -56,43 +57,45 @@ def get_team_manager_crew(
                     if func_name == "create_team_manager_agent":
                         continue
 
-                    console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
+                    console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'",
+                                  style="dim")
                     try:
-                        module_name = f"src.crews.internal.{crew_name}.agents"  # Fixed typo
+                        module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
                         func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
-                        if 'coworkers' in func_params:
-                            call_kwargs['coworkers'] = worker_agents
-                        if 'coworker_names' in func_params:
-                            coworker_names_list = [agent.name for agent in worker_agents]
-                            call_kwargs['coworker_names'] = coworker_names_list
-                            console.print(f"DEBUG: Real coworker names list: {coworker_names_list}", style="blue")
-
 
                         agent = agent_creator_func(**call_kwargs)
-                        worker_agents.append(agent)
-                        console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
+                        if isinstance(agent, Agent):
+                            worker_agents.append(agent)
+                            console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
+                        else:
+                            console.print(f"⚠️ Agent creation function '{func_name}' returned a non-Agent object.",
+                                          style="yellow")
                     except Exception as e:
-                        console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
+                        console.print(
+                            f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}",
+                            style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
-                        error_logger.log_error(f"Failed to instantiate agent creator {func_name}", {"exception": str(e), "traceback": traceback.format_exc()})
+                        error_logger.log_error(f"Failed to instantiate agent creator {func_name}",
+                                               {"exception": str(e), "traceback": traceback.format_exc()})
 
-        if not worker_agents:
-            console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
-            return None
+        # 2. Filter out any non-Agent objects from the list and create coworker_names_list
+        worker_agents = [agent for agent in worker_agents if isinstance(agent, Agent)]
+        coworker_names_list = [agent.name for agent in worker_agents]
 
-        # 2. Create the team manager agent with coworkers
+        # 3. Create the team manager agent
         team_manager = create_team_manager_agent(
             router=router,
             project_id=project_id,
             working_dir=working_dir,
-            coworkers=worker_agents  # ✅ Pass coworkers now
+            coworkers=worker_agents,
+            coworker_names=coworker_names_list
         )
 
-        # 3. Define the initial task for the manager
+        # 4. Define the initial task for the manager
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,
@@ -101,14 +104,14 @@ def get_team_manager_crew(
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
-        # 4. Return the Crew instance with the correct configuration
+        # 5. Return the Crew instance with the correct configuration
         hierarchical_crew = Crew(
             agents=worker_agents,
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
             verbose=bool(task_inputs.get("verbose", 1)),
-            callbacks=[custom_logger]  # ✅ Pass callbacks during initialization
+            callbacks=[custom_logger]
         )
 
         # Add debug prints to confirm manager can see workers
