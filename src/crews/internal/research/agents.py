@@ -43,10 +43,10 @@ def get_research_llm(router: DistributedRouter, category: str = "research"):
     return llm
 
 
-def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
     llm = get_research_llm(router, category="research")
     return create_researcher(router, inputs, category="research", llm=llm)
 
-def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
     llm = get_research_llm(router, category="research")
     return create_analyst(router, inputs, category="research", llm=llm)
