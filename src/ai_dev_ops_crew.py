@@ -354,7 +354,7 @@ class AIOpsCrewManager:
                     "repository": self.repository,
                     "branch": self.branch,
                     "task_id": self.task_id,
-                    "crews_status": self.crews_status  # Pass crews status to the team manager
+                    "crews_status": self.crews_status , # Pass crews status to the team manager
                 }
 
                 # Create and execute the team manager crew
@@ -362,7 +362,8 @@ class AIOpsCrewManager:
                     router=self.router,
                     tools=self.tools,
                     project_config=self.project_config,
-                    task_inputs=task_inputs
+                    task_inputs=task_inputs,
+                    crews_status=self.crews_status
                 )
 
                 # Execute the crew
