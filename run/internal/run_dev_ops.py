@@ -23,10 +23,6 @@ from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
 from ast import literal_eval
 
-
-# Important: for any crews outside the default, make sure the proper crews are loaded
-os.environ["CREW_TYPE"] = "internal"
-
 # Add the project root to the Python path to make imports work
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -34,11 +30,7 @@ sys.path.insert(0, str(project_root))
 # Configure console for rich output
 console = Console()
 
-# Add debug information to help diagnose import issues
-console.print(f"Python path: {sys.path}")
-console.print(f"Current directory: {os.getcwd()}")
-
-# Helper function to ensure directory exists (since it's missing from yaml_utils)
+# Helper function to ensure directory exists
 def ensure_dir_exists(directory_path):
     """Ensure that a directory exists, creating it if necessary."""
     if isinstance(directory_path, str):
@@ -47,60 +39,7 @@ def ensure_dir_exists(directory_path):
     directory_path.mkdir(parents=True, exist_ok=True)
     return directory_path
 
-# Import required modules with detailed error tracking
-console.print("\n🔍 Starting import process with detailed debugging...")
-
-try:
-    # Try individual imports to isolate where the failure is happening
-    console.print("Importing PeerDiscovery...")
-    from src.peer_discovery import PeerDiscovery
-    console.print("✅ Successfully imported PeerDiscovery")
-
-    console.print("Importing get_router...")
-    from src.devops_router import get_router
-    console.print("✅ Successfully imported get_router")
-
-    console.print("Importing load_yaml_config...")
-    from src.utils.yaml_utils import load_yaml_config
-    console.print("✅ Successfully imported load_yaml_config")
-
-    # Try to import learning components
-    try:
-        console.print("Importing record_task_result...")
-        from src.learning import record_task_result
-        console.print("✅ Successfully imported record_task_result")
-    except ImportError as e:
-        console.print(f"⚠️ Learning module not found: {e}", style="yellow")
-        console.print("Traceback:", style="yellow")
-        console.print(traceback.format_exc())
-
-        # Create a dummy record_task_result function
-        def record_task_result(*args, **kwargs):
-            console.print("ℹ️ Task result recording skipped (learning module not available)", style="yellow")
-            return True
-
-    # Import the ai_dev_ops_crew module now that paths are set
-    console.print("Importing ai_dev_ops_crew...")
-    from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
-    console.print("✅ Successfully imported ai_dev_ops_crew")
-
-except ImportError as e:
-    console.print(f"Failed to import required modules: {e}", style="red")
-    console.print("Make sure you're running from the project root directory.")
-    console.print("Detailed error:", style="red")
-    console.print(traceback.format_exc())
-    sys.exit(1)
-
-# Configure logging
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
-logging.basicConfig(
-    filename=log_dir / "dev_ops.log",
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
+# Setup argument parser
 def setup_arg_parser():
     """Set up and return the argument parser."""
     parser = argparse.ArgumentParser(description="Run the AI DevOps Crew")
@@ -110,22 +49,23 @@ def setup_arg_parser():
 
     # Optional arguments
     parser.add_argument("--project", default="default",
-                       help="Project identifier (e.g., 'zeroai' or 'cyford/zeroai')")
+                        help="Project identifier (e.g., 'zeroai' or 'cyford/zeroai')")
     parser.add_argument("--category", default="general",
-                       help="Task category (developer, documentation, repo_manager, research)")
+                        help="Task category (developer, documentation, repo_manager, research)")
     parser.add_argument("--task-id", default=None,
-                       help="Task ID for tracking (auto-generated if not provided)")
+                        help="Task id for tracking (auto-generated if not provided)")
     parser.add_argument("--repo", default=None,
-                       help="Git repository URL")
+                        help="Git repository URL")
     parser.add_argument("--branch", default=None,
-                       help="Git branch name")
+                        help="Git branch name")
     parser.add_argument("--verbose", "-v", action="store_true",
-                       help="Enable verbose output")
+                        help="Enable verbose output")
     parser.add_argument("--dry-run", action="store_true",
-                       help="Only simulate execution without making changes")
+                        help="Only simulate execution without making changes")
 
     return parser
 
+# Load project configuration
 def load_project_config(project_path: str, project_root: Path) -> dict:
     """
     Load project configuration from YAML file, supporting nested directories.
@@ -164,7 +104,8 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
 
     # Load existing config from the found path
     try:
-        config = load_yaml_config(config_path)
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
         return config
     except Exception as e:
         console.print(f"❌ Error loading project config from {config_path}: {e}", style="red")
@@ -174,9 +115,7 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
             "repository": None
         }
 
-
-# In dev_ops_crew_runner.py
-
+# Execute DevOps task
 def execute_devops_task(router, args, project_config):
     """Execute the DevOps task with the given parameters."""
     log_stream = StringIO()
@@ -190,8 +129,6 @@ def execute_devops_task(router, args, project_config):
         console.print(f"📝 Task ID: [bold cyan]{task_id}[/bold cyan]")
         console.print(f"🔍 Category: [bold green]{args.category}[/bold green]")
         console.print(f"📂 Project: [bold yellow]{args.project}[/bold yellow]")
-
-        # ... (rest of the existing dry-run and setup) ...
 
         # Redirect stdout to capture verbose logs
         if args.verbose:
@@ -224,12 +161,18 @@ def execute_devops_task(router, args, project_config):
             # Get the captured log output
             full_log_output = log_stream.getvalue()
 
-            # Ensure coworker_names is a list
-            raw_coworker_names = "['data_analyst', 'report_writer']"  # Example string from logs
-            coworker_names = literal_eval(raw_coworker_names)  # Convert to list
+            # Collect real coworker names from the crew
+            coworker_names = []
+            if 'crew' in locals() and hasattr(crew, 'agents'):
+                coworker_names = [agent.name for agent in crew.agents]
+                console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
 
             # Create the diagnostic agent and crew
-            diagnostic_agent = create_diagnostic_agent(router=router, inputs={})
+            diagnostic_agent = create_diagnostic_agent(
+                router=router,
+                inputs={},
+                coworker_names=coworker_names  # ✅ Use real names
+            )
             diagnostic_task = Task(
                 description=f"Analyze the following logs to diagnose the reason for a delegation failure:\n\n{full_log_output}",
                 agent=diagnostic_agent,
@@ -247,6 +190,7 @@ def execute_devops_task(router, args, project_config):
             console.print(f"\n🔬 [bold green]Diagnostic Agent Analysis:[/bold green]")
             console.print(diagnostic_result)
             # --- End Diagnostic Crew ---
+
 
         end_time = time.time()
         record_task_result(
