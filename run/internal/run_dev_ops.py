@@ -283,19 +283,21 @@ if __name__ == "__main__":
 
         # Initialize peer discovery and router
         discovery = PeerDiscovery()
-        # FIX: Call get_router without the discovery argument
         router = get_router()
 
         # Execute the task
         result = execute_devops_task(router, args, project_config)
 
         console.print("\n--- Final Result ---")
-        if result.get("success"):
+        # Check if result is not None before trying to call .get()
+        if result and result.get("success"):
             console.print(result.get("message", "Success"), style="green")
             if result.get("result"):
                 console.print(result["result"])
         else:
-            console.print(f"Error: {result.get('error')}", style="red")
+            # Provide a default error message if result is None
+            error_message = result.get('error') if result else 'Unknown Error (Task function returned None)'
+            console.print(f"Error: {error_message}", style="red")
             sys.exit(1)
 
     except Exception as e:
