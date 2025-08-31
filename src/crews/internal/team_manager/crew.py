@@ -16,7 +16,7 @@ error_logger = ErrorLogger()
 def get_team_manager_crew(
     router,
     tools: List,
-    project_config: Dict[str, Any],a
+    project_config: Dict[str, Any],
     task_inputs: Dict[str, Any]
 ) -> Crew:
     """
