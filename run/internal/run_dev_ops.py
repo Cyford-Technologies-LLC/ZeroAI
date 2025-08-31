@@ -27,6 +27,12 @@ from src.devops_router import get_router  # ✅ Import get_router
 from src.peer_discovery import PeerDiscovery  # ✅ Import PeerDiscovery
 logger = logging.getLogger(__name__)  # ✅ Define logger
 
+from src.learning.task_manager import TaskManager
+
+logger = logging.getLogger(__name__)
+task_manager = TaskManager()
+
+
 # Add the project root to the Python path to make imports work
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -118,7 +124,20 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
             "description": "Error loading configuration",
             "repository": None
         }
-
+def record_task_result(task_id: str, result: Dict[str, Any], learning_tokens: int):
+    """
+    Records the result of a DevOps task and updates the task queue.
+    """
+    try:
+        task_manager.update_task_status(
+            task_id=task_id,
+            status="completed" if result.get("success") else "failed",
+            result=result
+        )
+        # Logic to use learning_tokens, e.g., for model feedback
+        logger.info(f"Recorded task result for {task_id} with {learning_tokens} learning tokens.")
+    except Exception as e:
+        logger.error(f"Error recording task result: {e}")
 # Execute DevOps task
 def execute_devops_task(router, args, project_config):
     """Execute the DevOps task with the given parameters."""
