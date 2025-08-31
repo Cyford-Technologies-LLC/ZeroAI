@@ -1,6 +1,3 @@
-
-# src/crews/internal/team_manager/agent.py
-
 import importlib
 import inspect
 import logging
@@ -40,7 +37,7 @@ AVAILABLE_AGENTS = {
         "capabilities": ["security audits", "vulnerability assessment", "secure coding practices", "threat modeling"]
     },
     "Research Specialist": {
-        "description": "Gets  all details relating to the project for the team and users.  answers  all project related questions",
+        "description": "Gets all details relating to the project for the team and users. answers all project related questions",
         "capabilities": ["Project Details", "github details", "working directory details", "unknown details"]
     },
     "DevOps Engineer": {
@@ -175,38 +172,39 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
     """
     try:
         # Get LLM for the team manager role
-        llm = router.get_llm_for_role("devops_orchestrator")  # Reusing existing role for compatibility
+        llm = router.get_llm_for_role("devops_orchestrator")
 
         # Discover available crews
         available_crews = discover_available_crews()
-        crew_list = format_agent_list()  # Fixed: changed format_crew_list to format_agent_list
+        crew_list = format_agent_list()
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
 
-        # Create the team manager agent
+        # Create the team manager agent with improved instructions
         team_manager = Agent(
             role="Team Manager",
             name="Project Coordinator",
-            goal=f"Coordinate specialists to complete tasks for project {project_id}",
-            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks,
-                    delegate work to appropriate specialists, and oversee the project's progress. You do not perform technical work directly.
+            goal=f"Coordinate specialists to complete tasks for project {project_id} by delegating work efficiently, avoiding redundant questions, and making logical decisions based on coworker feedback.",
+            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
+            delegate work to appropriate specialists, and oversee the project's progress. You do not perform technical work directly.
 
-                    You must follow these instructions precisely:
-                    1.  **Analyze Requirements**: Thoroughly understand the request.
-                    2.  **Identify Specialists**: Determine which available specialists are best suited for each sub-task.
-                    3.  **Delegate Effectively**: Use the 'Delegate work to coworker' tool. Provide clear, descriptive strings for the 'task' and 'context'. For example, if you receive a dictionary, extract the string from the 'description' key before using the tool.
-                    4.  **Recover from Failures**: If a tool execution fails with an error, *do not repeat the same failed action*. Carefully read the error message and formulate a new, corrected input. If an input format is rejected, it means you must provide a simpler format.
-                    5.  **Ask for Clarification**: If unsure, use the 'Ask question to coworker' tool.
-                    6.  **Avoid Loops**: Be mindful of repeating yourself and generate unique, well-reasoned actions for each step.
+            You must follow these instructions precisely:
+            1. **Analyze Requirements**: Thoroughly understand the request.
+            2. **Identify Specialists**: Determine which available specialists are best suited for each sub-task.
+            3. **Prioritize Delegation**: Your primary action should be to use the 'Delegate work to coworker' tool.
+            4. **Evaluate Answers**: After asking a question, you MUST evaluate the answer. If the answer provides sufficient information to proceed, delegate the task. Do not ask a chain of repetitive questions. If the answer is vague or unhelpful, formulate a different, more specific question.
+            5. **Delegate Effectively**: When delegating, provide all necessary context as clear, descriptive strings for the 'task' and 'context' parameters. Do not repeat failed actions.
+            6. **Recover from Failures**: If a tool execution fails with an error, *do not repeat the same failed action*. Carefully read the error message and formulate a new, corrected input.
+            7. **Provide Final Answer**: Only provide the final answer when all delegation is complete and the objective has been fully addressed by the specialists.
 
-                    Available Specialists and their Capabilities:
-                    {crew_list}
-
-                    Your working directory is: {working_dir}
-                    """,
+            Available Specialists and their Capabilities:
+            {crew_list}
+            
+            Your working directory is: {working_dir}
+            """,
             llm=llm,
             verbose=True,
-            allow_delegation=True,  # Allow delegation to other agents
+            allow_delegation=True,
         )
 
         return team_manager
@@ -218,8 +216,8 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
             {
                 "project_id": project_id,
                 "working_dir": str(working_dir),
-                "traceback": traceback.format_exc()
+                "traceback": traceback.format_exc(),
+                "sys.path": sys.path
             }
         )
-        console.print(f"❌ Error creating team manager agent: {e}", style="red")
-        raise
+        return None
