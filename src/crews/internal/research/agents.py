@@ -6,7 +6,8 @@ from distributed_router import DistributedRouter
 from config import config
 # from agents.base_agents import create_researcher, create_analyst
 from utils.memory import Memory
-from tdl import console
+from rich.console import Console
+console = Console()
 
 #  this is fake    but easier to save time  as hours  was wasted  trying to figure out why this is needed
 def create_writer(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
