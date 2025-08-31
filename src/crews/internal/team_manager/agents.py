@@ -1,4 +1,4 @@
-# src/crews/internal/team_manager/agents.py (revised)
+# src/crews/internal/team_manager/agents.py
 import importlib
 import inspect
 import sys
@@ -51,7 +51,6 @@ AVAILABLE_AGENTS = {
 
 
 class ErrorLogger:
-    # (Same as before)
     def __init__(self):
         self.error_dir = Path("errors")
         self.error_dir.mkdir(parents=True, exist_ok=True)
@@ -77,9 +76,7 @@ class ErrorLogger:
 
 
 def format_agent_list() -> str:
-    # (Same as before)
     agent_list = "# Available Specialist Teams\n\n"
-
     for name, details in AVAILABLE_AGENTS.items():
         agent_list += f"## {name}\n"
         agent_list += f"- **Description**: {details['description']}\n"
@@ -87,15 +84,12 @@ def format_agent_list() -> str:
         for capability in details['capabilities']:
             agent_list += f"  - {capability}\n"
         agent_list += "\n"
-
     return agent_list
 
 
 def discover_available_crews() -> Dict[str, Dict[str, str]]:
-    # (Same as before)
     available_crews = {}
     errors = []
-
     crews_path = Path("src/crews/internal")
     if not crews_path.exists() or not crews_path.is_dir():
         error_message = f"Internal crews directory not found at {crews_path}"
@@ -107,23 +101,19 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
         if crew_dir.is_dir() and crew_dir.name not in ["__pycache__", "team_manager", "diagnostics"]:
             crew_name = crew_dir.name
             crew_info = {"path": str(crew_dir)}
-
             try:
                 module_name = f"src.crews.internal.{crew_name}.agents"
                 agents_module = importlib.import_module(module_name)
-
                 agent_creators = []
                 for name, obj in inspect.getmembers(agents_module):
                     if inspect.isfunction(obj) and name.startswith("create_"):
                         agent_creators.append(name)
-
                 if agent_creators:
                     crew_info["agents"] = agent_creators
                     crew_info["status"] = "available"
                 else:
                     crew_info["status"] = "no_agents"
                     crew_info["error"] = "No agent creation functions found"
-
             except ImportError as e:
                 crew_info["status"] = "import_failed"
                 crew_info["error"] = str(e)
@@ -134,24 +124,15 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
                 crew_info["error"] = str(e)
                 error_message = f"Error examining {module_name}: {e}"
                 errors.append(error_message)
-
             available_crews[crew_name] = crew_info
-
     if errors:
         available_crews["errors"] = errors
-
     return available_crews
 
 
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
-    """
-    Dynamically loads and instantiates all agents from discovered crews,
-    correctly assigning their coworkers list and rebuilding tools.
-    """
     discovered_crews = discover_available_crews()
     agent_creator_functions = {}
-
-    # Pass 1: Discover all agent creation functions
     for crew_name, crew_info in discovered_crews.items():
         if crew_info.get("status") == "available":
             module_name = f"src.crews.internal.{crew_name}.agents"
@@ -163,24 +144,31 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
                 console.print(f"❌ Failed to get agent creators from {module_name}: {e}", style="red")
 
     temp_coworkers = []
-
-    # Pass 2: Instantiate agents with placeholders for coworkers
     for creator_func in agent_creator_functions.values():
         temp_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=[])
         temp_coworkers.append(temp_agent)
 
     all_coworkers = []
-    # Pass 3: Create final agents with the correct coworkers list
     for creator_func in agent_creator_functions.values():
         new_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=temp_coworkers)
         all_coworkers.append(new_agent)
         console.print(f"✅ Configured agent: [bold green]{new_agent.name}[/bold green] with coworkers", style="blue")
-
     return all_coworkers
 
 
 def create_team_manager_agent(router, project_id: str, working_dir: Path, coworkers: Optional[List] = None) -> Agent:
-    # (Same as before)
+    """
+    Creates and configures the Team Manager Agent.
+
+    Args:
+        router: The DevOps router instance for LLM routing.
+        project_id: The ID of the project being worked on.
+        working_dir: The project's working directory.
+        coworkers: A list of all other agents in the crew for delegation.
+
+    Returns:
+        The configured CrewAI Team Manager Agent.
+    """
     try:
         llm = router.get_llm_for_role("devops_orchestrator")
         available_crews = discover_available_crews()
@@ -196,35 +184,27 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             delegate work to appropriate specialists, and oversee the project's progress. You do not perform technical work directly.
 
             You must follow these instructions precisely:
-            1. **Analyze Requirements**: Thoroughly understand the request.
-            2. **Identify Specialists**: Determine which available specialists are best suited for each sub-task.
-            3. **Prioritize Delegation**: Your primary action should be to use the 'Delegate work to coworker' tool.
-            4. **Evaluate Answers**: After asking a question, you MUST evaluate the answer. If the answer provides sufficient information to proceed, delegate the task. Do not ask a chain of repetitive questions. If the answer is vague or unhelpful, formulate a different, more specific question.
-            5. **Delegate Effectively**: When delegating, include all relevant context from the original prompt and any prior interactions.
-            6. **Integrate Work**: Combine the results from specialists into a cohesive final solution.
+            1. **Analyze the task**: Before delegating, carefully review the user's request and project context.
+            2. **Identify the right specialist**: Examine the list of `Available Specialist Teams` below and their `Capabilities`. Select the agent best suited for the current task.
+            3. **Delegate the task**: Formulate a clear and concise task for the chosen specialist.
+            4. **Avoid redundancy**: Do not ask specialists for information already available in the prompt or their previous outputs.
+            5. **Manage project state**: Use your tool to set project properties as needed.
 
-            Available Coworkers and their capabilities:
+            # Available Specialist Teams
             {crew_list}
-
-            Working directory: {working_dir}
             """,
             llm=llm,
+            tools=[],  # Assuming tools are added elsewhere if needed
             verbose=True,
-            allow_delegation=True,
+            max_iter=15,
             coworkers=coworkers,
+            allow_delegation=True
         )
-
         return team_manager
 
     except Exception as e:
+        console.print(f"❌ Error creating Team Manager agent: {e}", style="red")
         error_logger = ErrorLogger()
-        error_logger.log_error(
-            f"Error creating team manager agent: {str(e)}",
-            {
-                "project_id": project_id,
-                "working_dir": str(working_dir),
-                "traceback": traceback.format_exc(),
-            }
-        )
-        raise e
+        error_logger.log_error(f"Error creating Team Manager agent", {"error": str(e), "traceback": traceback.format_exc()})
+        sys.exit(1)
 

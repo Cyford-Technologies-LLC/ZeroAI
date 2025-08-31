@@ -12,7 +12,8 @@ console = Console()
 
 class LogAnalysisTool(BaseTool):
     name: str = "Log Analysis Tool"
-    description: str = "Analyzes a string of CrewAI verbose logs to find the root cause of delegation failures."
+    description=f"Use the 'Log Analysis Tool' to analyze the provided logs and diagnose the root cause of a delegation failure. Your analysis must be based solely on the output from the tool.\n\nLogs:\n{full_log_output}",
+
 
     def _run(self, log_output: str, coworker_names: List[str]) -> str:
         """
