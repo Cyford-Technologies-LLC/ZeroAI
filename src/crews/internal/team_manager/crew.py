@@ -64,7 +64,13 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
+
+                        # Inspect the function signature to see if it accepts `coworkers`
+                        func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
+                        if 'coworkers' in func_params:
+                            call_kwargs['coworkers'] = []  # Pass an empty list for initial instantiation
+
                         agent = agent_creator_func(**call_kwargs)
                         if isinstance(agent, Agent):
                             worker_agents.append(agent)
@@ -117,10 +123,13 @@ def get_team_manager_crew(
         )
 
         # 6. Optional: Add debug prints to confirm manager can see workers
-        # The agent's tools should include the DelegateWorkTool, which is implicitly
-        # configured to be aware of the other agents within the hierarchical crew.
         manager_tool_names = [tool.name for tool in hierarchical_crew.manager_agent.tools]
         console.print(f"DEBUG: Manager agent tools: {manager_tool_names}", style="dim")
+        for tool in hierarchical_crew.manager_agent.tools:
+            if "Delegate work" in tool.name:
+                console.print(f"DEBUG: Delegate tool description: {tool.description}", style="dim")
+            if "Ask question" in tool.name:
+                console.print(f"DEBUG: Ask tool description: {tool.description}", style="dim")
 
         return hierarchical_crew
 
@@ -130,3 +139,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
