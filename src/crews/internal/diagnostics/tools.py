@@ -1,15 +1,14 @@
 # src/crews/internal/diagnostics/tools.py
-
 from crewai import Agent
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from pathlib import Path
 import re
 
 from rich.console import Console
-from crewai_tools.tools.base_tool import BaseTool
+# --- REVISED IMPORT ---
+from crewai.tools import BaseTool
 
 console = Console()
-
 
 class LogAnalysisTool(BaseTool):
     name: str = "Log Analysis Tool"
