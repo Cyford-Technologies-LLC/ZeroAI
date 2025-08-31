@@ -2,21 +2,18 @@
 
 from crewai import Agent
 from rich.console import Console
+from typing import Dict, Any, List, Optional
 
 from src.crews.internal.diagnostics.tools import LogAnalysisTool
-from src.crews.internal.developer.agents import create_code_researcher_agent, create_senior_developer_agent
 
 console = Console()
 
-def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List] = None, coworker_names: Optional[List[str]] = None) -> Agent:
     """Create a Diagnostic Agent."""
     llm = router.get_llm_for_role("devops_diagnostician")
 
-    # Get the names of the existing coworker agents
-    coworker_names = [
-        create_code_researcher_agent(router, inputs).name,
-        create_senior_developer_agent(router, inputs).name
-    ]
+    if coworker_names is None:
+        coworker_names = []
 
     return Agent(
         role="CrewAI Diagnostic Agent",
