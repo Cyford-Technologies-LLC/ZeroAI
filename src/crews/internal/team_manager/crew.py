@@ -73,7 +73,7 @@ def get_team_manager_crew(
                         if 'coworker_names' in func_params:
                             # Create and pass the list of coworker names
                             coworker_names_list = [agent.name for agent in worker_agents]
-                            console.print(f"DEBUG: Coworker names (directlty freom allen): {coworker_names_list}", style="blue")
+                            console.print(f"DEBUG: Coworker names (directlty freom allen): {coworker_names_list}", style="red")
                             call_kwargs['coworker_names'] = coworker_names_list
 
                         agent = agent_creator_func(**call_kwargs)
