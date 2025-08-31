@@ -1,5 +1,3 @@
-# src/crews/internal/team_manager/crew.py
-
 import importlib
 import logging
 import traceback
@@ -14,7 +12,8 @@ from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
-error_logger = ErrorLogger()
+# The error_logger instance will be passed from the run script
+# error_logger = ErrorLogger() # This line is removed as the instance is passed
 
 def get_team_manager_crew(
     router,
@@ -26,6 +25,8 @@ def get_team_manager_crew(
     try:
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
+        # FIX: Retrieve error_logger from task_inputs
+        error_logger = task_inputs.get("error_logger", ErrorLogger()) # Use a default if not passed
         working_dir_str = project_config.get("crewai_settings", {}).get(
             "working_directory", f"/tmp/internal_crew/{project_id}/")
         working_dir = Path(working_dir_str)
@@ -52,37 +53,13 @@ def get_team_manager_crew(
                         agent_creator_func = getattr(agents_module, func_name)
 
                         # Call the agent creation function
-                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
+                        # FIX: Pass error_logger instance to agent creators
+                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools, error_logger=error_logger)
 
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
-                        console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
-                        console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
-
-        if not worker_agents:
-            console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
-            return None
-
-        console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
-
-        # Initial task for the manager
-        initial_task = Task(
-            description=f"Analyze and coordinate the following request: {prompt}",
-            agent=team_manager,
-            expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them."
-        )
-
-        return Crew(
-            agents=worker_agents,
-            manager_agent=team_manager,
-            tasks=[initial_task],
-            process=Process.hierarchical,
-            verbose=True
-        )
-
-    except Exception as e:
-        error_context = {"traceback": traceback.format_exc()}
-        error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
-        console.print(f"❌ Error creating team manager crew: {e}", style="red")
-        return None
+                        console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}", style="yellow")
+                        console.print(f"Error: {e}", style="yellow")
+                        console.print("Traceback:", style="dim")
+                        console.print(traceback.format_exc(), style="dim")

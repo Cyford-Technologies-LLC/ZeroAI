@@ -8,8 +8,6 @@ It provides a secure command-line interface to trigger internal maintenance task
 
 import sys
 import os
-#  Important  for any crews outside the default,   to mak sure the proper crews are loaded src/__init__.py
-os.environ["CREW_TYPE"] = "internal"
 import argparse
 import json
 import time
@@ -18,59 +16,45 @@ import logging
 import traceback
 from pathlib import Path
 from rich.console import Console
+import yaml
 
-# Add the parent directory to the Python path to make imports work
+# Important: for any crews outside the default, make sure the proper crews are loaded
+os.environ["CREW_TYPE"] = "internal"
+
+# Add the project root and internal crews path to sys.path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
-
-# Add the internal crews path to sys.path to ensure we can import from there
 internal_crews_path = project_root / "src" / "crews" / "internal"
 sys.path.insert(0, str(internal_crews_path))
 
-# Configure console for rich output
 console = Console()
 
-# Add debug information to help diagnose import issues
-console.print(f"Python path: {sys.path}")
-console.print(f"Current directory: {os.getcwd()}")
-
-# Helper function to ensure directory exists (since it's missing from yaml_utils)
+# Helper function to ensure directory exists
 def ensure_dir_exists(directory_path):
     """Ensure that a directory exists, creating it if necessary."""
     if isinstance(directory_path, str):
         directory_path = Path(directory_path)
-
     directory_path.mkdir(parents=True, exist_ok=True)
     return directory_path
 
-# Import required modules with detailed error tracking
-console.print("\n🔍 Starting import process with detailed debugging...")
+# Import required modules with error tracking
+console.print("\n🔍 Starting import process...")
 
 try:
-    # Try individual imports to isolate where the failure is happening
-    console.print("Importing PeerDiscovery...")
     from src.peer_discovery import PeerDiscovery
-    console.print("✅ Successfully imported PeerDiscovery")
-
-    console.print("Importing get_router...")
     from src.devops_router import get_router
-    console.print("✅ Successfully imported get_router")
-
-    console.print("Importing load_yaml_config...")
     from src.utils.yaml_utils import load_yaml_config
-    console.print("✅ Successfully imported load_yaml_config")
+    # FIX: Import ai_dev_ops_crew and ErrorLogger correctly
+    from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
+    from src.crews.internal.team_manager.agents import ErrorLogger
+    console.print("✅ Successfully imported core modules.")
 
-    # Try to import learning components
+    # Try to import learning components, create dummy if not available
     try:
-        console.print("Importing record_task_result...")
         from src.learning import record_task_result
         console.print("✅ Successfully imported record_task_result")
-    except ImportError as e:
-        console.print(f"⚠️ Learning module not found: {e}", style="yellow")
-        console.print("Traceback:", style="yellow")
-        console.print(traceback.format_exc())
-
-        # Create a dummy record_task_result function
+    except ImportError:
+        console.print("⚠️ Learning module not found. Task result recording skipped.", style="yellow")
         def record_task_result(*args, **kwargs):
             console.print("ℹ️ Task result recording skipped (learning module not available)", style="yellow")
             return True
@@ -92,46 +76,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# FIX: Pass ErrorLogger to other functions
+error_logger = ErrorLogger()
+
 def setup_arg_parser():
     """Set up and return the argument parser."""
     parser = argparse.ArgumentParser(description="Run the AI DevOps Crew")
-
-    # Required task prompt argument
     parser.add_argument("prompt", help="The task description or prompt")
-
-    # Optional arguments
-    parser.add_argument("--project", default="default",
-                       help="Project identifier (default: 'default')")
-    parser.add_argument("--category", default="general",
-                       help="Task category (developer, documentation, repo_manager, research)")
-    parser.add_argument("--task-id", default=None,
-                       help="Task ID for tracking (auto-generated if not provided)")
-    parser.add_argument("--repo", default=None,
-                       help="Git repository URL")
-    parser.add_argument("--branch", default=None,
-                       help="Git branch name")
-    parser.add_argument("--verbose", "-v", action="store_true",
-                       help="Enable verbose output")
-    parser.add_argument("--dry-run", action="store_true",
-                       help="Only simulate execution without making changes")
-
+    parser.add_argument("--project", default="default", help="Project identifier")
+    parser.add_argument("--category", default="general", help="Task category")
+    parser.add_argument("--task-id", default=None, help="Task ID for tracking")
+    parser.add_argument("--repo", default=None, help="Git repository URL")
+    parser.add_argument("--branch", default=None, help="Git branch name")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument("--dry-run", action="store_true", help="Only simulate execution")
     return parser
 
-def load_project_config(project_name):
-    """Load project configuration from YAML file."""
-    # Define the project config path
-    config_path = Path(f"knowledge/internal_crew/{project_name}/project_config.yaml")
-
-    # Ensure the directory exists
+def load_project_config(project_path: str, project_root: Path) -> dict:
+    """Load project configuration from YAML file, supporting nested directories."""
+    config_dir_root = project_root / "knowledge" / "internal_crew"
+    config_path = config_dir_root / project_path / "project_config.yaml"
     config_dir = config_path.parent
-    ensure_dir_exists(config_dir)
 
-    # If config doesn't exist, create a default one
     if not config_path.exists():
-        console.print(f"⚠️ No config found for project '{project_name}', creating default", style="yellow")
-
+        console.print(f"⚠️ No config found for project at '{config_path}', creating default", style="yellow")
+        ensure_dir_exists(config_dir)
         default_config = {
-            "project_name": project_name,
+            "project_name": project_path.split('/')[-1],
             "description": "Auto-generated project configuration",
             "repository": None,
             "default_branch": "main",
@@ -139,263 +110,135 @@ def load_project_config(project_name):
             "categories": ["developer", "documentation", "repo_manager", "research"],
             "tools": ["git", "file"]
         }
-
-        # Ensure the directory exists
-        config_dir.mkdir(parents=True, exist_ok=True)
-
-        # Write default config
         with open(config_path, 'w') as f:
-            import yaml
             yaml.dump(default_config, f, default_flow_style=False)
-
         return default_config
 
-    # Load existing config
+    console.print(f"✅ Found project config for '{project_path}' at {config_path}", style="green")
     try:
         config = load_yaml_config(config_path)
         return config
     except Exception as e:
-        console.print(f"❌ Error loading project config: {e}", style="red")
-        # Return a minimal default config
+        console.print(f"❌ Error loading project config from {config_path}: {e}", style="red")
         return {
-            "project_name": project_name,
+            "project_name": project_path.split('/')[-1],
             "description": "Error loading configuration",
             "repository": None
         }
+# Continues from Part 1...
 
 def execute_devops_task(router, args, project_config):
     """Execute the DevOps task with the given parameters."""
-    try:
-        # Start timing the execution
-        start_time = time.time()
+    start_time = time.time()
+    task_id = args.task_id or str(uuid.uuid4())
 
-        # Create a unique task ID if not provided
-        task_id = args.task_id or str(uuid.uuid4())
+    console.print(f"\n🚀 [bold blue]Executing DevOps Task[/bold blue]")
+    console.print(f"📝 Task ID: [bold cyan]{task_id}[/bold cyan]")
+    console.print(f"🔍 Category: [bold green]{args.category}[/bold green]")
+    console.print(f"📂 Project: [bold yellow]{args.project}[/bold yellow]")
 
-        console.print(f"\n🚀 [bold blue]Executing DevOps Task[/bold blue]")
-        console.print(f"📝 Task ID: [bold cyan]{task_id}[/bold cyan]")
-        console.print(f"🔍 Category: [bold green]{args.category}[/bold green]")
-        console.print(f"📂 Project: [bold yellow]{args.project}[/bold yellow]")
+    if args.verbose:
+        console.print(f"📋 Task details:")
+        console.print(f"   Prompt: {args.prompt}")
+        if args.repo:
+            console.print(f"   Repository: {args.repo}")
+        if args.branch:
+            console.print(f"   Branch: {args.branch}")
 
-        if args.verbose:
-            console.print(f"📋 Task details:")
-            console.print(f"   Prompt: {args.prompt}")
-            if args.repo:
-                console.print(f"   Repository: {args.repo}")
-            if args.branch:
-                console.print(f"   Branch: {args.branch}")
-
-        # If this is a dry run, don't execute
-        if args.dry_run:
-            console.print("\n🧪 [bold yellow]DRY RUN - No changes will be made[/bold yellow]")
-            end_time = time.time()
-
-            # Record the dry run in learning system
-            record_task_result(
-                task_id=task_id,
-                prompt=args.prompt,
-                category=args.category,
-                model_used="dry_run",
-                peer_used="local",
-                start_time=start_time,
-                end_time=end_time,
-                success=True,
-                error_message=None,
-                git_changes=None,
-                token_usage=None
-            )
-
-            return {"success": True, "message": "Dry run completed"}
-
-        # Here you would call your actual execution code
-        console.print("\n⚙️ [bold blue]Processing task...[/bold blue]")
-
-        # Check if the file exists
-        ai_dev_ops_crew_path = project_root / "src" / "ai_dev_ops_crew.py"
-        if ai_dev_ops_crew_path.exists():
-            console.print(f"✅ Found ai_dev_ops_crew.py at {ai_dev_ops_crew_path}")
-        else:
-            console.print(f"❌ Could not find ai_dev_ops_crew.py at {ai_dev_ops_crew_path}", style="red")
-
-        try:
-            # Import the manager correctly using the full path with detailed debugging
-            console.print("\n🔍 Attempting to import src.ai_dev_ops_crew with detailed debugging...")
-
-            # Try the actual import with traceback capturing
-            try:
-                import src.ai_dev_ops_crew
-                console.print("✅ Basic import of src.ai_dev_ops_crew succeeded", style="green")
-
-                # Now try importing specific functions
-                console.print("🔍 Attempting to import specific functions from ai_dev_ops_crew...")
-                from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely, AIOpsCrewManager
-                console.print("✅ Successfully imported AIOpsCrewManager", style="green")
-
-            except ImportError as ie:
-                # Print detailed import error information
-                console.print(f"❌ Import error: {ie}", style="red")
-                console.print(f"  Error name: {ie.name if hasattr(ie, 'name') else 'N/A'}")
-                console.print(f"  Error path: {ie.path if hasattr(ie, 'path') else 'N/A'}")
-                console.print(f"  Error args: {ie.args}")
-                console.print("Full traceback:", style="red")
-                console.print(traceback.format_exc())
-
-                # Check for specific import statements in the file
-                if ai_dev_ops_crew_path.exists():
-                    console.print("\n🔍 Examining ai_dev_ops_crew.py for import statements...")
-                    with open(ai_dev_ops_crew_path, 'r') as f:
-                        lines = f.readlines()
-                        for i, line in enumerate(lines):
-                            if 'import' in line:
-                                console.print(f"Line {i+1}: {line.strip()}")
-
-                # Try to see what's in the module
-                console.print("\n🔍 Attempting to inspect module contents...")
-                try:
-                    import importlib.util
-                    spec = importlib.util.find_spec("src.ai_dev_ops_crew")
-                    if spec:
-                        module = importlib.util.module_from_spec(spec)
-                        console.print("✅ Found module spec, attempting to execute module...")
-                        try:
-                            spec.loader.exec_module(module)
-                            console.print("✅ Module executed successfully")
-                            console.print(f"Module contents: {dir(module)}")
-                        except Exception as exec_error:
-                            console.print(f"❌ Error executing module: {exec_error}", style="red")
-                            console.print(traceback.format_exc())
-                except Exception as inspect_error:
-                    console.print(f"❌ Error inspecting module: {inspect_error}", style="red")
-
-                raise
-
-            # Execute the task
-            result = run_ai_dev_ops_crew_securely(
-                router=router,
-                project_id=args.project,
-                inputs={
-                    "prompt": args.prompt,
-                    "category": args.category,
-                    "repository": args.repo or project_config.get("repository"),
-                    "branch": args.branch or project_config.get("default_branch", "main"),
-                    "task_id": task_id
-                }
-            )
-        except ImportError as e:
-            console.print(f"⚠️ Could not import AIOpsCrewManager: {e}", style="yellow")
-
-            # Fallback to a simpler method if the manager is not available
-            result = {
-                "success": True,
-                "message": f"Task '{args.prompt}' processed with category '{args.category}'",
-                "token_usage": {"total_tokens": 0}
-            }
-
-        # End timing
-        end_time = time.time()
-        execution_time = end_time - start_time
-
-        console.print(f"\n✅ [bold green]Task completed in {execution_time:.2f} seconds[/bold green]")
-
-        # Get model and peer information for feedback
-        model_used = getattr(result, "model_used", "unknown") if hasattr(result, "model_used") else "unknown"
-        peer_used = getattr(result, "peer_used", "unknown") if hasattr(result, "peer_used") else "unknown"
-
-        if args.verbose:
-            console.print(f"🤖 Model used: [bold blue]{model_used}[/bold blue]")
-            console.print(f"🖥️ Peer used: [bold blue]{peer_used}[/bold blue]")
-
-        # Extract git changes if available
-        git_changes = None
-        if hasattr(result, "git_changes"):
-            git_changes = result.git_changes
-        elif isinstance(result, dict) and "git_changes" in result:
-            git_changes = result["git_changes"]
-
-        # Extract token usage if available
-        token_usage = None
-        if hasattr(result, "token_usage"):
-            token_usage = result.token_usage
-        elif isinstance(result, dict) and "token_usage" in result:
-            token_usage = result["token_usage"]
-
-        # Record the outcome in the feedback loop
-        record_task_result(
-            task_id=task_id,
-            prompt=args.prompt,
-            category=args.category,
-            model_used=model_used,
-            peer_used=peer_used,
-            start_time=start_time,
-            end_time=end_time,
-            success=True,
-            error_message=None,
-            git_changes=git_changes,
-            token_usage=token_usage
-        )
-
-        return result
-
-    except Exception as e:
-        console.print(f"\n❌ [bold red]Error executing task: {e}[/bold red]")
-        console.print("Detailed error:", style="red")
-        console.print(traceback.format_exc())
-        logger.error(f"Error executing DevOps task: {e}")
-
-        # Record the failure in the feedback loop
+    if args.dry_run:
+        console.print("\n🧪 [bold yellow]DRY RUN - No changes will be made[/bold yellow]")
         end_time = time.time()
         record_task_result(
-            task_id=task_id if 'task_id' in locals() else str(uuid.uuid4()),
-            prompt=args.prompt,
-            category=args.category,
-            model_used="unknown",
-            peer_used="unknown",
-            start_time=start_time if 'start_time' in locals() else time.time() - 1,
-            end_time=end_time,
-            success=False,
-            error_message=str(e),
-            git_changes=None,
-            token_usage=None
+            task_id=task_id, prompt=args.prompt, category=args.category,
+            model_used="dry_run", peer_used="local", start_time=start_time,
+            end_time=end_time, success=True, error_message=None,
+            git_changes=None, token_usage=None
         )
+        return {"success": True, "message": "Dry run completed"}
 
-        return {"success": False, "error": str(e)}
+    console.print("\n⚙️ [bold blue]Processing task...[/bold blue]")
 
-def main():
-    """Main entry point for the script."""
+    ai_dev_ops_crew_path = project_root / "src" / "ai_dev_ops_crew.py"
+    if not ai_dev_ops_crew_path.exists():
+        console.print(f"❌ ai_dev_ops_crew.py not found at {ai_dev_ops_crew_path}", style="red")
+        return {"success": False, "error": f"ai_dev_ops_crew.py not found"}
+    console.print(f"✅ Found ai_dev_ops_crew.py at {ai_dev_ops_crew_path}")
+
+
+    inputs = {
+        "prompt": args.prompt,
+        "category": args.category,
+        "repository": args.repo or project_config.get("repository"),
+        "branch": args.branch or project_config.get("default_branch", "main"),
+        "task_id": task_id,
+        "verbose": args.verbose,
+        # FIX: Pass error_logger instance
+        "error_logger": error_logger
+    }
+
     try:
-        # Parse command-line arguments
-        parser = setup_arg_parser()
-        args = parser.parse_args()
-
-        # Initialize router
-        console.print("🔄 Initializing secure DevOps router...")
-        router = get_router()
-
-        # Load project configuration
-        console.print(f"📂 Loading configuration for project '{args.project}'...")
-        project_config = load_project_config(args.project)
-
-        # Execute the task
-        result = execute_devops_task(router, args, project_config)
-
-        # Handle result
-        if isinstance(result, dict) and not result.get("success", True):
-            console.print("\n--- Final Result ---")
-            console.print(f"Error: {result.get('error', 'Unknown error')}")
-            return 1
-        else:
-            console.print("\n--- Final Result ---")
-            console.print("✅ Task completed successfully!")
-            return 0
-
-    except KeyboardInterrupt:
-        console.print("\n⚠️ Operation cancelled by user.")
-        return 130
+        result = run_ai_dev_ops_crew_securely(router=router, project_id=args.project, inputs=inputs)
     except Exception as e:
-        console.print(f"\n❌ Fatal error: {e}", style="red")
+        console.print(f"❌ Error during crew execution: {e}", style="red")
+        console.print("Traceback:", style="red")
         console.print(traceback.format_exc())
-        logger.critical(f"Fatal error in main function: {e}")
-        return 1
+        result = {"success": False, "error": str(e)}
+
+    end_time = time.time()
+    success = result.get("success", False)
+    error_message = result.get("error") if not success else None
+
+    if success:
+        console.print(f"✅ [bold green]Task completed successfully in {end_time - start_time:.2f} seconds[/bold green]")
+    else:
+        console.print(f"❌ [bold red]Task failed after {end_time - start_time:.2f} seconds[/bold red]")
+        console.print(f"Error: {error_message}", style="red")
+
+    record_task_result(
+        task_id=task_id,
+        prompt=args.prompt,
+        category=args.category,
+        model_used=result.get("model_used", "n/a"),
+        peer_used=result.get("peer_used", "n/a"),
+        start_time=start_time,
+        end_time=end_time,
+        success=success,
+        error_message=error_message,
+        git_changes=None,
+        token_usage=result.get("token_usage")
+    )
+
+    return result
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = setup_arg_parser()
+    args = parser.parse_args()
+
+    try:
+        project_config = load_project_config(args.project, project_root)
+
+        if not args.repo and project_config.get("repository"):
+            args.repo = project_config.get("repository")
+
+        if not args.branch and project_config.get("default_branch"):
+            args.branch = project_config.get("default_branch")
+
+        discovery = PeerDiscovery()
+        router = get_router()
+
+        result = execute_devops_task(router, args, project_config)
+
+        console.print("\n--- Final Result ---")
+        if result.get("success"):
+            console.print(result.get("message", "Success"), style="green")
+            if result.get("result"):
+                console.print(result["result"])
+        else:
+            console.print(f"Error: {result.get('error')}", style="red")
+            sys.exit(1)
+
+    except Exception as e:
+        console.print(f"\n❌ [bold red]Execution failed[/bold red]")
+        console.print(f"Reason: {e}", style="red")
+        logger.error(f"Execution failed: {e}", exc_info=True)
+        sys.exit(1)
