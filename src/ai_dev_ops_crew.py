@@ -315,7 +315,7 @@ class AIOpsCrewManager:
         try:
             start_time = time.time()
             log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
-            logger_callback = CustomLoggerCallback(output_file=str(log_output_path))
+            custom_logger = CustomLogger(output_file=str(log_output_path))
 
             # ... (rest of the initial setup and model information extraction) ...
             try:
@@ -365,12 +365,15 @@ class AIOpsCrewManager:
                 }
 
                 # Create the team manager crew
+                # Create the team manager crew, passing the callback methods
                 crew = get_team_manager_crew(
                     router=self.router,
                     tools=self.tools,
                     project_config=self.project_config,
                     task_inputs=task_inputs,
-                    crews_status=self.crews_status # <--- This line is mandatory
+                    crews_status=self.crews_status,
+                    step_callback=custom_logger.log_step,
+                    task_callback=custom_logger.log_task,
                 )
 
                 # --- ADDED: Explicitly check for None before calling kickoff ---
