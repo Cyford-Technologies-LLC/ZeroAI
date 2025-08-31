@@ -32,10 +32,10 @@ def get_developer_crew(router, tools, project_config, use_new_memory=False):
 
 def create_developer_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     """Creates a developer crew using the distributed router."""
-    researcher = create_code_researcher(router, inputs)
-    senior_developer = create_senior_developer(router, inputs)
-    junior_developer = create_junior_developer(router, inputs)
-    tester = create_qa_engineer(router, inputs)
+    researcher = create_code_researcher_agent(router, inputs)
+    senior_developer = create_senior_developer_agent(router, inputs)
+    junior_developer = create_junior_developer_agent(router, inputs)
+    tester = create_qa_engineer_agent(router, inputs)
 
     analyze_task = analyze_codebase_task(researcher, inputs)
     fix_task = fix_bug_task(coder, inputs, context=[analyze_task])
