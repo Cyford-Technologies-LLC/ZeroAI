@@ -3,7 +3,7 @@ from crewai import Crew, Process
 from typing import Dict, Any, List
 from distributed_router import DistributedRouter
 from config import config
-from .agents import create_researcher_agent, create_coder_agent, create_tester_agent
+from .agents import create_code_researcher_agent, create_coder_agent, create_tester_agent
 from .tasks import analyze_codebase_task, fix_bug_task, write_tests_task, run_tests_task
 
 def get_code_fixer_crew(router, tools, project_config, use_new_memory=False):
@@ -31,7 +31,7 @@ def get_code_fixer_crew(router, tools, project_config, use_new_memory=False):
 
 def create_code_fixer_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     """Creates a developer crew using the distributed router."""
-    researcher = create_researcher_agent(router, inputs)
+    researcher = create_code_researcher_agent(router, inputs)
     coder = create_coder_agent(router, inputs)
     tester = create_tester_agent(router, inputs)
 
