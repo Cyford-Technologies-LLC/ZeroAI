@@ -244,10 +244,9 @@ def execute_devops_task(router, args, project_config):
         end_time = time.time()
         record_task_result(
             task_id=task_id,
-            model_used="multiple", peer_used="internal", start_time=start_time,
-            end_time=end_time, success=result and result.get("success"),
-            error_message=result.get("error") if result else "Unknown failure",
-            git_changes=None, token_usage=None
+            result={"success": result and result.get("success"),
+                    "error_message": result.get("error") if result else "Unknown failure"},
+            learning_tokens=0 # Placeholder value, adjust as needed
         )
 
     except Exception as e:
