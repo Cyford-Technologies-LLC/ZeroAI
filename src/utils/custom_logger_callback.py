@@ -1,8 +1,8 @@
-# src/utils/custom_logger_callback.py
 import json
 from datetime import datetime
 
-from crewai.callback import Callback
+# --- REVISED IMPORT ---
+from crewai.tools import Callback
 from rich.console import Console
 
 console = Console()
