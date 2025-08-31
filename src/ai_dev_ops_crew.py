@@ -342,33 +342,33 @@ class AIOpsCrewManager:
                 }
 
             # Import the Team Manager crew
-             try:
-                 console.print("🔄 Importing Team Manager crew...", style="blue")
-                 from src.crews.internal.team_manager.crew import get_team_manager_crew
+            try:
+                console.print("🔄 Importing Team Manager crew...", style="blue")
+                from src.crews.internal.team_manager.crew import get_team_manager_crew
 
-                 # Prepare task inputs
-                 task_inputs = {
-                     "project_id": self.project_id,
-                     "prompt": self.prompt,
-                     "category": self.category,
-                     "repository": self.repository,
-                     "branch": self.branch,
-                     "task_id": self.task_id,
-                     "crews_status": self.crews_status, # Include crews_status in task_inputs
-                 }
+                # Prepare task inputs
+                task_inputs = {
+                    "project_id": self.project_id,
+                    "prompt": self.prompt,
+                    "category": self.category,
+                    "repository": self.repository,
+                    "branch": self.branch,
+                    "task_id": self.task_id,
+                    "crews_status": self.crews_status, # Include crews_status in task_inputs
+                }
 
-                 # Create and execute the team manager crew
-                 crew = get_team_manager_crew(
-                     router=self.router,
-                     tools=self.tools,
-                     project_config=self.project_config,
-                     task_inputs=task_inputs,
-                     crews_status=self.crews_status # <--- This line is mandatory
-                 )
+                # Create and execute the team manager crew
+                crew = get_team_manager_crew(
+                    router=self.router,
+                    tools=self.tools,
+                    project_config=self.project_config,
+                    task_inputs=task_inputs,
+                    crews_status=self.crews_status # <--- This line is mandatory
+                )
 
-                 # Execute the crew
-                 console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
-                 result = crew.kickoff()
+                # Execute the crew
+                console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
+                result = crew.kickoff()
 
 
             except ImportError as e:
