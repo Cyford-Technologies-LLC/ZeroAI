@@ -299,3 +299,15 @@ if __name__ == "__main__":
         console.print(f"Reason: {e}", style="red")
         logger.error(f"Execution failed: {e}", exc_info=True)
         sys.exit(1)
+# run/internal/run_dev_ops.py
+# ...
+if __name__ == "__main__":
+    parser = setup_arg_parser()
+    args = parser.parse_args()
+
+    try:
+        # ...
+        # Initialize peer discovery and router
+        discovery = PeerDiscovery()
+        router = get_router(discovery) # <-- Remove the verbose argument
+        # ...
