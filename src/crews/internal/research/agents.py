@@ -42,9 +42,6 @@ def get_research_llm(router: DistributedRouter, category: str = "research"):
 
     return llm
 
-def create_writer(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    llm = get_research_llm(router, category="research")
-    return create_researcher(router, inputs, category="research", llm=llm)
 
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
     llm = get_research_llm(router, category="research")
