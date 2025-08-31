@@ -280,7 +280,7 @@ class AIOpsCrewManager:
 
         try:
             # Import the tools
-            from tools.git_tool import GitTool, FileTool
+            from src.crews.internal.tools.git_tool import GitTool, FileTool
 
             # Initialize the tools with the working directory
             git_tool = GitTool(working_dir=str(self.working_dir))
