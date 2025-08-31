@@ -1,6 +1,7 @@
 import importlib
 import logging
 import traceback
+import inspect
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from rich.console import Console
@@ -63,8 +64,14 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
-                        # Pass the shared toolset and the list of other worker agents
-                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools, coworkers=worker_agents)
+
+                        # Dynamically check if the function accepts 'coworkers'
+                        func_params = inspect.signature(agent_creator_func).parameters
+                        call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
+                        if 'coworkers' in func_params:
+                            call_kwargs['coworkers'] = worker_agents
+
+                        agent = agent_creator_func(**call_kwargs)
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
@@ -112,4 +119,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
