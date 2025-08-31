@@ -1,5 +1,3 @@
-# src/crews/internal/team_manager/crew.py
-
 import importlib
 import logging
 import traceback
@@ -8,7 +6,9 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
+# Correct import for ErrorLogger from the same directory's agents file
 from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
+# The DelegateWorkTool is used by the manager in the hierarchical process
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
