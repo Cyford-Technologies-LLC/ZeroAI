@@ -30,7 +30,8 @@ def get_research_llm(router: DistributedRouter, category: str = "research", pref
     llm = None
     try:
         task_description = f"Perform {category} tasks."
-        llm = router.get_llm_for_task(task_description, preferred_models)
+        # --- FIX: Removed the preferred_models argument ---
+        llm = router.get_llm_for_task(task_description)
     except Exception as e:
         console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
         llm = router.get_local_llm("llama3.2:1b")
@@ -53,7 +54,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
         goal="Gather information on internal project details.",
         backstory="An expert at internal research, finding and documenting all project-specific information.",
         llm=llm,
-        tools=tools, # <-- Add tools parameter here
+        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=False,
     )
@@ -67,8 +68,7 @@ def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, A
         goal="Analyze research results and provide insights.",
         backstory="A detail-oriented analyst who synthesizes information from internal research to provide insights.",
         llm=llm,
-        tools=tools, # <-- Add tools parameter here
+        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=False,
     )
-
