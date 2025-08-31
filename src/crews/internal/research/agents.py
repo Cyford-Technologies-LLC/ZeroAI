@@ -56,6 +56,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,
+        coworkers=coworkers if coworkers is not None else [],
         allow_delegation=False,
     )
 
@@ -69,6 +70,7 @@ def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, A
         backstory="A detail-oriented analyst who synthesizes information from internal research to provide insights.",
         llm=llm,
         tools=tools,
+        coworkers=coworkers if coworkers is not None else [],
         verbose=config.agents.verbose,
         allow_delegation=False,
     )
