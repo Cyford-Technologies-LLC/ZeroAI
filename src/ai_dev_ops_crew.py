@@ -374,6 +374,7 @@ class AIOpsCrewManager:
                 )
 
                 if crew:
+                    custom_logger = CustomLogger(...)  # Ensure custom_logger is initialized
                     crew.step_callback = custom_logger.log_step
                     crew.task_callback = custom_logger.log_task
                 # --- ADDED: Explicitly check for None before calling kickoff ---
