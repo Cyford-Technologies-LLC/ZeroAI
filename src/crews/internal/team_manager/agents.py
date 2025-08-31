@@ -10,7 +10,6 @@ from typing import Dict, Any, List, Optional
 # from langchain_community.llms import Ollama
 
 
-from src.crews.internal.team_manager.tools import InternalPeerCheckTool
 from crewai import Agent
 from rich.console import Console
 
