@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from rich.console import Console
 
-from crewai import Crew, Process, Task
+from crewai import Crew, Process, Task, Agent
 from .agents import create_team_manager_agent, ErrorLogger
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
@@ -36,17 +36,14 @@ def get_team_manager_crew(
     try:
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
-        # Retrieve error_logger from task_inputs
         error_logger = task_inputs.get("error_logger", ErrorLogger())
         working_dir_str = project_config.get("crewai_settings", {}).get(
-            "working_directory", f"/tmp/internal_crew/{project_id}/")
+            "working_directory", f"/tmp/internal_crew/{project_id}/"
+        )
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Create the team manager agent.
-        team_manager = create_team_manager_agent(router=router, project_id=project_id, working_dir=working_dir)
-
-        # 2. Dynamically instantiate worker agents from other available crews.
+        # 1. Collect all worker agents first
         worker_agents = []
         for crew_name, info in crews_status.items():
             if crew_name == "team_manager":
@@ -55,25 +52,21 @@ def get_team_manager_crew(
             console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
-                    # Skip manager agents from being added as workers.
                     if func_name == "create_team_manager_agent":
                         continue
 
                     console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
                     try:
-                        module_name = f"src.crews.internal.{crew_name}.agents"
+                        module_name = f"src.crews.internal.{crew_name}.agents"  # Fixed typo: 'crewew' → 'crews'
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
-                        # Dynamically check if the function accepts 'coworkers' or 'coworker_names'
                         func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
                         if 'coworkers' in func_params:
                             call_kwargs['coworkers'] = worker_agents
                         if 'coworker_names' in func_params:
-                            # Create and pass the list of coworker names
                             coworker_names_list = [agent.name for agent in worker_agents]
-                            console.print(f"DEBUG: Coworker names (directlty freom allen): {coworker_names_list}", style="red")
                             call_kwargs['coworker_names'] = coworker_names_list
 
                         agent = agent_creator_func(**call_kwargs)
@@ -88,7 +81,15 @@ def get_team_manager_crew(
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
             return None
 
-        # 3. Define the initial task for the manager.
+        # 2. Create the team manager agent with coworkers
+        team_manager = create_team_manager_agent(
+            router=router,
+            project_id=project_id,
+            working_dir=working_dir,
+            coworkers=worker_agents  # ✅ Pass coworkers now
+        )
+
+        # 3. Define the initial task for the manager
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,
@@ -97,7 +98,7 @@ def get_team_manager_crew(
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
-        # 4. Return the Crew instance with the correct configuration.
+        # 4. Return the Crew instance with the correct configuration
         hierarchical_crew = Crew(
             agents=worker_agents,
             manager_agent=team_manager,

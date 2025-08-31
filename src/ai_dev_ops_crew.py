@@ -390,12 +390,12 @@ class AIOpsCrewManager:
                     }
 
                 # Pass the callback handler to the Crew object
-                crew.callbacks = [logger_callback]
+                crew.callbacks = [custom_logger]
 
                 result = crew.kickoff(inputs={'prompt': self.prompt})
 
                 # Save the log before returning
-                logger_callback.save_log()
+                custom_logger.save_log()
 
                 if verbose:
                     console.print(f"\nFinal Result:\n{result}")
