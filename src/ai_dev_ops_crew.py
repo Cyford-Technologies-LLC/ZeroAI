@@ -12,6 +12,9 @@ from typing import Dict, Any, Optional, List
 from rich.console import Console
 from rich.table import Table
 from src.crews.internal.team_manager.crew import get_team_manager_crew
+from src.utils.custom_logger_callback import CustomLoggerCallback
+
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -311,6 +314,8 @@ class AIOpsCrewManager:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
             start_time = time.time()
+            log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
+            logger_callback = CustomLoggerCallback(output_file=str(log_output_path))
 
             # ... (rest of the initial setup and model information extraction) ...
             try:
@@ -379,6 +384,18 @@ class AIOpsCrewManager:
                         "peer_used": self.peer_used,
                         "crews_status": self.crews_status
                     }
+
+                # Pass the callback handler to the Crew object
+                crew.callbacks = [logger_callback]
+
+                result = crew.kickoff(inputs={'prompt': self.prompt})
+
+                # Save the log before returning
+                logger_callback.save_log()
+
+                if verbose:
+                    console.print(f"\nFinal Result:\n{result}")
+
 
                 # Execute the crew
                 console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
