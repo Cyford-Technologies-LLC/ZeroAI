@@ -22,6 +22,8 @@ from crewai import Agent, Crew, Task
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
 from ast import literal_eval
+from src.devops_router import PeerDiscovery  # ✅ Import PeerDiscovery
+logger = logging.getLogger(__name__)  # ✅ Define logger
 
 # Add the project root to the Python path to make imports work
 project_root = Path(__file__).parent.parent.parent
