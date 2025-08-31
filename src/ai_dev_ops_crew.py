@@ -49,7 +49,7 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
     table.add_column("Details", style="white")
     table.add_column("Files", style="dim")
 
-    crew_dirs = [d for d in internal_crews_dir.iterdir() if d.is_dir() and not d.name.startswith("__")]
+    crew_dirs = [d for d in internal_crews_dir.iterdir() if d.is_dir() and not d.name.startswith("__") and d.name != "tools"]
 
     console.print(f"🔍 [bold blue]Checking internal crews availability[/bold blue]")
     console.print(f"Found {len(crew_dirs)} potential internal crews", style="blue")
