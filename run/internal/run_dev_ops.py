@@ -222,7 +222,7 @@ def execute_devops_task(router, args, project_config):
 
         end_time = time.time()
         record_task_result(
-            task_id=task_id, category=args.category,
+            task_id=task_id,
             model_used="multiple", peer_used="internal", start_time=start_time,
             end_time=end_time, success=result and result.get("success"),
             error_message=result.get("error") if result else "Unknown failure",

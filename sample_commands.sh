@@ -65,3 +65,36 @@ clear ; python3 run/examples/advanced_analysis.py
 $body = @{ inputs = @{ topic = "what is your name"; context = "general"; focus = "standard" } } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri "http://localhost:3939/run_crew_ai/" -ContentType "application/json" -Body $body
 
+
+
+
+
+#  private internal commands
+
+# Basic usage
+python run/internal/run_dev_ops.py "Fix a simple bug in the login form validation"
+
+# With category
+python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
+
+# With project and repository
+python run/internal/run_dev_ops.py --project=zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "Add error handling to the peer discovery system"
+
+# Dry run for testing
+python run/internal/run_dev_ops.py --dry-run "Test task that won't make changes"
+
+# Verbose output
+python run/internal/run_dev_ops.py -v "Task with detailed logging"
+
+# Simple task
+python run/internal/run_dev_ops.py "Fix a simple bug in the login form validation"
+
+# With category and project
+python run/internal/run_dev_ops.py --project=zeroai --category=developer "Add error handling to the peer discovery system"
+
+# Dry run for testing
+python run/internal/run_dev_ops.py --dry-run "Test task that won't make changes"
+
+
+python run/internal/analyze_learning.py --action=summary
+python run/internal/analyze_learning.py --action=models
