@@ -63,8 +63,8 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
-                        # Pass the shared toolset to the worker agents.
-                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
+                        # Pass the shared toolset and the list of other worker agents
+                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools, coworkers=worker_agents)
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
@@ -112,3 +112,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
