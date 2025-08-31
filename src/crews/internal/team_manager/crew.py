@@ -49,27 +49,29 @@ def get_team_manager_crew(
         # 2. Instantiate all necessary worker agents dynamically
         worker_agents = []
         for crew_name, info in crews_status.items():
-            # Skip the team_manager entry itself
             if crew_name == "team_manager":
                 continue
 
-            console.print(f"DEBUG: Processing crew: {crew_name}", style="dim")
+            console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
             if info.get("status") == "available" and "agents" in info:
+                console.print(f"DEBUG: Found available crew '{crew_name}' with agents: {info['agents']}", style="dim")
                 for func_name in info["agents"]:
-                    # Exclude the manager agent creator itself
                     if func_name == "create_team_manager_agent":
                         continue
 
-                    console.print(f"DEBUG: Attempting to instantiate agent via: {func_name} from {crew_name}", style="dim")
+                    console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
                     try:
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
                         worker_agents.append(agent_creator_func(router=router, inputs=task_inputs))
-                        console.print(f"DEBUG: Successfully instantiated agent via: {func_name}", style="green")
+                        console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except (ImportError, AttributeError, Exception) as e:
-                        console.print(f"⚠️ Failed to import agent creator {func_name} from {crew_name}: {e}", style="yellow")
+                        console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
+
+        # After the loop
+        console.print(f"DEBUG: Final number of worker agents found: {len(worker_agents)}", style="blue")
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
