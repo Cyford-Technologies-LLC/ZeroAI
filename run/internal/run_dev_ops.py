@@ -194,16 +194,17 @@ def execute_devops_task(router, args, project_config):
         if args.verbose:
             sys.stdout = log_stream
 
-        # Execute the main AI DevOps crew
         result = run_ai_dev_ops_crew_securely(
-            prompt=args.prompt,
+            router=router,
             project_id=args.project,
-            category=args.category,
-            repository=args.repo or project_config.get("repository"),
-            branch=args.branch or project_config.get("default_branch"),
-            verbose=args.verbose,
-            dry_run=args.dry_run,
-            router=router
+            inputs={
+                "prompt": args.prompt,
+                "category": args.category,
+                "repository": args.repo or project_config.get("repository"),
+                "branch": args.branch or project_config.get("default_branch"),
+                "verbose": args.verbose,
+                "dry_run": args.dry_run
+            }
         )
 
         # Restore stdout
