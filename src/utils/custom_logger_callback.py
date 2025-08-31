@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 # --- REVISED IMPORT ---
-from crewai.callbacks import Callback
+from crewai.tools.callbacks import Callback
 from rich.console import Console
 
 console = Console()
