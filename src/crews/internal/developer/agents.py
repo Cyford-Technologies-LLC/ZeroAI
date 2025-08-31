@@ -1,206 +1,218 @@
 # src/crews/internal/developer/agents.py
 
 from crewai import Agent
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from src.utils.memory import Memory
 from src.crews.internal.tools.git_tool import GitTool, FileTool
-from distributed_router import DistributedRouter # Assuming this is available
-from config import config # Assuming this is available
-from rich.console import Console # Assuming rich is available
 
-console = Console()
 
-def get_developer_llm(router: DistributedRouter, category: str = "coding") -> Any:
-    """
-    Selects the optimal LLM based on preferences for developer tasks,
-    with a fallback mechanism.
-    """
+
+
+
+
+
+
+def create_code_researcher(router=None, inputs: Dict[str, Any] = None) -> Agent:
+    """Create a Code Researcher agent."""
+    # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
     preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
 
+    agent_memory = Memory()
+    # Check if we have learning-based model preference
     try:
         from learning.feedback_loop import feedback_loop
-        category_model = feedback_loop.get_model_preference(category)
-        if category_model and category_model not in preferred_models:
-            preferred_models.insert(0, category_model)
+        category_model = feedback_loop.get_model_preference("developer")
+        if category_model:
+            # Add the learning-preferred model to the top of the list
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
     except ImportError:
-        pass
-
-    llm = None
-    try:
-        task_description = f"Perform {category} tasks."
-        llm = router.get_llm_for_task(task_description) # Pass only the task_description
-    except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
-        llm = router.get_local_llm("llama3.2:1b")
-
-    if not llm:
-        raise ValueError(f"Failed to get LLM for {category} agent after all attempts.")
-
-    console.print(
-        f"🔗 {category.capitalize()} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
-        style="blue")
-    return llm
-
-def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
-    """Create a Code Researcher agent."""
-    llm = get_developer_llm(router, category="coding")
-    agent_memory = Memory()
+        pass  # Learning module not available
 
     return Agent(
         role="Code Researcher",
         name="Dr. Alan Parse",
-        memory=agent_memory,
+        memory=agent_memory,  # Add memory here
         learning={
-            "enabled": True,
-            "learning_rate": 0.05,
-            "feedback_incorporation": "immediate",
-            "adaptation_strategy": "progressive"
-        },
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
         personality={
-            "traits": ["analytical", "detail-oriented", "methodical"],
-            "quirks": ["always cites research papers", "uses scientific analogies"],
-            "communication_preferences": ["prefers direct questions", "responds with examples"]
-        },
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
         communication_style={
-            "formality": "professional",
-            "verbosity": "concise",
-            "tone": "authoritative",
-            "technical_level": "expert"
-        },
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
-        ],
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
         expertise=[
-            "Python", "JavaScript", "Database Design",
-            "API Development", "Microservices Architecture", "PHP", "JavaScript"
-        ],
-        expertise_level=9.2,
+                "Python", "JavaScript", "Database Design",
+                "API Development", "Microservices Architecture","PHP","JavaScript"
+            ],
+        expertise_level=9.2,  # On a scale of 1-10
+
         goal="Research and understand code patterns and issues",
         backstory="""You are an expert at analyzing codebases, understanding
         complex systems, and identifying potential issues.""",
-        llm=llm,
-        tools=tools if tools else [],
         verbose=True,
-        allow_delegation=True
+        llm=router.route_task("code research", preferred_models=preferred_models) if router else None,
+        allow_delegation=False
     )
+def create_junior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent:
+    """Create a Senior Developer agent."""
+    # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
+    preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
 
-def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
-    """Create a Junior Developer agent."""
-    llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference("developer")
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
 
     return Agent(
         role="Junior Developer",
         name="tom Kyles",
-        memory=agent_memory,
+        memory=agent_memory,  # Add memory here
         learning={
-            "enabled": True,
-            "learning_rate": 0.05,
-            "feedback_incorporation": "immediate",
-            "adaptation_strategy": "progressive"
-        },
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
         personality={
-            "traits": ["analytical", "detail-oriented", "methodical"],
-            "quirks": ["always cites research papers", "uses scientific analogies"],
-            "communication_preferences": ["prefers direct questions", "responds with examples"]
-        },
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
         communication_style={
-            "formality": "professional",
-            "verbosity": "concise",
-            "tone": "authoritative",
-            "technical_level": "expert"
-        },
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
-        ],
-        goal="Implement high-quality code solutions under guidance",
-        backstory="""You are a junior software developer, eager to learn and implement code solutions
-        under the guidance of senior team members.""",
-        llm=llm,
-        tools=tools if tools else [],
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
+        goal="Implement high-quality code solutions",
+        backstory="""You are a software developer with years of experience.
+        You create elegant, maintainable, and robust code solutions to complex problems.""",
         verbose=True,
+        llm=router.route_task("code development", preferred_models=preferred_models) if router else None,
         allow_delegation=False
     )
-
-def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_senior_developer(router=None, inputs: Dict[str, Any] = None) -> Agent:
     """Create a Senior Developer agent."""
-    llm = get_developer_llm(router, category="coding")
+    # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
+    preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
+
     agent_memory = Memory()
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference("developer")
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
 
     return Agent(
         role="Senior Developer",
         name="Tony Kyles",
-        memory=agent_memory,
+        memory=agent_memory,  # Add memory here
         learning={
-            "enabled": True,
-            "learning_rate": 0.05,
-            "feedback_incorporation": "immediate",
-            "adaptation_strategy": "progressive"
-        },
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
         personality={
-            "traits": ["analytical", "detail-oriented", "methodical"],
-            "quirks": ["always cites research papers", "uses scientific analogies"],
-            "communication_preferences": ["prefers direct questions", "responds with examples"]
-        },
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
         communication_style={
-            "formality": "professional",
-            "verbosity": "concise",
-            "tone": "authoritative",
-            "technical_level": "expert"
-        },
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
-        ],
-        goal="Implement high-quality, robust code solutions to complex problems",
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
+        goal="Implement high-quality code solutions",
         backstory="""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.""",
-        llm=llm,
-        tools=tools if tools else [],
         verbose=True,
-        allow_delegation=True
+        llm=router.route_task("code development", preferred_models=preferred_models) if router else None,
+        allow_delegation=False
     )
 
-def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_qa_engineer(router=None, inputs: Dict[str, Any] = None) -> Agent:
     """Create a QA Engineer agent."""
-    llm = get_developer_llm(router, category="testing")
+    # Model preference order: codellama:13b -> llama3.1:8b -> llama3.2:latest -> llama3.2:1b
+    preferred_models = ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"]
+
     agent_memory = Memory()
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference("qa")
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
 
     return Agent(
         role="QA Engineer",
         name="Anthony Gates",
-        memory=agent_memory,
+        memory=agent_memory,  # Add memory here
         learning={
-            "enabled": True,
-            "learning_rate": 0.05,
-            "feedback_incorporation": "immediate",
-            "adaptation_strategy": "progressive"
-        },
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
         personality={
-            "traits": ["analytical", "detail-oriented", "methodical"],
-            "quirks": ["always cites research papers", "uses scientific analogies"],
-            "communication_preferences": ["prefers direct questions", "responds with examples"]
-        },
+                "traits": ["analytical", "detail-oriented", "methodical"],
+                "quirks": ["always cites research papers", "uses scientific analogies"],
+                "communication_preferences": ["prefers direct questions", "responds with examples"]
+            },
         communication_style={
-            "formality": "professional",
-            "verbosity": "concise",
-            "tone": "authoritative",
-            "technical_level": "expert"
-        },
+                "formality": "professional",
+                "verbosity": "concise",
+                "tone": "authoritative",
+                "technical_level": "expert"
+            },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
-        ],
-        goal="Ensure the quality and correctness of implemented code through rigorous testing and validation.",
-        backstory="""A meticulous QA engineer dedicated to identifying defects, writing comprehensive test cases, and ensuring the software meets all functional and non-functional requirements.""",
-        llm=llm,
-        tools=tools if tools else [],
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
+        goal="Ensure code quality and functionality",
+        backstory="""You are a meticulous quality assurance engineer who takes pride
+        in finding edge cases and ensuring robust software.""",
         verbose=True,
+        llm=router.route_task("code testing", preferred_models=preferred_models) if router else None,
         allow_delegation=False
     )
