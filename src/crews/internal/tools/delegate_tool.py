@@ -15,18 +15,21 @@ class DelegateWorkTool(BaseTool):
     description: str = "Delegate a specific task to a coworker."
     args_schema: BaseModel = DelegateWorkToolSchema
 
-    def _run(self, coworker: str, task: Union[str, Dict[str, Any]], context: Union[str, Dict[str, Any]]) -> str:
-        # Pre-execution parser to handle malformed LLM output
+    def _tool_parser(self, **kwargs) -> Dict[str, Any]:
+        """Custom pre-execution parser to handle malformed LLM output."""
+        task = kwargs.get('task')
+        context = kwargs.get('context')
+
         if isinstance(task, dict) and 'description' in task:
-            task = task['description']
+            kwargs['task'] = task['description']
+
         if isinstance(context, dict) and 'description' in context:
-            context = context['description']
+            kwargs['context'] = context['description']
 
-        # NOTE: The delegation logic itself is handled by the CrewAI framework
-        # when a manager agent is configured. This tool's role is to define
-        # the interface for that delegation action.
+        return kwargs
 
-        # The manager should be prompted to select a coworker and provide
-        # the task and context as strings.
+    def _run(self, coworker: str, task: str, context: str) -> str:
+        # The delegation logic itself is handled by the CrewAI framework
+        # This part of the code is executed AFTER the pydantic validation
+        # and after the _tool_parser has cleaned the input.
         return f"Task '{task}' has been delegated to coworker '{coworker}'."
-
