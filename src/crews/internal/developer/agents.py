@@ -3,7 +3,7 @@
 from crewai import Agent
 from typing import Dict, Any
 from src.utils.memory import Memory
-
+from src.crews.internal.tools.git_tool import GitTool, FileTool
 
 
 
