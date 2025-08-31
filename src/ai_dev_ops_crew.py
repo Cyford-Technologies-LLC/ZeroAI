@@ -379,7 +379,8 @@ class AIOpsCrewManager:
                 if crew and hasattr(crew, 'agents'):
                     coworker_names = [agent.name for agent in crew.agents]
                     console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
-
+                else:
+                    coworker_names = []
                 if crew:
                     custom_logger = CustomLogger(...)  # Ensure custom_logger is initialized
                     crew.step_callback = custom_logger.log_step
