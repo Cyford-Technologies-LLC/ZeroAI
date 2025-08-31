@@ -31,6 +31,7 @@ def get_team_manager_crew(
         project_config: The project's configuration dictionary.
         task_inputs: A dictionary of task-specific inputs.
         crews_status: A dictionary containing the status of other available crews.
+        custom_logger: A custom logger for crew callbacks.
 
     Returns:
         A Crew object configured for a hierarchical process, or None if creation fails.
@@ -63,10 +64,7 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
-
-                        func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
-
                         agent = agent_creator_func(**call_kwargs)
                         if isinstance(agent, Agent):
                             worker_agents.append(agent)
@@ -82,29 +80,28 @@ def get_team_manager_crew(
                         error_logger.log_error(f"Failed to instantiate agent creator {func_name}",
                                                {"exception": str(e), "traceback": traceback.format_exc()})
 
-        # 2. Filter out any non-Agent objects and create coworker_names_list
+        # 2. Filter out any non-Agent objects
         worker_agents = [agent for agent in worker_agents if isinstance(agent, Agent)]
-        coworker_names_list = [agent.name for agent in worker_agents if hasattr(agent, 'name')]
-        console.print(f"DEBUG: Final coworker names list: {coworker_names_list}", style="blue")
+        console.print(f"DEBUG: Found {len(worker_agents)} worker agents.", style="blue")
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
             return None
 
-        # 3. Create the team manager agent
+        # 3. Create the team manager agent. No need to pass coworker_names.
+        # The manager will learn about the coworkers when the crew is assembled.
         team_manager = create_team_manager_agent(
             router=router,
             project_id=project_id,
             working_dir=working_dir,
             coworkers=worker_agents,
-            coworker_names=coworker_names_list
         )
 
         # 4. Define the initial task for the manager
         initial_task = Task(
-            description=f"Analyze and coordinate the following request: {prompt}",
+            description=f"Analyze and coordinate the following request: {prompt}. Your specialized crew members include: {', '.join([a.role for a in worker_agents])}. Inform all team members about the request and delegate tasks accordingly.",
             agent=team_manager,
-            expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them."
+            expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them, including confirmation that the full crew roster has been shared."
         )
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
@@ -119,14 +116,11 @@ def get_team_manager_crew(
             callbacks=[custom_logger]
         )
 
-        # Add debug prints to confirm manager can see workers
+        # 6. Optional: Add debug prints to confirm manager can see workers
+        # The agent's tools should include the DelegateWorkTool, which is implicitly
+        # configured to be aware of the other agents within the hierarchical crew.
         manager_tool_names = [tool.name for tool in hierarchical_crew.manager_agent.tools]
         console.print(f"DEBUG: Manager agent tools: {manager_tool_names}", style="dim")
-        for tool in hierarchical_crew.manager_agent.tools:
-            if "Delegate work" in tool.name:
-                console.print(f"DEBUG: Delegate tool description: {tool.description}", style="dim")
-            if "Ask question" in tool.name:
-                console.print(f"DEBUG: Ask tool description: {tool.description}", style="dim")
 
         return hierarchical_crew
 
