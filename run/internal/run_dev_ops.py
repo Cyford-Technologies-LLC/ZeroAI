@@ -231,7 +231,7 @@ def execute_devops_task(router, args, project_config):
         # Record task failure
         end_time = time.time()
         record_task_result(
-            task_id=task_id, prompt=args.prompt, category=args.category,
+            task_id=task_id,  category=args.category,
             model_used="multiple", peer_used="internal", start_time=start_time,
             end_time=end_time, success=False, error_message=str(e),
             git_changes=None, token_usage=None
