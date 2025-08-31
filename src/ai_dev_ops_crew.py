@@ -499,6 +499,8 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
 
     def execute_crew(self) -> Any:
         """Assembles the crew and executes the task."""
+        print("DEBUG: Inside execute_crew")
+        print(f"DEBUG: crews_status is of type {type(self.crews_status)}")
 
         # Instantiate the crew using the get_team_manager_crew function
         crew = get_team_manager_crew(
