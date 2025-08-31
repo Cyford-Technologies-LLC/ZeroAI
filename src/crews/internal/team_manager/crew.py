@@ -16,7 +16,7 @@ error_logger = ErrorLogger()
 def get_team_manager_crew(
     router,
     tools: List,
-    project_config: Dict[str, Any],
+    project_config: Dict[str, Any],a
     task_inputs: Dict[str, Any]
 ) -> Crew:
     """
@@ -100,9 +100,10 @@ def get_team_manager_crew(
 
         # Create the crew with the team manager and tasks
         crew = Crew(
-            agents=[team_manager],
+            agents=[worker_agents],
+            manager_agent=team_manager,
             tasks=[intro_task, execution_task],
-            process=Process.sequential,
+            process=Process.hierarchical,
             verbose=True
         )
 
@@ -119,3 +120,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         raise
+
