@@ -18,11 +18,12 @@ from pathlib import Path
 from rich.console import Console
 import yaml
 from src.crews.internal.diagnostics.agents import create_diagnostic_agent
-from crewai import Agent, Crew, Task
+from crewai import Agent, Crew, Task , Process
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
 from ast import literal_eval
 from src.devops_router import get_router  # ✅ Import get_router
+from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers
 
 from src.peer_discovery import PeerDiscovery  # ✅ Import PeerDiscovery
 logger = logging.getLogger(__name__)  # ✅ Define logger
@@ -236,7 +237,7 @@ def execute_devops_task(router, args, project_config):
         # Record task failure
         end_time = time.time()
         record_task_result(
-            task_id=task_id,  category=args.category,
+            task_id=task_id,
             model_used="multiple", peer_used="internal", start_time=start_time,
             end_time=end_time, success=False, error_message=str(e),
             git_changes=None, token_usage=None

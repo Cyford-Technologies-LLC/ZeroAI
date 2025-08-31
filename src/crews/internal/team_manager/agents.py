@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+from src.crews.internal.team_manager.tools import InternalPeerCheckTool # Import the new tool
 from crewai import Agent
 from rich.console import Console
 
@@ -170,11 +171,12 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
         The configured CrewAI Team Manager Agent.
     """
     try:
-        llm = router.get_llm_for_role("devops_orchestrator")
+        llm = router.get_llm_for_role("team_manager")
         available_crews = discover_available_crews()
         crew_list = format_agent_list()
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
+        peer_check_tool = InternalPeerCheckTool(coworkers=coworkers)
 
         team_manager = Agent(
             role="Team Manager",
@@ -194,7 +196,7 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             {crew_list}
             """,
             llm=llm,
-            tools=[],  # Assuming tools are added elsewhere if needed
+            tools=[peer_check_tool], # Assuming tools are added elsewhere if needed
             verbose=True,
             max_iter=15,
             coworkers=coworkers,
