@@ -259,3 +259,11 @@ if __name__ == "__main__":
         console.print(f"Reason: {e}", style="red")
         logger.error(f"Execution failed: {e}", exc_info=True)
         sys.exit(1)
+
+
+def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
+    """
+    Securely run the AI DevOps Crew.
+    """
+    manager = AIOpsCrewManager(router, project_id, inputs)
+    return manager.execute()
