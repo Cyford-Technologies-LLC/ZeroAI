@@ -1,5 +1,3 @@
-# src/crews/internal/team_manager/crew.py
-
 import importlib
 import logging
 import traceback
@@ -55,6 +53,7 @@ def get_team_manager_crew(
             if crew_name == "team_manager":
                 continue
 
+            console.print(f"DEBUG: Processing crew: {crew_name}", style="dim")
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
                     # Exclude the manager agent creator itself
@@ -64,7 +63,6 @@ def get_team_manager_crew(
                     console.print(f"DEBUG: Attempting to instantiate agent via: {func_name} from {crew_name}", style="dim")
                     try:
                         module_name = f"src.crews.internal.{crew_name}.agents"
-                        # The dynamic import must happen here to ensure proper scope
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
                         worker_agents.append(agent_creator_func(router=router, inputs=task_inputs))
@@ -72,7 +70,6 @@ def get_team_manager_crew(
                     except (ImportError, AttributeError, Exception) as e:
                         console.print(f"⚠️ Failed to import agent creator {func_name} from {crew_name}: {e}", style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
-                        # Do not return None here, continue to try and load other agents
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
@@ -101,3 +98,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
