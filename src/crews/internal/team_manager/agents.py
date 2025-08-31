@@ -180,6 +180,8 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
         # This line was previously removed, but the ErrorLogger class is now in scope at the top.
         # As discussed before, we do NOT assign tools to the manager in a hierarchical crew.
         # peer_check_tool = InternalPeerCheckTool(coworkers=coworkers) # Keep this commented out
+        coworker_names = ", ".join([coworker.name for coworker in coworkers]) if coworkers else "No coworkers available."
+
 
         team_manager = Agent(
             role="Team Manager",
