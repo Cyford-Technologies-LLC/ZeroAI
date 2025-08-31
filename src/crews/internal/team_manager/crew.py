@@ -1,14 +1,13 @@
-# src/crews/internal/team_manager/crew.py
-
 import importlib
 import logging
 import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from rich.console import Console
-from crewai import Crew, Process, Task, Agent
-from .agents import create_team_manager_agent, format_agent_list
-from src.utils.error_logging import ErrorLogger
+
+from crewai import Crew, Process, Task
+from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
+from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
 error_logger = ErrorLogger()
@@ -28,56 +27,48 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create the team manager agent, but redefine its purpose as a router
         team_manager = create_team_manager_agent(router=router, project_id=project_id, working_dir=working_dir)
-        team_manager.role = "Task Router"
-        team_manager.goal = (
-            "Analyze an incoming request and output the role of the most suitable specialist agent to handle it. "
-            "Your output must be a single word corresponding to the worker's role."
-        )
-        team_manager.backstory = "You are a highly efficient dispatcher who routes tasks to the correct expert."
-        team_manager.tools = []
-        team_manager.allow_delegation = False
 
-        worker_agents = {}
+        worker_agents = []
         for crew_name, info in crews_status.items():
             if crew_name == "team_manager":
                 continue
 
-            # ... (Code to load worker agents into the `worker_agents` dictionary)
+            console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
                     if func_name == "create_team_manager_agent":
                         continue
+
+                    console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
                     try:
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
                         agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
-                        worker_agents[agent.role] = agent
+                        worker_agents.append(agent)
+                        console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
-                        console.print(f"⚠️ Failed to import agent creator '{func_name}': {e}", style="yellow")
+                        console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
 
         if not worker_agents:
-            console.print("❌ No worker agents found to form the crew. Aborting.", style="red")
+            console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
             return None
 
-        # Define the routing task for the manager
+        console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
+
         initial_task = Task(
-            description=(
-                f"Analyze the following request: '{prompt}'. "
-                f"Your final answer MUST be only the role of the single best-suited agent from this list: {list(worker_agents.keys())}."
-            ),
+            description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,
-            expected_output="The role of the worker agent (e.g., 'Developer')."
+            expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them."
         )
 
-        # Assemble a sequential crew for the routing task only
         return Crew(
-            agents=[team_manager],  # Only the router agent is needed for this first step
+            agents=worker_agents,
+            manager_agent=team_manager,
             tasks=[initial_task],
-            process=Process.sequential,
+            process=Process.hierarchical,
             verbose=True
         )
 
