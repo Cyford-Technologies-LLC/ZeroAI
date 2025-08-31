@@ -1,31 +1,49 @@
+# src/crews/internal/tools/delegate_tool.py
+from crewai.tools import BaseTool
+from crewai import Agent
+from pydantic import BaseModel, Field
+from typing import Union, Dict, Any, List
 
-import re
+class DelegateWorkToolSchema(BaseModel):
+    task: Union[str, Dict[str, Any]] = Field(..., description="The task to delegate")
+    context: Union[str, Dict[str, Any]] = Field(..., description="The context for the task")
+    coworker: str = Field(..., description="The role/name of the coworker to delegate to")
 
-def validate_email(email: str) -> bool:
-    """
-    Validates an email address.
+class DelegateWorkTool(BaseTool):
+    name: str = "Delegate work to coworker"
+    description: str = "Delegate a specific task to a coworker."
+    args_schema: BaseModel = DelegateWorkToolSchema
+    coworkers: List[Agent] = Field(..., description="List of coworker agents")
 
-    This function checks if the given email address is valid according to a simplified set of rules:
-    1. It must contain exactly one '@' symbol.
-    2. The local part (before '@') must not be empty and can contain letters, digits, and some special characters.
-    3. The domain part (after '@') must not be empty and can contain letters, digits, dots, and hyphens.
-    4. The domain must have at least one dot and the last part after the dot must be 2-4 characters long.
+    def _run(
+        self,
+        task: Union[str, Dict[str, Any]],
+        context: Union[str, Dict[str, Any]],
+        coworker: str,
+        **kwargs,
+    ) -> str:
+        # If task is a dictionary, extract the description
+        if isinstance(task, dict) and "description" in task:
+            task = task["description"]
 
-    Args:
-    email (str): The email address to validate.
+        # If context is a dictionary, extract the description
+        if isinstance(context, dict) and "description" in context:
+            context = context["description"]
+        
+        coworker_agent = self._get_coworker(coworker, **kwargs)
+        if coworker_agent:
+            return self._execute(coworker_agent, task, context)
+        else:
+            return f"Coworker with role/name '{coworker}' not found."
 
-    Returns:
-    bool: True if the email is valid, False otherwise.
+    def _get_coworker(self, coworker_name: str, **kwargs) -> Agent | None:
+        for agent in self.coworkers:
+            if agent.name == coworker_name or agent.role == coworker_name:
+                return agent
+        return None
 
-    Examples:
-    >>> validate_email("user@example.com")
-    True
-    >>> validate_email("invalid.email@com")
-    False
-    """
-    pattern = r'^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$'
-    if re.match(pattern, email):
-        parts = email.split('@')
-        if len(parts) == 2 and all(parts):
-            return True
-    return False
+    def _execute(self, agent: Agent, task: str, context: str) -> str:
+        # In a real-world scenario, this would trigger a sub-crew.
+        # For simplicity, we can return a confirmation message.
+        return f"Task '{task}' delegated to {agent.name}. Context: {context}"
+

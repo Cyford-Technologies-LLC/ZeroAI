@@ -13,7 +13,7 @@ from typing import Dict, Any, List, Optional
 
 from crewai import Agent
 from rich.console import Console
-
+from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 # Configure console for rich output
 console = Console()
 
