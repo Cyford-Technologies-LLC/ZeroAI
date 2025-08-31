@@ -18,26 +18,24 @@ from pathlib import Path
 from rich.console import Console
 import yaml
 from src.crews.internal.diagnostics.agents import create_diagnostic_agent
-from crewai import Agent, Crew, Task , Process
+from crewai import Agent, Crew, Task, Process
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
 from ast import literal_eval
-from src.devops_router import get_router  # ✅ Import get_router
+from src.devops_router import get_router
 from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers
+from src.utils.loop_detection import LoopDetector  # Import the new class
 
-from src.peer_discovery import PeerDiscovery  # ✅ Import PeerDiscovery
-logger = logging.getLogger(__name__)  # ✅ Define logger
+from src.peer_discovery import PeerDiscovery
 
+logger = logging.getLogger(__name__)
 
 crew_type = os.getenv("CREW_TYPE")
-
-
 
 from src.learning.task_manager import TaskManager
 
 logger = logging.getLogger(__name__)
 task_manager = TaskManager()
-
 
 # Add the project root to the Python path to make imports work
 project_root = Path(__file__).parent.parent.parent
@@ -45,6 +43,7 @@ sys.path.insert(0, str(project_root))
 
 # Configure console for rich output
 console = Console()
+
 
 # Helper function to ensure directory exists
 def ensure_dir_exists(directory_path):
@@ -54,6 +53,7 @@ def ensure_dir_exists(directory_path):
 
     directory_path.mkdir(parents=True, exist_ok=True)
     return directory_path
+
 
 # Setup argument parser
 def setup_arg_parser():
@@ -81,6 +81,7 @@ def setup_arg_parser():
 
     return parser
 
+
 # Load project configuration
 def load_project_config(project_path: str, project_root: Path) -> dict:
     """
@@ -103,7 +104,7 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
         ensure_dir_exists(config_dir)
 
         default_config = {
-            "project_name": project_path.split('/')[-1], # Extract project name from path
+            "project_name": project_path.split('/')[-1],
             "description": "Auto-generated project configuration",
             "repository": None,
             "default_branch": "main",
@@ -130,6 +131,8 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
             "description": "Error loading configuration",
             "repository": None
         }
+
+
 def record_task_result(task_id: str, result: dict[str, any], learning_tokens: int):
     """
     Records the result of a DevOps task and updates the task queue.
@@ -144,9 +147,9 @@ def record_task_result(task_id: str, result: dict[str, any], learning_tokens: in
         logger.info(f"Recorded task result for {task_id} with {learning_tokens} learning tokens.")
     except Exception as e:
         logger.error(f"Error recording task result: {e}")
+
+
 # Execute DevOps task
-# run_dev_ops.py
-# ... (imports) ...
 def execute_devops_task(router, args, project_config):
     """Execute the DevOps task with the given parameters."""
     log_stream = StringIO()
@@ -173,8 +176,7 @@ def execute_devops_task(router, args, project_config):
                 "category": args.category,
                 "repository": args.repo or project_config.get("repository"),
                 "branch": args.branch or project_config.get("default_branch"),
-                # Ensure the verbose flag is a boolean
-                "verbose": bool(args.verbose),
+                "verbose": bool(args.verbose),  # FIX: Ensure boolean value
                 "dry_run": args.dry_run
             }
         )
@@ -199,6 +201,13 @@ def execute_devops_task(router, args, project_config):
                 coworker_names = [agent.name for agent in crew.agents]
                 console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
 
+            # --- NEW: Initialize loop detection ---
+            loop_detector = LoopDetector(max_consecutive_repeats=3)
+
+            def stop_on_loop_callback(output):
+                if loop_detector.detect(output):
+                    raise RuntimeError("Loop detected. Stopping diagnostic crew.")
+
             # Create the diagnostic agent and crew
             diagnostic_agent = create_diagnostic_agent(
                 router=router,
@@ -213,15 +222,17 @@ def execute_devops_task(router, args, project_config):
             diagnostic_crew = Crew(
                 agents=[diagnostic_agent],
                 tasks=[diagnostic_task],
-                # Pass the corrected boolean value
-                verbose=bool(args.verbose)
+                verbose=bool(args.verbose),  # FIX: Ensure boolean value
+                step_callback=stop_on_loop_callback  # NEW: Add the callback
             )
 
-            # Run the diagnostic crew
-            diagnostic_result = diagnostic_crew.kickoff()
-
-            console.print(f"\n🔬 [bold green]Diagnostic Agent Analysis:[/bold green]")
-            console.print(diagnostic_result)
+            # Run the diagnostic crew with a try-except block for the new loop detection
+            try:
+                diagnostic_result = diagnostic_crew.kickoff()
+                console.print(f"\n🔬 [bold green]Diagnostic Agent Analysis:[/bold green]")
+                console.print(diagnostic_result)
+            except RuntimeError as e:
+                console.print(f"\n❌ [bold red]Diagnostic Crew stopped due to detected loop: {e}[/bold red]")
             # --- End Diagnostic Crew ---
 
         end_time = time.time()
@@ -237,7 +248,6 @@ def execute_devops_task(router, args, project_config):
         sys.stdout = original_stdout  # Ensure stdout is restored on error
         console.print(f"❌ An unexpected error occurred: {e}", style="red")
         logger.error(f"Error executing DevOps task: {e}\n{traceback.format_exc()}")
-        # Record task failure (corrected)
         end_time = time.time()
         record_task_result(
             task_id=task_id,
@@ -247,10 +257,13 @@ def execute_devops_task(router, args, project_config):
         )
 
 
-
+# Main entry point for the script
 if __name__ == "__main__":
     parser = setup_arg_parser()
     args = parser.parse_args()
+    router = get_router()
+    project_config = load_project_config(args.project, project_root)
+    execute_devops_task(router, args, project_config)
 
     try:
         # Load project config, which now uses the dynamic path and project_root
