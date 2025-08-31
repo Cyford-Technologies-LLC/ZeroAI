@@ -498,28 +498,6 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
         }
 
 
-    def execute_crew(self) -> Any:
-        """Assembles the crew and executes the task."""
-        print("DEBUG: Inside execute_crew")
-        print(f"DEBUG: crews_status is of type {type(self.crews_status)}")
-
-        # Instantiate the crew using the get_team_manager_crew function
-        crew = get_team_manager_crew(
-            router=self.router,
-            tools=self.tools,
-            project_config=self.project_config,
-            task_inputs=self.inputs,
-            crews_status=self.crews_status  # <-- Pass the preloaded status here
-        )
-
-        if crew:
-            console.print(f"🚀 [bold green]Starting crew execution[/bold green]...", style="green")
-            start_time = time.time()
-            result = crew.kickoff(inputs=self.inputs)
-            end_time = time.time()
-            console.print(f"🎉 [bold green]Execution completed[/bold green] in {end_time - start_time:.2f} seconds.", style="green")
-            return result
-        return None
 
 if __name__ == "__main__":
     # This module should not be imported, not run directly
