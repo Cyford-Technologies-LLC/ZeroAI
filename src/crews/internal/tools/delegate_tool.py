@@ -1,8 +1,30 @@
 # src/crews/internal/tools/delegate_tool.py
 
 from pydantic import BaseModel, Field
-# FIX: Correct the import path for BaseTool
-from crewai import BaseTool
+import importlib
+import sys
+
+# FIX: Use a robust, version-agnostic import for BaseTool
+BaseTool = None
+import_paths = [
+    "crewai.tools",
+    "crewai_tools.tools",
+    "crewai.utilities",
+    "crewai",
+]
+
+for path in import_paths:
+    try:
+        module = importlib.import_module(path)
+        BaseTool = getattr(module, "BaseTool")
+        print(f"✅ Successfully imported BaseTool from {path}")
+        break
+    except (ImportError, AttributeError):
+        continue
+
+if not BaseTool:
+    print("❌ Failed to import BaseTool from all known paths. Please check your crewai and crewai_tools versions.")
+    sys.exit(1)
 
 class DelegateWorkToolSchema(BaseModel):
     """Input schema for DelegateWorkTool."""
@@ -11,12 +33,8 @@ class DelegateWorkToolSchema(BaseModel):
     context: str = Field(..., description="The context for the task.")
 
 class DelegateWorkTool(BaseTool):
-    """
-    This tool allows a manager agent to delegate tasks to other coworkers.
-    It is specifically designed for use in a hierarchical crew structure.
-    """
     name: str = "Delegate work to coworker"
-    description: str = "Delegate a specific task to one of the following coworkers."
+    description: str = "Delegate a specific task to a coworker."
     args_schema: BaseModel = DelegateWorkToolSchema
 
     def _run(self, coworker: str, task: str, context: str) -> str:
