@@ -29,6 +29,7 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
 
     # Try to import the ErrorLogger first
     try:
+        from src.crews.internal.team_manager.crew import get_team_manager_crew
         from src.crews.internal.team_manager.agents import ErrorLogger
         error_logger = ErrorLogger()
     except ImportError as e:
@@ -495,77 +496,19 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
             "crews_status": preload_internal_crews()  # Include crews status in the error response
         }
 
-    def get_hierarchical_crew(self) -> Optional[Crew]:
-        """
-        Dynamically creates and returns a hierarchical master crew.
-
-        This method imports all available agents and assembles a crew
-        with the Team Manager overseeing all specialist teams.
-        """
-        try:
-            # Import necessary components
-            from src.crews.internal.team_manager.agents import create_team_manager_agent
-
-            # Collect all available agent creation functions
-            all_agent_creators = []
-            for crew_name, info in self.crews_status.items():
-                if info.get("status") == "available" and "agents" in info:
-                    try:
-                        agents_module_path = f"src.crews.internal.{crew_name}.agents"
-                        agents_module = importlib.import_module(agents_module_path)
-                        for func_name in info["agents"]:
-                            agent_creator_func = getattr(agents_module, func_name)
-                            all_agent_creators.append(agent_creator_func)
-                    except (ImportError, AttributeError) as e:
-                        console.print(f"⚠️ Failed to import agent creator {func_name} from {crew_name}: {e}", style="yellow")
-
-            if not all_agent_creators:
-                console.print("❌ No agent creation functions found. Cannot assemble crew.", style="red")
-                return None
-
-            # Instantiate the manager agent
-            manager_agent = create_team_manager_agent(
-                router=self.router,
-                project_id=self.project_id,
-                working_dir=self.working_dir
-            )
-
-            # Instantiate all worker agents
-            worker_agents = []
-            for creator_func in all_agent_creators:
-                # Assuming creator functions take router and inputs
-                # Add logic to handle different function signatures if needed
-                if creator_func.__name__ != "create_team_manager_agent":
-                    worker_agents.append(creator_func(router=self.router, inputs=self.inputs))
-
-            # Define the initial high-level task for the manager
-            initial_task = Task(
-                description=self.prompt,
-                agent=manager_agent,
-                expected_output="Complete execution of the requested task through delegation."
-            )
-
-            # Assemble and return the crew
-            console.print(f" assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
-
-            return Crew(
-                agents=worker_agents,
-                manager_agent=manager_agent,
-                tasks=[initial_task],
-                process=Process.hierarchical,
-                verbose=config.agents.verbose,
-                full_output=True
-            )
-
-        except Exception as e:
-            error_logger = importlib.import_module("src.crews.internal.team_manager.agents").ErrorLogger()
-            error_logger.log_error(f"Error assembling hierarchical crew: {str(e)}", {"traceback": traceback.format_exc()})
-            console.print(f"❌ Error assembling hierarchical crew: {e}", style="red")
-            return None
 
     def execute_crew(self) -> Any:
         """Assembles the crew and executes the task."""
-        crew = self.get_hierarchical_crew()
+
+        # Instantiate the crew using the get_team_manager_crew function
+        crew = get_team_manager_crew(
+            router=self.router,
+            tools=self.tools,
+            project_config=self.project_config,
+            task_inputs=self.inputs,
+            crews_status=self.crews_status # Pass the preloaded status
+        )
+
         if crew:
             console.print(f"🚀 [bold green]Starting crew execution[/bold green]...", style="green")
             start_time = time.time()
@@ -574,7 +517,6 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
             console.print(f"🎉 [bold green]Execution completed[/bold green] in {end_time - start_time:.2f} seconds.", style="green")
             return result
         return None
-
 
 if __name__ == "__main__":
     # This module should not be imported, not run directly
