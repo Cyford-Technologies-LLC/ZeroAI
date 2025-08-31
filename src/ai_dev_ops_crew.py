@@ -378,12 +378,15 @@ class AIOpsCrewManager:
                 if crew and hasattr(crew, 'agents'):
                     coworker_names = [agent.name for agent in crew.agents]
                     console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
-                if crew and hasattr(crew, 'agents'):
-                    coworker_names = [agent.name for agent in crew.agents]
-                    console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
                 else:
                     coworker_names = []  # Fallback to empty list if crew is None or has no agents
 
+
+
+                if crew:
+                    custom_logger = CustomLogger(output_file=str(log_output_path))  # Ensure custom_logger is initialized
+                    crew.step_callback = custom_logger.log_step
+                    crew.task_callback = custom_logger.log_task
                 # --- ADDED: Explicitly check for None before calling kickoff ---
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
