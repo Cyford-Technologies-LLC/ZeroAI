@@ -205,7 +205,13 @@ def execute_devops_task(router, args, project_config):
             loop_detector = LoopDetector(max_consecutive_repeats=3)
 
             def stop_on_loop_callback(output):
-                if loop_detector.detect(output):
+                # FIX: Extract string from ToolResult object
+                if hasattr(output, 'result'):
+                    output_string = output.result
+                else:
+                    output_string = str(output)
+
+                if loop_detector.detect(output_string):
                     raise RuntimeError("Loop detected. Stopping diagnostic crew.")
 
             # Create the diagnostic agent and crew
