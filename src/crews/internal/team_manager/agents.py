@@ -175,21 +175,16 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
         crew_list = format_agent_list()
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
-        # Ensure ErrorLogger is defined before this point.
-        # This line was previously removed, but the ErrorLogger class is now in scope at the top.
-        # As discussed before, we do NOT assign tools to the manager in a hierarchical crew.
-        # peer_check_tool = InternalPeerCheckTool(coworkers=coworkers) # Keep this commented out
-        coworker_names = ", ".join([coworker.name for coworker in coworkers]) if coworkers else "No coworkers available."
 
+        # Removed the logic that uses 'coworker_names' during manager initialization.
+        # CrewAI's internal logic will handle the list of coworkers later.
 
         team_manager = Agent(
             role="Team Manager",
             name="Project Coordinator",
             goal=f"Coordinate specialists to complete tasks for project {project_id} by delegating work efficiently, avoiding redundant questions, and making logical decisions based on coworker feedback.",
-            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
-            delegate work to appropriate specialists, and oversee the project's progress.
-            You DO NOT perform technical tasks yourself. Your role is PURELY supervisory.
-            Your available specialists are: {coworker_names}.
+            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks,
+            delegate work to appropriate specialists, and oversee the project's progress. You DO NOT perform technical tasks yourself. Your role is PURELY supervisory.
             You MUST NEVER attempt to delegate a task to yourself.
             """,
             allow_delegation=True,
@@ -200,6 +195,5 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
 
     except Exception as e:
         error_message = f"Error creating Team Manager agent: {e}"
-        # Since ErrorLogger is now at the top, it is a valid reference here.
         ErrorLogger().log_error(error_message, {"traceback": traceback.format_exc()})
         raise Exception(error_message)
