@@ -375,18 +375,57 @@ class AIOpsCrewManager:
                 )
 
                 coworker_names = []
+                # In AIOpsCrewManager.execute()
                 if crew and hasattr(crew, 'agents'):
                     coworker_names = [agent.name for agent in crew.agents]
                     console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
                 else:
-                    coworker_names = []  # Fallback to empty list if crew is None or has no agents
+                    coworker_names = []
 
+                # Initialize custom logger
+                log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
+                custom_logger = CustomLogger(output_file=str(log_output_path))
 
-
+                # Assign callbacks for logging
                 if crew:
-                    custom_logger = CustomLogger(output_file=str(log_output_path))  # Ensure custom_logger is initialized
                     crew.step_callback = custom_logger.log_step
                     crew.task_callback = custom_logger.log_task
+
+                # Execute the crew
+                if crew:
+                    result = crew.kickoff()
+                    custom_logger.save_log()  # ✅ Save logs to file
+                    return {
+                        "success": True,
+                        "result": result,
+                        "model_used": "multiple",
+                        "peer_used": "internal"
+                    }
+                else:
+                    # Run diagnostic agent if crew creation failed
+                    console.print("❌ Crew creation failed. Running diagnostic agent...", style="red")
+                    diagnostic_agent = create_diagnostic_agent(
+                        router=self.router,
+                        inputs={},
+                        coworker_names=coworker_names  # ✅ Use real names
+                    )
+                    diagnostic_task = Task(
+                        description=f"Analyze why the team manager crew failed to create.",
+                        agent=diagnostic_agent,
+                        expected_output="A concise explanation of the crew creation failure."
+                    )
+                    diagnostic_crew = Crew(
+                        agents=[diagnostic_agent],
+                        tasks=[diagnostic_task],
+                        verbose=True
+                    )
+                    diagnostic_result = diagnostic_crew.kickoff()
+                    return {
+                        "success": False,
+                        "error": "Crew creation failed",
+                        "diagnostic_result": diagnostic_result
+                    }
+
                 # --- ADDED: Explicitly check for None before calling kickoff ---
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
