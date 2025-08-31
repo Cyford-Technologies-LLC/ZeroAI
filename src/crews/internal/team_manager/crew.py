@@ -57,7 +57,7 @@ def get_team_manager_crew(
 
                     console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
                     try:
-                        module_name = f"src.crews.internal.{crew_name}.agents"  # Fixed typo: 'crewew' → 'crews'
+                        module_name = f"src.crews.internal.{crew_name}.agents"  # Fixed typo
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
@@ -105,6 +105,7 @@ def get_team_manager_crew(
             tasks=[initial_task],
             process=Process.hierarchical,
             verbose=task_inputs.get("verbose", 1),
+            callbacks=[custom_logger]  # ✅ Pass callbacks during initialization
         )
 
         # Add debug prints to confirm manager can see workers
