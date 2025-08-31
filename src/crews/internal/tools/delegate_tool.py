@@ -1,30 +1,8 @@
 # src/crews/internal/tools/delegate_tool.py
 
 from pydantic import BaseModel, Field
-import importlib
-import sys
-
-# FIX: Use a robust, version-agnostic import for BaseTool
-BaseTool = None
-import_paths = [
-    "crewai.tools",
-    "crewai_tools.tools",
-    "crewai.utilities",
-    "crewai",
-]
-
-for path in import_paths:
-    try:
-        module = importlib.import_module(path)
-        BaseTool = getattr(module, "BaseTool")
-        # print(f"✅ Successfully imported BaseTool from {path}")
-        break
-    except (ImportError, AttributeError):
-        continue
-
-if not BaseTool:
-    print("❌ Failed to import BaseTool from all known paths. Please check your crewai and crewai_tools versions.")
-    sys.exit(1)
+from crewai import BaseTool
+from typing import Union, Dict, Any
 
 class DelegateWorkToolSchema(BaseModel):
     """Input schema for DelegateWorkTool."""
@@ -37,9 +15,8 @@ class DelegateWorkTool(BaseTool):
     description: str = "Delegate a specific task to a coworker."
     args_schema: BaseModel = DelegateWorkToolSchema
 
-    def _run(self, coworker: str, task: str, context: str) -> str:
+    def _run(self, coworker: str, task: Union[str, Dict[str, Any]], context: Union[str, Dict[str, Any]]) -> str:
         # Pre-execution parser to handle malformed LLM output
-        # Ensures that task and context are strings, not dictionaries
         if isinstance(task, dict) and 'description' in task:
             task = task['description']
         if isinstance(context, dict) and 'description' in context:
