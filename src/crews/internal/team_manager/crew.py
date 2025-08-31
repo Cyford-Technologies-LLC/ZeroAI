@@ -1,3 +1,5 @@
+# src/crews/internal/team_manager/crew.py
+
 import importlib
 import logging
 import traceback
@@ -6,13 +8,11 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
-# Assume that all agent creation functions will be imported dynamically
-# so you don't need a static list of imports here.
-
 from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
 
 console = Console()
 error_logger = ErrorLogger()
+
 
 def get_team_manager_crew(
     router,
@@ -52,16 +52,21 @@ def get_team_manager_crew(
         # 2. Instantiate all necessary worker agents dynamically
         worker_agents = []
         for crew_name, info in crews_status.items():
+            # Skip the team_manager entry itself
+            if crew_name == "team_manager":
+                continue
+
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
                     # Exclude the manager agent creator itself
                     if func_name == "create_team_manager_agent":
                         continue
-
+                    
                     try:
                         agents_module_path = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(agents_module_path)
                         agent_creator_func = getattr(agents_module, func_name)
+                        
                         # Pass the tools here if your agent creation functions expect them
                         worker_agents.append(agent_creator_func(router=router, inputs=task_inputs))
                     except (ImportError, AttributeError) as e:
@@ -94,3 +99,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
