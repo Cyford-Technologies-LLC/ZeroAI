@@ -1,9 +1,8 @@
-# src/crews/internal/diagnostics/agents.py
+# src/crews/internal/diagnostics/agents.py (Full script)
 from crewai import Agent
 from rich.console import Console
 from typing import Dict, Any, List, Optional
-
-from src.crews.internal.diagnostics.tools import LogAnalysisTool
+from src.crews.internal.diagnostics.tools import LogAnalysisTool, DiagnosticFileHandlerTool
 
 console = Console()
 
@@ -17,15 +16,16 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
     return Agent(
         role="CrewAI Diagnostic Agent",
         name="Agent-Dr. Watson",
-        # REVISED: Explicitly reference the tool and check for error files in the goal.
-        goal="""Analyze crew run logs using the Log Analysis Tool to find and explain delegation failures.
-        You must specifically check for any logged error files in the 'errors/' directory as a primary source of failure diagnosis.""",
+        goal="""Analyze crew run logs and manage manager-logged error files to find and explain delegation failures.
+        You must first use the Diagnostic File Handler Tool to process any old error files before analyzing the verbose logs.
+        This ensures you are working with a clean state and have all diagnostic information consolidated.""",
         backstory=f"""You are a specialized diagnostic AI for CrewAI multi-agent systems, like a seasoned detective.
         Your expertise lies in parsing verbose logs and detecting the root causes of communication breakdowns and runtime errors.
-        Your primary tool is the Log Analysis Tool. You will meticulously examine both the verbose log output and any generated error files
-        to provide clear, actionable insights into the cause of any delegation failures. You do not manually review the logs; you use your tool for analysis.""",
+        You will first process any existing manager-logged error files to consolidate findings, and then analyze the current logs.
+        Your tools are the Log Analysis Tool for live logs and the Diagnostic File Handler Tool for managing error files.""",
         llm=llm,
-        tools=[LogAnalysisTool(coworker_names=coworker_names)],
+        # Updated tools list to include the new file handler
+        tools=[LogAnalysisTool(coworker_names=coworker_names), DiagnosticFileHandlerTool()],
         verbose=True,
         allow_delegation=False  # This agent does not delegate
     )
