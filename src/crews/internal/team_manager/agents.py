@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from langchain_community.llms import Ollama
+# from langchain_community.llms import Ollama
 
 
 from src.crews.internal.team_manager.tools import InternalPeerCheckTool
@@ -16,7 +16,7 @@ from rich.console import Console
 
 # Configure console for rich output
 console = Console()
-manager_llm = Ollama(model="llama3.1:8b", base_url="http://149.36.1.65:11434")
+# manager_llm = Ollama(model="llama3.1:8b", base_url="http://149.36.1.65:11434")
 
 
 # Define the ErrorLogger class at the top, before it is used.
