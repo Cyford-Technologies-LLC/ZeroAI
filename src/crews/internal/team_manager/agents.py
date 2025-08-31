@@ -53,7 +53,7 @@ AVAILABLE_AGENTS = {
 class ErrorLogger:
     # (Same as before)
     def __init__(self):
-        self.error_dir = Path("src/errors")
+        self.error_dir = Path("errors")
         self.error_dir.mkdir(parents=True, exist_ok=True)
 
     def log_error(self, error_message: str, context: Dict[str, Any] = None) -> str:

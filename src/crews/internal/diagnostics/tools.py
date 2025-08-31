@@ -18,6 +18,22 @@ class LogAnalysisTool(BaseTool):
         """
         Parses verbose log output to provide a diagnosis of delegation failures.
         """
+        # --- NEW: Check for general errors in the log output ---
+        error_pattern = re.compile(r"Error: |Exception: |Traceback")
+        error_matches = error_pattern.findall(log_output)
+
+        if error_matches:
+            return f"🚨 Diagnosis: The following errors were found in the logs:\n\n{error_matches}"
+
+        # --- NEW: Check for errors in the error directory ---
+        error_dir = Path("errors")
+        if error_dir.exists():
+            for error_file in error_dir.glob("*.log"):
+                with open(error_file, 'r') as f:
+                    error_content = f.read()
+                    if "Error" in error_content.lower():
+                        return f"🚨 Diagnosis: Found error in file {error_file.name}:\n\n{error_content}"
+
         coworker_names_str = "|".join([re.escape(name) for name in coworker_names])
         coworker_delegation_pattern = re.compile(
             r"Delegate work to coworker.*?Agent name: (?!({}))".format(coworker_names_str),
