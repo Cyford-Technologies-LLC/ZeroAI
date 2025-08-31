@@ -1,3 +1,5 @@
+# src/crews/internal/team_manager/crew.py
+
 import importlib
 import logging
 import traceback
@@ -6,9 +8,9 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
-# Import ErrorLogger from the local agents module
+# Correct import for ErrorLogger from the same directory's agents file
 from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
-# Import the DelegateWorkTool
+# The DelegateWorkTool is used by the manager in the hierarchical process
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
@@ -49,8 +51,9 @@ def get_team_manager_crew(
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
-                        # Call the agent creation function with all known arguments
+                        # Call the agent creation function
                         agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
+
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
@@ -63,6 +66,7 @@ def get_team_manager_crew(
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
+        # Initial task for the manager
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,
@@ -82,4 +86,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
