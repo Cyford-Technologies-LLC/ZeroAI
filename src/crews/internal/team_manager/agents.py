@@ -195,7 +195,7 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             """,
             allow_delegation=True,
             verbose=True,
-            llm=manager_llm,
+            llm=llm,
         )
         return team_manager
 
