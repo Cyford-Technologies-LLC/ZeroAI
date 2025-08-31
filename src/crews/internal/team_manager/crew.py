@@ -74,7 +74,8 @@ def get_team_manager_crew(
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
-            verbose=True
+            verbose=crew_verbose,
+            output_log_file="crew_output.txt"
         )
 
     except Exception as e:
