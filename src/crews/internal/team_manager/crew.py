@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 from crewai import Crew, Process, Task, Agent
 from .agents import create_team_manager_agent, format_agent_list
-# Import ErrorLogger
 from src.utils.error_logging import ErrorLogger
 
 console = Console()
@@ -45,12 +44,11 @@ def get_team_manager_crew(
             if crew_name == "team_manager":
                 continue
 
-            console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
+            # ... (Code to load worker agents into the `worker_agents` dictionary)
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
                     if func_name == "create_team_manager_agent":
                         continue
-
                     try:
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
@@ -64,8 +62,6 @@ def get_team_manager_crew(
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Aborting.", style="red")
             return None
-
-        console.print(f"👨‍💼 Assembling sequential crew with a routing manager and {len(worker_agents)} worker agents.", style="blue")
 
         # Define the routing task for the manager
         initial_task = Task(
