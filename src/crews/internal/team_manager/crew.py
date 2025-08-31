@@ -1,3 +1,5 @@
+# src/crews/internal/team_manager/crew.py
+
 import importlib
 import logging
 import traceback
@@ -21,7 +23,7 @@ def get_team_manager_crew(
     try:
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
-        # Get error_logger from task_inputs
+        # Retrieve error_logger from task_inputs
         error_logger = task_inputs.get("error_logger", ErrorLogger())
         working_dir_str = project_config.get("crewai_settings", {}).get(
             "working_directory", f"/tmp/internal_crew/{project_id}/")
@@ -47,12 +49,17 @@ def get_team_manager_crew(
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
-                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools, error_logger=error_logger)
+                        # Call the agent creation function WITHOUT passing error_logger directly
+                        agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
+
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
                         console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
+                        # Log the error using the passed error_logger instance
+                        error_logger.log_error(f"Failed to instantiate agent creator {func_name}", {"exception": str(e), "traceback": traceback.format_exc()})
+
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
@@ -76,6 +83,8 @@ def get_team_manager_crew(
 
     except Exception as e:
         error_context = {"traceback": traceback.format_exc()}
+        # Ensure error_logger is available in the except block
+        error_logger = task_inputs.get("error_logger", ErrorLogger())
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
