@@ -17,6 +17,9 @@ import traceback
 from pathlib import Path
 from rich.console import Console
 import yaml
+from src.crews.internal.diagnostics.agents import create_diagnostic_agent
+from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
+from io import StringIO
 
 # Important: for any crews outside the default, make sure the proper crews are loaded
 os.environ["CREW_TYPE"] = "internal"
@@ -168,8 +171,14 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
             "repository": None
         }
 
+
+# In dev_ops_crew_runner.py
+
 def execute_devops_task(router, args, project_config):
     """Execute the DevOps task with the given parameters."""
+    log_stream = StringIO()
+    original_stdout = sys.stdout
+
     try:
         start_time = time.time()
         task_id = args.task_id or str(uuid.uuid4())
@@ -179,84 +188,80 @@ def execute_devops_task(router, args, project_config):
         console.print(f"🔍 Category: [bold green]{args.category}[/bold green]")
         console.print(f"📂 Project: [bold yellow]{args.project}[/bold yellow]")
 
+        # ... (rest of the existing dry-run and setup) ...
+
+        # Redirect stdout to capture verbose logs
         if args.verbose:
-            console.print(f"📋 Task details:")
-            console.print(f"   Prompt: {args.prompt}")
-            if args.repo:
-                console.print(f"   Repository: {args.repo}")
-            if args.branch:
-                console.print(f"   Branch: {args.branch}")
+            sys.stdout = log_stream
 
-        if args.dry_run:
-            console.print("\n🧪 [bold yellow]DRY RUN - No changes will be made[/bold yellow]")
-            end_time = time.time()
-            record_task_result(
-                task_id=task_id, prompt=args.prompt, category=args.category,
-                model_used="dry_run", peer_used="local", start_time=start_time,
-                end_time=end_time, success=True, error_message=None,
-                git_changes=None, token_usage=None
-            )
-            return {"success": True, "message": "Dry run completed"}
-
-        console.print("\n⚙️ [bold blue]Processing task...[/bold blue]")
-
-        ai_dev_ops_crew_path = project_root / "src" / "ai_dev_ops_crew.py"
-        if ai_dev_ops_crew_path.exists():
-            console.print(f"✅ Found ai_dev_ops_crew.py at {ai_dev_ops_crew_path}")
-        else:
-            console.print(f"❌ ai_dev_ops_crew.py not found at {ai_dev_ops_crew_path}", style="red")
-            return {"success": False, "error": f"ai_dev_ops_crew.py not found"}
-
-        # Create the inputs dictionary
-        inputs = {
-            "prompt": args.prompt,
-            "category": args.category,
-            "repository": args.repo or project_config.get("repository"),
-            "branch": args.branch or project_config.get("default_branch", "main"),
-            "task_id": task_id,
-            "verbose": args.verbose
-        }
-
-        try:
-            result = run_ai_dev_ops_crew_securely(router=router, project_id=args.project, inputs=inputs)
-        except Exception as e:
-            console.print(f"❌ Error during crew execution: {e}", style="red")
-            traceback_str = traceback.format_exc()
-            console.print("Traceback:", style="red")
-            console.print(traceback_str)
-            result = {"success": False, "error": str(e)}
-
-        end_time = time.time()
-        success = result.get("success", False)
-        error_message = result.get("error") if not success else None
-
-        # Log and record the task result
-        if success:
-            console.print(f"✅ [bold green]Task completed successfully in {end_time - start_time:.2f} seconds[/bold green]")
-        else:
-            console.print(f"❌ [bold red]Task failed after {end_time - start_time:.2f} seconds[/bold red]")
-            console.print(f"Error: {error_message}", style="red")
-
-        record_task_result(
-            task_id=task_id,
+        # Execute the main AI DevOps crew
+        result = run_ai_dev_ops_crew_securely(
             prompt=args.prompt,
+            project_id=args.project,
             category=args.category,
-            model_used=result.get("model_used", "n/a"),
-            peer_used=result.get("peer_used", "n/a"),
-            start_time=start_time,
-            end_time=end_time,
-            success=success,
-            error_message=error_message,
-            git_changes=None,
-            token_usage=result.get("token_usage")
+            repository=args.repo or project_config.get("repository"),
+            branch=args.branch or project_config.get("default_branch"),
+            verbose=args.verbose,
+            dry_run=args.dry_run,
+            router=router
         )
 
-        return result
+        # Restore stdout
+        sys.stdout = original_stdout
+
+        if result and result.get("success"):
+            console.print(f"\n✅ [bold green]DevOps Task completed successfully![/bold green]")
+        else:
+            console.print(f"\n❌ [bold red]DevOps Task failed.[/bold red]")
+
+            # --- Start Diagnostic Crew ---
+            console.print("\n🔬 [bold blue]Running Diagnostic Crew to analyze failure...[/bold blue]")
+
+            # Get the captured log output
+            full_log_output = log_stream.getvalue()
+
+            # Create the diagnostic agent and crew
+            diagnostic_agent = create_diagnostic_agent(router=router, inputs={})
+            diagnostic_task = Task(
+                description=f"Analyze the following logs to diagnose the reason for a delegation failure:\n\n{full_log_output}",
+                agent=diagnostic_agent,
+                expected_output="A concise explanation of the delegation failure and potential fixes."
+            )
+            diagnostic_crew = Crew(
+                agents=[diagnostic_agent],
+                tasks=[diagnostic_task],
+                verbose=args.verbose
+            )
+
+            # Run the diagnostic crew
+            diagnostic_result = diagnostic_crew.kickoff()
+
+            console.print(f"\n🔬 [bold green]Diagnostic Agent Analysis:[/bold green]")
+            console.print(diagnostic_result)
+            # --- End Diagnostic Crew ---
+
+        end_time = time.time()
+        record_task_result(
+            task_id=task_id, prompt=args.prompt, category=args.category,
+            model_used="multiple", peer_used="internal", start_time=start_time,
+            end_time=end_time, success=result and result.get("success"),
+            error_message=result.get("error") if result else "Unknown failure",
+            git_changes=None, token_usage=None
+        )
 
     except Exception as e:
+        sys.stdout = original_stdout  # Ensure stdout is restored on error
         console.print(f"❌ An unexpected error occurred: {e}", style="red")
-        logger.error(f"Unexpected error in execute_devops_task: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+        logger.error(f"Error executing DevOps task: {e}\n{traceback.format_exc()}")
+        # Record task failure
+        end_time = time.time()
+        record_task_result(
+            task_id=task_id, prompt=args.prompt, category=args.category,
+            model_used="multiple", peer_used="internal", start_time=start_time,
+            end_time=end_time, success=False, error_message=str(e),
+            git_changes=None, token_usage=None
+        )
+
 
 if __name__ == "__main__":
     parser = setup_arg_parser()
