@@ -46,10 +46,7 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
-
-                        # Call the agent creation function WITHOUT passing error_logger directly
                         agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
-
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
                     except Exception as e:
@@ -74,8 +71,7 @@ def get_team_manager_crew(
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
-            verbose=crew_verbose,
-            output_log_file="crew_output.txt"
+            verbose=task_inputs.get("verbose", 1), # FIX: Use task_inputs.get("verbose") instead of a undefined variable
         )
 
     except Exception as e:
@@ -84,4 +80,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
