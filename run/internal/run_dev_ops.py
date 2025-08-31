@@ -204,6 +204,13 @@ def execute_devops_task(router, args, project_config):
             # --- NEW: Initialize loop detection ---
             loop_detector = LoopDetector(max_consecutive_repeats=3)
 
+            def loop_callback_and_exit_signal(output):
+                if hasattr(output, 'result'):
+                    output_string = output.result
+                else:
+                    output_string = str(output)
+
+                loop_detector.detect(output_string)
             def stop_on_loop_callback(output):
                 # FIX: Extract string from ToolResult object
                 if hasattr(output, 'result'):
@@ -229,6 +236,7 @@ def execute_devops_task(router, args, project_config):
                 agents=[diagnostic_agent],
                 tasks=[diagnostic_task],
                 verbose=bool(args.verbose),  # FIX: Ensure boolean value
+                max_iter=50,
                 step_callback=stop_on_loop_callback  # NEW: Add the callback
             )
 
