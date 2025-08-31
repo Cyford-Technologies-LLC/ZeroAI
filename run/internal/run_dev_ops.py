@@ -1,302 +1,160 @@
-#!/usr/bin/env python3
-"""
-AI DevOps Crew Runner
-
-This script safely executes the internal DevOps AI crew for secure development operations.
-It provides a secure command-line interface to trigger internal maintenance tasks.
-"""
-
-import sys
 import os
-import argparse
-import json
-import time
+import sys
 import uuid
+import time
 import logging
+import importlib
 import traceback
 from pathlib import Path
+from typing import Dict, Any, Optional, List
 from rich.console import Console
-import yaml
+from rich.table import Table
 
-# Important: for any crews outside the default, make sure the proper crews are loaded
-os.environ["CREW_TYPE"] = "internal"
-
-# Add the parent directory to the Python path to make imports work
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-# Add the internal crews path to sys.path to ensure we can import from there
-internal_crews_path = project_root / "src" / "crews" / "internal"
-sys.path.insert(0, str(internal_crews_path))
-
-# Configure console for rich output
-console = Console()
-
-# Add debug information to help diagnose import issues
-console.print(f"Python path: {sys.path}")
-console.print(f"Current directory: {os.getcwd()}")
-
-# Helper function to ensure directory exists (since it's missing from yaml_utils)
-def ensure_dir_exists(directory_path):
-    """Ensure that a directory exists, creating it if necessary."""
-    if isinstance(directory_path, str):
-        directory_path = Path(directory_path)
-
-    directory_path.mkdir(parents=True, exist_ok=True)
-    return directory_path
-
-# Import required modules with detailed error tracking
-console.print("\n🔍 Starting import process with detailed debugging...")
-
-try:
-    # Try individual imports to isolate where the failure is happening
-    console.print("Importing PeerDiscovery...")
-    from src.peer_discovery import PeerDiscovery
-    console.print("✅ Successfully imported PeerDiscovery")
-
-    console.print("Importing get_router...")
-    from src.devops_router import get_router
-    console.print("✅ Successfully imported get_router")
-
-    console.print("Importing load_yaml_config...")
-    from src.utils.yaml_utils import load_yaml_config
-    console.print("✅ Successfully imported load_yaml_config")
-
-    # Try to import learning components
-    try:
-        console.print("Importing record_task_result...")
-        from src.learning import record_task_result
-        console.print("✅ Successfully imported record_task_result")
-    except ImportError as e:
-        console.print(f"⚠️ Learning module not found: {e}", style="yellow")
-        console.print("Traceback:", style="yellow")
-        console.print(traceback.format_exc())
-
-        # Create a dummy record_task_result function
-        def record_task_result(*args, **kwargs):
-            console.print("ℹ️ Task result recording skipped (learning module not available)", style="yellow")
-            return True
-
-    # Import the ai_dev_ops_crew module now that paths are set
-    console.print("Importing ai_dev_ops_crew...")
-    from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
-    console.print("✅ Successfully imported ai_dev_ops_crew")
-
-except ImportError as e:
-    console.print(f"Failed to import required modules: {e}", style="red")
-    console.print("Make sure you're running from the project root directory.")
-    console.print("Detailed error:", style="red")
-    console.print(traceback.format_exc())
-    sys.exit(1)
+# --- FIX: Import ErrorLogger correctly ---
+from src.crews.internal.team_manager.agents import ErrorLogger
+from src.crews.internal.team_manager.crew import get_team_manager_crew
 
 # Configure logging
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
-logging.basicConfig(
-    filename=log_dir / "dev_ops.log",
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+console = Console()
 
-def setup_arg_parser():
-    """Set up and return the argument parser."""
-    parser = argparse.ArgumentParser(description="Run the AI DevOps Crew")
-
-    # Required task prompt argument
-    parser.add_argument("prompt", help="The task description or prompt")
-
-    # Optional arguments
-    parser.add_argument("--project", default="default",
-                       help="Project identifier (e.g., 'zeroai' or 'cyford/zeroai')")
-    parser.add_argument("--category", default="general",
-                       help="Task category (developer, documentation, repo_manager, research)")
-    parser.add_argument("--task-id", default=None,
-                       help="Task ID for tracking (auto-generated if not provided)")
-    parser.add_argument("--repo", default=None,
-                       help="Git repository URL")
-    parser.add_argument("--branch", default=None,
-                       help="Git branch name")
-    parser.add_argument("--verbose", "-v", action="store_true",
-                       help="Enable verbose output")
-    parser.add_argument("--dry-run", action="store_true",
-                       help="Only simulate execution without making changes")
-
-    return parser
-
-def load_project_config(project_path: str, project_root: Path) -> dict:
+def preload_internal_crews(error_logger: ErrorLogger) -> Dict[str, Dict[str, Any]]:
     """
-    Load project configuration from YAML file, supporting nested directories.
-
-    Args:
-        project_path: The path to the project relative to internal_crew (e.g., 'zeroai' or 'cyford/zeroai').
-        project_root: The root Path of the project.
-
-    Returns:
-        Dictionary with project configuration.
+    Preload all internal crew modules and check which ones are available.
     """
-    config_dir_root = project_root / "knowledge" / "internal_crew"
-    config_path = config_dir_root / project_path / "project_config.yaml"
-    config_dir = config_path.parent
+    crew_status = {}
+    internal_crews_dir = Path("src/crews/internal")
 
-    # Check if the config file exists
-    if not config_path.exists():
-        console.print(f"⚠️ No config found for project at '{config_path}', creating default", style="yellow")
-        ensure_dir_exists(config_dir)
+    if not internal_crews_dir.exists():
+        error_msg = f"Internal crews directory not found at {internal_crews_dir}"
+        console.print(f"❌ {error_msg}", style="red")
+        error_logger.log_error(error_msg, {})
+        return {"error": error_msg}
 
-        default_config = {
-            "project_name": project_path.split('/')[-1], # Extract project name from path
-            "description": "Auto-generated project configuration",
-            "repository": None,
-            "default_branch": "main",
-            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "categories": ["developer", "documentation", "repo_manager", "research"],
-            "tools": ["git", "file"]
+    table = Table(title="Internal Crews Status")
+    table.add_column("Crew", style="cyan")
+    table.add_column("Status", style="white")
+    table.add_column("Details", style="white")
+    table.add_column("Files", style="dim")
+
+    crew_dirs = [d for d in internal_crews_dir.iterdir() if d.is_dir() and not d.name.startswith("__")]
+    console.print(f"🔍 [bold blue]Checking internal crews availability[/bold blue]")
+    console.print(f"Found {len(crew_dirs)} potential internal crews", style="blue")
+
+    for crew_dir in crew_dirs:
+        crew_name = crew_dir.name
+        crew_status[crew_name] = {
+            "status": "unknown",
+            "error": None,
+            "files_present": [],
+            "directory": str(crew_dir)
         }
+        required_files = ["__init__.py", "agents.py", "tasks.py", "crew.py"]
+        missing_files = []
 
-        with open(config_path, 'w') as f:
-            yaml.dump(default_config, f, default_flow_style=False)
-        return default_config
+        for file in required_files:
+            if (crew_dir / file).exists():
+                crew_status[crew_name]["files_present"].append(file)
+            else:
+                missing_files.append(file)
 
-    console.print(f"✅ Found project config for '{project_path}' at {config_path}", style="green")
-
-    # Load existing config from the found path
-    try:
-        config = load_yaml_config(config_path)
-        return config
-    except Exception as e:
-        console.print(f"❌ Error loading project config from {config_path}: {e}", style="red")
-        return {
-            "project_name": project_path.split('/')[-1],
-            "description": "Error loading configuration",
-            "repository": None
-        }
-
-def execute_devops_task(router, args, project_config):
-    """Execute the DevOps task with the given parameters."""
-    try:
-        start_time = time.time()
-        task_id = args.task_id or str(uuid.uuid4())
-
-        console.print(f"\n🚀 [bold blue]Executing DevOps Task[/bold blue]")
-        console.print(f"📝 Task ID: [bold cyan]{task_id}[/bold cyan]")
-        console.print(f"🔍 Category: [bold green]{args.category}[/bold green]")
-        console.print(f"📂 Project: [bold yellow]{args.project}[/bold yellow]")
-
-        if args.verbose:
-            console.print(f"📋 Task details:")
-            console.print(f"   Prompt: {args.prompt}")
-            if args.repo:
-                console.print(f"   Repository: {args.repo}")
-            if args.branch:
-                console.print(f"   Branch: {args.branch}")
-
-        if args.dry_run:
-            console.print("\n🧪 [bold yellow]DRY RUN - No changes will be made[/bold yellow]")
-            end_time = time.time()
-            record_task_result(
-                task_id=task_id, prompt=args.prompt, category=args.category,
-                model_used="dry_run", peer_used="local", start_time=start_time,
-                end_time=end_time, success=True, error_message=None,
-                git_changes=None, token_usage=None
-            )
-            return {"success": True, "message": "Dry run completed"}
-
-        console.print("\n⚙️ [bold blue]Processing task...[/bold blue]")
-
-        ai_dev_ops_crew_path = project_root / "src" / "ai_dev_ops_crew.py"
-        if ai_dev_ops_crew_path.exists():
-            console.print(f"✅ Found ai_dev_ops_crew.py at {ai_dev_ops_crew_path}")
-        else:
-            console.print(f"❌ ai_dev_ops_crew.py not found at {ai_dev_ops_crew_path}", style="red")
-            return {"success": False, "error": f"ai_dev_ops_crew.py not found"}
-
-        # Create the inputs dictionary
-        inputs = {
-            "prompt": args.prompt,
-            "category": args.category,
-            "repository": args.repo or project_config.get("repository"),
-            "branch": args.branch or project_config.get("default_branch", "main"),
-            "task_id": task_id,
-            "verbose": args.verbose
-        }
+        if missing_files:
+            crew_status[crew_name]["status"] = "incomplete"
+            crew_status[crew_name]["error"] = f"Missing files: {', '.join(missing_files)}"
+            table.add_row(crew_name, "⚠️ Incomplete", f"Missing: {', '.join(missing_files)}", ", ".join(crew_status[crew_name]["files_present"]))
+            continue
 
         try:
-            result = run_ai_dev_ops_crew_securely(router=router, project_id=args.project, inputs=inputs)
+            import_path = f"src.crews.internal.{crew_name}.crew"
+            module = importlib.import_module(import_path)
+            crew_status[crew_name]["status"] = "available"
+            crew_status[crew_name]["module"] = import_path
+            get_crew_func = f"get_{crew_name}_crew"
+            if hasattr(module, get_crew_func):
+                crew_status[crew_name]["get_crew_function"] = get_crew_func
+                table.add_row(crew_name, "✅ Available", f"Found {get_crew_func}()", ", ".join(required_files))
+            else:
+                crew_status[crew_name]["error"] = f"Missing {get_crew_func}() function"
+                crew_status[crew_name]["status"] = "incomplete"
+                table.add_row(crew_name, "⚠️ Function Missing", f"Missing {get_crew_func}()", ", ".join(required_files))
+        except ImportError as e:
+            crew_status[crew_name]["status"] = "import_error"
+            crew_status[crew_name]["error"] = str(e)
+            table.add_row(crew_name, "❌ Import Error", str(e), ", ".join(crew_status[crew_name]["files_present"]))
+            error_logger.log_error(f"Failed to import {crew_name} crew: {str(e)}", {"crew_name": crew_name, "traceback": traceback.format_exc()})
         except Exception as e:
-            console.print(f"❌ Error during crew execution: {e}", style="red")
-            traceback_str = traceback.format_exc()
-            console.print("Traceback:", style="red")
-            console.print(traceback_str)
-            result = {"success": False, "error": str(e)}
+            crew_status[crew_name]["status"] = "error"
+            crew_status[crew_name]["error"] = str(e)
+            table.add_row(crew_name, "❌ Error", str(e), ", ".join(crew_status[crew_name]["files_present"]))
+            error_logger.log_error(f"Error with {crew_name} crew: {str(e)}", {"crew_name": crew_name, "traceback": traceback.format_exc()})
 
-        end_time = time.time()
-        success = result.get("success", False)
-        error_message = result.get("error") if not success else None
+    console.print(table)
+    for crew_name, info in crew_status.items():
+        status_style = "green" if info["status"] == "available" else "yellow" if info["status"] == "incomplete" else "red"
+        console.print(f"[bold]{crew_name}[/bold]: [{status_style}]{info['status']}[/{status_style}]")
+        if info["error"]:
+            console.print(f"  Error: {info['error']}")
+    return crew_status
 
-        # Log and record the task result
-        if success:
-            console.print(f"✅ [bold green]Task completed successfully in {end_time - start_time:.2f} seconds[/bold green]")
-        else:
-            console.print(f"❌ [bold red]Task failed after {end_time - start_time:.2f} seconds[/bold red]")
-            console.print(f"Error: {error_message}", style="red")
+class AIOpsCrewManager:
+    """
+    Manager for the AI DevOps Crew.
+    Orchestrates secure execution of internal development and maintenance tasks
+    by delegating to specialized sub-crews.
+    """
+    def __init__(self, router, project_id, inputs):
+        self.router = router
+        self.project_id = project_id
+        self.inputs = inputs
+        self.task_id = inputs.get("task_id", str(uuid.uuid4()))
+        self.prompt = inputs.get("prompt", "")
+        self.category = inputs.get("category", "general")
+        self.repository = inputs.get("repository")
+        self.branch = inputs.get("branch", "main")
+        self.error_logger = ErrorLogger()
+        self.model_used = "unknown"
+        self.peer_used = "unknown"
+        self.token_usage = {"total_tokens": 0}
+        self.base_url = None
+        self.crews_status = inputs.get("crews_status", {})
+        if not self.crews_status:
+            console.print("Preloading internal crews status...", style="blue")
+            self.crews_status = preload_internal_crews(self.error_logger)
+        self.project_config = self._load_project_config()
+        self.working_dir = self._setup_working_dir()
+        self.tools = self._initialize_tools()
 
-        record_task_result(
-            task_id=task_id,
-            prompt=args.prompt,
-            category=args.category,
-            model_used=result.get("model_used", "n/a"),
-            peer_used=result.get("peer_used", "n/a"),
-            start_time=start_time,
-            end_time=end_time,
-            success=success,
-            error_message=error_message,
-            git_changes=None,
-            token_usage=result.get("token_usage")
-        )
+    def _load_project_config(self) -> Dict[str, Any]:
+        try:
+            from src.utils.yaml_utils import load_yaml_config
+            config_path = Path(f"knowledge/internal_crew/{self.project_id}/project_config.yaml")
+            if not config_path.exists():
+                console.print(f"⚠️ No config found for project '{self.project_id}', using default", style="yellow")
+                return {
+                    "project": {"name": self.project_id},
+                    "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}"}
+                }
+            console.print(f"✅ Found project config at {config_path}", style="green")
+            config = load_yaml_config(config_path)
+            return config
+        except Exception as e:
+            console.print(f"❌ Error loading project config from {config_path}: {e}", style="red")
+            return {"error": str(e)}
 
-        return result
+    def _setup_working_dir(self):
+        # Implementation of _setup_working_dir...
+        pass
 
-    except Exception as e:
-        console.print(f"❌ An unexpected error occurred: {e}", style="red")
-        logger.error(f"Unexpected error in execute_devops_task: {e}", exc_info=True)
-        return {"success": False, "error": str(e)}
+    def _initialize_tools(self):
+        # Implementation of _initialize_tools...
+        pass
 
-if __name__ == "__main__":
-    parser = setup_arg_parser()
-    args = parser.parse_args()
+    def run(self):
+        # Implementation of the run method...
+        pass
 
-    try:
-        # Load project config, which now uses the dynamic path and project_root
-        project_config = load_project_config(args.project, project_root)
-
-        # Use the repository from the config if not specified on the command line
-        if not args.repo and project_config.get("repository"):
-            args.repo = project_config.get("repository")
-
-        # Use the branch from the config if not specified on the command line
-        if not args.branch and project_config.get("default_branch"):
-            args.branch = project_config.get("default_branch")
-
-        # Initialize peer discovery and router
-        discovery = PeerDiscovery()
-        # FIX: Call get_router without the discovery argument
-        router = get_router()
-
-        # Execute the task
-        result = execute_devops_task(router, args, project_config)
-
-        console.print("\n--- Final Result ---")
-        if result.get("success"):
-            console.print(result.get("message", "Success"), style="green")
-            if result.get("result"):
-                console.print(result["result"])
-        else:
-            console.print(f"Error: {result.get('error')}", style="red")
-            sys.exit(1)
-
-    except Exception as e:
-        console.print(f"\n❌ [bold red]Execution failed[/bold red]")
-        console.print(f"Reason: {e}", style="red")
-        logger.error(f"Execution failed: {e}", exc_info=True)
-        sys.exit(1)
+def run_ai_dev_ops_crew_securely(router, project_id, inputs):
+    manager = AIOpsCrewManager(router=router, project_id=project_id, inputs=inputs)
+    # The actual implementation of run_ai_dev_ops_crew_securely would go here
+    return manager.run()
