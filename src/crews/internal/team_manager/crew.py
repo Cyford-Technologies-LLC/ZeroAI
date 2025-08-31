@@ -1,3 +1,5 @@
+# src/crews/internal/team_manager/crew.py
+
 import importlib
 import logging
 import traceback
@@ -18,6 +20,20 @@ def get_team_manager_crew(
     task_inputs: Dict[str, Any],
     crews_status: Dict[str, Any]
 ) -> Optional[Crew]:
+    """
+    Creates and returns a hierarchical Crew for a team manager, dynamically
+    including available worker agents from other crews.
+
+    Args:
+        router: The router to use for LLM selection.
+        tools: A list of tools to be used by the agents.
+        project_config: The project's configuration dictionary.
+        task_inputs: A dictionary of task-specific inputs.
+        crews_status: A dictionary containing the status of other available crews.
+
+    Returns:
+        A Crew object configured for a hierarchical process, or None if creation fails.
+    """
     try:
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
@@ -28,8 +44,10 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
+        # 1. Create the team manager agent.
         team_manager = create_team_manager_agent(router=router, project_id=project_id, working_dir=working_dir)
 
+        # 2. Dynamically instantiate worker agents from other available crews.
         worker_agents = []
         for crew_name, info in crews_status.items():
             if crew_name == "team_manager":
@@ -38,6 +56,7 @@ def get_team_manager_crew(
             console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
+                    # Skip manager agents from being added as workers to prevent confusion.
                     if func_name == "create_team_manager_agent":
                         continue
 
@@ -46,6 +65,7 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
+                        # Pass the shared toolset to the worker agents.
                         agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
@@ -58,20 +78,27 @@ def get_team_manager_crew(
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
             return None
 
-        console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
+        # 3. Create a combined list of all agents, including the manager.
+        # This is the fix to ensure the manager's delegation tool is populated
+        # with the correct list of coworkers.
+        full_agent_list = [team_manager] + worker_agents
 
+        console.print(f"👨‍💼 Assembling hierarchical crew with {len(full_agent_list)} agents.", style="blue")
+
+        # 4. Define the initial task for the manager.
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,
             expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them."
         )
 
+        # 5. Return the Crew instance with the correct configuration.
         return Crew(
-            agents=worker_agents,
+            agents=full_agent_list,  # Use the combined list
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
-            verbose=task_inputs.get("verbose", 1), # FIX: Use task_inputs.get("verbose") instead of a undefined variable
+            verbose=task_inputs.get("verbose", 1),
         )
 
     except Exception as e:
@@ -80,3 +107,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
