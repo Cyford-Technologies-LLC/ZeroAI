@@ -1,3 +1,4 @@
+# src/crews/internal/team_manager/agents.py (revised)
 import importlib
 import inspect
 import sys
@@ -50,16 +51,12 @@ AVAILABLE_AGENTS = {
 
 
 class ErrorLogger:
-    """Logs errors to a file for later review."""
-
+    # (Same as before)
     def __init__(self):
         self.error_dir = Path("src/errors")
         self.error_dir.mkdir(parents=True, exist_ok=True)
 
     def log_error(self, error_message: str, context: Dict[str, Any] = None) -> str:
-        """
-        Log an error to a file for later review.
-        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         error_id = str(uuid.uuid4())[:8]
         filename = f"error_{timestamp}_{error_id}.log"
@@ -80,7 +77,7 @@ class ErrorLogger:
 
 
 def format_agent_list() -> str:
-    """Format the list of available agents as a string."""
+    # (Same as before)
     agent_list = "# Available Specialist Teams\n\n"
 
     for name, details in AVAILABLE_AGENTS.items():
@@ -95,10 +92,7 @@ def format_agent_list() -> str:
 
 
 def discover_available_crews() -> Dict[str, Dict[str, str]]:
-    """
-    Scan the project to discover available crews and their agents.
-    This provides a dynamic list of what's actually accessible.
-    """
+    # (Same as before)
     available_crews = {}
     errors = []
 
@@ -152,7 +146,7 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
     """
     Dynamically loads and instantiates all agents from discovered crews,
-    correctly assigning their coworkers list.
+    correctly assigning their coworkers list and rebuilding tools.
     """
     discovered_crews = discover_available_crews()
     agent_creator_functions = {}
@@ -168,27 +162,25 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
             except Exception as e:
                 console.print(f"❌ Failed to get agent creators from {module_name}: {e}", style="red")
 
-    all_coworkers = []
+    temp_coworkers = []
 
     # Pass 2: Instantiate agents with placeholders for coworkers
     for creator_func in agent_creator_functions.values():
         temp_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=[])
-        all_coworkers.append(temp_agent)
+        temp_coworkers.append(temp_agent)
 
-    # Pass 3: Update each agent with the complete list of coworkers and rebuild tools
-    for agent in all_coworkers:
-        agent.coworkers = [coworker for coworker in all_coworkers if coworker != agent]
-        # This is the critical step to ensure tools are rebuilt with the correct coworkers
-        agent.tools = agent.tools  # Re-assignment triggers tool recreation if implemented
-        console.print(f"✅ Configured agent: [bold green]{agent.name}[/bold green] with coworkers", style="blue")
+    all_coworkers = []
+    # Pass 3: Create final agents with the correct coworkers list
+    for creator_func in agent_creator_functions.values():
+        new_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=temp_coworkers)
+        all_coworkers.append(new_agent)
+        console.print(f"✅ Configured agent: [bold green]{new_agent.name}[/bold green] with coworkers", style="blue")
 
     return all_coworkers
 
 
 def create_team_manager_agent(router, project_id: str, working_dir: Path, coworkers: Optional[List] = None) -> Agent:
-    """
-    Create the Team Manager Agent that only delegates tasks (no direct tools).
-    """
+    # (Same as before)
     try:
         llm = router.get_llm_for_role("devops_orchestrator")
         available_crews = discover_available_crews()
@@ -201,21 +193,21 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             name="Project Coordinator",
             goal=f"Coordinate specialists to complete tasks for project {project_id} by delegating work efficiently, avoiding redundant questions, and making logical decisions based on coworker feedback.",
             backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
-                delegate work to appropriate specialists, and oversee the project's progress. You do not perform technical work directly.
+            delegate work to appropriate specialists, and oversee the project's progress. You do not perform technical work directly.
 
-                You must follow these instructions precisely:
-                1. **Analyze Requirements**: Thoroughly understand the request.
-                2. **Identify Specialists**: Determine which available specialists are best suited for each sub-task.
-                3. **Prioritize Delegation**: Your primary action should be to use the 'Delegate work to coworker' tool.
-                4. **Evaluate Answers**: After asking a question, you MUST evaluate the answer. If the answer provides sufficient information to proceed, delegate the task. Do not ask a chain of repetitive questions. If the answer is vague or unhelpful, formulate a different, more specific question.
-                5. **Delegate Effectively**: When delegating, include all relevant context from the original prompt and any prior interactions.
-                6. **Integrate Work**: Combine the results from specialists into a cohesive final solution.
+            You must follow these instructions precisely:
+            1. **Analyze Requirements**: Thoroughly understand the request.
+            2. **Identify Specialists**: Determine which available specialists are best suited for each sub-task.
+            3. **Prioritize Delegation**: Your primary action should be to use the 'Delegate work to coworker' tool.
+            4. **Evaluate Answers**: After asking a question, you MUST evaluate the answer. If the answer provides sufficient information to proceed, delegate the task. Do not ask a chain of repetitive questions. If the answer is vague or unhelpful, formulate a different, more specific question.
+            5. **Delegate Effectively**: When delegating, include all relevant context from the original prompt and any prior interactions.
+            6. **Integrate Work**: Combine the results from specialists into a cohesive final solution.
 
-                Available Coworkers and their capabilities:
-                {crew_list}
+            Available Coworkers and their capabilities:
+            {crew_list}
 
-                Working directory: {working_dir}
-                """,
+            Working directory: {working_dir}
+            """,
             llm=llm,
             verbose=True,
             allow_delegation=True,
