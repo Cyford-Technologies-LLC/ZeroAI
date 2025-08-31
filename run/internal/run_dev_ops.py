@@ -280,8 +280,8 @@ if __name__ == "__main__":
 
         # Initialize peer discovery and router
         discovery = PeerDiscovery()
-        # FIX: Call get_router without the discovery argument
-        router = get_router()
+        # FIX: Remove the verbose=args.verbose argument
+        router = get_router(discovery)
 
         # Execute the task
         result = execute_devops_task(router, args, project_config)
