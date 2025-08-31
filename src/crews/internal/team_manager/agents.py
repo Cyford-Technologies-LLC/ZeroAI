@@ -18,7 +18,8 @@ console = Console()
 AVAILABLE_AGENTS = {
     "Team Manager": {
         "description": "Coordinates tasks and manages teams of specialists",
-        "capabilities": ["task coordination", "requirement analysis", "team management", "task delegation", "progress monitoring"]
+        "capabilities": ["task coordination", "requirement analysis", "team management", "task delegation",
+                         "progress monitoring"]
     },
     "Developer": {
         "description": "Implements code solutions and fixes bugs",
@@ -26,7 +27,8 @@ AVAILABLE_AGENTS = {
     },
     "Documentation Specialist": {
         "description": "Creates and maintains technical documentation",
-        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams", "markdown expertise"]
+        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams",
+                         "markdown expertise"]
     },
     "Testing Engineer": {
         "description": "Designs and implements tests for code quality",
@@ -42,9 +44,11 @@ AVAILABLE_AGENTS = {
     },
     "DevOps Engineer": {
         "description": "Handles deployment and infrastructure automation",
-        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup", "cloud deployment"]
+        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup",
+                         "cloud deployment"]
     }
 }
+
 
 class ErrorLogger:
     """Logs errors to a file for later review."""
@@ -82,6 +86,7 @@ class ErrorLogger:
         console.print(f"📝 Error logged to {filepath}", style="yellow")
         return str(filepath)
 
+
 def format_agent_list() -> str:
     """Format the list of available agents as a string."""
     agent_list = "# Available Specialist Teams\n\n"
@@ -95,6 +100,7 @@ def format_agent_list() -> str:
         agent_list += "\n"
 
     return agent_list
+
 
 def discover_available_crews() -> Dict[str, Dict[str, str]]:
     """
@@ -117,16 +123,14 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
 
     # Scan each subdirectory in the internal crews path
     for crew_dir in crews_path.iterdir():
-        if crew_dir.is_dir() and crew_dir.name != "__pycache__" and crew_dir.name != "team_manager":
+        if crew_dir.is_dir() and crew_dir.name not in ["__pycache__", "team_manager"]:
             crew_name = crew_dir.name
             crew_info = {"path": str(crew_dir)}
 
-            # Try to import the crew's agents module
             try:
                 module_name = f"src.crews.internal.{crew_name}.agents"
                 agents_module = importlib.import_module(module_name)
 
-                # Look for agent creation functions
                 agent_creators = []
                 for name, obj in inspect.getmembers(agents_module):
                     if inspect.isfunction(obj) and name.startswith("create_"):
@@ -152,11 +156,36 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
 
             available_crews[crew_name] = crew_info
 
-    # Add any errors to the results
     if errors:
         available_crews["errors"] = errors
 
     return available_crews
+
+
+def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
+    """
+    Dynamically loads and instantiates all agents from discovered crews.
+    """
+    all_coworkers = []
+    discovered_crews = discover_available_crews()
+
+    for crew_name, crew_info in discovered_crews.items():
+        if crew_info.get("status") == "available":
+            module_name = f"src.crews.internal.{crew_name}.agents"
+            try:
+                agents_module = importlib.import_module(module_name)
+                for agent_creator_name in crew_info["agents"]:
+                    agent_creator_func = getattr(agents_module, agent_creator_name)
+                    new_agent = agent_creator_func(router=router, inputs=inputs, tools=tools)
+                    all_coworkers.append(new_agent)
+                    console.print(f"✅ Loaded agent: [bold green]{new_agent.name}[/bold green] from {crew_name}",
+                                  style="blue")
+            except Exception as e:
+                console.print(f"❌ Failed to load agent from {module_name}: {e}", style="red")
+                traceback.print_exc()
+
+    return all_coworkers
+
 
 def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Agent:
     """
@@ -174,11 +203,14 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
         # Get LLM for the team manager role
         llm = router.get_llm_for_role("devops_orchestrator")
 
-        # Discover available crews
+        # Discover available crews and format for context
         available_crews = discover_available_crews()
         crew_list = format_agent_list()
 
         console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
+
+        # Load all potential coworkers
+        coworkers = load_all_coworkers(router=router, inputs={})
 
         # Create the team manager agent with improved instructions
         team_manager = Agent(
@@ -193,18 +225,18 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
             2. **Identify Specialists**: Determine which available specialists are best suited for each sub-task.
             3. **Prioritize Delegation**: Your primary action should be to use the 'Delegate work to coworker' tool.
             4. **Evaluate Answers**: After asking a question, you MUST evaluate the answer. If the answer provides sufficient information to proceed, delegate the task. Do not ask a chain of repetitive questions. If the answer is vague or unhelpful, formulate a different, more specific question.
-            5. **Delegate Effectively**: When delegating, provide all necessary context as clear, descriptive strings for the 'task' and 'context' parameters. Do not repeat failed actions.
-            6. **Recover from Failures**: If a tool execution fails with an error, *do not repeat the same failed action*. Carefully read the error message and formulate a new, corrected input.
-            7. **Provide Final Answer**: Only provide the final answer when all delegation is complete and the objective has been fully addressed by the specialists.
+            5. **Delegate Effectively**: When delegating, include all relevant context from the original prompt and any prior interactions.
+            6. **Integrate Work**: Combine the results from specialists into a cohesive final solution.
 
-            Available Specialists and their Capabilities:
+            Available Coworkers and their capabilities:
             {crew_list}
-            
-            Your working directory is: {working_dir}
+
+            Working directory: {working_dir}
             """,
             llm=llm,
             verbose=True,
             allow_delegation=True,
+            coworkers=coworkers,
         )
 
         return team_manager
@@ -217,7 +249,7 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
                 "project_id": project_id,
                 "working_dir": str(working_dir),
                 "traceback": traceback.format_exc(),
-                "sys.path": sys.path
             }
         )
-        return None
+        raise e
+
