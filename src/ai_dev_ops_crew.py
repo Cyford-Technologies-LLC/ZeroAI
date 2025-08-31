@@ -13,7 +13,6 @@ from rich.console import Console
 from rich.table import Table
 from src.crews.internal.team_manager.crew import get_team_manager_crew
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
