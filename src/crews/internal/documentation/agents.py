@@ -1,23 +1,13 @@
 # src/crews/internal/documentation/agents.py
 from crewai import Agent
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
 from config import config
 from tools.file_tool import file_tool
 from src.utils.memory import Memory
 
-
-
-
-
-
-
-
-
-
-
-
-def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+    """Create a Documentation Writer agent."""
     task_description = "Generate or update documentation based on project changes."
     preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
 
@@ -32,12 +22,11 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Ag
     except ImportError:
         pass  # Learning module not available
 
-
     llm = router.get_llm_for_task(task_description)
     return Agent(
         role="Documentation Writer",
         name="William White",
-        memory=agent_memory,  # Add memory here
+        memory=agent_memory,
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,
@@ -60,11 +49,10 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Ag
                 "code_quality_guidelines.pdf",
                 "https://testing-best-practices.com"
             ],
-
         goal="Create clear and concise documentation for software projects.",
         backstory="A skilled technical writer who translates complex code into understandable documentation.",
         llm=llm,
-        tools=[file_tool],
+        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )
