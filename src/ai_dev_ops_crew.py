@@ -506,7 +506,7 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
             tools=self.tools,
             project_config=self.project_config,
             task_inputs=self.inputs,
-            crews_status=self.crews_status # Pass the preloaded status
+            crews_status=self.crews_status  # <-- Pass the preloaded status here
         )
 
         if crew:
