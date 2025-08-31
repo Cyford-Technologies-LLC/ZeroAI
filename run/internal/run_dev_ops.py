@@ -21,6 +21,8 @@ from src.crews.internal.diagnostics.agents import create_diagnostic_agent
 from crewai import Agent, Crew, Task
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
+from ast import literal_eval
+
 
 # Important: for any crews outside the default, make sure the proper crews are loaded
 os.environ["CREW_TYPE"] = "internal"
@@ -221,6 +223,10 @@ def execute_devops_task(router, args, project_config):
 
             # Get the captured log output
             full_log_output = log_stream.getvalue()
+
+            # Ensure coworker_names is a list
+            raw_coworker_names = "['data_analyst', 'report_writer']"  # Example string from logs
+            coworker_names = literal_eval(raw_coworker_names)  # Convert to list
 
             # Create the diagnostic agent and crew
             diagnostic_agent = create_diagnostic_agent(router=router, inputs={})
