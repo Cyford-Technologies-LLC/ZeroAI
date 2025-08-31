@@ -1,3 +1,4 @@
+# src/crews/internal/team_manager/crew.py
 import importlib
 import logging
 import traceback
@@ -19,22 +20,12 @@ def get_team_manager_crew(
         project_config: Dict[str, Any],
         task_inputs: Dict[str, Any],
         crews_status: Dict[str, Any],
-        custom_logger
+        custom_logger: Any,
+        step_callback: Optional[Any] = None
 ) -> Optional[Crew]:
     """
     Creates and returns a hierarchical Crew for a team manager, dynamically
     including available worker agents from other crews.
-
-    Args:
-        router: The router to use for LLM selection.
-        tools: A list of tools to be used by the agents.
-        project_config: The project's configuration dictionary.
-        task_inputs: A dictionary of task-specific inputs.
-        crews_status: A dictionary containing the status of other available crews.
-        custom_logger: A custom logger for crew callbacks.
-
-    Returns:
-        A Crew object configured for a hierarchical process, or None if creation fails.
     """
     try:
         project_id = task_inputs.get("project_id", "default")
@@ -46,7 +37,6 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Dynamically instantiate worker agents from other available crews.
         worker_agents = []
         for crew_name, info in crews_status.items():
             if crew_name == "team_manager":
@@ -65,11 +55,10 @@ def get_team_manager_crew(
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
-                        # Inspect the function signature to see if it accepts `coworkers`
                         func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
                         if 'coworkers' in func_params:
-                            call_kwargs['coworkers'] = []  # Pass an empty list for initial instantiation
+                            call_kwargs['coworkers'] = []
 
                         agent = agent_creator_func(**call_kwargs)
                         if isinstance(agent, Agent):
@@ -86,7 +75,6 @@ def get_team_manager_crew(
                         error_logger.log_error(f"Failed to instantiate agent creator {func_name}",
                                                {"exception": str(e), "traceback": traceback.format_exc()})
 
-        # 2. Filter out any non-Agent objects
         worker_agents = [agent for agent in worker_agents if isinstance(agent, Agent)]
         console.print(f"DEBUG: Found {len(worker_agents)} worker agents.", style="blue")
 
@@ -94,8 +82,6 @@ def get_team_manager_crew(
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
             return None
 
-        # 3. Create the team manager agent. No need to pass coworker_names.
-        # The manager will learn about the coworkers when the crew is assembled.
         team_manager = create_team_manager_agent(
             router=router,
             project_id=project_id,
@@ -103,7 +89,6 @@ def get_team_manager_crew(
             coworkers=worker_agents,
         )
 
-        # 4. Define the initial task for the manager
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}. Your specialized crew members include: {', '.join([a.role for a in worker_agents])}. Inform all team members about the request and delegate tasks accordingly.",
             agent=team_manager,
@@ -112,17 +97,18 @@ def get_team_manager_crew(
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
-        # 5. Return the Crew instance with the correct configuration
+        # REVISED: Pass step_callback to the Crew constructor
         hierarchical_crew = Crew(
             agents=worker_agents,
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
+            # REVISED: Ensure verbose is a boolean
             verbose=bool(task_inputs.get("verbose", 1)),
-            callbacks=[custom_logger]
+            # REVISED: Use step_callback instead of the deprecated callbacks
+            step_callback=step_callback
         )
 
-        # 6. Optional: Add debug prints to confirm manager can see workers
         manager_tool_names = [tool.name for tool in hierarchical_crew.manager_agent.tools]
         console.print(f"DEBUG: Manager agent tools: {manager_tool_names}", style="dim")
         for tool in hierarchical_crew.manager_agent.tools:
@@ -139,4 +125,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
