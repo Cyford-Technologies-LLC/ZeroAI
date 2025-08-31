@@ -83,7 +83,8 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         llm=llm,
         tools=tools if tools else [],
         verbose=True,
-        allow_delegation=True
+        allow_delegation=True,
+        coworkers=coworkers if coworkers is not None else []
     )
 
 def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:

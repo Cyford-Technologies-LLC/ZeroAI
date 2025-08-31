@@ -44,7 +44,8 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         llm=llm,
         tools=tools, # Pass tools here
         verbose=config.agents.verbose,
-        allow_delegation=False
+        allow_delegation=False,
+        coworkers = coworkers if coworkers is not None else []
     )
 
 def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
@@ -55,6 +56,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
         role="Senior Developer",
         name="Anthony Gates",
         memory=agent_memory,  # Add memory here
+        coworkers=coworkers if coworkers is not None else [],
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,
@@ -91,6 +93,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     agent_memory = Memory()
     return Agent(
         role="QA Engineer",
+        coworkers=coworkers if coworkers is not None else [],
         name="Emily",
         memory=agent_memory,  # Add memory here
         learning={
