@@ -165,6 +165,51 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
 
 class AIOpsCrewManager:
     # ... (initializer and helper methods remain the same) ...
+    """
+    Manager for the AI DevOps Crew.
+    Orchestrates secure execution of internal development and maintenance tasks
+    by delegating to specialized sub-crews.
+    """
+
+    def __init__(self, router, project_id, inputs):
+        """
+        Initialize the AIOps Crew Manager.
+
+        Args:
+            router: The DevOps router instance for LLM routing
+            project_id: The ID of the project being worked on
+            inputs: Dictionary of input parameters
+        """
+        self.router = router
+        self.project_id = project_id
+        self.inputs = inputs
+        self.task_id = inputs.get("task_id", str(uuid.uuid4()))
+        self.prompt = inputs.get("prompt", "")
+        self.category = inputs.get("category", "general")
+        self.repository = inputs.get("repository")
+        self.branch = inputs.get("branch", "main")
+
+        # Initialize tracking information
+        self.model_used = "unknown"
+        self.peer_used = "unknown"
+        self.token_usage = {"total_tokens": 0}
+        self.base_url = None
+
+        # Preload all crew modules
+        self.crews_status = inputs.get("crews_status", {})
+        if not self.crews_status:
+            console.print("Preloading internal crews status...", style="blue")
+            self.crews_status = preload_internal_crews()
+
+        # Load project configuration
+        self.project_config = self._load_project_config()
+
+        # Set up working directory from project configuration
+        self.working_dir = self._setup_working_dir()
+
+        # Initialize the tools
+        self.tools = self._initialize_tools()
+
     def _load_project_config(self) -> Dict[str, Any]:
         """Load the project configuration from YAML file."""
         try:
