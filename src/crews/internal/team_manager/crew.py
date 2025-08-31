@@ -1,5 +1,3 @@
-# src/crews/internal/team_manager/crew.py
-
 import importlib
 import logging
 import traceback
@@ -8,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
-from .agents import create_team_manager_agent, ErrorLogger
+from .agent import create_team_manager_agent, ErrorLogger
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
@@ -88,14 +86,25 @@ def get_team_manager_crew(
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
         # 4. Return the Crew instance with the correct configuration.
-        # FIX: Pass only the worker_agents to the 'agents' parameter.
-        return Crew(
+        # This is the correct way to handle the hierarchical process.
+        hierarchical_crew = Crew(
             agents=worker_agents,
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
             verbose=task_inputs.get("verbose", 1),
         )
+
+        # Add debug prints to confirm manager can see workers
+        manager_tool_names = [tool.name for tool in hierarchical_crew.manager_agent.tools]
+        console.print(f"DEBUG: Manager agent tools: {manager_tool_names}", style="dim")
+        for tool in hierarchical_crew.manager_agent.tools:
+            if "Delegate work" in tool.name:
+                console.print(f"DEBUG: Delegate tool description: {tool.description}", style="dim")
+            if "Ask question" in tool.name:
+                console.print(f"DEBUG: Ask tool description: {tool.description}", style="dim")
+
+        return hierarchical_crew
 
     except Exception as e:
         error_context = {"traceback": traceback.format_exc()}
