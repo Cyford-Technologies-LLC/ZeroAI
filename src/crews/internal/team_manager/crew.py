@@ -65,11 +65,13 @@ def get_team_manager_crew(
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
-                        # Dynamically check if the function accepts 'coworkers'
+                        # Dynamically check if the function accepts 'coworkers' or 'coworker_names'
                         func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
                         if 'coworkers' in func_params:
                             call_kwargs['coworkers'] = worker_agents
+                        if 'coworker_names' in func_params:
+                            call_kwargs['coworker_names'] = [agent.name for agent in worker_agents]
 
                         agent = agent_creator_func(**call_kwargs)
                         worker_agents.append(agent)
@@ -93,7 +95,6 @@ def get_team_manager_crew(
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
         # 4. Return the Crew instance with the correct configuration.
-        # This is the correct way to handle the hierarchical process.
         hierarchical_crew = Crew(
             agents=worker_agents,
             manager_agent=team_manager,
