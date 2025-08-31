@@ -1,8 +1,12 @@
+# src/crews/internal/research/agents.py
+
 from crewai import Agent
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
 from config import config
 from rich.console import Console
+
+# Assuming Memory is imported and configured
 from src.utils.memory import Memory
 
 console = Console()
@@ -43,9 +47,28 @@ def get_research_llm(router: DistributedRouter, category: str = "research", pref
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
     """Create a specialized researcher agent."""
     llm = get_research_llm(router, category="research")
-    return create_researcher(router, inputs, category="research", llm=llm, tools=tools)
+    return Agent(
+        role="Internal Researcher",
+        name="Internal Research Specialist",
+        goal="Gather information on internal project details.",
+        backstory="An expert at internal research, finding and documenting all project-specific information.",
+        llm=llm,
+        tools=tools, # <-- Add tools parameter here
+        verbose=config.agents.verbose,
+        allow_delegation=False,
+    )
 
 def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
     """Create a specialized analyst agent."""
     llm = get_research_llm(router, category="research")
-    return create_analyst(router, inputs, category="research", llm=llm, tools=tools)
+    return Agent(
+        role="Internal Analyst",
+        name="Internal Analyst",
+        goal="Analyze research results and provide insights.",
+        backstory="A detail-oriented analyst who synthesizes information from internal research to provide insights.",
+        llm=llm,
+        tools=tools, # <-- Add tools parameter here
+        verbose=config.agents.verbose,
+        allow_delegation=False,
+    )
+
