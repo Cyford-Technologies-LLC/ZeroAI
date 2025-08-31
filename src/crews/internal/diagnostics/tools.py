@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 from rich.console import Console
-from crewai_tools import BaseTool
+from crewai_tools.tools.base_tool import BaseTool
 
 console = Console()
 
