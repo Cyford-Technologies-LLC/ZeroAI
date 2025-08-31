@@ -6,7 +6,9 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
+# Import ErrorLogger from the local agents module
 from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
+# Import the DelegateWorkTool
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
@@ -27,6 +29,7 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create the team manager agent
         team_manager = create_team_manager_agent(router=router, project_id=project_id, working_dir=working_dir)
 
         worker_agents = []
@@ -45,6 +48,8 @@ def get_team_manager_crew(
                         module_name = f"src.crews.internal.{crew_name}.agents"
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
+
+                        # Call the agent creation function with all known arguments
                         agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
                         worker_agents.append(agent)
                         console.print(f"DEBUG: Successfully instantiated agent via: '{func_name}'", style="green")
@@ -77,3 +82,4 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
