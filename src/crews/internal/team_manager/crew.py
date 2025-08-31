@@ -104,7 +104,7 @@ def get_team_manager_crew(
             tasks=[initial_task],
             process=Process.hierarchical,
             # REVISED: Ensure verbose is a boolean
-            verbose=bool(task_inputs.get("verbose", 1)),
+            verbose=bool(task_inputs.get("verbose", 2)),
             # REVISED: Use step_callback instead of the deprecated callbacks
             step_callback=step_callback
         )
