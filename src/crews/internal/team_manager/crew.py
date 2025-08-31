@@ -1,3 +1,5 @@
+# src/crews/internal/team_manager/crew.py
+
 import importlib
 import logging
 import traceback
@@ -18,8 +20,20 @@ def get_team_manager_crew(
     task_inputs: Dict[str, Any],
     crews_status: Dict[str, Any]
 ) -> Optional[Crew]:
+    """
+    Creates a hierarchical master crew managed by the Team Manager agent.
+
+    Args:
+        router: The LLM router instance
+        tools: List of tools (passed to worker agents)
+        project_config: The project configuration
+        task_inputs: Dictionary of task inputs
+        crews_status: Preloaded status of all available crews
+
+    Returns:
+        A Crew instance configured for hierarchical execution, or None on error.
+    """
     try:
-        # ... (instantiate manager agent) ...
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
         working_dir_str = project_config.get("crewai_settings", {}).get(
@@ -37,18 +51,20 @@ def get_team_manager_crew(
         # 2. Instantiate all necessary worker agents dynamically
         worker_agents = []
         for crew_name, info in crews_status.items():
+            # Skip the team_manager entry itself
             if crew_name == "team_manager":
                 continue
 
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
+                    # Exclude the manager agent creator itself
                     if func_name == "create_team_manager_agent":
                         continue
 
                     console.print(f"DEBUG: Attempting to instantiate agent via: {func_name} from {crew_name}", style="dim")
                     try:
-                        # Modified import logic
                         module_name = f"src.crews.internal.{crew_name}.agents"
+                        # The dynamic import must happen here to ensure proper scope
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
                         worker_agents.append(agent_creator_func(router=router, inputs=task_inputs))
