@@ -47,7 +47,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         allow_delegation=False
     )
 
-def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
     task_description = "Write and apply code changes to fix bugs."
     llm = router.get_llm_for_task(task_description)
     agent_memory = Memory()
@@ -85,7 +85,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         allow_delegation=False
     )
 
-def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
     task_description = "Write and run tests to verify code fixes."
     llm = router.get_llm_for_task(task_description)
     agent_memory = Memory()
