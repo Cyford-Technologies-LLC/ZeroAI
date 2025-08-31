@@ -145,6 +145,8 @@ def record_task_result(task_id: str, result: dict[str, any], learning_tokens: in
     except Exception as e:
         logger.error(f"Error recording task result: {e}")
 # Execute DevOps task
+# run_dev_ops.py
+# ... (imports) ...
 def execute_devops_task(router, args, project_config):
     """Execute the DevOps task with the given parameters."""
     log_stream = StringIO()
@@ -171,7 +173,8 @@ def execute_devops_task(router, args, project_config):
                 "category": args.category,
                 "repository": args.repo or project_config.get("repository"),
                 "branch": args.branch or project_config.get("default_branch"),
-                "verbose": args.verbose,
+                # Ensure the verbose flag is a boolean
+                "verbose": bool(args.verbose),
                 "dry_run": args.dry_run
             }
         )
@@ -200,7 +203,7 @@ def execute_devops_task(router, args, project_config):
             diagnostic_agent = create_diagnostic_agent(
                 router=router,
                 inputs={},
-                coworker_names=coworker_names  # ✅ Use real names
+                coworker_names=coworker_names
             )
             diagnostic_task = Task(
                 description=f"Analyze the following logs to diagnose the reason for a delegation failure:\n\n{full_log_output}",
@@ -210,7 +213,8 @@ def execute_devops_task(router, args, project_config):
             diagnostic_crew = Crew(
                 agents=[diagnostic_agent],
                 tasks=[diagnostic_task],
-                verbose=args.verbose
+                # Pass the corrected boolean value
+                verbose=bool(args.verbose)
             )
 
             # Run the diagnostic crew
@@ -219,7 +223,6 @@ def execute_devops_task(router, args, project_config):
             console.print(f"\n🔬 [bold green]Diagnostic Agent Analysis:[/bold green]")
             console.print(diagnostic_result)
             # --- End Diagnostic Crew ---
-
 
         end_time = time.time()
         record_task_result(
@@ -234,7 +237,7 @@ def execute_devops_task(router, args, project_config):
         sys.stdout = original_stdout  # Ensure stdout is restored on error
         console.print(f"❌ An unexpected error occurred: {e}", style="red")
         logger.error(f"Error executing DevOps task: {e}\n{traceback.format_exc()}")
-        # Record task failure
+        # Record task failure (corrected)
         end_time = time.time()
         record_task_result(
             task_id=task_id,
@@ -242,6 +245,7 @@ def execute_devops_task(router, args, project_config):
             end_time=end_time, success=False, error_message=str(e),
             git_changes=None, token_usage=None
         )
+
 
 
 if __name__ == "__main__":
