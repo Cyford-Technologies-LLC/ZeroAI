@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
-from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
+from .agents import create_team_manager_agent, ErrorLogger
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
@@ -56,7 +56,7 @@ def get_team_manager_crew(
             console.print(f"DEBUG: Checking crew '{crew_name}'. Status: {info.get('status')}", style="dim")
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
-                    # Skip manager agents from being added as workers to prevent confusion.
+                    # Skip manager agents from being added as workers.
                     if func_name == "create_team_manager_agent":
                         continue
 
@@ -78,23 +78,19 @@ def get_team_manager_crew(
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
             return None
 
-        # 3. Create a combined list of all agents, including the manager.
-        # This is the fix to ensure the manager's delegation tool is populated
-        # with the correct list of coworkers.
-        full_agent_list = [team_manager] + worker_agents
-
-        console.print(f"👨‍💼 Assembling hierarchical crew with {len(full_agent_list)} agents.", style="blue")
-
-        # 4. Define the initial task for the manager.
+        # 3. Define the initial task for the manager.
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,
             expected_output="A comprehensive plan outlining the steps and which specialized crew should execute them."
         )
 
-        # 5. Return the Crew instance with the correct configuration.
+        console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
+
+        # 4. Return the Crew instance with the correct configuration.
+        # FIX: Pass only the worker_agents to the 'agents' parameter.
         return Crew(
-            agents=full_agent_list,  # Use the combined list
+            agents=worker_agents,
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
@@ -107,4 +103,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
