@@ -1,7 +1,7 @@
 # src/crews/internal/tools/delegate_tool.py
 
 from pydantic import BaseModel, Field
-from crewai import BaseTool
+from crewai.tools import BaseTool
 from typing import Union, Dict, Any
 
 class DelegateWorkToolSchema(BaseModel):
