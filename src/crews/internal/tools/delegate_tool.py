@@ -29,3 +29,4 @@ class DelegateWorkTool(BaseTool):
         # The manager should be prompted to select a coworker and provide
         # the task and context as strings.
         return f"Task '{task}' has been delegated to coworker '{coworker}'."
+
