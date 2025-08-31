@@ -71,7 +71,9 @@ def get_team_manager_crew(
                         if 'coworkers' in func_params:
                             call_kwargs['coworkers'] = worker_agents
                         if 'coworker_names' in func_params:
-                            call_kwargs['coworker_names'] = [agent.name for agent in worker_agents]
+                            # Create and pass the list of coworker names
+                            coworker_names_list = [agent.name for agent in worker_agents]
+                            call_kwargs['coworker_names'] = coworker_names_list
 
                         agent = agent_creator_func(**call_kwargs)
                         worker_agents.append(agent)
