@@ -42,14 +42,14 @@ try:
     # Use the updated get_llm_for_task with preferred models
     llm = router.get_llm_for_task(task_description, preferred_models)
 except Exception as e:
-    console.print(f"⚠️ Failed to get optimal LLM for research agent via router: {e}", style="yellow")
+    #console.print(f"⚠️ Failed to get optimal LLM for research agent via router: {e}", style="yellow")
     # Fall back to local model
     llm = router.get_local_llm("llama3.2:1b")
 
 if not llm:
     raise ValueError("Failed to get LLM for research agent after all attempts.")
 
-console.print(
+#console.print(
     f"🔗 Research Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
     style="blue")
 
