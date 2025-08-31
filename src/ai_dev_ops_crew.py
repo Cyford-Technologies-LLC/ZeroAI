@@ -383,11 +383,7 @@ class AIOpsCrewManager:
                 else:
                     coworker_names = []
 
-                if crew:
-                    # Ensure custom_logger is initialized and callbacks are set
-                    # Note: `crew.callbacks` is the standard approach, `crew.step_callback` and `crew.task_callback` might be older syntax
-                    crew.callbacks = [custom_logger]
-                # --- ADDED: Explicitly check for None before calling kickoff ---
+
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
                     console.print(error_msg, style="red")
