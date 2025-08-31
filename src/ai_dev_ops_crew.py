@@ -371,7 +371,7 @@ class AIOpsCrewManager:
                     project_config=self.project_config,
                     task_inputs=task_inputs,
                     crews_status=self.crews_status,
-                    custom_logger=custom_logger
+                    step_callback=custom_logger.log_step_callback if custom_logger else None
                 )
 
                 # Collect real agent roles from the crew (using .role instead of .name)

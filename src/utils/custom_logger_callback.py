@@ -1,45 +1,48 @@
+# src/utils/custom_logger_callback.py (Revised snippet)
 import json
-from datetime import datetime
+import time
 from rich.console import Console
 
 console = Console()
 
 
 class CustomLogger:
-    """A helper class to manage logging output."""
-
-    def __init__(self, output_file: str = None):
+    def __init__(self, output_file: str):
         self.output_file = output_file
-        self.log_history = []
+        self.log_data = {"execution_start": time.time(), "steps": []}
+        console.print(f"📝 Custom logger initialized, logging to '{output_file}'", style="blue")
 
-    def log_step(self, step_output):
-        """Logs the output of a crew step."""
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event": "on_step_callback",
-            "output": str(step_output),
-        }
-        self.log_history.append(log_entry)
+    def log_step_callback(self, output: any) -> None:
+        """
+        Logs the output of each agent step.
+        """
+        step_output = {}
+        if hasattr(output, 'result'):
+            step_output = {
+                "type": "tool_output",
+                "result": output.result,
+                "tool": output.tool
+            }
+        else:
+            # Handle other types of step output like AgentAction or AgentFinish
+            step_output = {
+                "type": "agent_action",  # Assuming it's an agent action if not a tool output
+                "output": str(output)
+            }
 
-    def log_task(self, task_output):
-        """Logs the output of a task."""
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event": "on_task_callback",
-            "output": str(task_output),
-        }
-        self.log_history.append(log_entry)
+        self.log_data["steps"].append({
+            "timestamp": time.time(),
+            "output": step_output
+        })
 
-    def save_log(self):
-        """Saves the log history to a JSON file."""
-        if self.output_file:
-            try:
-                with open(self.output_file, 'w') as f:
-                    json.dump(self.log_history, f, indent=2)
-                console.print(f"📄 Log history saved to {self.output_file}", style="green")
-            except Exception as e:
-                console.print(f"❌ Error saving log: {e}", style="red")
+        console.print(f"📝 Logged step output: {step_output}", style="dim")
 
+    def save_log(self) -> None:
+        """
+        Saves the complete log data to the specified output file.
+        """
+        self.log_data["execution_end"] = time.time()
+        with open(self.output_file, 'w') as f:
+            json.dump(self.log_data, f, indent=4)
+        console.print(f"📝 Log saved to '{self.output_file}'", style="green")
 
-# You can still import this class from other modules
-__all__ = ['CustomLogger']
