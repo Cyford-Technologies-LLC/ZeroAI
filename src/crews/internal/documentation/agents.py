@@ -6,7 +6,7 @@ from config import config
 from tools.file_tool import file_tool
 from src.utils.memory import Memory
 
-def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     """Create a Documentation Writer agent."""
     task_description = "Generate or update documentation based on project changes."
     preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
@@ -27,6 +27,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
         role="Documentation Writer",
         name="William White",
         memory=agent_memory,
+        coworkers=coworkers if coworkers is not None else [],
         learning={
                 "enabled": True,
                 "learning_rate": 0.05,

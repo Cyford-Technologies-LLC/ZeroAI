@@ -1,13 +1,12 @@
-# src/crews/internal/developer/agents.py
 import os
 
 from crewai import Agent
 from typing import Dict, Any, List, Optional
 from src.utils.memory import Memory
 from src.crews.internal.tools.git_tool import GitTool, FileTool
-from distributed_router import DistributedRouter # Assuming this is available
-from config import config # Assuming this is available
-from rich.console import Console # Assuming rich is available
+from distributed_router import DistributedRouter
+from config import config
+from rich.console import Console
 # Important: for any crews outside the default, make sure the proper crews are loaded
 os.environ["CREW_TYPE"] = "internal"
 console = Console()
@@ -30,7 +29,7 @@ def get_developer_llm(router: DistributedRouter, category: str = "coding") -> An
     llm = None
     try:
         task_description = f"Perform {category} tasks."
-        llm = router.get_llm_for_task(task_description) # Pass only the task_description
+        llm = router.get_llm_for_task(task_description)
     except Exception as e:
         console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
         llm = router.get_local_llm("llama3.2:1b")
@@ -43,7 +42,7 @@ def get_developer_llm(router: DistributedRouter, category: str = "coding") -> An
         style="blue")
     return llm
 
-def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     """Create a Code Researcher agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
