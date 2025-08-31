@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
-from .agent import create_team_manager_agent, ErrorLogger
+from .agents import create_team_manager_agent, ErrorLogger
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
