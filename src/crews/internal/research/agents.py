@@ -2,7 +2,7 @@ from crewai import Agent
 from typing import Dict, Any
 from distributed_router import DistributedRouter
 from config import config
-from agents.base_agents import create_researcher, create_analyst # <--- UNCOMMENTED THIS LINE
+# from agents.base_agents import create_researcher, create_analyst # <--- UNCOMMENTED THIS LINE
 from rich.console import Console
 console = Console()
 
