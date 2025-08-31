@@ -3,8 +3,7 @@ from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
 from config import config
 from rich.console import Console
-from agents.base_agents import create_researcher, create_analyst  # <-- UNCOMMENTED THIS LINE
-from utils.memory import Memory
+from src.utils.memory import Memory
 
 console = Console()
 
