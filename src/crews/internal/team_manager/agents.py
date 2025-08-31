@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+from crewai_ollama import OllamaLLM
+
 
 from src.crews.internal.team_manager.tools import InternalPeerCheckTool
 from crewai import Agent
@@ -14,6 +16,8 @@ from rich.console import Console
 
 # Configure console for rich output
 console = Console()
+manager_llm = OllamaLLM(model="llama3.1:8b", base_url="http://149.36.1.65:11434")
+
 
 # Define the ErrorLogger class at the top, before it is used.
 class ErrorLogger:
@@ -181,12 +185,15 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             role="Team Manager",
             name="Project Coordinator",
             goal=f"Coordinate specialists to complete tasks for project {project_id} by delegating work efficiently, avoiding redundant questions, and making logical decisions based on coworker feedback.",
-            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks,
-            delegate work to appropriate specialists, and oversee the project's progress. You do not perform technical tasks yourself;
-            you rely on the specialist teams available to you. Your primary directive is to use your delegation capability to assign tasks to the most suitable specialist team.""",
+            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
+            delegate work to appropriate specialists, and oversee the project's progress.
+            You DO NOT perform technical tasks yourself. Your role is PURELY supervisory.
+            Your available specialists are: {coworker_names}.
+            You MUST NEVER attempt to delegate a task to yourself.
+            """,
             allow_delegation=True,
             verbose=True,
-            llm=llm,
+            llm=manager_llm,
         )
         return team_manager
 
