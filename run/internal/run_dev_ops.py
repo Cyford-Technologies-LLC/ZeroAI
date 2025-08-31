@@ -18,6 +18,7 @@ from pathlib import Path
 from rich.console import Console
 import yaml
 from src.crews.internal.diagnostics.agents import create_diagnostic_agent
+from crewai import Task
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
 
