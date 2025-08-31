@@ -8,6 +8,9 @@ from rich.console import Console
 from crewai import Crew, Process, Task
 from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
 
+# Import the DelegateWorkTool
+from src.crews.internal.tools.delegate_tool import DelegateWorkTool
+
 console = Console()
 error_logger = ErrorLogger()
 
@@ -26,6 +29,7 @@ def get_team_manager_crew(
         working_dir = Path(working_dir_str)
         working_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create the team manager without tools initially
         team_manager = create_team_manager_agent(router=router, project_id=project_id, working_dir=working_dir)
 
         worker_agents = []
@@ -46,8 +50,6 @@ def get_team_manager_crew(
                         agent_creator_func = getattr(agents_module, func_name)
 
                         # Call the agent creation function with all known arguments
-                        # It's better to pass `tools` unconditionally if possible,
-                        # and rely on the agent's creator function to handle it.
                         agent = agent_creator_func(router=router, inputs=task_inputs, tools=tools)
 
                         worker_agents.append(agent)
@@ -62,7 +64,13 @@ def get_team_manager_crew(
 
         console.print(f"👨‍💼 Assembling hierarchical crew with {len(worker_agents)} worker agents.", style="blue")
 
-        # FIX: Add the required `expected_output` field
+        # Instantiate the DelegateWorkTool and provide the worker_agents
+        delegate_tool = DelegateWorkTool(coworkers=worker_agents)
+
+        # Add the delegation tool to the manager agent
+        team_manager.tools = [delegate_tool]
+
+        # Add the required `expected_output` field
         initial_task = Task(
             description=f"Analyze and coordinate the following request: {prompt}",
             agent=team_manager,

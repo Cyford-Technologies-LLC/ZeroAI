@@ -13,7 +13,7 @@ from typing import Dict, Any, List, Optional
 
 from crewai import Agent
 from rich.console import Console
-from src.crews.internal.tools.delegate_tool import DelegateWorkTool
+
 # Configure console for rich output
 console = Console()
 
@@ -173,8 +173,6 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
     Returns:
         An Agent instance configured as Team Manager
     """
-    delegate_tool = DelegateWorkTool(agents=[]) # You'll need to provide the agents later
-
     try:
         # Get LLM for the team manager role
         llm = router.get_llm_for_role("devops_orchestrator")  # Reusing existing role for compatibility
@@ -207,7 +205,6 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path) -> Age
             llm=llm,
             verbose=True,
             allow_delegation=True,  # Allow delegation to other agents
-            tools=[delegate_tool] # <-- Add the tool here
         )
 
         return team_manager
