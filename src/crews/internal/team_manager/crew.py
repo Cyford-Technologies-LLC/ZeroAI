@@ -17,7 +17,8 @@ def get_team_manager_crew(
     tools: List,
     project_config: Dict[str, Any],
     task_inputs: Dict[str, Any],
-    crews_status: Dict[str, Any]
+    crews_status: Dict[str, Any],
+    custom_logger
 ) -> Optional[Crew]:
     """
     Creates and returns a hierarchical Crew for a team manager, dynamically
@@ -104,7 +105,7 @@ def get_team_manager_crew(
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
-            verbose=task_inputs.get("verbose", 1),
+            verbose=task_inputs.get("verbose", 2),
             callbacks=[custom_logger]  # ✅ Pass callbacks during initialization
         )
 
