@@ -124,7 +124,7 @@ def load_project_config(project_path: str, project_root: Path) -> dict:
             "description": "Error loading configuration",
             "repository": None
         }
-def record_task_result(task_id: str, result: Dict[str, Any], learning_tokens: int):
+def record_task_result(task_id: str, result: dict[str, Any], learning_tokens: int):
     """
     Records the result of a DevOps task and updates the task queue.
     """
