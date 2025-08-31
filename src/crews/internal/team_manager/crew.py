@@ -6,9 +6,7 @@ from typing import Any, Dict, List, Optional
 from rich.console import Console
 
 from crewai import Crew, Process, Task
-# Correct import for ErrorLogger from the same directory's agents file
 from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
-# The DelegateWorkTool is used by the manager in the hierarchical process
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
@@ -57,9 +55,7 @@ def get_team_manager_crew(
                     except Exception as e:
                         console.print(f"⚠️ Failed to import or instantiate agent creator '{func_name}' from '{crew_name}': {e}", style="yellow")
                         console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
-                        # Log the error using the passed error_logger instance
                         error_logger.log_error(f"Failed to instantiate agent creator {func_name}", {"exception": str(e), "traceback": traceback.format_exc()})
-
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
@@ -83,8 +79,8 @@ def get_team_manager_crew(
 
     except Exception as e:
         error_context = {"traceback": traceback.format_exc()}
-        # Ensure error_logger is available in the except block
         error_logger = task_inputs.get("error_logger", ErrorLogger())
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
+
