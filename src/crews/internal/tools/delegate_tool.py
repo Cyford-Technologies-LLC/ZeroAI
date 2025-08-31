@@ -1,7 +1,8 @@
-# Assuming a file structure where DelegateWorkTool is in a similar location
+# src/crews/internal/tools/delegate_tool.py
 
 from pydantic import BaseModel, Field
-from crewai_tools import BaseTool
+# FIX: Correct the import path for BaseTool
+from crewai_tools.tools.base_tool import BaseTool
 
 class DelegateWorkToolSchema(BaseModel):
     """Input schema for DelegateWorkTool."""
@@ -25,3 +26,4 @@ class DelegateWorkTool(BaseTool):
         # ... your existing logic to delegate the task ...
 
         return "Task delegated successfully."
+
