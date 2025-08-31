@@ -371,10 +371,11 @@ class AIOpsCrewManager:
                     project_config=self.project_config,
                     task_inputs=task_inputs,
                     crews_status=self.crews_status,
-                    step_callback=custom_logger.log_step,
-                    task_callback=custom_logger.log_task,
                 )
 
+                if crew:
+                    crew.step_callback = custom_logger.log_step
+                    crew.task_callback = custom_logger.log_task
                 # --- ADDED: Explicitly check for None before calling kickoff ---
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
