@@ -27,6 +27,11 @@ from src.devops_router import get_router  # ✅ Import get_router
 from src.peer_discovery import PeerDiscovery  # ✅ Import PeerDiscovery
 logger = logging.getLogger(__name__)  # ✅ Define logger
 
+
+crew_type = os.getenv("CREW_TYPE")
+
+
+
 from src.learning.task_manager import TaskManager
 
 logger = logging.getLogger(__name__)
