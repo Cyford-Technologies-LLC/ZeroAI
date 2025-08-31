@@ -1,4 +1,5 @@
 # src/crews/internal/developer/agents.py
+import os
 
 from crewai import Agent
 from typing import Dict, Any, List, Optional
@@ -7,7 +8,8 @@ from src.crews.internal.tools.git_tool import GitTool, FileTool
 from distributed_router import DistributedRouter # Assuming this is available
 from config import config # Assuming this is available
 from rich.console import Console # Assuming rich is available
-
+# Important: for any crews outside the default, make sure the proper crews are loaded
+os.environ["CREW_TYPE"] = "internal"
 console = Console()
 
 def get_developer_llm(router: DistributedRouter, category: str = "coding") -> Any:
