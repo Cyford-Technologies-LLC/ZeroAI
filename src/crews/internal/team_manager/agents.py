@@ -39,6 +39,10 @@ AVAILABLE_AGENTS = {
         "description": "Analyzes and enhances security measures",
         "capabilities": ["security audits", "vulnerability assessment", "secure coding practices", "threat modeling"]
     },
+    "SResearch Specialist": {
+        "description": "Gaters all details relating to the project for the team",
+        "capabilities": ["Project Details", "github details", "working directory details", "unknown details"]
+    },
     "DevOps Engineer": {
         "description": "Handles deployment and infrastructure automation",
         "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup", "cloud deployment"]
