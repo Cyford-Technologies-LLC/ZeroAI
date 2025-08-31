@@ -1,4 +1,3 @@
-# src/crews/internal/team_manager/crew.py
 import importlib
 import logging
 import traceback
@@ -6,8 +5,9 @@ import inspect
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from rich.console import Console
+
 from crewai import Crew, Process, Task, Agent
-from .agents import create_team_manager_agent
+from .agents import create_team_manager_agent, ErrorLogger
 from src.crews.internal.tools.delegate_tool import DelegateWorkTool
 
 console = Console()
@@ -30,7 +30,6 @@ def get_team_manager_crew(
         project_config: The project's configuration dictionary.
         task_inputs: A dictionary of task-specific inputs.
         crews_status: A dictionary containing the status of other available crews.
-        custom_logger: The custom logger to use for logging.
 
     Returns:
         A Crew object configured for a hierarchical process, or None if creation fails.
@@ -38,7 +37,7 @@ def get_team_manager_crew(
     try:
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
-        error_logger = task_inputs.get("error_logger", logging.getLogger(__name__))
+        error_logger = task_inputs.get("error_logger", ErrorLogger())
         working_dir_str = project_config.get("crewai_settings", {}).get(
             "working_directory", f"/tmp/internal_crew/{project_id}/"
         )
@@ -59,7 +58,7 @@ def get_team_manager_crew(
 
                     console.print(f"DEBUG: Attempting to instantiate agent via: '{func_name}' from crew '{crew_name}'", style="dim")
                     try:
-                        module_name = f"src.crews.internal.{crew_name}.agents"
+                        module_name = f"src.crews.internal.{crew_name}.agents"  # Fixed typo
                         agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
 
@@ -70,6 +69,8 @@ def get_team_manager_crew(
                         if 'coworker_names' in func_params:
                             coworker_names_list = [agent.name for agent in worker_agents]
                             call_kwargs['coworker_names'] = coworker_names_list
+                            console.print(f"DEBUG: Real coworker names list: {coworker_names_list}", style="blue")
+
 
                         agent = agent_creator_func(**call_kwargs)
                         worker_agents.append(agent)
@@ -88,7 +89,7 @@ def get_team_manager_crew(
             router=router,
             project_id=project_id,
             working_dir=working_dir,
-            coworkers=worker_agents  # ✅ Pass real coworkers
+            coworkers=worker_agents  # ✅ Pass coworkers now
         )
 
         # 3. Define the initial task for the manager
@@ -106,7 +107,7 @@ def get_team_manager_crew(
             manager_agent=team_manager,
             tasks=[initial_task],
             process=Process.hierarchical,
-            verbose=task_inputs.get("verbose", 1),
+            verbose=task_inputs.get("verbose", 2),
             callbacks=[custom_logger]  # ✅ Pass callbacks during initialization
         )
 
@@ -123,7 +124,7 @@ def get_team_manager_crew(
 
     except Exception as e:
         error_context = {"traceback": traceback.format_exc()}
-        error_logger = task_inputs.get("error_logger", logging.getLogger(__name__))
+        error_logger = task_inputs.get("error_logger", ErrorLogger())
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
