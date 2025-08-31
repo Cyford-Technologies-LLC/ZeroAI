@@ -12,8 +12,7 @@ from typing import Dict, Any, Optional, List
 from rich.console import Console
 from rich.table import Table
 from src.crews.internal.team_manager.crew import get_team_manager_crew
-from src.utils.custom_logger_callback import CustomLoggerCallback
-
+from src.utils.custom_logger_callback import CustomLogger
 
 
 # Configure logging
