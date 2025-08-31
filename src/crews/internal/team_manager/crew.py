@@ -1,5 +1,3 @@
-# src/crews/internal/team_manager/crew.py
-
 import importlib
 import logging
 import traceback
@@ -13,28 +11,15 @@ from .agents import create_team_manager_agent, ErrorLogger, format_agent_list
 console = Console()
 error_logger = ErrorLogger()
 
-
 def get_team_manager_crew(
     router,
     tools: List,
     project_config: Dict[str, Any],
     task_inputs: Dict[str, Any],
-    crews_status: Dict[str, Any]  # Add crews_status as a parameter
+    crews_status: Dict[str, Any]
 ) -> Optional[Crew]:
-    """
-    Creates a hierarchical master crew managed by the Team Manager agent.
-
-    Args:
-        router: The LLM router instance
-        tools: List of tools (passed to worker agents)
-        project_config: The project configuration
-        task_inputs: Dictionary of task inputs
-        crews_status: Preloaded status of all available crews
-
-    Returns:
-        A Crew instance configured for hierarchical execution, or None on error.
-    """
     try:
+        # ... (instantiate manager agent) ...
         project_id = task_inputs.get("project_id", "default")
         prompt = task_inputs.get("prompt", "")
         working_dir_str = project_config.get("crewai_settings", {}).get(
@@ -52,25 +37,26 @@ def get_team_manager_crew(
         # 2. Instantiate all necessary worker agents dynamically
         worker_agents = []
         for crew_name, info in crews_status.items():
-            # Skip the team_manager entry itself
             if crew_name == "team_manager":
                 continue
 
             if info.get("status") == "available" and "agents" in info:
                 for func_name in info["agents"]:
-                    # Exclude the manager agent creator itself
                     if func_name == "create_team_manager_agent":
                         continue
-                    
+
+                    console.print(f"DEBUG: Attempting to instantiate agent via: {func_name} from {crew_name}", style="dim")
                     try:
-                        agents_module_path = f"src.crews.internal.{crew_name}.agents"
-                        agents_module = importlib.import_module(agents_module_path)
+                        # Modified import logic
+                        module_name = f"src.crews.internal.{crew_name}.agents"
+                        agents_module = importlib.import_module(module_name)
                         agent_creator_func = getattr(agents_module, func_name)
-                        
-                        # Pass the tools here if your agent creation functions expect them
                         worker_agents.append(agent_creator_func(router=router, inputs=task_inputs))
-                    except (ImportError, AttributeError) as e:
+                        console.print(f"DEBUG: Successfully instantiated agent via: {func_name}", style="green")
+                    except (ImportError, AttributeError, Exception) as e:
                         console.print(f"⚠️ Failed to import agent creator {func_name} from {crew_name}: {e}", style="yellow")
+                        console.print(f"Full Traceback: {traceback.format_exc()}", style="yellow")
+                        # Do not return None here, continue to try and load other agents
 
         if not worker_agents:
             console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
@@ -87,10 +73,10 @@ def get_team_manager_crew(
 
         # 4. Create the crew with the correct process and manager agent
         return Crew(
-            agents=worker_agents,  # Pass ALL worker agents here
-            manager_agent=team_manager,  # Designate the manager
+            agents=worker_agents,
+            manager_agent=team_manager,
             tasks=[initial_task],
-            process=Process.hierarchical,  # **Crucial for delegation**
+            process=Process.hierarchical,
             verbose=True
         )
 
@@ -99,4 +85,3 @@ def get_team_manager_crew(
         error_logger.log_error(f"Error creating team manager crew: {str(e)}", error_context)
         console.print(f"❌ Error creating team manager crew: {e}", style="red")
         return None
-
