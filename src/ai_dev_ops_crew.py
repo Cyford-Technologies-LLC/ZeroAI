@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from rich.console import Console
 from rich.table import Table
+from src.crews.internal.team_manager.crew import get_team_manager_crew
+from src.crews.internal.team_manager.agents import ErrorLogger
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,8 +31,8 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
 
     # Try to import the ErrorLogger first
     try:
-        from src.crews.internal.team_manager.crew import get_team_manager_crew
-        from src.crews.internal.team_manager.agents import ErrorLogger
+
+
         error_logger = ErrorLogger()
     except ImportError as e:
         console.print(f"⚠️ Could not import ErrorLogger: {e}", style="yellow")
