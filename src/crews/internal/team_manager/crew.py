@@ -67,6 +67,8 @@ def get_team_manager_crew(
                         func_params = inspect.signature(agent_creator_func).parameters
                         call_kwargs = {'router': router, 'inputs': task_inputs, 'tools': tools}
 
+                        # Only check for coworkers after all agents are instantiated
+                        # This avoids the NameError and ensures the list is complete
                         agent = agent_creator_func(**call_kwargs)
                         if isinstance(agent, Agent):
                             worker_agents.append(agent)
@@ -82,9 +84,14 @@ def get_team_manager_crew(
                         error_logger.log_error(f"Failed to instantiate agent creator {func_name}",
                                                {"exception": str(e), "traceback": traceback.format_exc()})
 
-        # 2. Filter out any non-Agent objects from the list and create coworker_names_list
+        # 2. Filter out any non-Agent objects and create coworker_names_list *after* all agents are instantiated.
         worker_agents = [agent for agent in worker_agents if isinstance(agent, Agent)]
         coworker_names_list = [agent.name for agent in worker_agents]
+        console.print(f"DEBUG: Final coworker names list: {coworker_names_list}", style="blue")
+
+        if not worker_agents:
+            console.print("❌ No worker agents found to form the crew. Delegation will fail.", style="red")
+            return None
 
         # 3. Create the team manager agent
         team_manager = create_team_manager_agent(
