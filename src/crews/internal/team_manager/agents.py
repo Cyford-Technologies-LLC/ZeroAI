@@ -132,14 +132,39 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
     return available_crews
 
 
+import importlib
+import inspect
+from rich.console import Console
+from typing import Any, Dict, List, Optional
+from crewai import Agent
+
+# Assume discover_available_crews is defined elsewhere in the file
+# and console is also configured
+
+console = Console()
+
+
+def discover_available_crews() -> Dict[str, Dict[str, str]]:
+    # This is a placeholder for the function that discovers crews.
+    # The actual implementation should be in src/crews/internal/team_manager/agents.py
+    # and should be checked for correctness.
+    pass
+
+
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
-    # ... (code to discover_available_crews) ...
+    """
+    Loads and configures all available coworker agents from discovered crews.
+    """
     discovered_crews = discover_available_crews()
     agent_creator_functions = {}
+
+    # Check if discovered_crews is a dictionary before proceeding
     if isinstance(discovered_crews, dict):
         for crew_name, crew_info in discovered_crews.items():
+            # Skip the errors list and check if crew_info is a dictionary
             if crew_name == "errors" or not isinstance(crew_info, dict):
                 continue
+
             if crew_info.get("status") == "available":
                 module_name = f"src.crews.internal.{crew_name}.agents"
                 try:
@@ -151,10 +176,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
 
     temp_coworkers = []
     for creator_func in agent_creator_functions.values():
-        # Get the signature of the creator function
         sig = inspect.signature(creator_func)
-
-        # Prepare arguments to pass, based on what the function accepts
         kwargs_to_pass = {
             'router': router,
             'inputs': inputs,
@@ -163,15 +185,15 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = []
 
-        temp_agent = creator_func(**kwargs_to_pass)
-        temp_coworkers.append(temp_agent)
+        try:
+            temp_agent = creator_func(**kwargs_to_pass)
+            temp_coworkers.append(temp_agent)
+        except Exception as e:
+            console.print(f"❌ Error creating temporary agent with {creator_func.__name__}: {e}", style="red")
 
     all_coworkers = []
     for creator_func in agent_creator_functions.values():
-        # Get the signature of the creator function again
         sig = inspect.signature(creator_func)
-
-        # Prepare arguments to pass for the final agent creation
         kwargs_to_pass = {
             'router': router,
             'inputs': inputs,
@@ -180,10 +202,24 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = temp_coworkers
 
-        new_agent = creator_func(**kwargs_to_pass)
-        all_coworkers.append(new_agent)
-        console.print(f"✅ Configured agent: [bold green]{new_agent.name}[/bold green] with coworkers", style="blue")
+        try:
+            new_agent = creator_func(**kwargs_to_pass)
+
+            # --- START DIAGNOSTIC LOGGING ---
+            if not isinstance(new_agent, Agent) or not hasattr(new_agent, 'name'):
+                console.print(f"❌ Creator '{creator_func.__name__}' returned an invalid object: {type(new_agent)}",
+                              style="red")
+                continue
+            # --- END DIAGNOSTIC LOGGING ---
+
+            all_coworkers.append(new_agent)
+            console.print(f"✅ Configured agent: [bold green]{new_agent.name}[/bold green] with coworkers", style="blue")
+
+        except Exception as e:
+            console.print(f"❌ Error creating final agent with {creator_func.__name__}: {e}", style="red")
+
     return all_coworkers
+
 
 def create_team_manager_agent(router, project_id: str, working_dir: Path, coworkers: Optional[List] = None) -> Agent:
     """
