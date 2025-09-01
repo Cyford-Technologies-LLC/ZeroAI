@@ -133,16 +133,13 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
 
 
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
+    # ... (code to discover_available_crews) ...
     discovered_crews = discover_available_crews()
     agent_creator_functions = {}
-
-    # Check if discovered_crews is a dictionary before proceeding
     if isinstance(discovered_crews, dict):
         for crew_name, crew_info in discovered_crews.items():
-            # Skip the errors list and check if crew_info is a dictionary
             if crew_name == "errors" or not isinstance(crew_info, dict):
                 continue
-
             if crew_info.get("status") == "available":
                 module_name = f"src.crews.internal.{crew_name}.agents"
                 try:
@@ -154,16 +151,39 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
 
     temp_coworkers = []
     for creator_func in agent_creator_functions.values():
-        temp_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=[])
+        # Get the signature of the creator function
+        sig = inspect.signature(creator_func)
+
+        # Prepare arguments to pass, based on what the function accepts
+        kwargs_to_pass = {
+            'router': router,
+            'inputs': inputs,
+            'tools': tools,
+        }
+        if 'coworkers' in sig.parameters:
+            kwargs_to_pass['coworkers'] = []
+
+        temp_agent = creator_func(**kwargs_to_pass)
         temp_coworkers.append(temp_agent)
 
     all_coworkers = []
     for creator_func in agent_creator_functions.values():
-        new_agent = creator_func(router=router, inputs=inputs, tools=tools, coworkers=temp_coworkers)
+        # Get the signature of the creator function again
+        sig = inspect.signature(creator_func)
+
+        # Prepare arguments to pass for the final agent creation
+        kwargs_to_pass = {
+            'router': router,
+            'inputs': inputs,
+            'tools': tools,
+        }
+        if 'coworkers' in sig.parameters:
+            kwargs_to_pass['coworkers'] = temp_coworkers
+
+        new_agent = creator_func(**kwargs_to_pass)
         all_coworkers.append(new_agent)
         console.print(f"✅ Configured agent: [bold green]{new_agent.name}[/bold green] with coworkers", style="blue")
     return all_coworkers
-
 
 def create_team_manager_agent(router, project_id: str, working_dir: Path, coworkers: Optional[List] = None) -> Agent:
     """
