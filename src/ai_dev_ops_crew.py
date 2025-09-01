@@ -12,7 +12,7 @@ from rich.table import Table
 
 from crewai import Crew
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 # from src.utils.custom_logger import CustomLogger
 from src.utils.yaml_utils import load_yaml_config
 

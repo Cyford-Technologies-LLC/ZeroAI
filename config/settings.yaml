@@ -1,3 +1,5 @@
+#  config/settings.yaml
+
 zeroai:
   mode: "smart"              # local, smart, or cloud
   cost_optimization: true    # Minimize costs automatically

@@ -1,4 +1,6 @@
 """Configuration management for the AI crew system."""
+# src/config.py
+
 
 import os
 import yaml
