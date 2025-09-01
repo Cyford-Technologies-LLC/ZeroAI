@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
- from langchain_community.llms import Ollama
+from langchain_community.llms import Ollama
 
 
 from crewai import Agent
