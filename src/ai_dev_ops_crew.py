@@ -306,14 +306,16 @@ class AIOpsCrewManager:
             try:
                 llm = self.router.get_llm_for_role("general")
                 if llm:
-                    self.model_used = getattr(llm, 'model_name', getattr(llm, 'model', 'unknown')).replace("ollama/",
-                                                                                                           "")
-                    if hasattr(llm, 'base_url') and llm.base_url:
+                    self.model_used = llm.model.replace("ollama/", "")
+                    if hasattr(llm, 'base_url'):
                         self.base_url = llm.base_url
-                        try:
-                            self.peer_used = self.base_url.split('//')[1].split(':')
-                        except IndexError:
-                            self.peer_used = "unknown"
+                        # Extract peer from base_url
+                        if self.base_url:
+                            try:
+                                peer_ip = self.base_url.split('//')[1].split(':')[0]
+                                self.peer_used = peer_ip
+                            except:
+                                self.peer_used = "unknown"
             except Exception as e:
                 console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
 
