@@ -209,6 +209,7 @@ class AIOpsCrewManager:
         self.project_config = self._load_project_config()
         self.working_dir = self._setup_working_dir()
         self.tools = self._initialize_tools()
+        self.config = config_instance
 
     def _load_project_config(self) -> Dict[str, Any]:
         """Load the project configuration from YAML file."""
@@ -443,8 +444,11 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
         # Add crews status to inputs
         inputs["crews_status"] = crews_status
 
-        # Initialize and run the manager
-        manager = AIOpsCrewManager(router, project_id, inputs)
+        # Load the configuration from the settings.yaml
+        config_instance = config.load_from_file(config_path="config/settings.yaml")
+
+        # Initialize and run the manager with the router and loaded config
+        manager = AIOpsCrewManager(router, project_id, inputs, config_instance)
         return manager.execute()
     except Exception as e:
         # ... (error handling logic, likely already present) ...
