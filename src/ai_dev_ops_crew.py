@@ -30,8 +30,149 @@ console = Console()
 
 # The preload_internal_crews function remains unchanged
 def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
-    # ... (same as before) ...
-    pass
+    """
+    Preload all internal crew modules and check which ones are available.
+    Returns:
+        Dictionary with crew status information
+    """
+    crew_status = {}
+    error_logger = None
+
+    # Try to import the ErrorLogger first
+    try:
+        from src.crews.internal.team_manager.agents import ErrorLogger
+        error_logger = ErrorLogger()
+    except ImportError as e:
+        console.print(f"⚠️ Could not import ErrorLogger: {e}", style="yellow")
+
+    internal_crews_dir = Path("src/crews/internal")
+
+    if not internal_crews_dir.exists():
+        error_msg = f"Internal crews directory not found at {internal_crews_dir}"
+        console.print(f"❌ {error_msg}", style="red")
+        if error_logger:
+            error_logger.log_error(error_msg, {})
+        return {"error": error_msg}
+
+    table = Table(title="Internal Crews Status")
+    table.add_column("Crew", style="cyan")
+    table.add_column("Status", style="white")
+    table.add_column("Details", style="white")
+    table.add_column("Files", style="dim")
+
+    crew_dirs = [d for d in internal_crews_dir.iterdir() if d.is_dir() and not d.name.startswith("__") and d.name != "tools"]
+
+    console.print(f"🔍 [bold blue]Checking internal crews availability[/bold blue]")
+    console.print(f"Found {len(crew_dirs)} potential internal crews", style="blue")
+
+    for crew_dir in crew_dirs:
+        crew_name = crew_dir.name
+        crew_status[crew_name] = {
+            "status": "unknown",
+            "error": None,
+            "files_present": [],
+            "directory": str(crew_dir),
+            "agents": []  # Added to store agent creator function names
+        }
+
+        required_files = ["__init__.py", "agents.py", "tasks.py", "crew.py"]
+        missing_files = []
+
+        for file in required_files:
+            if (crew_dir / file).exists():
+                crew_status[crew_name]["files_present"].append(file)
+            else:
+                missing_files.append(file)
+
+        if missing_files:
+            crew_status[crew_name]["status"] = "incomplete"
+            crew_status[crew_name]["error"] = f"Missing files: {', '.join(missing_files)}"
+            table.add_row(
+                crew_name,
+                "⚠️ Incomplete",
+                f"Missing: {', '.join(missing_files)}",
+                ", ".join(crew_status[crew_name]["files_present"])
+            )
+            continue
+
+        try:
+            import_path = f"src.crews.internal.{crew_name}.crew"
+            module = importlib.import_module(import_path)
+
+            # Import the agents module as well
+            agents_import_path = f"src.crews.internal.{crew_name}.agents"
+            agents_module = importlib.import_module(agents_import_path)
+
+            crew_status[crew_name]["status"] = "available"
+            crew_status[crew_name]["module"] = import_path
+
+            get_crew_func = f"get_{crew_name}_crew"
+            if hasattr(module, get_crew_func):
+                crew_status[crew_name]["get_crew_function"] = get_crew_func
+
+            # Find agent creator functions in the agents module
+            for func_name in dir(agents_module):
+                if func_name.startswith("create_") and func_name.endswith("_agent"):
+                    crew_status[crew_name]["agents"].append(func_name)
+
+            # Check if any agent creation functions were found
+            if not crew_status[crew_name]["agents"]:
+                crew_status[crew_name]["status"] = "incomplete"
+                crew_status[crew_name]["error"] = "No agent creator functions found."
+                table.add_row(
+                    crew_name,
+                    "⚠️ Incomplete",
+                    "No agent creator functions found",
+                    ", ".join(required_files)
+                )
+                continue
+
+            table.add_row(
+                crew_name,
+                "✅ Available",
+                f"Found {len(crew_status[crew_name]['agents'])} agents",
+                ", ".join(required_files)
+            )
+
+        except ImportError as e:
+            crew_status[crew_name]["status"] = "import_error"
+            crew_status[crew_name]["error"] = str(e)
+            table.add_row(
+                crew_name,
+                "❌ Import Error",
+                str(e),
+                ", ".join(crew_status[crew_name]["files_present"])
+            )
+            if error_logger:
+                error_logger.log_error(
+                    f"Failed to import {crew_name} crew: {str(e)}",
+                    {"crew_name": crew_name, "traceback": traceback.format_exc()}
+                )
+
+        except Exception as e:
+            crew_status[crew_name]["status"] = "error"
+            crew_status[crew_name]["error"] = str(e)
+            table.add_row(
+                crew_name,
+                "❌ Error",
+                str(e),
+                ", ".join(crew_status[crew_name]["files_present"])
+            )
+            if error_logger:
+                error_logger.log_error(
+                    f"Error with {crew_name} crew: {str(e)}",
+                    {"crew_name": crew_name, "traceback": traceback.format_exc()}
+                )
+
+    console.print(table)
+
+    for crew_name, info in crew_status.items():
+        status_style = "green" if info["status"] == "available" else "yellow" if info["status"] == "incomplete" else "red"
+        console.print(f"[bold]{crew_name}[/bold]: [{status_style}]{info['status']}[/{status_style}]")
+        if info["error"]:
+            console.print(f"  Error: {info['error']}")
+
+    return crew_status
 
 
 class AIOpsCrewManager:
