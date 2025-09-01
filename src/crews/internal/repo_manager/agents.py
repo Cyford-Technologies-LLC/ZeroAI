@@ -1,50 +1,71 @@
-# src/crews/internal/repo_manager/agents.py
-
+import os
+import inspect
 from crewai import Agent
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
 from config import config
-# FIX: Correct the import path for GitTool and FileTool
 from src.tools.git_tool import GitTool, FileTool
 from src.utils.memory import Memory
 from rich.console import Console
-from src.tools.git_tool import GitTool
+# FIX: Import the correct GitHub tool from crewai_tools
+from crewai_tools import GithubSearchTool
+
 
 # Create the console instance so it can be used in this module
 console = Console()
 
+def get_repo_manager_llm(router: DistributedRouter, category: str = "repo_management",
+                         preferred_models: Optional[List] = None) -> Any:
+    """
+    Selects the optimal LLM for the repo manager agent.
+    """
+    preferred_models = preferred_models or ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
+
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model and category_model not in preferred_models:
+            preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
+
+    llm = None
+    try:
+        task_description = f"Perform {category} tasks."
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError(f"Failed to get LLM for {category} agent after all attempts.")
+
+    console.print(
+        f"🔗 {category.capitalize()} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    return llm
 
 def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: List[Any],
                               coworkers: Optional[List] = None) -> Agent:
+    """Create a Git Operator agent."""
     task_description = "Perform Git and file system operations."
 
     agent_memory = Memory()
 
-    # Try to get LLM with fallback
-    llm = None
-    try:
-        llm = router.get_llm_for_task(task_description)
-    except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for repo manager agent via router: {e}", style="yellow")
-        llm = router.get_local_llm("llama3.2:1b")
+    llm = get_repo_manager_llm(router, category="repo_management")
 
-    if not llm:
-        raise ValueError("Failed to get LLM for repo manager agent after all attempts.")
-
-    console.print(
-        f"🔗 Repo Manager Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
-        style="blue")
-
-    # Get the working directory from inputs for dynamic tool instantiation
+    # Get working directory and repository from inputs
     working_dir = inputs.get("working_dir", "/tmp")
+    repository = inputs.get("repository")
 
-    # FIX: Instantiate the Git and File tools dynamically
+    # Instantiate the Git, File, and GithubSearch tools
     git_tool = GitTool(repo_path=working_dir)
     file_tool = FileTool(working_dir=working_dir)
-    github_tool = GitHubTool(github_repo=inputs.get("repository"))
+    # FIX: Use the correctly imported GithubSearchTool
+    github_tool = GithubSearchTool(github_repo=repository)
 
-    # FIX: Combine all tools into a single list
-    all_tools = [git_tool, file_tool, github_tool]
+    # Combine all tools, including any external tools passed in
+    all_tools = (tools or []) + [git_tool, file_tool, github_tool]
 
     return Agent(
         role="Git Operator",
@@ -80,7 +101,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         goal="Execute Git commands and file manipulations to manage project repositories.",
         backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
         llm=llm,
-        tools=all_tools,  # FIX: Pass the new list of all tools
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )
