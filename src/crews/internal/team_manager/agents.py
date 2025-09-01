@@ -302,6 +302,7 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         llm=manager_llm,
         tools=tools,  # Pass the tools from the function argument
         verbose=config.agents.verbose,  # Corrected verbose flag
+        inputs=inputs,  # Add the missing inputs argument
         allow_delegation=True
     )
 
