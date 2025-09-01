@@ -35,7 +35,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         role="Git Operator",
         name="Deon Sanders",
         memory=agent_memory,
-        coworkers=coworkers if coworkers is not None else [],  # Fix here
+        coworkers=coworkers if coworkers is not None else [],
         learning={
             "enabled": True,
             "learning_rate": 0.05,
@@ -43,9 +43,9 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
             "adaptation_strategy": "progressive"
         },
         personality={
-            "traits": ["analytical", "detail-oriented", "methodical"],
-            "quirks": ["always cites research papers", "uses scientific analogies"],
-            "communication_preferences": ["prefers direct questions", "responds with examples"]
+            "traits": ["precise", "efficient", "methodical", "detail-oriented"],
+            "quirks": ["prefers command-line interfaces", "avoids unnecessary conversation"],
+            "communication_preferences": ["prefers direct commands", "responds with confirmation"]
         },
         communication_style={
             "formality": "professional",
@@ -63,7 +63,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         ],
         expertise_level=9.2,
         goal="Execute Git commands and file manipulations to manage project repositories.",
-        backstory="An automated system for performing repository management tasks.",
+        backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,

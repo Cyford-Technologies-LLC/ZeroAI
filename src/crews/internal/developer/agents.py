@@ -1,7 +1,7 @@
 import os
 
 from crewai import Agent
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.git_tool import GitTool, FileTool
 from distributed_router import DistributedRouter
@@ -80,7 +80,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         expertise_level=9.2,
         goal="Research and understand code patterns and issues",
         backstory="""You are an expert at analyzing codebases, understanding
-        complex systems, and identifying potential issues.""",
+        complex systems, and identifying potential issues. All responses are signed off with 'Dr. Alan Parse'""",
         llm=llm,
         tools=tools if tools else [],
         verbose=True,
@@ -95,7 +95,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     return Agent(
         role="Junior Developer",
-        name="tom Kyles",
+        name="Tom Kyles",
         memory=agent_memory,
         learning={
             "enabled": True,
@@ -121,7 +121,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         ],
         goal="Implement high-quality code solutions under guidance",
         backstory="""You are a junior software developer, eager to learn and implement code solutions
-        under the guidance of senior team members.""",
+        under the guidance of senior team members. All responses are signed off with 'Tom Kyles'""",
         llm=llm,
         tools=tools if tools else [],
         verbose=True,
@@ -161,7 +161,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         ],
         goal="Implement high-quality, robust code solutions to complex problems",
         backstory="""You are a skilled software developer with years of experience.
-        You create elegant, maintainable, and robust code solutions to complex problems.""",
+        You create elegant, maintainable, and robust code solutions to complex problems. All responses are signed off with 'Tony Kyles'""",
         llm=llm,
         tools=tools if tools else [],
         verbose=True,
@@ -200,7 +200,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
             "https://testing-best-practices.com"
         ],
         goal="Ensure the quality and correctness of implemented code through rigorous testing and validation.",
-        backstory="""A meticulous QA engineer dedicated to identifying defects, writing comprehensive test cases, and ensuring the software meets all functional and non-functional requirements.""",
+        backstory="""A meticulous QA engineer dedicated to identifying defects, writing comprehensive test cases, and ensuring the software meets all functional and non-functional requirements. All responses are signed off with 'Anthony Gates'""",
         llm=llm,
         tools=tools if tools else [],
         verbose=True,
