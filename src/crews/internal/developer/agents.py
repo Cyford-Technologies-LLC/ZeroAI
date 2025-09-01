@@ -16,10 +16,12 @@ from rich.console import Console
 
 # Import the dynamic GitHub tool from the tool factory
 from tool_factory import dynamic_github_tool
+from src.utils.tool_initializer import get_universal_tools  # New universal tool function
 
 # Important: for any crews outside the default, make sure the proper crews are loaded
 os.environ["CREW_TYPE"] = "internal"
 console = Console()
+
 
 
 def get_developer_llm(router: DistributedRouter, category: str = "coding") -> Any:
@@ -60,9 +62,9 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     """Create a Code Researcher agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
-    # Pass the dynamic tool instead of a hardcoded instance
-    all_tools = (tools if tools else []) + [dynamic_github_tool, SerperDevTool()]
+
 
     return Agent(
         role="Code Researcher",
@@ -119,8 +121,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     git_tool = GitTool()
 
     # Pass the dynamic tool instead of a hardcoded instance
-    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, dynamic_github_tool]
-
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
     return Agent(
         role="Junior Developer",
         name="Tom Kyles",
@@ -171,7 +172,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     git_tool = GitTool()
 
     # Pass the dynamic tool instead of a hardcoded instance
-    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, dynamic_github_tool]
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="Senior Developer",

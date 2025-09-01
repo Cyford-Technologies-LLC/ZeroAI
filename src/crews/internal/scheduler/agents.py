@@ -38,7 +38,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
     llm = get_scheduler_llm(router)
 
     # Use tools passed from the main crew manager
-    all_tools = (tools or []) + [SchedulingTool()]
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="Scheduler",

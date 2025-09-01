@@ -44,7 +44,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
     working_dir = inputs.get("working_dir", "/tmp")
     file_tool = FileTool(working_dir=working_dir)
 
-    all_tools = (tools or []) + [file_tool]
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     # Check for a valid repo path and token before creating the GitTool
     if repo_path and isinstance(repo_path, str) and repo_path.strip() and token:
