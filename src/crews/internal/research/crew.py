@@ -3,7 +3,7 @@ from crewai import Crew, Process
 from typing import Dict, Any, List
 from distributed_router import DistributedRouter
 from src.config import config
-from src.crews.internal.research.agents  import create_internal_researcher_agent, create_internal_analyst_agent
+from src.crews.internal.research.agents  import create_project_manager_agent , create_internal_researcher_agent, create_online_researcher_agent
 from src.crews.internal.research.tasks import internal_research_task, internal_analysis_task
 
 def get_research_crew(router, tools, project_config, use_new_memory=False):
@@ -31,15 +31,16 @@ def get_research_crew(router, tools, project_config, use_new_memory=False):
 
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     researcher_agent = create_internal_researcher_agent(router, inputs)
-    analyst_agent = create_internal_analyst_agent(router, inputs)
+    analyst_agent = create_online_researcher_agent(router, inputs)
+    project_manager_agent = create_project_manager_agent
 
     tasks = [
         internal_research_task(researcher_agent, inputs),
-        internal_analysis_task(analyst_agent, inputs)
+        internal_analysis_task(analyst_agent, inputs),
     ]
 
     return Crew(
-        agents=[researcher_agent, analyst_agent],
+        agents=[researcher_agent, analyst_agent,project_manager_agent],
         tasks=tasks,
         process=Process.sequential,
         verbose=config.agents.verbose,
