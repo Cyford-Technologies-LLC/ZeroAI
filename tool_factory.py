@@ -1,14 +1,11 @@
 # tool_factory.py
 
 import os
-import inspect
 from crewai_tools import GithubSearchTool
 from crewai.tools import BaseTool
 
 from typing import Optional, Any
-from src.config import config
-
-
+from src.config import config # Ensure this is the correct import
 
 class DynamicGithubTool(BaseTool):
     name: str = "Dynamic GitHub Search Tool"
@@ -21,24 +18,33 @@ class DynamicGithubTool(BaseTool):
         if not token_key:
             return "Error: No token key provided for the GitHub search."
 
-        gh_token = config.github_tokens.get(token_key.lower()) or config.github_tokens.get("general")
+        # Access the gh_token from the consolidated config
+        gh_token_value = config.github_tokens.get(token_key.lower()) or config.github_tokens.get("general")
 
-        if not gh_token:
-            return f"Error: GitHub token not found for key '{token_key}'."
+        if not gh_token_value:
+            return f"Error: GitHub token not found for key '{token_key or 'general'}'."
 
         try:
-            # Find the full repository URL based on the repo_name or another identifier
-            # This part needs to be updated based on your project config structure
-            repo_url = f"https://github.com/{config.ZeroAI['Company_Details']['Projects']['GItHUB_URL'].split('/')[-2]}/{repo_name}"  # Example
+            # Assuming ZeroAI and Company_Details are at the top level in your settings.yaml or env.
+            # Adjust the path based on your final settings.yaml structure.
+            company_details = config.Company_Details
+            if not company_details:
+                return "Error: 'Company_Details' not found in config."
+
+            github_url = company_details.get("Projects", {}).get("GItHUB_URL")
+            if not github_url:
+                return "Error: 'GItHUB_URL' not found in config under Company_Details.Projects."
+
+            # Construct the repo URL
+            repo_url = f"{github_url}/{repo_name}"
 
             github_tool = GithubSearchTool(
                 github_repo=repo_url,
-                gh_token=gh_token.get_secret_value()
+                gh_token=gh_token_value.get_secret_value()
             )
             return github_tool.run(query=query)
         except Exception as e:
             return f"Error running GitHub tool for {repo_name}: {e}"
-
 
 # Instantiate the dynamic tool once
 dynamic_github_tool = DynamicGithubTool()
