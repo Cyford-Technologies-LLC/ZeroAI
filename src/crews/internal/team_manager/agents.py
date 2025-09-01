@@ -1,3 +1,5 @@
+# src/crews/internal/team_manager/agents.py
+
 import importlib
 import inspect
 import sys
@@ -9,14 +11,35 @@ from typing import Dict, Any, List, Optional
 from langchain_ollama import OllamaLLM
 from src.config import config
 
-
 from crewai import Agent
 from rich.console import Console
 from src.utils.memory import Memory
 
 # Configure console for rich output
 console = Console()
-manager_llm = OllamaLLM(model="ollama/llama3.1:8b", base_url="http://149.36.1.65:11434")
+
+
+# Use a helper function for LLM retrieval to leverage the router and config
+def get_manager_llm(router: Any) -> Any:
+    """Helper function to get the manager LLM via the router or local fallback."""
+    try:
+        # Attempt to get LLM via the router for the 'general' role
+        llm = router.get_llm_for_role("general")
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for manager via router: {e}", style="yellow")
+        llm = None
+
+    if not llm:
+        # Fallback to local LLM using the centralized config
+        llm = OllamaLLM(model=config.model.name, base_url=config.model.base_url)
+        console.print(
+            f"🔗 Manager LLM connecting to local model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+            style="blue")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for manager agent after all attempts.")
+
+    return llm
 
 
 # Define the ErrorLogger class at the top, before it is used.
@@ -43,6 +66,7 @@ class ErrorLogger:
 
         console.print(f"📝 Error logged to {filepath}", style="yellow")
         return str(filepath)
+
 
 # Define the available agents in the system
 AVAILABLE_AGENTS = {
@@ -79,6 +103,7 @@ AVAILABLE_AGENTS = {
     }
 }
 
+
 def format_agent_list() -> str:
     agent_list = "# Available Specialist Teams\n\n"
     for name, details in AVAILABLE_AGENTS.items():
@@ -89,6 +114,7 @@ def format_agent_list() -> str:
             agent_list += f"  - {capability}\n"
         agent_list += "\n"
     return agent_list
+
 
 def discover_available_crews() -> Dict[str, Dict[str, str]]:
     available_crews = {}
@@ -132,6 +158,7 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
         available_crews["errors"] = errors
     return available_crews
 
+
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
     """
     Loads and configures all available coworker agents from discovered crews.
@@ -158,6 +185,10 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = []
+        if 'project_config' in sig.parameters:
+            kwargs_to_pass['project_config'] = inputs.get('project_config')
+        if 'working_dir' in sig.parameters:
+            kwargs_to_pass['working_dir'] = inputs.get('working_dir')
         try:
             temp_agent = creator_func(**kwargs_to_pass)
             temp_coworkers.append(temp_agent)
@@ -170,6 +201,10 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = temp_coworkers
+        if 'project_config' in sig.parameters:
+            kwargs_to_pass['project_config'] = inputs.get('project_config')
+        if 'working_dir' in sig.parameters:
+            kwargs_to_pass['working_dir'] = inputs.get('working_dir')
         try:
             full_agent = creator_func(**kwargs_to_pass)
             all_coworkers.append(full_agent)
@@ -178,10 +213,54 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
 
     return all_coworkers
 
-def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None) -> Agent:
+
+# src/crews/internal/team_manager/agents.py
+
+from src.config import config  # Ensure this is imported
+from langchain_ollama import OllamaLLM
+from distributed_router import DistributedRouter
+from typing import Dict, Any, List, Optional
+from pathlib import Path
+from crewai import Agent
+from rich.console import Console
+from src.utils.memory import Memory
+
+console = Console()
+
+
+# --- Helper function to get LLM ---
+def get_manager_llm(router: DistributedRouter) -> Any:
+    """Helper function to get the manager LLM via the router or local fallback."""
+    llm = None
+    try:
+        llm = router.get_llm_for_role("general")
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for manager via router: {e}", style="yellow")
+        llm = None
+
+    if not llm:
+        llm = OllamaLLM(model=config.model.name, base_url=config.model.base_url)
+        console.print(
+            f"🔗 Manager LLM connecting to local model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+            style="blue")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for manager agent after all attempts.")
+
+    return llm
+
+
+# --- End of Helper function ---
+
+
+def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None,
+                              working_dir: Optional[Path] = None) -> Agent:
     """Creates the Team Manager agent with memory and learning capabilities."""
     coworkers = load_all_coworkers(router, inputs, tools)
     manager_memory = Memory()
+
+    # Use the helper function to get the LLM
+    manager_llm = get_manager_llm(router)
 
     backstory = f"You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'."
     goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'."
@@ -200,7 +279,8 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         personality={
             "traits": ["strategic", "empowering", "resourceful", "proactive"],
             "quirks": ["prefers high-level strategies over micro-managing", "responds with a well-defined action plan"],
-            "communication_preferences": ["structured and goal-oriented communication", "values clear, concise updates"],
+            "communication_preferences": ["structured and goal-oriented communication",
+                                          "values clear, concise updates"],
             "expertise_level": "expert"
         },
         communication_style={
@@ -220,7 +300,8 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         goal=goal,
         backstory=backstory,
         llm=manager_llm,
-        tools=[],
-        verbose=config.agents_verbose,
+        tools=tools,  # Pass the tools from the function argument
+        verbose=config.agents.verbose,  # Corrected verbose flag
         allow_delegation=True
     )
+

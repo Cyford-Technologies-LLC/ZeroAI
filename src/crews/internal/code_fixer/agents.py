@@ -1,14 +1,40 @@
+# src/crews/internal/code_fixer/agents.py
+
 from crewai import Agent
 from typing import Dict, Any, Optional, List
 from distributed_router import DistributedRouter
 from src.config import config
-from src.tools.git_tool import GitTool, file_tool
+from src.crews.internal.tools.git_tool import GitTool, FileTool # Corrected import
 from src.utils.memory import Memory
+from langchain_ollama import OllamaLLM
+from rich.console import Console
 
+console = Console()
+
+def get_code_fixer_llm(router: DistributedRouter, category: str) -> Any:
+    """
+    Selects the optimal LLM for code fixer tasks,
+    with a fallback mechanism.
+    """
+    llm = None
+    try:
+        task_description = f"Perform {category} tasks."
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
+        # Ensure the fallback uses the correct config for base_url and model name
+        llm = OllamaLLM(model=config.model.name, base_url=config.model.base_url)
+
+    if not llm:
+        raise ValueError(f"Failed to get LLM for {category} agent after all attempts.")
+
+    console.print(
+        f"🔗 {category.capitalize()} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    return llm
 
 def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
-    task_description = "Analyze bug reports, code, and project context."
-    llm = router.get_llm_for_task(task_description)
+    llm = get_code_fixer_llm(router, category="code_research")
     agent_memory = Memory()
     return Agent(
         role="Code Researcher",
@@ -47,8 +73,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
 
 def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
-    task_description = "Write and apply code changes to fix bugs."
-    llm = router.get_llm_for_task(task_description)
+    llm = get_code_fixer_llm(router, category="coding")
     agent_memory = Memory()
     return Agent(
         role="Senior Developer",
@@ -87,8 +112,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
 
 
 def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
-    task_description = "Write and run tests to verify code fixes."
-    llm = router.get_llm_for_task(task_description)
+    llm = get_code_fixer_llm(router, category="testing")
     agent_memory = Memory()
     return Agent(
         role="QA Engineer",
