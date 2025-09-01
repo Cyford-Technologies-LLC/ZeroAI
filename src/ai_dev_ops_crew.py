@@ -22,6 +22,7 @@ from src.crews.internal.team_manager.agents import ErrorLogger, create_team_mana
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool, create_git_tool
 from tool_factory import dynamic_github_tool
+from src.utils.custom_logger_callback import CustomLogger
 
 # Configure console
 console = Console()
