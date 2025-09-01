@@ -30,7 +30,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             agent=manager_agent,
             expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
                             "This may include code, documentation, or other relevant artifacts.",
-            callback=[custom_logger.log_step_callback] if custom_logger else None
+            # FIX: Pass the callback directly, without wrapping it in a list.
+            callback=custom_logger.log_step_callback if custom_logger else None
         )
     ]
 
