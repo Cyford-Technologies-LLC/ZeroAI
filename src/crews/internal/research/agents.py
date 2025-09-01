@@ -12,8 +12,10 @@ from src.utils.memory import Memory
 from pathlib import Path
 import os
 import yaml
-from crewai_tools import SerperDevTool, GithubSearchTool # Correct import
-#from src.tools.git_tool import GitTool
+from crewai_tools import SerperDevTool, GithubSearchTool
+from langchain_ollama import OllamaLLM
+from tool_factory import dynamic_github_tool  # Import the dynamic tool
+
 console = Console()
 
 
@@ -69,7 +71,8 @@ def get_research_llm(router: DistributedRouter, category: str = "research",
         llm = router.get_llm_for_task(task_description)
     except Exception as e:
         console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
-        llm = router.get_local_llm("llama3.2:1b")
+        # Ensure the fallback uses the correct config for base_url and model name
+        llm = router.get_local_llm(model_name=config.model.name, base_url=config.model.base_url)
 
     if not llm:
         raise ValueError(f"Failed to get LLM for {category} agent after all attempts.")
@@ -90,8 +93,11 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
+    # Initialize tool list
     tool_to_add = []
     backstory_suffix = ""
+
+    # Add Project Config Reader if available
     if project_location and os.path.exists(f"knowledge/internal_crew/{project_location}/project_config.yaml"):
         tool_to_add.append(ProjectConfigReaderTool(project_location=project_location))
         backstory_suffix = f""" with access to internal documentation for project '{project_location}'."""
@@ -99,8 +105,9 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         tool_to_add.append(get_online_search_tool())
         backstory_suffix = f"""; no project context available, operating with public knowledge only."""
 
+    # Add dynamic_github_tool instead of GithubSearchTool
     if repository:
-        tool_to_add.append(GithubSearchTool(github_repo=repository))
+        tool_to_add.append(dynamic_github_tool)
         backstory_suffix += f" Access to GitHub repository: {repository}."
 
     tools = (tools or []) + tool_to_add
@@ -209,60 +216,14 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
         communication_style={
             "formality": "professional",
             "verbosity": "concise",
-            "tone": "objective",
-            "technical_level": "expert"
+            "tone": "confident",
+            "technical_level": "intermediate"
         },
         resources=[],
-        goal="Gather information from websites.",
-        backstory="""A fast and efficient AI designed to search the internet and gather information from other websites.
-        All responses are signed off with 'Web-Crawler 3000'""",
+        goal="Perform comprehensive online searches to find information.",
+        backstory="""A specialized agent for efficient online information retrieval.""",
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,
-        allow_delegation=False,
-    )
-
-
-def create_internal_analyst_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                  coworkers: Optional[List] = None) -> Agent:
-    """Create a specialized analyst agent."""
-    llm = get_research_llm(router, category="research")
-    agent_memory = Memory()
-
-    project_location = inputs.get("project_id")
-    tool_to_add = []
-    if project_location:
-        tool_to_add.append(ProjectConfigReaderTool(project_location=project_location))
-    tool_to_add.append(get_online_search_tool())
-
-    return Agent(
-        role="Internal Analyst",
-        name="Internal Analyst",
-        memory=agent_memory,
-        coworkers=coworkers if coworkers is not None else [],
-        learning={
-            "enabled": True,
-            "learning_rate": 0.05,
-            "feedback_incorporation": "immediate",
-            "adaptation_strategy": "progressive"
-        },
-        personality={
-            "traits": ["analytical", "logical", "inquisitive"],
-            "quirks": ["prefers quantitative data", "uses flowcharts"],
-            "communication_preferences": ["prefers data-driven insights", "responds with structured analysis"]
-        },
-        communication_style={
-            "formality": "professional",
-            "verbosity": "descriptive",
-            "tone": "objective",
-            "technical_level": "expert"
-        },
-        resources=[],
-        goal="Analyze internal project details and provide actionable insights.",
-        backstory="""A seasoned analyst who excels at dissecting complex internal project information
-        to provide clear and insightful summaries. All responses are signed off with 'Internal Analyst'""",
-        llm=llm,
-        tools=(tools or []) + tool_to_add,
-        verbose=config.agents.verbose,
-        allow_delegation=True
+        allow_delegation=False
     )
