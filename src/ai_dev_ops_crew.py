@@ -350,7 +350,8 @@ class AIOpsCrewManager:
             # Import the Team Manager crew
             try:
                 console.print("🔄 Importing Team Manager crew...", style="blue")
-                from src.crews.internal.team_manager.crew import get_team_manager_crew
+                # Fix: Import create_team_manager_crew directly, not the old wrapper
+                from src.crews.internal.team_manager.crew import create_team_manager_crew
 
                 # Prepare task inputs
                 task_inputs = {
@@ -361,16 +362,15 @@ class AIOpsCrewManager:
                     "branch": self.branch,
                     "task_id": self.task_id,
                     "crews_status": self.crews_status,  # Include crews_status in task_inputs
+                    "working_dir": self.working_dir  # Pass working_dir
                 }
 
-                # Create the team manager crew
                 # Create the team manager crew, passing the callback methods
-                crew = get_team_manager_crew(
+                crew = create_team_manager_crew(  # Fix: Call the correct function
                     router=self.router,
                     tools=self.tools,
                     project_config=self.project_config,
-                    task_inputs=task_inputs,
-                    crews_status=self.crews_status,
+                    inputs=task_inputs,  # Use the correct parameter name
                     custom_logger=custom_logger,
                     step_callback=custom_logger.log_step_callback if custom_logger else None
                 )
@@ -382,7 +382,6 @@ class AIOpsCrewManager:
                     console.print(f"DEBUG: Real coworker names (roles) from crew: {coworker_names}", style="blue")
                 else:
                     coworker_names = []
-
 
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
