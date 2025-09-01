@@ -90,12 +90,13 @@ class DevOpsDistributedRouter(DistributedRouter):
             # --- PARENT METHOD CALL ---
             base_url, peer_name, model_name = None, None, None
             try:
-                console.print(f"Allens Testing  get_optimal_endpoint_and_model:", style="red")
+
                 base_url, peer_name, model_name = super().get_optimal_endpoint_and_model(
                     prompt=prompt,
                     failed_peers=[],  # Empty list for failed peers
                     model_preference_list=preference_list  # Pass the preference list correctly
                 )
+                console.print(f"Allens Testing  get_optimal_endpoint_and_model:", style="red")
                 console.print(f"Parent method returned: base_url={base_url}, peer_name={peer_name}, model_name={model_name}")
             except Exception as e:
                 # Log the specific exception from the parent method
