@@ -300,9 +300,10 @@ class AIOpsCrewManager:
             custom_logger = CustomLogger(output_file=str(log_output_path))
 
             try:
+                # Assuming `get_llm_for_role` uses the router correctly
                 llm = self.router.get_llm_for_role("general")
                 if llm:
-                    self.model_used = llm.model.replace("ollama/", "")
+                    self.model_used = getattr(llm, 'model_name', 'unknown').replace("ollama/", "")
                     if hasattr(llm, 'base_url'):
                         self.base_url = llm.base_url
                         if self.base_url:
@@ -313,6 +314,7 @@ class AIOpsCrewManager:
                                 self.peer_used = "unknown"
             except Exception as e:
                 console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
+                # Continue execution even if model info extraction fails
 
             if "team_manager" not in self.crews_status or self.crews_status["team_manager"]["status"] != "available":
                 error_msg = "Team Manager crew is not available or has errors."
@@ -387,7 +389,7 @@ class AIOpsCrewManager:
                     )
                 except ImportError:
                     console.print("⚠️ Could not import ErrorLogger", style="yellow")
-                raise
+                raise # Re-raise the exception to be caught by the outer try-except
 
             if result:
                 if hasattr(crew, "usage_metrics"):
