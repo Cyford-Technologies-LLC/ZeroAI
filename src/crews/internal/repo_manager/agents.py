@@ -1,10 +1,14 @@
+# src/crews/internal/repo_manager/agents.py
+
 from crewai import Agent
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
 from config import config
-from src.crews.internal.tools.git_tool import GitTool, FileTool
+# FIX: Correct the import path for GitTool and FileTool
+from src.tools.git_tool import GitTool, FileTool
 from src.utils.memory import Memory
 from rich.console import Console
+from crewai_tools.tools import GitHubTool
 
 # Create the console instance so it can be used in this module
 console = Console()
@@ -30,6 +34,17 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
     console.print(
         f"🔗 Repo Manager Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
         style="blue")
+
+    # Get the working directory from inputs for dynamic tool instantiation
+    working_dir = inputs.get("working_dir", "/tmp")
+
+    # FIX: Instantiate the Git and File tools dynamically
+    git_tool = GitTool(repo_path=working_dir)
+    file_tool = FileTool(working_dir=working_dir)
+    github_tool = GitHubTool(github_repo=inputs.get("repository"))
+
+    # FIX: Combine all tools into a single list
+    all_tools = [git_tool, file_tool, github_tool]
 
     return Agent(
         role="Git Operator",
@@ -65,7 +80,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         goal="Execute Git commands and file manipulations to manage project repositories.",
         backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
         llm=llm,
-        tools=tools,
+        tools=all_tools,  # FIX: Pass the new list of all tools
         verbose=config.agents.verbose,
         allow_delegation=False
     )
