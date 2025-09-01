@@ -103,6 +103,6 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
         llm=llm,
         tools=all_tools,
-        verbose=config.agents_verbose,
+        verbose=config.agents.verbose,
         allow_delegation=False
     )

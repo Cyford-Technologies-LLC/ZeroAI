@@ -249,7 +249,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         defects to ensure a high-quality product. All responses are signed off with 'Lara Croft'""",
         llm=llm,
         tools=(tools if tools else []) + [file_tool, docker_tool],
-        verbose=config.agents_verbose,
+        verbose=config.agents.verbose,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
     )
