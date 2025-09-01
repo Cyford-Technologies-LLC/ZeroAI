@@ -1,5 +1,4 @@
 # src/crews/internal/team_manager/crew.py
-
 from crewai import Crew, Process, Task
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
@@ -10,7 +9,8 @@ from pathlib import Path
 
 
 def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], tools: List,
-                             project_config: Dict[str, Any], full_output: bool = False) -> Crew:
+                             project_config: Dict[str, Any], full_output: bool = False,
+                             custom_logger: Optional[CustomLogger] = None) -> Crew:
     """Creates a Team Manager crew using the distributed router."""
     # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
@@ -29,7 +29,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             description=inputs.get("prompt"),
             agent=manager_agent,
             expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
-                            "This may include code, documentation, or other relevant artifacts."
+                            "This may include code, documentation, or other relevant artifacts.",
+            # FIX: Pass the callback directly to the Task if available
+            callback=[custom_logger.log_step_callback] if custom_logger else None
         )
     ]
 
@@ -45,4 +47,3 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         verbose=config.agents.verbose,
         full_output=full_output,
     )
-
