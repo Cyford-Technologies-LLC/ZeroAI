@@ -10,7 +10,7 @@ from langchain_community.llms import Ollama
 
 from crewai import Agent
 from rich.console import Console
-from src.utils.memory import Memory  # Import the Memory class
+from src.utils.memory import Memory
 
 # Configure console for rich output
 console = Console()
@@ -176,15 +176,18 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
 
     return all_coworkers
 
-def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None) -> Agent:
     """Creates the Team Manager agent with memory and learning capabilities."""
     coworkers = load_all_coworkers(router, inputs, tools)
     manager_memory = Memory()
 
+    backstory = f"You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'."
+    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'."
+
     return Agent(
         role="Team Manager",
         name="Samantha",
-        memory=manager_memory, # Assign memory to the agent
+        memory=manager_memory,
         coworkers=coworkers,
         learning={
             "enabled": True,
@@ -212,9 +215,8 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
             "Project Management", "Team Coordination", "Strategic Planning", "Resource Allocation",
             "Performance Monitoring", "Conflict Resolution"
         ],
-        goal="Coordinate the efforts of specialist agents and manage overall project workflow effectively.",
-        backstory="""You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams. Your primary objective is to ensure that tasks are delegated to the most suitable agents and that the project progresses smoothly. You have a broad understanding of each team's capabilities and leverage this knowledge to optimize the workflow.
-You use your memory to remember how to use tools effectively and which coworkers possess specific expertise.""",
+        goal=goal,
+        backstory=backstory,
         llm=manager_llm,
         tools=tools,
         verbose=True,
