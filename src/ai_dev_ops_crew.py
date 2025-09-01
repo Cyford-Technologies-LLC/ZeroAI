@@ -17,6 +17,7 @@ from src.config import config  # Keep only one import
 from src.utils.yaml_utils import load_yaml_config
 
 # Import specific agents and tools
+from src.crews.internal.team_manager.crew import create_team_manager_crew
 from src.crews.internal.team_manager.agents import ErrorLogger, create_team_manager_agent, load_all_coworkers
 # from src.crews.internal.team_manager.tasks import create_planning_task
 from src.crews.internal.tools.docker_tool import DockerTool
