@@ -1,218 +1,48 @@
 # src/ai_dev_ops_crew.py
 
-import os  # Unused
-import sys  # Used implicitly by `traceback` and potentially other modules, but not directly. Keep for now.
-import uuid  # Unused
-import time  # Unused
-import logging  # Used
-import importlib  # Used
-import traceback  # Used
-from pathlib import Path  # Used
-from typing import Dict, Any, Optional, List  # Used
-from rich.console import Console  # Used
-from rich.table import Table  # Used
-from src.utils.custom_logger_callback import CustomLogger  # Unused in this file. Remove.
-#from src.crews.internal.team_manager.agents import ErrorLogger
-#from src.crews.internal.tools.git_tool import GitTool, FileTool
-from src.tools.git_tool import GitTool, FileTool
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import os
+import json
+import yaml
+import time
+import sys
+import traceback
+from pathlib import Path
+from typing import Dict, Any
+from dotenv import load_dotenv, find_dotenv
+
+from crewai import Crew
+from distributed_router import DistributedRouter
+from config import config
+from rich.console import Console
+
+# Import specific agents and tools
+from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers, ErrorLogger
+from src.crews.internal.team_manager.tasks import create_planning_task
+from src.crews.internal.tools.docker_tool import DockerTool
+from src.crews.internal.tools.git_tool import GitTool, FileTool
+from src.crews.internal.tool_factory import dynamic_github_tool  # The dynamic tool factory
+from src.utils.custom_logger import CustomLogger
+
+# Create the console instance
 console = Console()
 
-def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
-    """
-    Preload all internal crew modules and check which ones are available.
-    Returns:
-        Dictionary with crew status information
-    """
-    crew_status = {}
-    error_logger = None
 
-    # Try to import the ErrorLogger first
-    try:
-        from src.crews.internal.team_manager.agents import ErrorLogger
-        error_logger = ErrorLogger()
-    except ImportError as e:
-        console.print(f"⚠️ Could not import ErrorLogger: {e}", style="yellow")
-
-    internal_crews_dir = Path("src/crews/internal")
-
-    if not internal_crews_dir.exists():
-        error_msg = f"Internal crews directory not found at {internal_crews_dir}"
-        console.print(f"❌ {error_msg}", style="red")
-        if error_logger:
-            error_logger.log_error(error_msg, {})
-        return {"error": error_msg}
-
-    table = Table(title="Internal Crews Status")
-    table.add_column("Crew", style="cyan")
-    table.add_column("Status", style="white")
-    table.add_column("Details", style="white")
-    table.add_column("Files", style="dim")
-
-    crew_dirs = [d for d in internal_crews_dir.iterdir() if d.is_dir() and not d.name.startswith("__") and d.name != "tools"]
-
-    console.print(f"🔍 [bold blue]Checking internal crews availability[/bold blue]")
-    console.print(f"Found {len(crew_dirs)} potential internal crews", style="blue")
-
-    for crew_dir in crew_dirs:
-        crew_name = crew_dir.name
-        crew_status[crew_name] = {
-            "status": "unknown",
-            "error": None,
-            "files_present": [],
-            "directory": str(crew_dir),
-            "agents": []  # Added to store agent creator function names
-        }
-
-        required_files = ["__init__.py", "agents.py", "tasks.py", "crew.py"]
-        missing_files = []
-
-        for file in required_files:
-            if (crew_dir / file).exists():
-                crew_status[crew_name]["files_present"].append(file)
-            else:
-                missing_files.append(file)
-
-        if missing_files:
-            crew_status[crew_name]["status"] = "incomplete"
-            crew_status[crew_name]["error"] = f"Missing files: {', '.join(missing_files)}"
-            table.add_row(
-                crew_name,
-                "⚠️ Incomplete",
-                f"Missing: {', '.join(missing_files)}",
-                ", ".join(crew_status[crew_name]["files_present"])
-            )
-            continue
-
-        try:
-            import_path = f"src.crews.internal.{crew_name}.crew"
-            module = importlib.import_module(import_path)
-
-            # Import the agents module as well
-            agents_import_path = f"src.crews.internal.{crew_name}.agents"
-            agents_module = importlib.import_module(agents_import_path)
-
-            crew_status[crew_name]["status"] = "available"
-            crew_status[crew_name]["module"] = import_path
-
-            get_crew_func = f"get_{crew_name}_crew"
-            if hasattr(module, get_crew_func):
-                crew_status[crew_name]["get_crew_function"] = get_crew_func
-
-            # Find agent creator functions in the agents module
-            for func_name in dir(agents_module):
-                if func_name.startswith("create_") and func_name.endswith("_agent"):
-                    crew_status[crew_name]["agents"].append(func_name)
-
-            # Check if any agent creation functions were found
-            if not crew_status[crew_name]["agents"]:
-                crew_status[crew_name]["status"] = "incomplete"
-                crew_status[crew_name]["error"] = "No agent creator functions found."
-                table.add_row(
-                    crew_name,
-                    "⚠️ Incomplete",
-                    "No agent creator functions found",
-                    ", ".join(required_files)
-                )
-                continue
-
-            table.add_row(
-                crew_name,
-                "✅ Available",
-                f"Found {len(crew_status[crew_name]['agents'])} agents",
-                ", ".join(required_files)
-            )
-
-        except ImportError as e:
-            crew_status[crew_name]["status"] = "import_error"
-            crew_status[crew_name]["error"] = str(e)
-            table.add_row(
-                crew_name,
-                "❌ Import Error",
-                str(e),
-                ", ".join(crew_status[crew_name]["files_present"])
-            )
-            if error_logger:
-                error_logger.log_error(
-                    f"Failed to import {crew_name} crew: {str(e)}",
-                    {"crew_name": crew_name, "traceback": traceback.format_exc()}
-                )
-
-        except Exception as e:
-            crew_status[crew_name]["status"] = "error"
-            crew_status[crew_name]["error"] = str(e)
-            table.add_row(
-                crew_name,
-                "❌ Error",
-                str(e),
-                ", ".join(crew_status[crew_name]["files_present"])
-            )
-            if error_logger:
-                error_logger.log_error(
-                    f"Error with {crew_name} crew: {str(e)}",
-                    {"crew_name": crew_name, "traceback": traceback.format_exc()}
-                )
-
-    console.print(table)
-
-    for crew_name, info in crew_status.items():
-        status_style = "green" if info["status"] == "available" else "yellow" if info["status"] == "incomplete" else "red"
-        console.print(f"[bold]{crew_name}[/bold]: [{status_style}]{info['status']}[/{status_style}]")
-        if info["error"]:
-            console.print(f"  Error: {info['error']}")
-
-    return crew_status
-
-
-
-class AIOpsCrewManager:
-    # ... (initializer and helper methods remain the same) ...
-    """
-    Manager for the AI DevOps Crew.
-    Orchestrates secure execution of internal development and maintenance tasks
-    by delegating to specialized sub-crews.
-    """
-
-    def __init__(self, router, project_id, inputs):
-        """
-        Initialize the AIOps Crew Manager.
-
-        Args:
-            router: The DevOps router instance for LLM routing
-            project_id: The ID of the project being worked on
-            inputs: Dictionary of input parameters
-        """
-        self.router = router
+class AiDevOpsCrew:
+    def __init__(self, project_id: str, prompt: str, category: str, repository: str, branch: str):
         self.project_id = project_id
-        self.inputs = inputs
-        self.task_id = inputs.get("task_id", str(uuid.uuid4()))
-        self.prompt = inputs.get("prompt", "")
-        self.category = inputs.get("category", "general")
-        self.repository = inputs.get("repository")
-        self.branch = inputs.get("branch", "main")
-
-        # Initialize tracking information
+        self.prompt = prompt
+        self.category = category
+        self.repository = repository
+        self.branch = branch
+        self.task_id = str(uuid.uuid4())[:8]
+        self.working_dir = Path("knowledge/internal_crew") / self.project_id / "workspace"
+        self.router = DistributedRouter()
+        self.tools = []
+        self.project_config = {}
+        self.crews_status = self.router.discover_crews()
         self.model_used = "unknown"
         self.peer_used = "unknown"
-        self.token_usage = {"total_tokens": 0}
-        self.base_url = None
-
-        # Preload all crew modules
-        self.crews_status = inputs.get("crews_status", {})
-        if not self.crews_status:
-            console.print("Preloading internal crews status...", style="blue")
-            self.crews_status = preload_internal_crews()
-
-        # Load project configuration
-        self.project_config = self._load_project_config()
-
-        # Set up working directory from project configuration
-        self.working_dir = self._setup_working_dir()
-
-        # Initialize the tools
-        self.tools = self._initialize_tools()
+        self.token_usage = {}
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
@@ -228,7 +58,6 @@ class AIOpsCrewManager:
                     self.model_used = llm.model.replace("ollama/", "")
                     if hasattr(llm, 'base_url'):
                         self.base_url = llm.base_url
-                        # Extract peer from base_url
                         if self.base_url:
                             try:
                                 peer_ip = self.base_url.split('//')[1].split(':')
@@ -257,6 +86,27 @@ class AIOpsCrewManager:
                 console.print("🔄 Importing Team Manager crew...", style="blue")
                 from src.crews.internal.team_manager.crew import create_team_manager_crew
 
+                # Read project config to get the token key
+                project_config_path = Path("knowledge/internal_crew") / self.project_id / "project_config.yaml"
+                if project_config_path.exists():
+                    with open(project_config_path, 'r') as f:
+                        self.project_config = yaml.safe_load(f)
+
+                repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
+
+                # --- Conditionally add tools ---
+                common_tools = [
+                    DockerTool(),
+                    GitTool(repo_path=self.working_dir),
+                    FileTool(working_dir=self.working_dir),
+                ]
+                if repo_token_key:
+                    common_tools.append(dynamic_github_tool)
+                    console.print(f"✅ GitHub tool added with token key: {repo_token_key}", style="green")
+                else:
+                    console.print("⚠️ No GitHub token key found in project config. GitHub tool disabled.",
+                                  style="yellow")
+
                 # Prepare task inputs
                 task_inputs = {
                     "project_id": self.project_id,
@@ -266,19 +116,18 @@ class AIOpsCrewManager:
                     "branch": self.branch,
                     "task_id": self.task_id,
                     "crews_status": self.crews_status,
-                    "working_dir": self.working_dir
+                    "working_dir": self.working_dir,
+                    "repo_token_key": repo_token_key  # Pass the token key
                 }
 
                 # Create the team manager crew
                 crew = create_team_manager_crew(
                     router=self.router,
-                    tools=self.tools,
+                    tools=common_tools,
                     project_config=self.project_config,
                     inputs=task_inputs,
-                    custom_logger=custom_logger  # FIX: Pass the logger instance
-
+                    custom_logger=custom_logger
                 )
-
 
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
@@ -289,7 +138,6 @@ class AIOpsCrewManager:
                         "model_used": self.model_used,
                         "peer_used": self.peer_used,
                         "crews_status": self.crews_status,
-
                     }
 
                 # Execute the crew
@@ -320,12 +168,10 @@ class AIOpsCrewManager:
                     )
                 except ImportError:
                     console.print("⚠️ Could not import ErrorLogger", style="yellow")
-
                 raise
 
             # Process the result
             if result:
-                # Extract token usage if available
                 if hasattr(crew, "usage_metrics"):
                     self.token_usage = crew.usage_metrics
 
