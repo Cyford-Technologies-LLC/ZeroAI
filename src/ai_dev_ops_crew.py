@@ -279,9 +279,6 @@ class AIOpsCrewManager:
 
                 )
 
-                # Assign the custom logger callback
-                if custom_logger:
-                    crew.callbacks = [custom_logger.log_step_callback]
 
                 if crew is None:
                     error_msg = "❌ Error: Crew not created because no worker agents were found."
