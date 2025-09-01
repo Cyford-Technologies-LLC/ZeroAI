@@ -1,0 +1,9 @@
+{
+  "app_name": "ZeroAI Project",
+  "agents_verbose": true,
+  "ollama": {
+    "model": "codellama:13b",
+    "base_url": "http://149.36.1.65:11434"
+  },
+  "serper_api_key": null
+}
