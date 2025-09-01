@@ -36,7 +36,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     ]
 
     # Create the list of agents for the crew, including all coworkers and the manager
-    crew_agents = all_coworkers + [manager_agent]
+    crew_agents = all_coworkers
 
     # Create and return the crew with the correct agent list
     return Crew(
