@@ -19,7 +19,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     manager_agent = create_team_manager_agent(
         router=router,
         project_id=inputs.get("project_id"),
-        working_dir=inputs.get("working_dir", Path("/tmp"))
+        working_dir=inputs.get("working_dir", Path("/tmp")),
+        inputs=inputs,
     )
 
     # Define tasks directly within this function
