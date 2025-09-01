@@ -96,7 +96,6 @@ class DevOpsDistributedRouter(DistributedRouter):
                     failed_peers=[],  # Empty list for failed peers
                     model_preference_list=preference_list  # Pass the preference list correctly
                 )
-                console.print(f"Allens Testing  get_optimal_endpoint_and_model:", style="red")
                 console.print(f"Parent method returned: base_url={base_url}, peer_name={peer_name}, model_name={model_name}")
             except Exception as e:
                 # Log the specific exception from the parent method
@@ -112,6 +111,7 @@ class DevOpsDistributedRouter(DistributedRouter):
                 prefixed_model_name = f"ollama/{model_name}"
                 llm_config = {"model": prefixed_model_name, "base_url": base_url,
                               "temperature": config.model.temperature}
+
 
                 console.print("\n--- DEBUG: Successful Distributed Call ---", style="bold green")
                 console.print(f"  Attempting to create Ollama instance with config:")
