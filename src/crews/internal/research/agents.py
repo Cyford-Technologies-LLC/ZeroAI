@@ -12,8 +12,8 @@ from src.utils.memory import Memory
 from pathlib import Path
 import os
 import yaml
-from crewai_tools import SerperDevTool, GitHubTool
-from src.tools.git_tool import GitTool
+from crewai_tools import SerperDevTool, GithubSearchTool # Correct import
+#from src.tools.git_tool import GitTool
 console = Console()
 
 
@@ -100,7 +100,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         backstory_suffix = f"""; no project context available, operating with public knowledge only."""
 
     if repository:
-        tool_to_add.append(GitHubTool(github_repo=repository))
+        tool_to_add.append(GithubSearchTool(github_repo=repository))
         backstory_suffix += f" Access to GitHub repository: {repository}."
 
     tools = (tools or []) + tool_to_add

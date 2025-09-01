@@ -1,11 +1,12 @@
-# src/crews/internal/developer/agents.py
-
 import os
 import inspect
 from crewai import Agent
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
-from src.tools.git_tool import GitTool, FileTool, DockerTool
+from src.crews.internal.tools.docker_tool import DockerTool
+from src.crews.internal.tools.git_tool import GitTool, FileTool
+from crewai_tools import GithubSearchTool, SerperDevTool
+
 from distributed_router import DistributedRouter
 from config import config
 from rich.console import Console
@@ -50,11 +51,8 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
-    # FIX: Get repository from inputs and instantiate GitHubTool
     repository = inputs.get("repository")
-    github_tool = GitHubTool(github_repo=repository)
-
-    # FIX: Add GitHubTool to the tools list
+    github_tool = GithubSearchTool(github_repo=repository)
     all_tools = (tools if tools else []) + [github_tool]
 
     return Agent(
@@ -92,7 +90,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         backstory="""You are an expert at analyzing codebases, understanding
         complex systems, and identifying potential issues. All responses are signed off with 'Dr. Alan Parse'""",
         llm=llm,
-        tools=all_tools, # FIX: Pass the combined tools list
+        tools=all_tools,
         verbose=True,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
@@ -108,9 +106,10 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     file_tool = FileTool(working_dir=working_dir)
     docker_tool = DockerTool()
-    github_tool = GitHubTool(github_repo=repository) # FIX: Instantiate GitHubTool
+    git_tool = GitTool()
+    github_tool = GithubSearchTool(github_repo=repository)
 
-    all_tools = (tools if tools else []) + [file_tool, docker_tool, github_tool] # FIX: Add GitHubTool
+    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, github_tool]
 
     return Agent(
         role="Junior Developer",
@@ -158,9 +157,10 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     file_tool = FileTool(working_dir=working_dir)
     docker_tool = DockerTool()
-    github_tool = GitHubTool(github_repo=repository) # FIX: Instantiate GitHubTool
+    git_tool = GitTool()
+    github_tool = GithubSearchTool(github_repo=repository)
 
-    all_tools = (tools if tools else []) + [file_tool, docker_tool, github_tool] # FIX: Add GitHubTool
+    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, github_tool]
 
     return Agent(
         role="Senior Developer",
@@ -200,20 +200,16 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
 def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     """Create a QA Engineer agent."""
-    llm = get_developer_llm(router, category="testing")
+    llm = get_developer_llm(router, category="qa")
     agent_memory = Memory()
 
     working_dir = inputs.get("working_dir")
-    repository = inputs.get("repository")
-
     file_tool = FileTool(working_dir=working_dir)
-    github_tool = GitHubTool(github_repo=repository) # FIX: Instantiate GitHubTool
-
-    all_tools = (tools if tools else []) + [file_tool, github_tool] # FIX: Add GitHubTool
+    docker_tool = DockerTool()
 
     return Agent(
         role="QA Engineer",
-        name="Anthony Gates",
+        name="Lara Croft",
         memory=agent_memory,
         learning={
             "enabled": True,
@@ -222,27 +218,26 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
             "adaptation_strategy": "progressive"
         },
         personality={
-            "traits": ["analytical", "detail-oriented", "methodical"],
-            "quirks": ["always cites research papers", "uses scientific analogies"],
-            "communication_preferences": ["prefers direct questions", "responds with examples"]
+            "traits": ["meticulous", "critical", "systematic"],
+            "quirks": ["tests edge cases relentlessly", "documents every bug found"],
+            "communication_preferences": ["prefers clear test reports", "responds with bug details"]
         },
         communication_style={
             "formality": "professional",
-            "verbosity": "concise",
-            "tone": "authoritative",
-            "technical_level": "expert"
+            "verbosity": "descriptive",
+            "tone": "objective",
+            "technical_level": "intermediate"
         },
-        resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
+        resources=[],
+        expertise=[
+            "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"
         ],
-        goal="Ensure the quality and correctness of implemented code through rigorous testing and validation.",
-        backstory="""A meticulous QA engineer dedicated to identifying defects, writing comprehensive test cases, and ensuring the software meets
-        all quality standards. All responses are signed off with 'Anthony Gates'""",
+        goal="Ensure the quality and reliability of code solutions through thorough testing",
+        backstory="""An expert in software quality assurance, dedicated to finding and documenting
+        defects to ensure a high-quality product. All responses are signed off with 'Lara Croft'""",
         llm=llm,
-        tools=all_tools,
+        tools=(tools if tools else []) + [file_tool, docker_tool],
         verbose=True,
-        allow_delegation=False,
+        allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
     )
