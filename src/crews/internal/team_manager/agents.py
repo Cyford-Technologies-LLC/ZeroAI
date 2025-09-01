@@ -180,7 +180,7 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
         # As discussed before, we do NOT assign tools to the manager in a hierarchical crew.
         # peer_check_tool = InternalPeerCheckTool(coworkers=coworkers) # Keep this commented out
         # coworker_names = ", ".join([coworker.name for coworker in coworkers]) if coworkers else "No coworkers available."
-        coworker_names = []
+
 
 
         team_manager = Agent(
@@ -190,7 +190,6 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
             delegate work to appropriate specialists, and oversee the project's progress.
             You DO NOT perform technical tasks yourself. Your role is PURELY supervisory.
-            # Your available specialists are: {coworker_names}.
             You MUST NEVER attempt to delegate a task to yourself.
             """,
             allow_delegation=True,
