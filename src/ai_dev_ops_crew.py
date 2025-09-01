@@ -485,7 +485,45 @@ class AIOpsCrewManager:
                 console.print("⚠️ Could not import ErrorLogger", style="yellow")
 
             return []
+def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
+    """
+    Securely run the AI DevOps Crew.
+    """
+    try:
+        # Preload all crew modules at startup
+        crews_status = preload_internal_crews()
 
+        # Add crews status to inputs
+        inputs["crews_status"] = crews_status
+
+        # Initialize and run the manager
+        manager = AIOpsCrewManager(router, project_id, inputs)
+        return manager.execute()
+    except Exception as e:
+        # ... (error handling logic, likely already present) ...
+        # Import ErrorLogger locally to prevent circular dependencies
+        try:
+            from src.crews.internal.team_manager.agents import ErrorLogger
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                f"Error running AI DevOps Crew: {str(e)}",
+                {
+                    "project_id": project_id,
+                    "inputs": str(inputs),
+                    "traceback": traceback.format_exc()
+                }
+            )
+        except ImportError:
+            # If we can't import the error logger, just log to the console
+            console.print(f"❌ Error running AI DevOps Crew and couldn't log to error directory: {e}", style="red")
+
+        return {
+            "success": False,
+            "error": f"Error running AI DevOps Crew: {str(e)}",
+            "model_used": "unknown",
+            "peer_used": "unknown",
+            "crews_status": preload_internal_crews()  # Include crews status in the error response
+        }
 
 if __name__ == "__main__":
     # This module should not be imported, not run directly
