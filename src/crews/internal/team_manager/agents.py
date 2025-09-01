@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-# from langchain_community.llms import Ollama
+ from langchain_community.llms import Ollama
 
 
 from crewai import Agent
@@ -15,7 +15,7 @@ from rich.console import Console
 
 # Configure console for rich output
 console = Console()
-# manager_llm = Ollama(model="llama3.1:8b", base_url="http://149.36.1.65:11434")
+manager_llm = Ollama(model="llama3.1:8b", base_url="http://149.36.1.65:11434")
 
 
 # Define the ErrorLogger class at the top, before it is used.
@@ -179,7 +179,8 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
         # This line was previously removed, but the ErrorLogger class is now in scope at the top.
         # As discussed before, we do NOT assign tools to the manager in a hierarchical crew.
         # peer_check_tool = InternalPeerCheckTool(coworkers=coworkers) # Keep this commented out
-        coworker_names = ", ".join([coworker.name for coworker in coworkers]) if coworkers else "No coworkers available."
+        # coworker_names = ", ".join([coworker.name for coworker in coworkers]) if coworkers else "No coworkers available."
+        coworker_names = []
 
 
         team_manager = Agent(
@@ -189,12 +190,12 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
             delegate work to appropriate specialists, and oversee the project's progress.
             You DO NOT perform technical tasks yourself. Your role is PURELY supervisory.
-            Your available specialists are: {coworker_names}.
+            # Your available specialists are: {coworker_names}.
             You MUST NEVER attempt to delegate a task to yourself.
             """,
             allow_delegation=True,
             verbose=True,
-            llm=llm,
+            llm=manager_llm,
         )
         return team_manager
 
