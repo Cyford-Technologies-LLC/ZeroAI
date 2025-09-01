@@ -11,7 +11,6 @@ from pathlib import Path  # Used
 from typing import Dict, Any, Optional, List  # Used
 from rich.console import Console  # Used
 from rich.table import Table  # Used
-src.utils.custom_logger_callback.CustomLogger
 from src.utils.custom_logger_callback import CustomLogger  # Unused in this file. Remove.
 
 
