@@ -1,15 +1,19 @@
 import os
 import inspect
-from crewai import Agent
 from typing import Dict, Any, List, Optional
+from crewai import Agent
 from distributed_router import DistributedRouter
-from config import config
+from rich.console import Console
+
+# Import the custom tools
 from src.tools.git_tool import GitTool, FileTool
 from src.utils.memory import Memory
-from rich.console import Console
-# FIX: Import the correct GitHub tool from crewai_tools
-from crewai_tools import GithubSearchTool
 
+# Import the dynamic GitHub tool from the tool factory
+from src.crews.internal.tool_factory import dynamic_github_tool
+
+# Assume config is correctly loaded from the root directory
+from config import config
 
 # Create the console instance so it can be used in this module
 console = Console()
@@ -22,6 +26,7 @@ def get_repo_manager_llm(router: DistributedRouter, category: str = "repo_manage
     preferred_models = preferred_models or ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
 
     try:
+        # Assuming feedback_loop is a module that exists
         from learning.feedback_loop import feedback_loop
         category_model = feedback_loop.get_model_preference(category)
         if category_model and category_model not in preferred_models:
@@ -45,27 +50,23 @@ def get_repo_manager_llm(router: DistributedRouter, category: str = "repo_manage
         style="blue")
     return llm
 
-def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: List[Any],
+def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
                               coworkers: Optional[List] = None) -> Agent:
     """Create a Git Operator agent."""
     task_description = "Perform Git and file system operations."
 
     agent_memory = Memory()
-
     llm = get_repo_manager_llm(router, category="repo_management")
 
     # Get working directory and repository from inputs
     working_dir = inputs.get("working_dir", "/tmp")
-    repository = inputs.get("repository")
 
-    # Instantiate the Git, File, and GithubSearch tools
+    # Instantiate the Git and File tools
     git_tool = GitTool(repo_path=working_dir)
     file_tool = FileTool(working_dir=working_dir)
-    # FIX: Use the correctly imported GithubSearchTool
-    github_tool = GithubSearchTool(github_repo=repository)
 
-    # Combine all tools, including any external tools passed in
-    all_tools = (tools or []) + [git_tool, file_tool, github_tool]
+    # Combine all tools, including the dynamic GitHub tool
+    all_tools = (tools or []) + [git_tool, file_tool, dynamic_github_tool]
 
     return Agent(
         role="Git Operator",
@@ -102,6 +103,6 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
         llm=llm,
         tools=all_tools,
-        verbose=config.agents.verbose,
+        verbose=config.agents_verbose,
         allow_delegation=False
     )

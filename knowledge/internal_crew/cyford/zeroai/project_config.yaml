@@ -11,6 +11,7 @@ repository:
   url: "https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
   # The branch to clone and pull the latest changes from
   pull_from_branch: "rl-core"
+  REPO_TOKEN_KEY: "GH_TOKEN_CYFORD"
   # The convention for the branch the AI will create and push to
   work_and_push_to_branch: "feature/{task_id}" # Dynamic branch name pattern
   # Paths relevant to the project structure

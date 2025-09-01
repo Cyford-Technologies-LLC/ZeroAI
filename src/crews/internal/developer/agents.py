@@ -5,15 +5,19 @@ from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
-from crewai_tools import GithubSearchTool, SerperDevTool
+from crewai_tools import SerperDevTool
 
 from distributed_router import DistributedRouter
 from config import config
 from rich.console import Console
 
+# Import the dynamic GitHub tool from the tool factory
+from src.crews.internal.tool_factory import dynamic_github_tool
+
 # Important: for any crews outside the default, make sure the proper crews are loaded
 os.environ["CREW_TYPE"] = "internal"
 console = Console()
+
 
 def get_developer_llm(router: DistributedRouter, category: str = "coding") -> Any:
     """
@@ -46,14 +50,15 @@ def get_developer_llm(router: DistributedRouter, category: str = "coding") -> An
         style="blue")
     return llm
 
-def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+
+def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                 coworkers: Optional[List] = None) -> Agent:
     """Create a Code Researcher agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
-    repository = inputs.get("repository")
-    github_tool = GithubSearchTool(github_repo=repository)
-    all_tools = (tools if tools else []) + [github_tool]
+    # Pass the dynamic tool instead of a hardcoded instance
+    all_tools = (tools if tools else []) + [dynamic_github_tool, SerperDevTool()]
 
     return Agent(
         role="Code Researcher",
@@ -91,25 +96,26 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         complex systems, and identifying potential issues. All responses are signed off with 'Dr. Alan Parse'""",
         llm=llm,
         tools=all_tools,
-        verbose=True,
+        verbose=config.agents_verbose,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
     )
 
-def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+
+def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None) -> Agent:
     """Create a Junior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
     working_dir = inputs.get("working_dir")
-    repository = inputs.get("repository")
 
     file_tool = FileTool(working_dir=working_dir)
     docker_tool = DockerTool()
     git_tool = GitTool()
-    github_tool = GithubSearchTool(github_repo=repository)
 
-    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, github_tool]
+    # Pass the dynamic tool instead of a hardcoded instance
+    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, dynamic_github_tool]
 
     return Agent(
         role="Junior Developer",
@@ -142,25 +148,26 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         under the guidance of senior team members. All responses are signed off with 'Tom Kyles'""",
         llm=llm,
         tools=all_tools,
-        verbose=True,
+        verbose=config.agents_verbose,
         allow_delegation=False,
         coworkers=coworkers if coworkers is not None else []
     )
 
-def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+
+def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None) -> Agent:
     """Create a Senior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
     working_dir = inputs.get("working_dir")
-    repository = inputs.get("repository")
 
     file_tool = FileTool(working_dir=working_dir)
     docker_tool = DockerTool()
     git_tool = GitTool()
-    github_tool = GithubSearchTool(github_repo=repository)
 
-    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, github_tool]
+    # Pass the dynamic tool instead of a hardcoded instance
+    all_tools = (tools if tools else []) + [file_tool, docker_tool, git_tool, dynamic_github_tool]
 
     return Agent(
         role="Senior Developer",
@@ -193,12 +200,14 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         You create elegant, maintainable, and robust code solutions to complex problems. All responses are signed off with 'Tony Kyles'""",
         llm=llm,
         tools=all_tools,
-        verbose=True,
+        verbose=config.agents_verbose,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
     )
 
-def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+
+def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                             coworkers: Optional[List] = None) -> Agent:
     """Create a QA Engineer agent."""
     llm = get_developer_llm(router, category="qa")
     agent_memory = Memory()
@@ -237,7 +246,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         defects to ensure a high-quality product. All responses are signed off with 'Lara Croft'""",
         llm=llm,
         tools=(tools if tools else []) + [file_tool, docker_tool],
-        verbose=True,
+        verbose=config.agents_verbose,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
     )
