@@ -8,7 +8,7 @@ from config import config
 from src.tools.git_tool import GitTool, FileTool
 from src.utils.memory import Memory
 from rich.console import Console
-from crewai_tools.tools import GitHubTool
+from src.tools.git_tool import GitTool
 
 # Create the console instance so it can be used in this module
 console = Console()

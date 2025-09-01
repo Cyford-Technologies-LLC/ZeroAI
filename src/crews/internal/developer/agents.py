@@ -5,9 +5,7 @@ import inspect
 from crewai import Agent
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
-from src.tools.git_tool import FileTool
-from crewai_tools.tools import DockerTool
-from crewai_tools.tools import GitHubTool # FIX: Import GitHubTool
+from src.tools.git_tool import GitTool, FileTool, DockerTool
 from distributed_router import DistributedRouter
 from config import config
 from rich.console import Console
