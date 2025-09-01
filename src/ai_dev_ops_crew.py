@@ -21,7 +21,7 @@ from src.crews.internal.team_manager.agents import ErrorLogger, create_team_mana
 #from src.crews.internal.team_manager.tasks import create_planning_task
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
-from src.crews.internal.tool_factory import dynamic_github_tool
+from tool_factory import dynamic_github_tool
 
 # Configure console
 console = Console()
