@@ -13,6 +13,7 @@ from src.utils.legacy_config_wrapper import Settings
 
 
 
+
 from crewai import Crew
 from distributed_router import DistributedRouter
 from src.config import config
@@ -212,7 +213,7 @@ class AIOpsCrewManager:
         self.project_config = self._load_project_config()
         self.working_dir = self._setup_working_dir()
         self.tools = self._initialize_tools()
-        self.config = config
+        self.config = Settings
 
     def _load_project_config(self) -> Dict[str, Any]:
         """Load the project configuration from YAML file."""

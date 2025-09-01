@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from langchain_ollama import OllamaLLM
+from src.utils.legacy_config_wrapper import Settings
+
 
 from crewai import Agent
 from rich.console import Console
