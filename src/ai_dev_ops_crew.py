@@ -275,6 +275,8 @@ class AIOpsCrewManager:
                     tools=self.tools,
                     project_config=self.project_config,
                     inputs=task_inputs,
+                    custom_logger=custom_logger  # FIX: Pass the logger instance
+
                 )
 
                 # Assign the custom logger callback
