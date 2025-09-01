@@ -447,6 +447,16 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
         # Add crews status to inputs
         inputs["crews_status"] = crews_status
 
+        console.print(f"--- DEBUG: About to initialize AIOpsCrewManager ---", style="bold yellow")
+        console.print(f"  router: {router}", style="dim")
+        console.print(f"  project_id: {project_id}", style="dim")
+        console.print(f"  inputs: {inputs}", style="dim")
+        console.print(f"  config.model.name: {config.model.name}", style="dim")
+        console.print(f"  config.model.temperature: {config.model.temperature}", style="dim")
+        console.print(f"  config.model.base_url: {config.model.base_url}", style="dim")
+        console.print(f"  config.agents.max_concurrent: {config.agents.max_concurrent}", style="dim")
+        console.print(f"--- END DEBUG ---", style="bold yellow")
+
         # Initialize and run the manager
         manager = AIOpsCrewManager(router, project_id, inputs)
         return manager.execute()
