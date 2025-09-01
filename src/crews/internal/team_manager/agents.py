@@ -218,7 +218,7 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         goal=goal,
         backstory=backstory,
         llm=manager_llm,
-        tools=tools,
+        tools=[],
         verbose=True,
         allow_delegation=True
     )
