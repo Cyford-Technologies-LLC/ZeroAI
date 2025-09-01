@@ -1,7 +1,6 @@
 # src/crews/internal/research/crew.py
-
 from crewai import Crew, Process
-from typing import Dict, Any
+from typing import Dict, Any, List
 from distributed_router import DistributedRouter
 from config import config
 from src.crews.internal.research.agents  import create_internal_researcher_agent, create_internal_analyst_agent
@@ -9,7 +8,7 @@ from src.crews.internal.research.tasks import internal_research_task, internal_a
 
 def get_research_crew(router, tools, project_config, use_new_memory=False):
     """
-    Wrapper function to create the research crew function.
+    Wrapper function to create the research crew.
 
     Args:
         router: The DistributedRouter instance for model selection
@@ -24,8 +23,10 @@ def get_research_crew(router, tools, project_config, use_new_memory=False):
     inputs = {
         "working_dir": project_config.get("crewai_settings", {}).get("working_directory", "/tmp"),
         "project_name": project_config.get("project", {}).get("name", "unknown"),
-        # Add any other inputs needed by the documentation crew
+        "tools": tools,
     }
+    # Call the correct crew creation function
+    return create_research_crew(router, inputs, full_output=True)
 
 
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
