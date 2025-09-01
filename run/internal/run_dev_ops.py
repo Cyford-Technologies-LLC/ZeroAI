@@ -22,6 +22,8 @@ from crewai import Agent, Crew, Task, Process
 from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
 from io import StringIO
 from ast import literal_eval
+from typing import Dict, Any, List, Optional
+
 from src.devops_router import get_router
 from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers
 from src.utils.loop_detection import LoopDetector  # Import the new class
