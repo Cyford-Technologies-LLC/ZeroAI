@@ -27,7 +27,10 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     manager_tasks = [
         Task(
             description=inputs.get("prompt"),
-            agent=manager_agent
+            agent=manager_agent,
+            # FIX: Add the required 'expected_output' field
+            expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
+                            "This may include code, documentation, or other relevant artifacts."
         )
     ]
 
@@ -44,3 +47,4 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         verbose=config.agents.verbose,
         full_output=full_output,
     )
+
