@@ -2,7 +2,7 @@
 from crewai import Crew, Process
 from typing import Dict, Any, List
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 
 from src.crews.internal.documentation.agents import create_writer_agent
 from .tasks import update_docs_task

@@ -6,7 +6,7 @@ from crewai import Agent
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 from rich.console import Console
 from src.utils.memory import Memory
 from pathlib import Path

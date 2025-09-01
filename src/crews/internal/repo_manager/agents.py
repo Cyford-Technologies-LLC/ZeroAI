@@ -13,7 +13,7 @@ from src.utils.memory import Memory
 from tool_factory import dynamic_github_tool
 
 # Assume config is correctly loaded from the root directory
-from config import config
+from src.config import config
 
 # Create the console instance so it can be used in this module
 console = Console()

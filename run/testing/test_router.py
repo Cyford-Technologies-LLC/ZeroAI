@@ -13,7 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../s
 from langchain_community.llms.ollama import Ollama
 from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES
 from devops_router import DevOpsDistributedRouter, get_router as get_devops_router
-from config import config
+from src.config import config
 
 console = Console()
 

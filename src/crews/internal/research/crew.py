@@ -2,7 +2,7 @@
 from crewai import Crew, Process
 from typing import Dict, Any, List
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 from src.crews.internal.research.agents  import create_internal_researcher_agent, create_internal_analyst_agent
 from src.crews.internal.research.tasks import internal_research_task, internal_analysis_task
 

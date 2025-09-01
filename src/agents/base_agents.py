@@ -3,7 +3,7 @@
 from crewai import Agent
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 from rich.console import Console
 
 console = Console()

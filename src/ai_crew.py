@@ -13,7 +13,7 @@ import uuid
 from langchain_community.llms.ollama import Ollama
 
 # --- Existing imports ---
-from config import config
+from src.config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
 from distributed_router import DistributedRouter

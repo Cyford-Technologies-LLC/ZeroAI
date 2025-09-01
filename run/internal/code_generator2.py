@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Fix: Import Ollama chat model directly from langchain
 from langchain_community.chat_models import ChatOllama
-from config import config
+from src.config import config
 from distributed_router import distributed_router
 from rich.console import Console
 

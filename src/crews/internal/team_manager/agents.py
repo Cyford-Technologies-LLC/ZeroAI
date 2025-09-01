@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from langchain_ollama import OllamaLLM
-import src.config as config
+from src.config import config
 
 
 from crewai import Agent
@@ -221,6 +221,6 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         backstory=backstory,
         llm=manager_llm,
         tools=[],
-        verbose=True,
+        verbose=config.agents_verbose,
         allow_delegation=True
     )

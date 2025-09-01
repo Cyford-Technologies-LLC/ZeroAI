@@ -10,7 +10,7 @@ from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENC
     MODEL_MEMORY_MAP
 from langchain_community.llms.ollama import Ollama
 from src.config import config
-from config import config
+from src.config import config
 import json  # Ensure json is imported for better logging
 
 console = Console()
