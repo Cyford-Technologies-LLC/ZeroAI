@@ -2,10 +2,11 @@
 
 import os
 import inspect
-from crewai_tools import GithubSearchTool
-from crewai.tools import BaseTool
+from crewai_tools import GithubSearchTool, BaseTool
+
 from typing import Optional, Any
-from config import config
+from src.config import config
+
 
 
 class DynamicGithubTool(BaseTool):
