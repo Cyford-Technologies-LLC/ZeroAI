@@ -90,7 +90,7 @@ class DevOpsDistributedRouter(DistributedRouter):
             # --- PARENT METHOD CALL ---
             base_url, peer_name, model_name = None, None, None
             try:
-                console.print(f"Allens Testing  get_optimal_endpoint_and_model: {e}", style="red")
+                console.print(f"Allens Testing  get_optimal_endpoint_and_model:", style="red")
                 base_url, peer_name, model_name = super().get_optimal_endpoint_and_model(
                     prompt=prompt,
                     failed_peers=[],  # Empty list for failed peers
