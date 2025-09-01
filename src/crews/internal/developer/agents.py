@@ -10,7 +10,7 @@ from src.crews.internal.tools.git_tool import GitTool, FileTool
 from crewai_tools import SerperDevTool
 
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 from rich.console import Console
 
 # Import the dynamic GitHub tool from the tool factory
