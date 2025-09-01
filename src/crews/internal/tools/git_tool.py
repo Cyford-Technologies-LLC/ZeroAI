@@ -26,7 +26,9 @@ class FileTool(BaseTool):
         # ... (implementation from before)
         pass # Placeholder for the code
 
+# Add to src/crews/internal/tools/git_tool.py
+def create_git_tool(repo_path: str):
+    return GitTool(repo_path=repo_path)
 # --- Add these lines to instantiate the tools ---
 # These are the objects that are imported by other modules
-git_tool = GitTool()
 file_tool = FileTool()

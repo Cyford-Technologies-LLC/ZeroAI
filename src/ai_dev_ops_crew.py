@@ -20,7 +20,7 @@ from src.utils.yaml_utils import load_yaml_config
 from src.crews.internal.team_manager.agents import ErrorLogger, create_team_manager_agent, load_all_coworkers
 #from src.crews.internal.team_manager.tasks import create_planning_task
 from src.crews.internal.tools.docker_tool import DockerTool
-from src.crews.internal.tools.git_tool import GitTool, FileTool
+from src.crews.internal.tools.git_tool import GitTool, FileTool, create_git_tool
 from tool_factory import dynamic_github_tool
 
 # Configure console
@@ -276,9 +276,9 @@ class AIOpsCrewManager:
         """
         common_tools = [
             DockerTool(),
-            GitTool(repo_path=self.working_dir),
-            FileTool(working_dir=self.working_dir),
+            FileTool(working_dir=self.working_dir)
         ]
+        common_tools.append(create_git_tool(repo_path=str(self.working_dir)))
 
         repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
         if repo_token_key:
