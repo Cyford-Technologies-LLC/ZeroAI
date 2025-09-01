@@ -291,7 +291,6 @@ class AIOpsCrewManager:
 
         return common_tools
 
-
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
@@ -300,21 +299,18 @@ class AIOpsCrewManager:
             custom_logger = CustomLogger(output_file=str(log_output_path))
 
             try:
-                # Assuming `get_llm_for_role` uses the router correctly
                 llm = self.router.get_llm_for_role("general")
                 if llm:
-                    self.model_used = getattr(llm, 'model_name', 'unknown').replace("ollama/", "")
-                    if hasattr(llm, 'base_url'):
+                    self.model_used = getattr(llm, 'model_name', getattr(llm, 'model', 'unknown')).replace("ollama/",
+                                                                                                           "")
+                    if hasattr(llm, 'base_url') and llm.base_url:
                         self.base_url = llm.base_url
-                        if self.base_url:
-                            try:
-                                peer_ip = self.base_url.split('//')[1].split(':')
-                                self.peer_used = peer_ip
-                            except:
-                                self.peer_used = "unknown"
+                        try:
+                            self.peer_used = self.base_url.split('//')[1].split(':')
+                        except IndexError:
+                            self.peer_used = "unknown"
             except Exception as e:
                 console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
-                # Continue execution even if model info extraction fails
 
             if "team_manager" not in self.crews_status or self.crews_status["team_manager"]["status"] != "available":
                 error_msg = "Team Manager crew is not available or has errors."
@@ -389,7 +385,7 @@ class AIOpsCrewManager:
                     )
                 except ImportError:
                     console.print("⚠️ Could not import ErrorLogger", style="yellow")
-                raise # Re-raise the exception to be caught by the outer try-except
+                raise
 
             if result:
                 if hasattr(crew, "usage_metrics"):
