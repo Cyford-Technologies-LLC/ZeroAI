@@ -279,71 +279,71 @@ class AIOpsCrewManager:
 
     def _initialize_tools(self) -> List[Any]:import os
 
-    def execute(self) -> Dict[str, Any]:
+    def execute(project_id: str, prompt: str, category: str, repository: str, branch: str,
+                task_id: str, crews_status: Dict[str, Any], working_dir: Path,
+                project_config: Dict[str, Any], tools: List, router: Any) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
             start_time = time.time()
-            log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
+            log_output_path = working_dir / f"crew_log_{task_id}.json"
             custom_logger = CustomLogger(output_file=str(log_output_path))
+            model_used, peer_used = "unknown", "unknown"
 
             try:
-                llm = self.router.get_llm_for_role("general")
+                llm = router.get_llm_for_role("general")
                 if llm:
-                    self.model_used = llm.model.replace("ollama/", "")
-                    if hasattr(llm, 'base_url'):
-                        self.base_url = llm.base_url
-                        # Extract peer from base_url
-                        if self.base_url:
-                            try:
-                                peer_ip = self.base_url.split('//')[1].split(':')[0]
-                                self.peer_used = peer_ip
-                            except:
-                                self.peer_used = "unknown"
+                    model_used = llm.model.replace("ollama/", "")
+                    if hasattr(llm, 'base_url') and llm.base_url:
+                        base_url = llm.base_url
+                        try:
+                            peer_used = base_url.split('//')[1].split(':')[0]
+                        except:
+                            peer_used = "unknown"
             except Exception as e:
                 console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
 
-            if "team_manager" not in self.crews_status or self.crews_status["team_manager"]["status"] != "available":
+            if "team_manager" not in crews_status or crews_status.get("team_manager", {}).get("status") != "available":
                 error_msg = "Team Manager crew is not available or has errors."
                 console.print(f"❌ {error_msg}", style="red")
-                if "team_manager" in self.crews_status and "error" in self.crews_status["team_manager"]:
-                    error_msg += f" Error: {self.crews_status['team_manager']['error']}"
+                if "team_manager" in crews_status and "error" in crews_status.get("team_manager", {}):
+                    error_msg += f" Error: {crews_status['team_manager']['error']}"
                 return {
                     "success": False,
                     "error": error_msg,
-                    "model_used": self.model_used,
-                    "peer_used": self.peer_used,
-                    "crews_status": self.crews_status
+                    "model_used": model_used,
+                    "peer_used": peer_used,
+                    "crews_status": crews_status
                 }
 
             try:
                 console.print("🔄 Importing Team Manager crew...", style="blue")
 
                 # --- Handle repo URL override and token retrieval ---
-                final_repo_url = self.project_config.get("repository", {}).get("url")
-                if self.repository:  # self.repository is set from a CLI argument
-                    final_repo_url = self.repository
+                final_repo_url = project_config.get("repository", {}).get("url")
+                if repository:  # CLI argument takes precedence
+                    final_repo_url = repository
                     console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
 
-                repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
+                repo_token_key = project_config.get("repository", {}).get("REPO_TOKEN_KEY")
                 repo_token = os.getenv(repo_token_key) if repo_token_key else None
                 # --- End repo logic ---
 
                 task_inputs = {
-                    "project_id": self.project_id,
-                    "prompt": self.prompt,
-                    "category": self.category,
-                    "repository": final_repo_url,  # Pass the final URL here
-                    "branch": self.branch,
-                    "task_id": self.task_id,
-                    "crews_status": self.crews_status,
-                    "working_dir": self.working_dir,
-                    "repo_token": repo_token,  # Pass the token here
+                    "project_id": project_id,
+                    "prompt": prompt,
+                    "category": category,
+                    "repository": final_repo_url,
+                    "branch": branch,
+                    "task_id": task_id,
+                    "crews_status": crews_status,
+                    "working_dir": working_dir,
+                    "repo_token": repo_token,
                 }
 
                 crew = create_team_manager_crew(
-                    router=self.router,
-                    tools=self.tools,
-                    project_config=self.project_config,
+                    router=router,
+                    tools=tools,
+                    project_config=project_config,
                     inputs=task_inputs,
                     custom_logger=custom_logger
                 )
@@ -354,30 +354,29 @@ class AIOpsCrewManager:
                     return {
                         "success": False,
                         "error": error_msg,
-                        "model_used": self.model_used,
-                        "peer_used": self.peer_used,
-                        "crews_status": self.crews_status,
+                        "model_used": model_used,
+                        "peer_used": peer_used,
+                        "crews_status": crews_status,
                     }
 
-                console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
+                console.print(f"🚀 Executing Team Manager crew for task: {prompt}", style="blue")
                 result = crew.kickoff()
 
                 custom_logger.save_log()
 
-                if self.project_config.get("crewai_settings", {}).get("verbose", 1):
+                if project_config.get("crewai_settings", {}).get("verbose", 1):
                     console.print(f"\nFinal Result:\n{result}")
 
             except ImportError as e:
                 console.print(f"❌ Could not import Team Manager crew: {e}", style="red")
                 console.print("Traceback:", style="red")
                 console.print(traceback.format_exc())
-
                 try:
                     error_logger = ErrorLogger()
                     error_logger.log_error(
                         f"Failed to import Team Manager crew: {str(e)}",
                         {
-                            "project_id": self.project_id,
+                            "project_id": project_id,
                             "traceback": traceback.format_exc(),
                             "sys_path": str(sys.path)
                         }
@@ -387,41 +386,38 @@ class AIOpsCrewManager:
                 raise
 
             if result:
-                if hasattr(crew, "usage_metrics"):
-                    self.token_usage = crew.usage_metrics
-
+                token_usage = getattr(crew, "usage_metrics", None)
                 return {
                     "success": True,
                     "message": "Task completed successfully",
                     "result": result,
-                    "model_used": self.model_used,
-                    "peer_used": self.peer_used,
-                    "token_usage": self.token_usage,
+                    "model_used": model_used,
+                    "peer_used": peer_used,
+                    "token_usage": token_usage,
                     "execution_time": time.time() - start_time,
-                    "crews_status": self.crews_status
+                    "crews_status": crews_status
                 }
             else:
                 return {
                     "success": False,
                     "error": "Crew execution did not return a result",
-                    "model_used": self.model_used,
-                    "peer_used": self.peer_used,
-                    "crews_status": self.crews_status
+                    "model_used": model_used,
+                    "peer_used": peer_used,
+                    "crews_status": crews_status
                 }
 
         except Exception as e:
             console.print(f"❌ Error executing task: {e}", style="red")
             console.print("Traceback:", style="red")
             console.print(traceback.format_exc())
-
             try:
                 error_logger = ErrorLogger()
                 error_logger.log_error(
                     f"Error executing task: {str(e)}",
                     {
-                        "project_id": self.project_id,
-                        "prompt": self.prompt,
-                        "category": self.category,
+                        "project_id": project_id,
+                        "prompt": prompt,
+                        "category": category,
                         "traceback": traceback.format_exc()
                     }
                 )
