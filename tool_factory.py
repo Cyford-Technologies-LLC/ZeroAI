@@ -2,7 +2,8 @@
 
 import os
 import inspect
-from crewai_tools import GithubSearchTool, BaseTool
+from crewai_tools import GithubSearchTool
+from crewai.tools import BaseTool
 
 from typing import Optional, Any
 from src.config import config
