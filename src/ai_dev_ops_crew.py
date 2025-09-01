@@ -209,7 +209,7 @@ class AIOpsCrewManager:
         self.project_config = self._load_project_config()
         self.working_dir = self._setup_working_dir()
         self.tools = self._initialize_tools()
-        self.config = config_instance
+        self.config = config
 
     def _load_project_config(self) -> Dict[str, Any]:
         """Load the project configuration from YAML file."""
