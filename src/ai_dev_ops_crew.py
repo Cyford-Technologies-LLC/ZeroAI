@@ -249,11 +249,8 @@ class AIOpsCrewManager:
                                                                                  f"/tmp/internal_crew/{self.project_id}/")
 
             working_dir_str = working_dir_str.replace("{task_id}", self.task_id)
-
             working_dir = Path(working_dir_str)
-
             working_dir.mkdir(parents=True, exist_ok=True)
-
             console.print(f"✅ Set up working directory: {working_dir}", style="green")
             return working_dir
         except Exception as e:
@@ -269,8 +266,8 @@ class AIOpsCrewManager:
             except ImportError:
                 console.print("⚠️ Could not import ErrorLogger", style="yellow")
 
-            # Explicitly return a Path instance from the temp directory
             import tempfile
+            # This line ensures a valid Path object is returned
             return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
 
     def _initialize_tools(self) -> List[Any]:
