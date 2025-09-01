@@ -188,13 +188,12 @@ def create_team_manager_agent(router, project_id: str, working_dir: Path, cowork
             name="Project Coordinator",
             goal=f"Coordinate specialists to complete tasks for project {project_id} by delegating work efficiently, avoiding redundant questions, and making logical decisions based on coworker feedback.",
             backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
-            delegate work to appropriate specialists, and oversee the project's progress.
-            You DO NOT perform technical tasks yourself. Your role is PURELY supervisory.
-            You MUST NEVER attempt to delegate a task to yourself.
+            delegate work to appropriate specialists, and oversee the project's progress. You DO NOT perform technical tasks yourself; you are PURELY supervisory.
+            You MUST NEVER delegate a task to yourself.
             """,
             allow_delegation=True,
             verbose=True,
-            llm=manager_llm,
+            llm=llm,
         )
         return team_manager
 
