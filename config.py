@@ -1,13 +1,36 @@
 import json
 import os
+import re
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel, ValidationError, SecretStr, Field
+from pydantic import BaseModel, Field, ValidationError, SecretStr
 from dotenv import find_dotenv, load_dotenv
 
 # Define the path to the JSON configuration file
 CONFIG_FILE = Path("config.json")
+
+# Find and load environment variables from the .env file
+load_dotenv(find_dotenv())
+
+# Regular expression to find placeholders like {ENV_VAR}
+ENV_VAR_PATTERN = re.compile(r"\{(\w+)\}")
+
+
+def replace_placeholders(data: Any) -> Any:
+    """Recursively replaces environment variable placeholders in a nested data structure."""
+    if isinstance(data, str):
+        for match in ENV_VAR_PATTERN.finditer(data):
+            env_var_name = match.group(1)
+            env_var_value = os.getenv(env_var_name)
+            if env_var_value:
+                data = data.replace(match.group(0), env_var_value)
+        return data
+    if isinstance(data, dict):
+        return {k: replace_placeholders(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [replace_placeholders(item) for item in data]
+    return data
 
 
 class OllamaConfig(BaseModel):
@@ -16,25 +39,15 @@ class OllamaConfig(BaseModel):
     base_url: str = "http://149.36.1.65:11434"
 
 
-class GitHubRepoConfig(BaseModel):
-    """Configuration for a single GitHub repository."""
-    name: str
-    owner: str
-    description: Optional[str] = None
-
-
 class Settings(BaseModel):
     """Application settings, with Pydantic validation."""
-    app_name: str = "ZeroAI"
-    agents_verbose: bool = False
-    ollama: OllamaConfig = OllamaConfig()
-    gh_token: Optional[SecretStr] = None
+    ZeroAI: Dict[str, Any]
+    Company_Details: Dict[str, Any]
     serper_api_key: Optional[SecretStr] = None
-    github_repos: List[GitHubRepoConfig] = Field(default_factory=list)
 
     @classmethod
     def load_from_json(cls, file_path: Path):
-        """Loads and validates settings from a JSON file."""
+        """Loads, replaces placeholders, and validates settings from a JSON file."""
         if not file_path.exists():
             print(f"⚠️ JSON config file not found at {file_path}, loading defaults.")
             return cls()
@@ -42,48 +55,32 @@ class Settings(BaseModel):
         try:
             with open(file_path, "r") as f:
                 data = json.load(f)
+
+            # Replace environment variable placeholders
+            data = replace_placeholders(data)
+
             return cls(**data)
         except (IOError, json.JSONDecodeError, ValidationError) as e:
             print(f"❌ Error loading config from JSON: {e}")
-            raise
+            return cls()
 
 
-# Load environment variables (e.g., for GH_TOKEN)
-load_dotenv(find_dotenv())
-
-# Load settings from the JSON file first
-try:
-    config = Settings.load_from_json(CONFIG_FILE)
-except ValidationError:
-    print("❌ JSON config is invalid, falling back to defaults.")
-    config = Settings()
+# Load settings from the JSON file first with placeholder replacement
+config = Settings.load_from_json(CONFIG_FILE)
 
 # Now, override with environment variables if they exist
 env_settings = {}
-if os.getenv("GH_TOKEN"):
-    env_settings["gh_token"] = os.getenv("GH_TOKEN")
 if os.getenv("SERPER_API_KEY"):
-    env_settings["serper_api_key"] = os.getenv("SERPER_API_KEY")
+    env_settings["serper_api_key"] = SecretStr(os.getenv("SERPER_API_KEY"))
 
 config = config.model_copy(update=env_settings)
 
 # Example usage
 if __name__ == "__main__":
     print("--- Loaded Configuration ---")
-    print(f"App Name: {config.app_name}")
-    print(f"Agents Verbose: {config.agents_verbose}")
-    print(f"Ollama Model: {config.ollama.model}")
-    print(f"Ollama Base URL: {config.ollama.base_url}")
-    print(
-        f"GitHub Token (masked): {config.gh_token.get_secret_value()[:4]}..." if config.gh_token else "GitHub Token not found.")
+    print(f"ZeroAI GIT: {config.ZeroAI['Details']['GIT']}")
+    print(f"Company Token Key: {config.Company_Details['Projects']['GIT_TOKEN_KEY']}")
     if config.serper_api_key:
-        print(f"Serper API Key loaded.")
+        print(f"Serper API Key loaded: {config.serper_api_key.get_secret_value()[:4]}...")
     else:
         print("Serper API Key not found.")
-
-    print("\n--- Configured GitHub Repositories ---")
-    if config.github_repos:
-        for repo in config.github_repos:
-            print(f"- {repo.owner}/{repo.name}: {repo.description}")
-    else:
-        print("No GitHub repositories configured.")

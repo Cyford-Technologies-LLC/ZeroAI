@@ -1,5 +1,5 @@
 {
-    "ZeroAI": {
+  "ZeroAI": {
     "Company_Name": "Cyford Technologies LLC",
     "Details": {
       "GIT": "https://github.com/Cyford-Technologies-LLC/ZeroAI.git",
@@ -13,6 +13,10 @@
       "model": "945 North Point Dr.  Alpharetta Ga 0004",
       "website": "http://www.cyfordtechnologies.com",
       "phone": "784595866"
+    },
+    "Projects": {
+      "GIT_TOKEN_KEY": "{GH_TOKEN_CYFORD}",
+      "GItHUB_URL": "https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
     }
   },
   "serper_api_key": null
