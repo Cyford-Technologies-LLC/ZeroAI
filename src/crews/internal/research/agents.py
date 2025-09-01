@@ -13,7 +13,7 @@ from pathlib import Path
 import os
 import yaml
 from crewai_tools import SerperDevTool, GitHubTool
-
+from src.tools.git_tool import GitTool
 console = Console()
 
 
