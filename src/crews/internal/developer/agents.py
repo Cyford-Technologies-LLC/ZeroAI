@@ -12,7 +12,7 @@ from config import config
 from rich.console import Console
 
 # Import the dynamic GitHub tool from the tool factory
-from src.crews.internal.tool_factory import dynamic_github_tool
+from tool_factory import dynamic_github_tool
 
 # Important: for any crews outside the default, make sure the proper crews are loaded
 os.environ["CREW_TYPE"] = "internal"

@@ -246,7 +246,7 @@ class AIOpsCrewManager:
         """Set up the working directory for the task based on project configuration."""
         try:
             working_dir_str = self.project_config.get("crewai_settings", {}).get("working_directory",
-                                                    f"/tmp/internal_crew/{self.project_id}/")
+                                                                                 f"/tmp/internal_crew/{self.project_id}/")
 
             working_dir_str = working_dir_str.replace("{task_id}", self.task_id)
 
@@ -269,6 +269,7 @@ class AIOpsCrewManager:
             except ImportError:
                 console.print("⚠️ Could not import ErrorLogger", style="yellow")
 
+            # Explicitly return a Path instance from the temp directory
             import tempfile
             return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
 

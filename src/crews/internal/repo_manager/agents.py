@@ -10,7 +10,7 @@ from src.tools.git_tool import GitTool, FileTool
 from src.utils.memory import Memory
 
 # Import the dynamic GitHub tool from the tool factory
-from src.crews.internal.tool_factory import dynamic_github_tool
+from tool_factory import dynamic_github_tool
 
 # Assume config is correctly loaded from the root directory
 from config import config
