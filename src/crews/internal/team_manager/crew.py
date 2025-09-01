@@ -41,6 +41,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     return Crew(
         agents=crew_agents,
         tasks=manager_tasks,
+        inputs=inputs,  # Add the missing inputs argument
         manager_agent=manager_agent,
         process=Process.hierarchical,
         verbose=config.agents.verbose,
