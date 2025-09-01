@@ -1,48 +1,246 @@
-# src/ai_dev_ops_crew.py
-
 import os
-import json
-import yaml
-import time
 import sys
+import uuid
+import time
+import importlib
 import traceback
+import yaml
 from pathlib import Path
-from typing import Dict, Any
-from dotenv import load_dotenv, find_dotenv
+from typing import Dict, Any, Optional, List
+from rich.console import Console
+from rich.table import Table
 
 from crewai import Crew
 from distributed_router import DistributedRouter
 from config import config
-from rich.console import Console
+from src.utils.custom_logger import CustomLogger
 
 # Import specific agents and tools
-from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers, ErrorLogger
+from src.crews.internal.team_manager.agents import ErrorLogger, create_team_manager_agent, load_all_coworkers
 from src.crews.internal.team_manager.tasks import create_planning_task
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
-from src.crews.internal.tool_factory import dynamic_github_tool  # The dynamic tool factory
-from src.utils.custom_logger import CustomLogger
+from src.crews.internal.tool_factory import dynamic_github_tool
 
-# Create the console instance
+# Configure console
 console = Console()
 
 
-class AiDevOpsCrew:
-    def __init__(self, project_id: str, prompt: str, category: str, repository: str, branch: str):
+def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
+    """
+    Preload all internal crew modules and check which ones are available.
+    Returns:
+        Dictionary with crew status information
+    """
+    crew_status = {}
+    error_logger = None
+    try:
+        from src.crews.internal.team_manager.agents import ErrorLogger
+        error_logger = ErrorLogger()
+    except ImportError as e:
+        console.print(f"⚠️ Could not import ErrorLogger: {e}", style="yellow")
+
+    internal_crews_dir = Path("src/crews/internal")
+
+    if not internal_crews_dir.exists():
+        error_msg = f"Internal crews directory not found at {internal_crews_dir}"
+        console.print(f"❌ {error_msg}", style="red")
+        if error_logger:
+            error_logger.log_error(error_msg, {})
+        return {"error": error_msg}
+
+    table = Table(title="Internal Crews Status")
+    table.add_column("Crew", style="cyan")
+    table.add_column("Status", style="white")
+    table.add_column("Details", style="white")
+    table.add_column("Files", style="dim")
+
+    crew_dirs = [d for d in internal_crews_dir.iterdir() if
+                 d.is_dir() and not d.name.startswith("__") and d.name != "tools"]
+
+    console.print(f"🔍 [bold blue]Checking internal crews availability[/bold blue]")
+    console.print(f"Found {len(crew_dirs)} potential internal crews", style="blue")
+
+    for crew_dir in crew_dirs:
+        crew_name = crew_dir.name
+        crew_status[crew_name] = {
+            "status": "unknown",
+            "error": None,
+            "files_present": [],
+            "directory": str(crew_dir),
+            "agents": []
+        }
+
+        required_files = ["__init__.py", "agents.py", "tasks.py", "crew.py"]
+        missing_files = []
+
+        for file in required_files:
+            if (crew_dir / file).exists():
+                crew_status[crew_name]["files_present"].append(file)
+            else:
+                missing_files.append(file)
+
+        if missing_files:
+            crew_status[crew_name]["status"] = "incomplete"
+            crew_status[crew_name]["error"] = f"Missing files: {', '.join(missing_files)}"
+            table.add_row(
+                crew_name,
+                "⚠️ Incomplete",
+                f"Missing: {', '.join(missing_files)}",
+                ", ".join(crew_status[crew_name]["files_present"])
+            )
+            continue
+
+        try:
+            import_path = f"src.crews.internal.{crew_name}.crew"
+            module = importlib.import_module(import_path)
+
+            agents_import_path = f"src.crews.internal.{crew_name}.agents"
+            agents_module = importlib.import_module(agents_import_path)
+
+            crew_status[crew_name]["status"] = "available"
+            crew_status[crew_name]["module"] = import_path
+
+            get_crew_func = f"get_{crew_name}_crew"
+            if hasattr(module, get_crew_func):
+                crew_status[crew_name]["get_crew_function"] = get_crew_func
+
+            for func_name in dir(agents_module):
+                if func_name.startswith("create_") and func_name.endswith("_agent"):
+                    crew_status[crew_name]["agents"].append(func_name)
+
+            if not crew_status[crew_name]["agents"]:
+                crew_status[crew_name]["status"] = "incomplete"
+                crew_status[crew_name]["error"] = "No agent creator functions found."
+                table.add_row(
+                    crew_name,
+                    "⚠️ Incomplete",
+                    "No agent creator functions found",
+                    ", ".join(required_files)
+                )
+                continue
+
+            table.add_row(
+                crew_name,
+                "✅ Available",
+                f"Found {len(crew_status[crew_name]['agents'])} agents",
+                ", ".join(required_files)
+            )
+
+        except ImportError as e:
+            crew_status[crew_name]["status"] = "import_error"
+            crew_status[crew_name]["error"] = str(e)
+            table.add_row(
+                crew_name,
+                "❌ Import Error",
+                str(e),
+                ", ".join(crew_status[crew_name]["files_present"])
+            )
+            if error_logger:
+                error_logger.log_error(
+                    f"Failed to import {crew_name} crew: {str(e)}",
+                    {"crew_name": crew_name, "traceback": traceback.format_exc()}
+                )
+
+        except Exception as e:
+            crew_status[crew_name]["status"] = "error"
+            crew_status[crew_name]["error"] = str(e)
+            table.add_row(
+                crew_name,
+                "❌ Error",
+                str(e),
+                ", ".join(crew_status[crew_name]["files_present"])
+            )
+            if error_logger:
+                error_logger.log_error(
+                    f"Error with {crew_name} crew: {str(e)}",
+                    {"crew_name": crew_name, "traceback": traceback.format_exc()}
+                )
+
+    console.print(table)
+
+    for crew_name, info in crew_status.items():
+        status_style = "green" if info["status"] == "available" else "yellow" if info[
+                                                                                     "status"] == "incomplete" else "red"
+        console.print(f"[bold]{crew_name}[/bold]: [{status_style}]{info['status']}[/{status_style}]")
+        if info["error"]:
+            console.print(f"  Error: {info['error']}")
+
+    return crew_status
+
+
+class AIOpsCrewManager:
+    """
+    Manager for the AI DevOps Crew.
+    Orchestrates secure execution of internal development and maintenance tasks
+    by delegating to specialized sub-crews.
+    """
+
+    def __init__(self, router, project_id, inputs):
+        """
+        Initialize the AIOps Crew Manager.
+
+        Args:
+            router: The DevOps router instance for LLM routing
+            project_id: The ID of the project being worked on
+            inputs: Dictionary of input parameters
+        """
+        self.router = router
         self.project_id = project_id
-        self.prompt = prompt
-        self.category = category
-        self.repository = repository
-        self.branch = branch
-        self.task_id = str(uuid.uuid4())[:8]
-        self.working_dir = Path("knowledge/internal_crew") / self.project_id / "workspace"
-        self.router = DistributedRouter()
-        self.tools = []
-        self.project_config = {}
-        self.crews_status = self.router.discover_crews()
+        self.inputs = inputs
+        self.task_id = inputs.get("task_id", str(uuid.uuid4()))
+        self.prompt = inputs.get("prompt", "")
+        self.category = inputs.get("category", "general")
+        self.repository = inputs.get("repository")
+        self.branch = inputs.get("branch", "main")
+
         self.model_used = "unknown"
         self.peer_used = "unknown"
-        self.token_usage = {}
+        self.token_usage = {"total_tokens": 0}
+        self.base_url = None
+
+        self.crews_status = inputs.get("crews_status", {})
+        if not self.crews_status:
+            console.print("Preloading internal crews status...", style="blue")
+            self.crews_status = preload_internal_crews()
+
+        self.project_config = self._load_project_config()
+        self.working_dir = self._setup_working_dir()
+        self.tools = self._initialize_tools()
+
+    def _load_project_config(self) -> Dict[str, Any]:
+        """Loads project configuration from the specified path."""
+        config_path = Path("knowledge/internal_crew") / self.project_id / "project_config.yaml"
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                return yaml.safe_load(f)
+        else:
+            return {}
+
+    def _setup_working_dir(self) -> Path:
+        """Sets up the working directory for the crew."""
+        working_dir_path = Path("knowledge/internal_crew") / self.project_id / "workspace"
+        working_dir_path.mkdir(parents=True, exist_ok=True)
+        return working_dir_path
+
+    def _initialize_tools(self) -> List[Any]:
+        """
+        Initializes the tools based on project configuration and returns a list.
+        """
+        common_tools = [
+            DockerTool(),
+            GitTool(repo_path=self.working_dir),
+            FileTool(working_dir=self.working_dir),
+        ]
+
+        repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
+        if repo_token_key:
+            common_tools.append(dynamic_github_tool)
+            console.print(f"✅ GitHub tool added with token key: {repo_token_key}", style="green")
+        else:
+            console.print("⚠️ No GitHub token key found in project config. GitHub tool disabled.", style="yellow")
+
+        return common_tools
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
@@ -51,7 +249,6 @@ class AiDevOpsCrew:
             log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
             custom_logger = CustomLogger(output_file=str(log_output_path))
 
-            # ... (rest of the initial setup and model information extraction) ...
             try:
                 llm = self.router.get_llm_for_role("general")
                 if llm:
@@ -67,7 +264,6 @@ class AiDevOpsCrew:
             except Exception as e:
                 console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
 
-            # Check if Team Manager is available
             if "team_manager" not in self.crews_status or self.crews_status["team_manager"]["status"] != "available":
                 error_msg = "Team Manager crew is not available or has errors."
                 console.print(f"❌ {error_msg}", style="red")
@@ -81,33 +277,10 @@ class AiDevOpsCrew:
                     "crews_status": self.crews_status
                 }
 
-            # Import the Team Manager crew
             try:
                 console.print("🔄 Importing Team Manager crew...", style="blue")
                 from src.crews.internal.team_manager.crew import create_team_manager_crew
 
-                # Read project config to get the token key
-                project_config_path = Path("knowledge/internal_crew") / self.project_id / "project_config.yaml"
-                if project_config_path.exists():
-                    with open(project_config_path, 'r') as f:
-                        self.project_config = yaml.safe_load(f)
-
-                repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
-
-                # --- Conditionally add tools ---
-                common_tools = [
-                    DockerTool(),
-                    GitTool(repo_path=self.working_dir),
-                    FileTool(working_dir=self.working_dir),
-                ]
-                if repo_token_key:
-                    common_tools.append(dynamic_github_tool)
-                    console.print(f"✅ GitHub tool added with token key: {repo_token_key}", style="green")
-                else:
-                    console.print("⚠️ No GitHub token key found in project config. GitHub tool disabled.",
-                                  style="yellow")
-
-                # Prepare task inputs
                 task_inputs = {
                     "project_id": self.project_id,
                     "prompt": self.prompt,
@@ -117,13 +290,12 @@ class AiDevOpsCrew:
                     "task_id": self.task_id,
                     "crews_status": self.crews_status,
                     "working_dir": self.working_dir,
-                    "repo_token_key": repo_token_key  # Pass the token key
+                    "repo_token_key": self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
                 }
 
-                # Create the team manager crew
                 crew = create_team_manager_crew(
                     router=self.router,
-                    tools=common_tools,
+                    tools=self.tools,
                     project_config=self.project_config,
                     inputs=task_inputs,
                     custom_logger=custom_logger
@@ -140,11 +312,9 @@ class AiDevOpsCrew:
                         "crews_status": self.crews_status,
                     }
 
-                # Execute the crew
                 console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
                 result = crew.kickoff()
 
-                # Save the log after kickoff
                 custom_logger.save_log()
 
                 if self.project_config.get("crewai_settings", {}).get("verbose", 1):
@@ -156,7 +326,6 @@ class AiDevOpsCrew:
                 console.print(traceback.format_exc())
 
                 try:
-                    from src.crews.internal.team_manager.agents import ErrorLogger
                     error_logger = ErrorLogger()
                     error_logger.log_error(
                         f"Failed to import Team Manager crew: {str(e)}",
@@ -170,7 +339,6 @@ class AiDevOpsCrew:
                     console.print("⚠️ Could not import ErrorLogger", style="yellow")
                 raise
 
-            # Process the result
             if result:
                 if hasattr(crew, "usage_metrics"):
                     self.token_usage = crew.usage_metrics
@@ -200,7 +368,6 @@ class AiDevOpsCrew:
             console.print(traceback.format_exc())
 
             try:
-                from src.crews.internal.team_manager.agents import ErrorLogger
                 error_logger = ErrorLogger()
                 error_logger.log_error(
                     f"Error executing task: {str(e)}",
@@ -213,123 +380,9 @@ class AiDevOpsCrew:
                 )
             except ImportError:
                 console.print("⚠️ Could not import ErrorLogger", style="yellow")
-
-            return {
-                "success": False,
-                "error": str(e),
-                "model_used": self.model_used,
-                "peer_used": self.peer_used,
-                "crews_status": self.crews_status
-            }
-
-    def _load_project_config(self) -> Dict[str, Any]:
-        """Load the project configuration from YAML file."""
-        try:
-            # Import here to avoid circular imports
-            from utils.yaml_utils import load_yaml_config
-
-            config_path = Path(f"knowledge/internal_crew/{self.project_id}/project_config.yaml")
-
-            if not config_path.exists():
-                console.print(f"⚠️ No config found for project '{self.project_id}', using default", style="yellow")
-                return {
-                    "project": {"name": self.project_id},
-                    "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
-                }
-
-            config = load_yaml_config(config_path)
-            console.print(f"✅ Loaded project config for '{self.project_id}'", style="green")
-            return config
-        except Exception as e:
-            console.print(f"❌ Error loading project config: {e}", style="red")
-            # Return a minimal default config
-            return {
-                "project": {"name": self.project_id},
-                "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
-            }
-
-    def _setup_working_dir(self) -> Path:
-        """Set up the working directory for the task based on project configuration."""
-        try:
-            # Get the working directory from the project config, or use a default
-            working_dir_str = self.project_config.get("crewai_settings", {}).get("working_directory",
-                                                    f"/tmp/internal_crew/{self.project_id}/")
-
-            # Replace any task_id placeholders in the path
-            working_dir_str = working_dir_str.replace("{task_id}", self.task_id)
-
-            # Create a Path object
-            working_dir = Path(working_dir_str)
-
-            # Create the directory
-            working_dir.mkdir(parents=True, exist_ok=True)
-
-            console.print(f"✅ Set up working directory: {working_dir}", style="green")
-            return working_dir
-        except Exception as e:
-            console.print(f"❌ Failed to set up working directory: {e}", style="red")
-
-            # Log this error to the errors directory
-            try:
-                from src.crews.internal.team_manager.agents import ErrorLogger
-                error_logger = ErrorLogger()
-                error_logger.log_error(
-                    f"Failed to set up working directory: {str(e)}",
-                    {"project_id": self.project_id, "task_id": self.task_id}
-                )
-            except ImportError:
-                console.print("⚠️ Could not import ErrorLogger", style="yellow")
-
-            # Return a temporary directory as fallback
-            import tempfile
-            return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
-
-    # Assuming ErrorLogger is imported at the top of the file containing AIOpsCrewManager
+            raise e
 
 
-    def _initialize_tools(self) -> List[Any]:
-        """Initialize and return the tools needed for the crews."""
-        try:
-            # Initialize the tools with the working directory
-            git_tool = GitTool(working_dir=str(self.working_dir))
-            file_tool = FileTool(working_dir=str(self.working_dir))
-            tools = [git_tool, file_tool]
-
-            console.print("✅ Initialized tools for crews", style="green")
-            return tools
-
-        except ImportError as e:
-            error_msg = f"⚠️ Could not import required tools. Crews will run without tools: {e}"
-            console.print(error_msg, style="yellow")
-
-            # Log the error using the logger from the higher scope
-            try:
-                error_logger = ErrorLogger()
-                error_logger.log_error(
-                    error_msg,
-                    {"project_id": self.project_id, "tools_attempted": "GitTool, FileTool"}
-                )
-            except Exception:
-                console.print("⚠️ Could not import ErrorLogger", style="yellow")
-
-            return []
-
-        except Exception as e:
-            error_msg = f"❌ Error initializing tools: {e}"
-            console.print(error_msg, style="red")
-
-            # Log the error using the logger from the higher scope
-            try:
-                error_logger = ErrorLogger()
-                error_logger.log_error(
-                    error_msg,
-                    {"project_id": self.project_id, "tools_attempted": "GitTool, FileTool",
-                     "traceback": traceback.format_exc()}
-                )
-            except Exception:
-                console.print("⚠️ Could not import ErrorLogger", style="yellow")
-
-            return []
 def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
     """
     Securely run the AI DevOps Crew.
