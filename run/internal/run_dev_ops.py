@@ -164,21 +164,26 @@ def execute_devops_task(router, args, project_config):
         console.print(f"🔍 Category: [bold green]{args.category}[/bold green]")
         console.print(f"📂 Project: [bold yellow]{args.project}[/bold yellow]")
 
+        # Prepare the inputs dictionary for run_ai_dev_ops_crew_securely
+        task_inputs = {
+            "prompt": args.prompt,
+            "category": args.category,
+            "repository": args.repo or project_config.get("repository"),
+            "branch": args.branch or project_config.get("default_branch"),
+            "verbose": args.verbose,
+            "dry_run": args.dry_run,
+            "task_id": task_id,
+        }
+
         # Redirect stdout to capture verbose logs
         if args.verbose:
             sys.stdout = log_stream
 
+        # Call the new entry point, which now handles manager and crew setup
         result = run_ai_dev_ops_crew_securely(
             router=router,
             project_id=args.project,
-            inputs={
-                "prompt": args.prompt,
-                "category": args.category,
-                "repository": args.repo or project_config.get("repository"),
-                "branch": args.branch or project_config.get("default_branch"),
-                "verbose": bool(args.verbose),  # FIX: Ensure boolean value
-                "dry_run": args.dry_run
-            }
+            inputs=task_inputs
         )
 
         # Restore stdout
@@ -189,85 +194,28 @@ def execute_devops_task(router, args, project_config):
         else:
             console.print(f"\n❌ [bold red]DevOps Task failed.[/bold red]")
 
-            # --- Start Diagnostic Crew ---
+            # Handle diagnostics after task failure
             console.print("\n🔬 [bold blue]Running Diagnostic Crew to analyze failure...[/bold blue]")
 
-            # Get the captured log output
+            # The full_log_output is captured, but diagnostics now depends on the internal crew's
+            # diagnostics module, which should be part of the crew's workflow.
+            # The following diagnostic logic may need to be moved or adapted
+            # based on how the internal crew reports errors.
             full_log_output = log_stream.getvalue()
 
-            # Collect real coworker names from the crew
-            coworker_names = []
-            if 'crew' in locals() and hasattr(crew, 'agents'):
-                coworker_names = [agent.name for agent in crew.agents]
-                console.print(f"DEBUG: Real coworker names from crew: {coworker_names}", style="blue")
+            # Placeholder for diagnostic logic:
+            console.print(f"Diagnostic report based on log output:\n{full_log_output}", style="yellow")
+            if 'error' in result:
+                 console.print(f"Error from result: {result['error']}", style="red")
 
-            # --- NEW: Initialize loop detection ---
-            loop_detector = LoopDetector(max_consecutive_repeats=3)
-
-            def loop_callback_and_exit_signal(output):
-                if hasattr(output, 'result'):
-                    output_string = output.result
-                else:
-                    output_string = str(output)
-
-                loop_detector.detect(output_string)
-            def stop_on_loop_callback(output):
-                # FIX: Extract string from ToolResult object
-                if hasattr(output, 'result'):
-                    output_string = output.result
-                else:
-                    output_string = str(output)
-
-                if loop_detector.detect(output_string):
-                    raise RuntimeError("Loop detected. Stopping diagnostic crew.")
-
-            # Create the diagnostic agent and crew
-            diagnostic_agent = create_diagnostic_agent(
-                router=router,
-                inputs={},
-                coworker_names=coworker_names
-            )
-            diagnostic_task = Task(
-                description=f"Analyze the following logs to diagnose the reason for a delegation failure:\n\n{full_log_output}",
-                agent=diagnostic_agent,
-                expected_output="A concise explanation of the delegation failure and potential fixes."
-            )
-            diagnostic_crew = Crew(
-                agents=[diagnostic_agent],
-                tasks=[diagnostic_task],
-                verbose=bool(args.verbose),  # FIX: Ensure boolean value
-                max_iter=50,
-                step_callback=stop_on_loop_callback  # NEW: Add the callback
-            )
-
-            # Run the diagnostic crew with a try-except block for the new loop detection
-            try:
-                diagnostic_result = diagnostic_crew.kickoff()
-                console.print(f"\n🔬 [bold green]Diagnostic Agent Analysis:[/bold green]")
-                console.print(diagnostic_result)
-            except RuntimeError as e:
-                console.print(f"\n❌ [bold red]Diagnostic Crew stopped due to detected loop: {e}[/bold red]")
-            # --- End Diagnostic Crew ---
-
-        end_time = time.time()
-        record_task_result(
-            task_id=task_id,
-            result={"success": result and result.get("success"),
-                    "error_message": result.get("error") if result else "Unknown failure"},
-            learning_tokens=0 # Placeholder value, adjust as needed
-        )
+        return result
 
     except Exception as e:
-        sys.stdout = original_stdout  # Ensure stdout is restored on error
-        console.print(f"❌ An unexpected error occurred: {e}", style="red")
-        logger.error(f"Error executing DevOps task: {e}\n{traceback.format_exc()}")
-        end_time = time.time()
-        record_task_result(
-            task_id=task_id,
-            model_used="multiple", peer_used="internal", start_time=start_time,
-            end_time=end_time, success=False, error_message=str(e),
-            git_changes=None, token_usage=None
-        )
+        sys.stdout = original_stdout
+        console.print(f"\n❌ [bold red]An unexpected error occurred during DevOps task execution: {e}[/bold red]")
+        console.print(traceback.format_exc(), style="red")
+        return {"success": False, "error": str(e)}
+
 
 
 # Main entry point for the script
