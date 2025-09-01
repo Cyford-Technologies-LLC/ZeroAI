@@ -1,4 +1,3 @@
-# src/crews/internal/team_manager/agents.py
 import importlib
 import inspect
 import sys
@@ -9,9 +8,9 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from langchain_community.llms import Ollama
 
-
 from crewai import Agent
 from rich.console import Console
+from src.utils.memory import Memory  # Import the Memory class
 
 # Configure console for rich output
 console = Console()
@@ -131,26 +130,6 @@ def discover_available_crews() -> Dict[str, Dict[str, str]]:
         available_crews["errors"] = errors
     return available_crews
 
-
-import importlib
-import inspect
-from rich.console import Console
-from typing import Any, Dict, List, Optional
-from crewai import Agent
-
-# Assume discover_available_crews is defined elsewhere in the file
-# and console is also configured
-
-console = Console()
-
-
-def discover_available_crews() -> Dict[str, Dict[str, str]]:
-    # This is a placeholder for the function that discovers crews.
-    # The actual implementation should be in src/crews/internal/team_manager/agents.py
-    # and should be checked for correctness.
-    pass
-
-
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
     """
     Loads and configures all available coworker agents from discovered crews.
@@ -158,13 +137,10 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
     discovered_crews = discover_available_crews()
     agent_creator_functions = {}
 
-    # Check if discovered_crews is a dictionary before proceeding
     if isinstance(discovered_crews, dict):
         for crew_name, crew_info in discovered_crews.items():
-            # Skip the errors list and check if crew_info is a dictionary
             if crew_name == "errors" or not isinstance(crew_info, dict):
                 continue
-
             if crew_info.get("status") == "available":
                 module_name = f"src.crews.internal.{crew_name}.agents"
                 try:
@@ -177,14 +153,9 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
     temp_coworkers = []
     for creator_func in agent_creator_functions.values():
         sig = inspect.signature(creator_func)
-        kwargs_to_pass = {
-            'router': router,
-            'inputs': inputs,
-            'tools': tools,
-        }
+        kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = []
-
         try:
             temp_agent = creator_func(**kwargs_to_pass)
             temp_coworkers.append(temp_agent)
@@ -194,76 +165,58 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
     all_coworkers = []
     for creator_func in agent_creator_functions.values():
         sig = inspect.signature(creator_func)
-        kwargs_to_pass = {
-            'router': router,
-            'inputs': inputs,
-            'tools': tools,
-        }
+        kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = temp_coworkers
-
         try:
-            new_agent = creator_func(**kwargs_to_pass)
-
-            # --- START DIAGNOSTIC LOGGING ---
-            if not isinstance(new_agent, Agent) or not hasattr(new_agent, 'name'):
-                console.print(f"❌ Creator '{creator_func.__name__}' returned an invalid object: {type(new_agent)}",
-                              style="red")
-                continue
-            # --- END DIAGNOSTIC LOGGING ---
-
-            all_coworkers.append(new_agent)
-            console.print(f"✅ Configured agent: [bold green]{new_agent.name}[/bold green] with coworkers", style="blue")
-
+            full_agent = creator_func(**kwargs_to_pass)
+            all_coworkers.append(full_agent)
         except Exception as e:
-            console.print(f"❌ Error creating final agent with {creator_func.__name__}: {e}", style="red")
+            console.print(f"❌ Error creating full agent with {creator_func.__name__}: {e}", style="red")
 
     return all_coworkers
 
+def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> Agent:
+    """Creates the Team Manager agent with memory and learning capabilities."""
+    coworkers = load_all_coworkers(router, inputs, tools)
+    manager_memory = Memory()
 
-def create_team_manager_agent(router, project_id: str, working_dir: Path, coworkers: Optional[List] = None) -> Agent:
-    """
-    Creates and configures the Team Manager Agent.
-
-    Args:
-        router: The DevOps router instance for LLM routing.
-        project_id: The ID of the project being worked on.
-        working_dir: The project's working directory.
-        coworkers: A list of all other agents in the crew for delegation.
-
-    Returns:
-        The configured CrewAI Team Manager Agent.
-    """
-    try:
-        llm = router.get_llm_for_role("team_manager")
-        available_crews = discover_available_crews()
-        crew_list = format_agent_list()
-
-        console.print(f"👨‍💼 Creating Team Manager agent...", style="blue")
-        # Ensure ErrorLogger is defined before this point.
-        # This line was previously removed, but the ErrorLogger class is now in scope at the top.
-        # As discussed before, we do NOT assign tools to the manager in a hierarchical crew.
-        # peer_check_tool = InternalPeerCheckTool(coworkers=coworkers) # Keep this commented out
-        # coworker_names = ", ".join([coworker.name for coworker in coworkers]) if coworkers else "No coworkers available."
-
-
-
-        team_manager = Agent(
-            role="Team Manager",
-            name="Project Coordinator",
-            goal=f"Coordinate specialists to complete tasks for project {project_id} by delegating work efficiently, avoiding redundant questions, and making logical decisions based on coworker feedback.",
-            backstory=f"""You are the expert Project Coordinator for project {project_id}. Your role is to analyze tasks, 
-            delegate work to appropriate specialists, and oversee the project's progress. You DO NOT perform technical tasks yourself; you are PURELY supervisory.
-            You MUST NEVER delegate a task to yourself.
-            """,
-            allow_delegation=True,
-            verbose=True,
-            llm=llm,
-        )
-        return team_manager
-
-    except Exception as e:
-        error_message = f"Error creating Team Manager agent: {e}"
-        # Since ErrorLogger is now at the top, it is a valid reference here.
-        ErrorLogger().log_error(error_message, {"traceback": traceback.format_exc()})
-        raise Exception(error_message)
+    return Agent(
+        role="Team Manager",
+        name="Samantha",
+        memory=manager_memory, # Assign memory to the agent
+        coworkers=coworkers,
+        learning={
+            "enabled": True,
+            "learning_rate": 0.05,
+            "feedback_incorporation": "immediate",
+            "adaptation_strategy": "progressive"
+        },
+        personality={
+            "traits": ["strategic", "empowering", "resourceful", "proactive"],
+            "quirks": ["prefers high-level strategies over micro-managing", "responds with a well-defined action plan"],
+            "communication_preferences": ["structured and goal-oriented communication", "values clear, concise updates"],
+            "expertise_level": "expert"
+        },
+        communication_style={
+            "formality": "professional",
+            "verbosity": "moderate",
+            "tone": "confident",
+            "technical_level": "intermediate"
+        },
+        resources=[
+            "team_management_best_practices.md",
+            "effective_delegation.pdf"
+        ],
+        expertise=[
+            "Project Management", "Team Coordination", "Strategic Planning", "Resource Allocation",
+            "Performance Monitoring", "Conflict Resolution"
+        ],
+        goal="Coordinate the efforts of specialist agents and manage overall project workflow effectively.",
+        backstory="""You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams. Your primary objective is to ensure that tasks are delegated to the most suitable agents and that the project progresses smoothly. You have a broad understanding of each team's capabilities and leverage this knowledge to optimize the workflow.
+You use your memory to remember how to use tools effectively and which coworkers possess specific expertise.""",
+        llm=manager_llm,
+        tools=tools,
+        verbose=True,
+        allow_delegation=True
+    )
