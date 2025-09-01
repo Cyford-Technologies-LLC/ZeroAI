@@ -105,9 +105,35 @@ class AIOpsCrewManager:
             # ... (original error handling) ...
             pass  # Removed for brevity
 
+    # src/ai_dev_ops_crew.py
+
     def _setup_working_dir(self) -> Path:
-        # ... (remains unchanged) ...
-        pass
+        """Set up the working directory for the task based on project configuration."""
+        try:
+            working_dir_str = self.project_config.get("crewai_settings", {}).get("working_directory",
+                                                                                 f"/tmp/internal_crew/{self.project_id}/")
+
+            working_dir_str = working_dir_str.replace("{task_id}", self.task_id)
+            working_dir = Path(working_dir_str)
+            working_dir.mkdir(parents=True, exist_ok=True)
+            console.print(f"✅ Set up working directory: {working_dir}", style="green")
+            return working_dir
+        except Exception as e:
+            console.print(f"❌ Failed to set up working directory: {e}", style="red")
+
+            try:
+                from src.crews.internal.team_manager.agents import ErrorLogger
+                error_logger = ErrorLogger()
+                error_logger.log_error(
+                    f"Failed to set up working directory: {str(e)}",
+                    {"project_id": self.project_id, "task_id": self.task_id}
+                )
+            except ImportError:
+                console.print("⚠️ Could not import ErrorLogger", style="yellow")
+
+            import tempfile
+            # This line ensures a valid Path object is returned
+            return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
 
     def _initialize_tools(self) -> List[Any]:
         # ... (remains unchanged) ...
