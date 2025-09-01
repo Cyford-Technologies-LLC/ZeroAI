@@ -18,7 +18,7 @@ from src.utils.yaml_utils import load_yaml_config
 
 # Import specific agents and tools
 from src.crews.internal.team_manager.agents import ErrorLogger, create_team_manager_agent, load_all_coworkers
-from src.crews.internal.team_manager.tasks import create_planning_task
+#from src.crews.internal.team_manager.tasks import create_planning_task
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
 from src.crews.internal.tool_factory import dynamic_github_tool
