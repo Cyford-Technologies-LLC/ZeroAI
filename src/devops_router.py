@@ -9,7 +9,7 @@ from rich.console import Console
 from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY, \
     MODEL_MEMORY_MAP
 from langchain_community.llms.ollama import Ollama
-from src.utils.legacy_config_wrapper import Settings
+from src.config import config
 from config import config
 import json  # Ensure json is imported for better logging
 

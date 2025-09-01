@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from rich.console import Console
 from rich.table import Table
-from src.utils.legacy_config_wrapper import Settings
+from src.config import config
 
 
 
