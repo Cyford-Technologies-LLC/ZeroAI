@@ -12,7 +12,7 @@ from pathlib import Path
 def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], tools: List,
                              project_config: Dict[str, Any], full_output: bool = False) -> Crew:
     """Creates a Team Manager crew using the distributed router."""
-    # This is the key fix: First, load all coworkers
+    # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
 
     # Then, create the manager agent, passing the now-populated coworker list
@@ -28,15 +28,13 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         Task(
             description=inputs.get("prompt"),
             agent=manager_agent,
-            # FIX: Add the required 'expected_output' field
             expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
                             "This may include code, documentation, or other relevant artifacts."
         )
     ]
 
-    # The agents parameter should be a flat list of all agent objects
-    # including the manager and all workers.
-    crew_agents = [manager_agent] + all_coworkers
+    # FIX: Remove the manager agent from the agents list.
+    crew_agents = all_coworkers
 
     # Create and return the crew with the correct agent list
     return Crew(
