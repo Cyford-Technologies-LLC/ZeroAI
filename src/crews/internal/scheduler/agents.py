@@ -5,7 +5,7 @@ from src.crews.internal.tools.scheduling_tool import SchedulingTool
 # You must also define a scheduler crew in `src/crews/internal/scheduler/crew.py`
 # and ensure it is properly imported.
 
-def create_scheduler_agent():
+def create_scheduler_agent(router, inputs, tools=None):
     return Agent(
         role="Scheduler",
         goal="Schedule events and appointments based on requests from the team manager.",
