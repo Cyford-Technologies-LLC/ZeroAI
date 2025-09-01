@@ -15,12 +15,11 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
 
-    # Then, create the manager agent, passing the now-populated coworker list
+    # Then, create the manager agent without the 'coworkers' argument
     manager_agent = create_team_manager_agent(
         router=router,
         project_id=inputs.get("project_id"),
-        working_dir=inputs.get("working_dir", Path("/tmp")),
-        coworkers=all_coworkers
+        working_dir=inputs.get("working_dir", Path("/tmp"))
     )
 
     # Define tasks directly within this function
@@ -30,13 +29,13 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             agent=manager_agent,
             expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
                             "This may include code, documentation, or other relevant artifacts.",
-            # FIX: Pass the callback directly, without wrapping it in a list.
+            # Pass the callback directly
             callback=custom_logger.log_step_callback if custom_logger else None
         )
     ]
 
-    # FIX: Remove the manager agent from the agents list.
-    crew_agents = all_coworkers
+    # Create the list of agents for the crew, including all coworkers and the manager
+    crew_agents = all_coworkers + [manager_agent]
 
     # Create and return the crew with the correct agent list
     return Crew(
@@ -47,3 +46,4 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         verbose=config.agents.verbose,
         full_output=full_output,
     )
+
