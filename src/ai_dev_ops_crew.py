@@ -444,11 +444,8 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
         # Add crews status to inputs
         inputs["crews_status"] = crews_status
 
-        # Load the configuration from the settings.yaml
-        config_instance = config.load_from_file(config_path="config/settings.yaml")
-
-        # Initialize and run the manager with the router and loaded config
-        manager = AIOpsCrewManager(router, project_id, inputs, config_instance)
+        # Initialize and run the manager
+        manager = AIOpsCrewManager(router, project_id, inputs)
         return manager.execute()
     except Exception as e:
         # ... (error handling logic, likely already present) ...
@@ -475,6 +472,7 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
             "peer_used": "unknown",
             "crews_status": preload_internal_crews()  # Include crews status in the error response
         }
+
 
 if __name__ == "__main__":
     # This module should not be imported, not run directly
