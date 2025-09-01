@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM
 
 from crewai import Agent
 from rich.console import Console
@@ -14,7 +14,7 @@ from src.utils.memory import Memory
 
 # Configure console for rich output
 console = Console()
-manager_llm = Ollama(model="ollama/llama3.1:8b", base_url="http://149.36.1.65:11434")
+manager_llm = OllamaLLM(model="ollama/llama3.1:8b", base_url="http://149.36.1.65:11434")
 
 
 # Define the ErrorLogger class at the top, before it is used.
