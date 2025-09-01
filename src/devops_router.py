@@ -152,6 +152,11 @@ class DevOpsDistributedRouter(DistributedRouter):
         return self._get_llm_with_fallback(prompt, category=role_category, model_preferences=model_preferences)
 
     def _get_local_llm(self, model_name: str) -> Optional[Ollama]:
+
+        console.print("\n--- DEBUG: Local Fallback Call ---", style="bold yellow")
+        console.print(f"  Creating Ollama instance with local config:")
+        console.print(f"  {json.dumps(llm_config, indent=2)}")
+        console.print("--- END DEBUG: Local Fallback Call ---\n", style="bold yellow")
         try:
             prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
@@ -160,10 +165,6 @@ class DevOpsDistributedRouter(DistributedRouter):
                 "temperature": config.model.temperature
             }
 
-            console.print("\n--- DEBUG: Local Fallback Call ---", style="bold yellow")
-            console.print(f"  Creating Ollama instance with local config:")
-            console.print(f"  {json.dumps(llm_config, indent=2)}")
-            console.print("--- END DEBUG: Local Fallback Call ---\n", style="bold yellow")
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
