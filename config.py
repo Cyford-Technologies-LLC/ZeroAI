@@ -1,9 +1,9 @@
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, List, Dict, Any
 
-from pydantic import BaseModel, Field, ValidationError, SecretStr
+from pydantic import BaseModel, ValidationError, SecretStr, Field
 from dotenv import find_dotenv, load_dotenv
 
 # Define the path to the JSON configuration file
@@ -16,6 +16,13 @@ class OllamaConfig(BaseModel):
     base_url: str = "http://149.36.1.65:11434"
 
 
+class GitHubRepoConfig(BaseModel):
+    """Configuration for a single GitHub repository."""
+    name: str
+    owner: str
+    description: Optional[str] = None
+
+
 class Settings(BaseModel):
     """Application settings, with Pydantic validation."""
     app_name: str = "ZeroAI"
@@ -23,10 +30,7 @@ class Settings(BaseModel):
     ollama: OllamaConfig = OllamaConfig()
     gh_token: Optional[SecretStr] = None
     serper_api_key: Optional[SecretStr] = None
-
-    # Nested configurations can be handled here
-    # Example:
-    # project: Optional[Dict[str, Any]] = None
+    github_repos: List[GitHubRepoConfig] = Field(default_factory=list)
 
     @classmethod
     def load_from_json(cls, file_path: Path):
@@ -41,18 +45,20 @@ class Settings(BaseModel):
             return cls(**data)
         except (IOError, json.JSONDecodeError, ValidationError) as e:
             print(f"❌ Error loading config from JSON: {e}")
-            return cls()
+            raise
 
 
 # Load environment variables (e.g., for GH_TOKEN)
 load_dotenv(find_dotenv())
 
 # Load settings from the JSON file first
-config = Settings.load_from_json(CONFIG_FILE)
+try:
+    config = Settings.load_from_json(CONFIG_FILE)
+except ValidationError:
+    print("❌ JSON config is invalid, falling back to defaults.")
+    config = Settings()
 
 # Now, override with environment variables if they exist
-# This is a key benefit of Pydantic and ensures precedence
-# (e.g., GH_TOKEN from .env will override a value in config.json)
 env_settings = {}
 if os.getenv("GH_TOKEN"):
     env_settings["gh_token"] = os.getenv("GH_TOKEN")
@@ -68,8 +74,16 @@ if __name__ == "__main__":
     print(f"Agents Verbose: {config.agents_verbose}")
     print(f"Ollama Model: {config.ollama.model}")
     print(f"Ollama Base URL: {config.ollama.base_url}")
-    print(f"GitHub Token (masked): {config.gh_token.get_secret_value()[:4]}...")
+    print(
+        f"GitHub Token (masked): {config.gh_token.get_secret_value()[:4]}..." if config.gh_token else "GitHub Token not found.")
     if config.serper_api_key:
         print(f"Serper API Key loaded.")
     else:
         print("Serper API Key not found.")
+
+    print("\n--- Configured GitHub Repositories ---")
+    if config.github_repos:
+        for repo in config.github_repos:
+            print(f"- {repo.owner}/{repo.name}: {repo.description}")
+    else:
+        print("No GitHub repositories configured.")
