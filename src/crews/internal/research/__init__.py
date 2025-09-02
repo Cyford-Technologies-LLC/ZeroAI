@@ -12,7 +12,8 @@ from .agents import (
 
 from .tasks import (
     internal_research_task,
-    internal_analysis_task
+    online_research_task,
+    project_management_task
 )
 
 from .crew import (
@@ -25,7 +26,8 @@ __all__ = [
     'create_internal_researcher_agent',
     'create_online_researcher_agent',
     'internal_research_task', 
-    'internal_analysis_task',
+    'online_research_task',
+    'project_management_task',
     'create_research_crew',
     'get_research_crew'
 ]
