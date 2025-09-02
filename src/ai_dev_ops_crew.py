@@ -237,17 +237,28 @@ class AIOpsCrewManager:
                 console.print(f"⚠️ No config found for project '{self.project_id}', using default", style="yellow")
                 project_config = {
                     "project": {"name": self.project_id},
+                    "repository": {},
                     "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
                 }
             else:
                 from src.utils.yaml_utils import load_yaml_config
                 project_config = load_yaml_config(config_path)
                 console.print(f"✅ Loaded project config for '{self.project_id}'", style="green")
+                
+                # Ensure repository key exists
+                if not project_config:
+                    project_config = {}
+                if 'repository' not in project_config:
+                    project_config['repository'] = {}
 
             return project_config
         except Exception as e:
-            # ... (original error handling) ...
-            pass  # Removed for brevity
+            console.print(f"❌ Error loading project config: {e}", style="red")
+            return {
+                "project": {"name": self.project_id},
+                "repository": {},
+                "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
+            }
 
     # src/ai_dev_ops_crew.py
 
