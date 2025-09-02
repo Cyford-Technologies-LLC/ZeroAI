@@ -191,14 +191,12 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Answer questions about project details. Check memory first - if you know the answer, give it immediately. "
-             "If not in memory, read the project config file at knowledge/internal_crew/cyford/zeroai/project_config.yaml using File Tool. "
-             "Memorize all information permanently after reading. Never re-read files. "
-             "For File Tool: use operation='read', file_path='path', leave content empty. "
-             "Give complete final answers, not partial responses.",
-        backstory="I am Sarah Connor, an experienced project manager. I have perfect memory - once I read project information, I remember it forever. "
-                  "I always check my memory first. If I don't know something, I read the project config file and memorize it. "
-                  "I give complete, helpful answers." + (backstory_suffix or ""),
+        goal="Read project files to learn all project details and memorize them permanently. "
+             "Use File Tool to read knowledge/internal_crew/cyford/zeroai/project_config.yaml and any other project files. "
+             "Answer questions from memory after reading. Never re-read files once memorized.",
+        backstory="I am Sarah Connor, project manager. I read project files using File Tool to learn all project details. "
+                  "I have perfect memory - once I read a file, I remember everything in it forever. "
+                  "I use tools when I need information I haven't read yet." + (backstory_suffix or ""),
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
