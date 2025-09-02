@@ -284,7 +284,9 @@ class AIOpsCrewManager:
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
+            # Sanitize project_id to prevent path traversal vulnerabilities
             sanitized_project_id = sanitize_filepath(self.project_id)
+
             start_time = time.time()
             log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
             custom_logger = CustomLogger(output_file=str(log_output_path))
@@ -303,7 +305,8 @@ class AIOpsCrewManager:
                                 peer_parts = parts[1].split(':')
                                 if peer_parts:
                                     self.peer_used = peer_parts[0]
-                        except:
+                        except Exception as e:
+                            console.print(f"⚠️ Error parsing peer IP: {e}", style="yellow")
                             self.peer_used = "unknown"
             except Exception as e:
                 console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
@@ -335,13 +338,12 @@ class AIOpsCrewManager:
 
                 # --- Debugging print statements ---
                 console.print(f"DEBUG: Token key from config: {repo_token_key}", style="magenta")
-                # --- Debugging print statements ---
                 console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
-                console.print(f"DEBUG: Looking for token with key: {repo_token_key}", style="magenta")
+                console.print(f"DEBUG: Retrieved repo_token: {'***' if repo_token else 'None'}", style="magenta")
                 # --- End repo logic ---
 
                 task_inputs = {
-                    "project_id": self.project_id,
+                    "project_id": sanitized_project_id,
                     "prompt": self.prompt,
                     "category": self.category,
                     "repository": final_repo_url,  # Pass the final URL here
@@ -438,7 +440,6 @@ class AIOpsCrewManager:
             except ImportError:
                 console.print("⚠️ Could not import ErrorLogger", style="yellow")
             raise e
-
 
 
 
