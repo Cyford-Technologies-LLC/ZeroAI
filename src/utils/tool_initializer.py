@@ -23,7 +23,7 @@ def get_universal_tools(inputs: Dict[str, Any], initial_tools: Optional[List] = 
 
     working_dir = inputs.get("working_dir")
     repo_path = inputs.get("repository")
-    repo_token = inputs.get("repo_token")
+    repo_token = inputs.get("repo_token") or inputs.get("repo_token_key")
 
     # Conditionally add GitTool
     if repo_path and isinstance(repo_path, str) and repo_path.strip() and repo_token:
