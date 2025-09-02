@@ -137,18 +137,15 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
     """Helper function to get tools including dynamic_github_tool when available"""
     base_tools = tools or []
     
-    # Add dynamic_github_tool if available
+    # Add configured GitHub tool if available
     if TOOL_FACTORY_AVAILABLE and dynamic_github_tool:
-        # Configure the GitHub tool with the token key from inputs
         repo_token_key = inputs.get("repo_token_key")
         if repo_token_key:
-            # Create a configured version of the GitHub tool
+            # Create a configured version that uses the specific token key
             class ConfiguredGithubTool(dynamic_github_tool.__class__):
                 def _run(self, repo_name: str, token_key: Optional[str] = None, query: str = "") -> str:
-                    # Use the configured token key if none provided
-                    if not token_key:
-                        token_key = repo_token_key
-                    return super()._run(repo_name, token_key, query)
+                    # Always use the configured token key
+                    return super()._run(repo_name, repo_token_key, query)
             
             configured_tool = ConfiguredGithubTool()
             base_tools = base_tools + [configured_tool]

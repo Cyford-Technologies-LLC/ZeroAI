@@ -33,22 +33,8 @@ class DynamicGithubTool(BaseTool):
         if not CONFIG_AVAILABLE:
             return "Error: Configuration not available. Cannot access GitHub tokens."
         
-        # Auto-detect token key from config if not provided
         if not token_key:
-            if hasattr(config, 'Company_Details') and config.Company_Details:
-                company_details = config.Company_Details
-                if isinstance(company_details, dict):
-                    projects = company_details.get("Projects", {})
-                    if isinstance(projects, dict):
-                        configured_key = projects.get("GIT_TOKEN_KEY", "")
-                        # Remove curly braces if present: {GH_TOKEN_CYFORD} -> GH_TOKEN_CYFORD
-                        if configured_key.startswith("{") and configured_key.endswith("}"):
-                            token_key = configured_key[1:-1]
-                        else:
-                            token_key = configured_key
-        
-        if not token_key:
-            return "Error: No token key provided and none configured in Company_Details.Projects.GIT_TOKEN_KEY."
+            return "Error: No token key provided for the GitHub search."
 
         try:
             # Access the gh_token from the consolidated config
