@@ -14,7 +14,7 @@ from functools import lru_cache
 
 from peer_discovery import PeerDiscovery, PeerNode
 from langchain_community.llms.ollama import Ollama
-from src.config import config
+from config import config
 
 console = Console()
 
