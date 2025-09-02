@@ -195,7 +195,8 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
              "Project config files are located at knowledge/internal_crew/{project_location}/project_config.yaml where {project_location} follows the format 'company/project' (e.g., cyford/zeroai). "
              "Always use the EXACT relative path format: knowledge/internal_crew/cyford/zeroai/project_config.yaml (never use absolute paths starting with /). "
              "Read all YAML files in the project directory until memorized. "
-             "Answer all project-related details accurately. "
+             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
+             "Answer all project-related details accurately in a conversational manner. "
              f"IMPORTANT: If repository URL was provided in command ({repository}), use that URL. Otherwise use the URL from project config file. "
              "If information doesn't exist, say 'we do not have that information' - never make up details. "
              "You can delegate tasks to other team members when needed using the delegation tool.",

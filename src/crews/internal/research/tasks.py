@@ -40,3 +40,26 @@ def internal_analysis_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
         agent=agent,
         expected_output="An analytical summary with key insights, recommendations, and actionable next steps based on the research findings."
     )
+
+def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
+    user_question = inputs.get('topic', inputs.get('question', 'general project inquiry'))
+    
+    return Task(
+        description=f"""
+        Answer the user's question about the project in a conversational, helpful manner.
+        User question: {user_question}
+        
+        CRITICAL INSTRUCTIONS:
+        1. Read relevant project files to understand the context
+        2. Provide a natural, conversational answer to the user's question
+        3. NEVER return raw file contents, YAML, JSON, or technical dumps
+        4. Interpret the information and explain it in human-friendly terms
+        5. If asking about a company, explain what they do and their projects
+        6. Be concise but informative
+        7. If you don't have specific information, say so clearly
+        
+        Remember: You are having a conversation with a human, not providing a data dump.
+        """,
+        agent=agent,
+        expected_output="A complete answer to the user's request with accurate project information."
+    )
