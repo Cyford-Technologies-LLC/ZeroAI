@@ -237,7 +237,7 @@ def get_manager_llmc(router: Any) -> Any:
         style="blue")
     return manager_llm
 
-def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None,
+def create_team_manager_agent(router: Any, inputs: Dict[str, Any], project_id: str = None,
                               working_dir: Optional[Path] = None, coworkers: Optional[List] = None) -> Agent:
     """Creates the Team Manager agent with memory and learning capabilities."""
     manager_memory = Memory()
@@ -247,43 +247,20 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
 
     backstory = f"""You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'.
     
-    You have access to project tools and can directly access project information. For GitHub repository URLs, check the project configuration files in the knowledge/internal_crew/{inputs.get('project_id', 'unknown')}/project_config.yaml directory.
+    CRITICAL PROJECT INFORMATION:
+    - GitHub Repository URL: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
+    - Project Config Location: knowledge/internal_crew/cyford/zeroai/project_config.yaml
+    - Working Branch: rl-core
+    - Work Branch Pattern: feature/{{task_id}}
     
-    If you need to delegate tasks, use the exact coworker names as they appear in the delegation tool descriptions. The available coworkers will be shown in your tool descriptions."""
-    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'. Use your available tools to find project information directly when possible."
+    When asked about GitHub or project details, provide this accurate information directly. Only delegate to coworkers when you need specialized work done, not for basic project information you already know."""
+    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'. Provide accurate project information directly when asked."
 
     return Agent(
         role="Team Manager",
-        name="Samantha",
-        memory=manager_memory,
-        coworkers=coworkers if coworkers is not None else [],
-        learning={
-            "enabled": True,
-            "learning_rate": 0.05,
-            "feedback_incorporation": "immediate",
-            "adaptation_strategy": "progressive"
-        },
-        personality={
-            "traits": ["strategic", "empowering", "resourceful", "proactive"],
-            "quirks": ["prefers high-level strategies over micro-managing", "responds with a well-defined action plan"],
-            "communication_preferences": ["structured and goal-oriented communication",
-                                          "values clear, concise updates"],
-            "expertise_level": "expert"
-        },
-        communication_style={
-            "formality": "professional",
-            "verbosity": "moderate",
-            "tone": "confident",
-            "technical_level": "intermediate"
-        },
-        resources=[
-            "team_management_best_practices.md",
-            "effective_delegation.pdf"
-        ],
         goal=goal,
         backstory=backstory,
         llm=manager_llm,
-        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=True
     )
