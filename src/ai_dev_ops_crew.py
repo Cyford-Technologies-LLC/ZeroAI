@@ -279,7 +279,23 @@ class AIOpsCrewManager:
             # This line ensures a valid Path object is returned
             return Path(tempfile.mkdtemp(prefix=f"aiops_{self.project_id}_"))
 
-    def _initialize_tools(self) -> List[Any]:import os
+    def _initialize_tools(self) -> List[Any]:
+        """Initialize tools for the crew."""
+        tools = []
+        
+        # Add basic tools
+        try:
+            tools.extend([DockerTool(), FileTool()])
+        except Exception as e:
+            console.print(f"⚠️ Warning: Could not initialize basic tools: {e}", style="yellow")
+        
+        # Add GitHub tool
+        try:
+            tools.append(dynamic_github_tool)
+        except Exception as e:
+            console.print(f"⚠️ Warning: Could not initialize GitHub tool: {e}", style="yellow")
+        
+        return tools
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
@@ -333,11 +349,30 @@ class AIOpsCrewManager:
                     final_repo_url = self.repository
                     console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
 
-                repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
-                repo_token = os.getenv(repo_token_key) if repo_token_key else None
+                # Get token key from Company_Details.Projects.GIT_TOKEN_KEY
+                repo_token_key = None
+                repo_token = None
+                
+                if hasattr(config, 'Company_Details') and config.Company_Details:
+                    company_details = config.Company_Details
+                    if isinstance(company_details, dict):
+                        projects = company_details.get("Projects", {})
+                        if isinstance(projects, dict):
+                            repo_token_key = projects.get("GIT_TOKEN_KEY", "")
+                            # Remove curly braces if present: {GH_TOKEN_CYFORD} -> GH_TOKEN_CYFORD
+                            if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
+                                repo_token_key = repo_token_key[1:-1]
+                            
+                            # Get token from environment or config.github_tokens
+                            if repo_token_key:
+                                repo_token = os.getenv(repo_token_key)
+                                if not repo_token and hasattr(config, 'github_tokens') and config.github_tokens:
+                                    repo_token = config.github_tokens.get(repo_token_key.lower().replace('gh_token_', '').replace('github_token_', ''))
+                                    if hasattr(repo_token, 'get_secret_value'):
+                                        repo_token = repo_token.get_secret_value()
 
                 # --- Debugging print statements ---
-                console.print(f"DEBUG: Token key from config: {repo_token_key}", style="magenta")
+                console.print(f"DEBUG: Token key from Company_Details: {repo_token_key}", style="magenta")
                 console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
                 console.print(f"DEBUG: Retrieved repo_token: {'***' if repo_token else 'None'}", style="magenta")
                 # --- End repo logic ---
@@ -352,6 +387,7 @@ class AIOpsCrewManager:
                     "crews_status": self.crews_status,
                     "working_dir": self.working_dir,
                     "repo_token": repo_token,  # Pass the token here
+                    "repo_token_key": repo_token_key,  # Pass the token key here
                 }
 
                 crew = create_team_manager_crew(

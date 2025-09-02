@@ -139,7 +139,21 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
     
     # Add dynamic_github_tool if available
     if TOOL_FACTORY_AVAILABLE and dynamic_github_tool:
-        base_tools = base_tools + [dynamic_github_tool]
+        # Configure the GitHub tool with the token key from inputs
+        repo_token_key = inputs.get("repo_token_key")
+        if repo_token_key:
+            # Create a configured version of the GitHub tool
+            class ConfiguredGithubTool(dynamic_github_tool.__class__):
+                def _run(self, repo_name: str, token_key: Optional[str] = None, query: str = "") -> str:
+                    # Use the configured token key if none provided
+                    if not token_key:
+                        token_key = repo_token_key
+                    return super()._run(repo_name, token_key, query)
+            
+            configured_tool = ConfiguredGithubTool()
+            base_tools = base_tools + [configured_tool]
+        else:
+            base_tools = base_tools + [dynamic_github_tool]
     
     # Use get_universal_tools with fallback handling
     try:
