@@ -33,19 +33,35 @@ class DynamicGithubTool(BaseTool):
         if not CONFIG_AVAILABLE:
             return "Error: Configuration not available. Cannot access GitHub tokens."
         
+        # Auto-detect token key from config if not provided
         if not token_key:
-            return "Error: No token key provided for the GitHub search."
+            if hasattr(config, 'Company_Details') and config.Company_Details:
+                company_details = config.Company_Details
+                if isinstance(company_details, dict):
+                    projects = company_details.get("Projects", {})
+                    if isinstance(projects, dict):
+                        configured_key = projects.get("GIT_TOKEN_KEY", "")
+                        # Remove curly braces if present: {GH_TOKEN_CYFORD} -> GH_TOKEN_CYFORD
+                        if configured_key.startswith("{") and configured_key.endswith("}"):
+                            token_key = configured_key[1:-1]
+                        else:
+                            token_key = configured_key
+        
+        if not token_key:
+            return "Error: No token key provided and none configured in Company_Details.Projects.GIT_TOKEN_KEY."
 
         try:
             # Access the gh_token from the consolidated config
             gh_token_value = None
             if hasattr(config, 'github_tokens') and config.github_tokens:
-                gh_token_value = config.github_tokens.get(token_key.lower()) or config.github_tokens.get("general")
+                # Try exact match, then lowercase, then general
+                gh_token_value = (config.github_tokens.get(token_key) or 
+                                config.github_tokens.get(token_key.lower()) or
+                                config.github_tokens.get("general"))
             
-            # Fallback to environment variable
+            # Fallback to direct environment variable lookup
             if not gh_token_value:
-                env_key = f"GITHUB_TOKEN_{token_key.upper()}"
-                gh_token_value = os.getenv(env_key) or os.getenv("GITHUB_TOKEN_GENERAL") or os.getenv("GITHUB_TOKEN")
+                gh_token_value = os.getenv(token_key) or os.getenv("GITHUB_TOKEN")
             
             if not gh_token_value:
                 return f"Error: GitHub token not found for key '{token_key or 'general'}'. Please set GITHUB_TOKEN environment variable."

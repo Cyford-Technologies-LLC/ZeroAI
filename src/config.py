@@ -90,12 +90,24 @@ class Config(BaseModel):
             with open(config_file, 'r', encoding='utf-8') as f:
                 config_data.update(yaml.safe_load(f) or {})
 
-        # Manually load GitHub token from env and add to config_data
-        github_token = os.getenv("GITHUB_TOKEN_GENERAL")
-        if github_token:
-            if "github_tokens" not in config_data:
-                config_data["github_tokens"] = {}
-            config_data["github_tokens"]["general"] = github_token
+        # Dynamically load all GitHub tokens from environment variables
+        if "github_tokens" not in config_data:
+            config_data["github_tokens"] = {}
+        
+        # Find all environment variables that match GitHub token patterns
+        for env_key, env_value in os.environ.items():
+            if env_value and (env_key.startswith("GITHUB_TOKEN") or env_key.startswith("GH_TOKEN")):
+                # Convert env key to a clean token key
+                if env_key.startswith("GITHUB_TOKEN_"):
+                    token_key = env_key[14:].lower()  # Remove "GITHUB_TOKEN_" prefix
+                elif env_key == "GITHUB_TOKEN":
+                    token_key = "general"
+                elif env_key.startswith("GH_TOKEN_"):
+                    token_key = env_key[9:].lower()  # Remove "GH_TOKEN_" prefix
+                else:
+                    token_key = env_key.lower()
+                
+                config_data["github_tokens"][token_key] = env_value
 
         return cls(**config_data)
 
