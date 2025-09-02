@@ -141,10 +141,12 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
     if TOOL_FACTORY_AVAILABLE and dynamic_github_tool:
         repo_token_key = inputs.get("repo_token_key")
         if repo_token_key:
+            console.print(f"🔧 Configuring GitHub tool with token key: {repo_token_key}", style="green")
             # Create a configured version that uses the specific token key
             class ConfiguredGithubTool(dynamic_github_tool.__class__):
                 def _run(self, repo_name: str, token_key: Optional[str] = None, query: str = "") -> str:
                     # Always use the configured token key
+                    console.print(f"🔧 GitHub tool using token key: {repo_token_key}", style="dim")
                     return super()._run(repo_name, repo_token_key, query)
             
             configured_tool = ConfiguredGithubTool()
@@ -152,9 +154,15 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
         else:
             base_tools = base_tools + [dynamic_github_tool]
     
-    # Use get_universal_tools with fallback handling
+    # Use get_universal_tools with fallback handling but exclude duplicate GitHub tools
     try:
         all_tools = get_universal_tools(inputs, initial_tools=base_tools)
+        # Remove any duplicate GitHub tools from get_universal_tools
+        github_tools = [tool for tool in all_tools if hasattr(tool, 'name') and 'GitHub' in tool.name]
+        if len(github_tools) > 1:
+            console.print(f"🔧 Removing {len(github_tools)-1} duplicate GitHub tools", style="yellow")
+            # Keep only the first GitHub tool (our configured one)
+            all_tools = [tool for tool in all_tools if not (hasattr(tool, 'name') and 'GitHub' in tool.name)] + [github_tools[0]]
     except Exception as e:
         console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
         all_tools = base_tools

@@ -7,16 +7,29 @@ import os
 class FileToolInput(BaseModel):
     operation: str = Field(description="Operation to perform: 'read' or 'write'")
     file_path: str = Field(description="Path to the file")
+    path: str = Field(description="Path to the file (alias for file_path)")
     content: Optional[str] = Field(None, description="Content for write operations (not needed for read)")
+    
+    def __init__(self, **data):
+        # Handle both 'path' and 'file_path' parameters
+        if 'path' in data and 'file_path' not in data:
+            data['file_path'] = data['path']
+        elif 'file_path' in data and 'path' not in data:
+            data['path'] = data['file_path']
+        super().__init__(**data)
 
 class FileTool(BaseTool):
     name: str = "File Tool"
     description: str = "A tool for performing file operations like reading and writing."
     args_schema: type[BaseModel] = FileToolInput
 
-    def _run(self, operation: str, file_path: str, content: Optional[str] = None) -> str:
+    def _run(self, operation: str, file_path: str = None, path: str = None, content: Optional[str] = None) -> str:
+        # Use either file_path or path parameter
+        actual_path = file_path or path
+        if not actual_path:
+            return "Error: No file path provided."
         """Executes file operations."""
-        full_path = os.path.normpath(file_path)
+        full_path = os.path.normpath(actual_path)
         if operation == "read":
             try:
                 with open(full_path, 'r', encoding='utf-8') as f:
