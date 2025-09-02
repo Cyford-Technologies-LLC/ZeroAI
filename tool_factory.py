@@ -77,7 +77,7 @@ class DynamicGithubTool(BaseTool):
                 github_repo=repo_url,
                 gh_token=token_str
             )
-            return github_tool.run(query=query)
+            return github_tool.run(query)
             
         except Exception as e:
             return f"Error running GitHub tool for {repo_name}: {e}"
