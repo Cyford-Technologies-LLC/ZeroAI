@@ -18,6 +18,18 @@ from src.config import config
 
 console = Console()
 
+# Debug levels: 0=silent, 1=errors, 2=warnings, 3=info, 4=debug, 5=verbose
+ROUTER_DEBUG_LEVEL = int(os.getenv('ROUTER_DEBUG_LEVEL', '3'))
+ENABLE_ROUTER_LOGGING = os.getenv('ENABLE_ROUTER_LOGGING', 'true').lower() == 'true'
+
+def log_router(message: str, level: int = 3, style: str = None):
+    """Log router messages based on debug level"""
+    if ENABLE_ROUTER_LOGGING and level <= ROUTER_DEBUG_LEVEL:
+        if style:
+            console.print(message, style=style)
+        else:
+            console.print(message)
+
 # Mapping model names to their approximate system memory requirements in GB
 MODEL_MEMORY_MAP = {
     "llama3.1:8b": 5.6,
@@ -83,7 +95,7 @@ class DistributedRouter:
             with open("pulled_models.json", "r") as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
+            log_router("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", 2, "yellow")
             return []
 
     def get_local_llm(self, model_name: str, base_url: str = None) -> Optional[Ollama]:
@@ -98,8 +110,7 @@ class DistributedRouter:
             }
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]",
-                              style="blue")
+                log_router(f"🔗 Using local LLM for '{model_name}' at {base_url}", 4, "blue")
                 return Ollama(**llm_config)
         return None
 
@@ -114,34 +125,29 @@ class DistributedRouter:
             category = next((cat for key, cat in KEYWORDS_TO_CATEGORY.items() if key in prompt_lower), "default")
             model_preference_list = MODEL_PREFERENCES.get(category, MODEL_PREFERENCES["default"])
 
-        # Use cached peers to avoid constant discovery
         all_peers = self.peer_discovery.get_peers()
         all_candidates = []
         local_ollama_models = self._get_local_ollama_models()
         
-        # Only show analysis if we're actually doing discovery
-        if not self.peer_discovery._is_cache_valid():
-            console.print("Ran peer discovery cycle to refresh peer list")
-        console.print(f"🔎 Analyzing peers for task with model preference: {model_preference_list}", style="blue")
+        log_router(f"🔎 Analyzing peers for task with model preference: {model_preference_list}", 4, "blue")
 
         for peer in all_peers:
             if peer.name in failed_peers:
-                console.print(f"   🚫 Skipping failed peer: {peer.name}", style="yellow")
+                log_router(f"   🚫 Skipping failed peer: {peer.name}", 4, "yellow")
                 continue
 
             available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
-            console.print(f"   Peer {peer.name} reports available models: {available_models}")
+            log_router(f"   Peer {peer.name} reports available models: {available_models}", 5)
 
             if not available_models:
-                console.print(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", style="red")
+                log_router(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", 4, "red")
                 continue
 
             for model in model_preference_list:
                 if model in available_models:
                     required_memory = MODEL_MEMORY_MAP.get(model)
                     if required_memory is None:
-                        console.print(f"      - ⚠️ Skipping model {model}: memory requirements unknown.",
-                                      style="yellow")
+                        log_router(f"      - ⚠️ Skipping model {model}: memory requirements unknown.", 4, "yellow")
                         continue
 
                     peer_memory = peer.capabilities.gpu_memory if peer.capabilities.gpu_available else peer.capabilities.memory
@@ -150,11 +156,11 @@ class DistributedRouter:
                             "peer": peer,
                             "model": model
                         })
-                        console.print(f"      - ✅ Candidate found: Model={model} on Peer={peer.name}")
+                        log_router(f"      - ✅ Candidate found: Model={model} on Peer={peer.name}", 5)
                     else:
-                        console.print(f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).")
+                        log_router(f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).", 5)
                 else:
-                    console.print(f"      - 🚫 Model {model} not available on peer {peer.name}.")
+                    log_router(f"      - 🚫 Model {model} not available on peer {peer.name}.", 5)
 
         def get_score(candidate):
             peer = candidate['peer']
@@ -170,10 +176,10 @@ class DistributedRouter:
             best_candidate = all_candidates[0]
             peer = best_candidate['peer']
             model = best_candidate['model']
-            console.print(f"✅ Optimal Endpoint Selected: Peer={peer.name}, Model={model}")
+            log_router(f"✅ Optimal Endpoint Selected: Peer={peer.name}, Model={model}", 3, "green")
             return f"http://{peer.ip}:11434", peer.name, model
 
-        console.print("❌ No suitable peer/model combination found. Routing failed.")
+        log_router("❌ No suitable peer/model combination found. Routing failed.", 1, "red")
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:

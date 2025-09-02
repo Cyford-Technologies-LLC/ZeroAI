@@ -20,6 +20,18 @@ PEER_PING_TIMEOUT = 5
 PEER_PING_RETRIES = 3
 CACHE_DURATION = 60  # 60 seconds cache
 
+# Debug levels: 0=silent, 1=errors, 2=warnings, 3=info, 4=debug, 5=verbose
+DEBUG_LEVEL = int(os.getenv('PEER_DEBUG_LEVEL', '3'))
+ENABLE_PEER_LOGGING = os.getenv('ENABLE_PEER_LOGGING', 'true').lower() == 'true'
+
+def log_peer(message: str, level: int = 3, style: str = None):
+    """Log peer discovery messages based on debug level"""
+    if ENABLE_PEER_LOGGING and level <= DEBUG_LEVEL:
+        if style:
+            console.print(message, style=style)
+        else:
+            console.print(message)
+
 @dataclass
 class PeerCapabilities:
     available: bool = False
@@ -57,18 +69,18 @@ class PeerDiscovery:
 
     def _load_peers_from_config(self) -> List[Dict[str, Any]]:
         if not PEERS_CONFIG_PATH.exists():
-            console.print(f"[yellow]Warning: Configuration file {PEERS_CONFIG_PATH} not found.[/yellow]")
+            log_peer(f"Warning: Configuration file {PEERS_CONFIG_PATH} not found.", 2, "yellow")
             return []
 
         try:
             with open(PEERS_CONFIG_PATH, 'r') as f:
                 data = json.load(f)
                 if not isinstance(data, dict) or "peers" not in data or not isinstance(data["peers"], list):
-                    console.print(f"[red]Error: {PEERS_CONFIG_PATH} is not in the correct format.[/red]")
+                    log_peer(f"Error: {PEERS_CONFIG_PATH} is not in the correct format.", 1, "red")
                     return []
                 return data.get('peers', [])
         except Exception as e:
-            console.print(f"[red]Error loading {PEERS_CONFIG_PATH}: {e}[/red]")
+            log_peer(f"Error loading {PEERS_CONFIG_PATH}: {e}", 1, "red")
             return []
 
 
@@ -96,7 +108,7 @@ class PeerDiscovery:
             with open(PEERS_CONFIG_PATH, 'w') as f:
                 json.dump({"peers": peers_data}, f, indent=2)
         except Exception as e:
-            console.print(f"[red]Error saving peers config: {e}[/red]")
+            log_peer(f"Error saving peers config: {e}", 1, "red")
 
     def add_peer(self, ip: str, port: int, name: str) -> (bool, str):
         try:
@@ -155,7 +167,7 @@ class PeerDiscovery:
                 cpu_cores=cpu_cores
             )
         except Exception as e:
-            console.print(f"[red]Error getting local capabilities: {e}[/red]")
+            log_peer(f"Error getting local capabilities: {e}", 1, "red")
             return PeerCapabilities(available=False)
 
     def _get_peer_metrics(self, ip: str) -> Optional[Dict[str, Any]]:
@@ -165,7 +177,7 @@ class PeerDiscovery:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            console.print(f"⚠️ Failed to get metrics from peer at {ip}: {e}", style="yellow")
+            log_peer(f"⚠️ Failed to get metrics from peer at {ip}: {e}", 4, "yellow")
             return None
 
     def _check_single_peer(self, peer_info: Dict[str, Any]) -> tuple[str, PeerCapabilities]:
@@ -221,8 +233,17 @@ class PeerDiscovery:
                     name, capabilities = future.result(timeout=PEER_PING_TIMEOUT * 2)
                     new_peers[name] = PeerNode(name, peer_info['ip'], capabilities)
                 except Exception as e:
-                    console.print(f"❌ {peer_info['name']}: {e}", style="red")
+                    log_peer(f"❌ {peer_info['name']}: {e}", 2, "red")
                     new_peers[peer_info['name']] = PeerNode(peer_info['name'], peer_info['ip'], PeerCapabilities(available=False))
+        
+        with self.peers_lock:
+            self.peers = new_peers
+            self.cached_peers = new_peers.copy()
+            self.cache_timestamp = time.time()
+        
+        self._save_peers_to_config(new_peers)
+        available_count = len([p for p in new_peers.values() if p.capabilities.available])
+        log_peer(f"🔍 Discovery complete: {available_count}/{len(new_peers)} peers available", 4, "cyan")peer_info['name']] = PeerNode(peer_info['name'], peer_info['ip'], PeerCapabilities(available=False))
         
         with self.peers_lock:
             self.peers = new_peers
@@ -245,9 +266,11 @@ class PeerDiscovery:
         """Get peers using cache if valid, otherwise trigger discovery"""
         with self.peers_lock:
             if not force_refresh and self._is_cache_valid() and self.cached_peers:
+                log_peer(f"📋 Using cached peers ({len(self.cached_peers)} peers)", 5)
                 return list(self.cached_peers.values())
             
             if not self.peers or force_refresh:
+                log_peer("🔄 Cache expired, refreshing peer discovery...", 4, "yellow")
                 self._discovery_cycle()
             
             return list(self.peers.values())
