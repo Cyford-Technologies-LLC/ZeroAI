@@ -59,38 +59,39 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Debug: Check manager tools after crew creation
     console.print(f"🔧 Manager tools before crew creation: {getattr(manager_agent, 'tools', 'No tools attr')}", style="cyan")
     
-    # Create the crew with the correct agent list
-    crew = Crew(
-        agents=crew_agents,
-        tasks=manager_tasks,
-        manager_agent=manager_agent,
-        process=Process.hierarchical,
-        verbose=config.agents.verbose,
-        full_output=full_output,
-    )
+    # WORKAROUND: Use sequential process since hierarchical delegation is broken
+    # Create a task for the Project Manager directly
+    project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     
-    # CRITICAL FIX: Manually set up delegation tools
-    try:
-        # Force CrewAI to recognize the crew agents for delegation
-        if hasattr(crew, '_setup_manager_tools'):
-            crew._setup_manager_tools()
-        elif hasattr(crew, 'manager_agent') and hasattr(crew.manager_agent, '_setup_tools'):
-            crew.manager_agent._setup_tools(crew.agents)
+    if project_manager:
+        console.print(f"🔧 Using Project Manager directly to bypass broken delegation", style="yellow")
+        direct_tasks = [
+            Task(
+                description=inputs.get("prompt"),
+                agent=project_manager,
+                expected_output="A complete answer to the user's request with accurate project information.",
+                callback=custom_logger.log_step_callback if custom_logger else None
+            )
+        ]
         
-        # Alternative: Directly set the available agents for delegation
-        if hasattr(manager_agent, 'tools'):
-            for tool in manager_agent.tools:
-                if hasattr(tool, 'agents') or hasattr(tool, 'coworkers'):
-                    if hasattr(tool, 'agents'):
-                        tool.agents = crew_agents
-                    if hasattr(tool, 'coworkers'):
-                        tool.coworkers = crew_agents
-                    console.print(f"🔧 Fixed delegation tool: {tool.name}", style="green")
-    except Exception as e:
-        console.print(f"🔧 Failed to fix delegation: {e}", style="red")
-    
-    # Debug: Check manager tools after fix
-    console.print(f"🔧 Manager tools after fix: {len(getattr(manager_agent, 'tools', []))}", style="cyan")
+        crew = Crew(
+            agents=[project_manager],
+            tasks=direct_tasks,
+            process=Process.sequential,
+            verbose=config.agents.verbose,
+            full_output=full_output,
+        )
+    else:
+        console.print(f"🔧 Project Manager not found, falling back to hierarchical", style="red")
+        crew = Crew(
+            agents=crew_agents,
+            tasks=manager_tasks,
+            manager_agent=manager_agent,
+            process=Process.hierarchical,
+            verbose=config.agents.verbose,
+            full_output=full_output,
+        )
+
     
     return crew
 
