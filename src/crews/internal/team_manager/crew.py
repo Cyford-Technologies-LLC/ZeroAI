@@ -42,12 +42,25 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Create the list of agents for the crew (manager is handled separately)
     crew_agents = all_coworkers
     
-    # Debug: Print coworker roles for delegation
-    console.print(f"🔧 Crew agents for delegation: {[agent.role for agent in crew_agents]}", style="cyan")
-    console.print(f"🔧 Manager agent role: {manager_agent.role}", style="cyan")
+    # Debug: Print detailed delegation information
+    console.print(f"🔧 DELEGATION DEBUG:", style="cyan")
+    console.print(f"🔧 Manager agent role: '{manager_agent.role}'", style="cyan")
+    console.print(f"🔧 Manager agent type: {type(manager_agent)}", style="cyan")
+    console.print(f"🔧 Total crew agents: {len(crew_agents)}", style="cyan")
+    for i, agent in enumerate(crew_agents):
+        console.print(f"🔧 Agent {i}: role='{agent.role}', type={type(agent)}, id={id(agent)}", style="cyan")
+    
+    # Check if manager has coworkers set
+    if hasattr(manager_agent, 'coworkers'):
+        console.print(f"🔧 Manager coworkers: {[c.role for c in manager_agent.coworkers] if manager_agent.coworkers else 'None'}", style="cyan")
+    else:
+        console.print(f"🔧 Manager has no coworkers attribute", style="cyan")
 
+    # Debug: Check manager tools after crew creation
+    console.print(f"🔧 Manager tools before crew creation: {getattr(manager_agent, 'tools', 'No tools attr')}", style="cyan")
+    
     # Create and return the crew with the correct agent list
-    return Crew(
+    crew = Crew(
         agents=crew_agents,
         tasks=manager_tasks,
         manager_agent=manager_agent,
@@ -55,4 +68,12 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         verbose=config.agents.verbose,
         full_output=full_output,
     )
+    
+    # Debug: Check manager tools after crew creation
+    console.print(f"🔧 Manager tools after crew creation: {getattr(manager_agent, 'tools', 'No tools attr')}", style="cyan")
+    if hasattr(manager_agent, 'tools') and manager_agent.tools:
+        for tool in manager_agent.tools:
+            console.print(f"🔧 Tool: {tool.name if hasattr(tool, 'name') else str(tool)}", style="cyan")
+    
+    return crew
 

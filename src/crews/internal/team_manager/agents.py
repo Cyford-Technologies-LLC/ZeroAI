@@ -247,14 +247,10 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], project_id: s
 
     backstory = f"""You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'.
     
-    CRITICAL PROJECT INFORMATION:
-    - GitHub Repository URL: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
-    - Project Config Location: knowledge/internal_crew/cyford/zeroai/project_config.yaml
-    - Working Branch: rl-core
-    - Work Branch Pattern: feature/{{task_id}}
+    You coordinate work by delegating tasks to your specialist team members. When you need project information, delegate to the Project Manager. When you need research, delegate to the Internal Researcher or Online Researcher. You do not have direct access to project files - you must delegate to the appropriate specialists.
     
-    When asked about GitHub or project details, provide this accurate information directly. Only delegate to coworkers when you need specialized work done, not for basic project information you already know."""
-    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'. Provide accurate project information directly when asked."
+    CRITICAL: Use exact role names when delegating. The delegation tools will show you the available coworkers."""
+    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'. Delegate tasks to appropriate specialists rather than attempting to answer directly."
 
     return Agent(
         role="Team Manager",
