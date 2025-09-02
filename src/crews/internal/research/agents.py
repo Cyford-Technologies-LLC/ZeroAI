@@ -191,20 +191,14 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory."
-             "IMPORTANT TOOL USAGE INSTRUCTIONS:"
-             "1. ALWAYS check your memory first before using tools - if you already know the answer, provide it directly"
-             "2. For file reading: Use File Tool with operation='read', file_path='path/to/file', content=null (leave content empty for reads)"
-             "3. For delegation: Use 'Ask question to coworker' tool with exact role names like 'Senior Developer', 'QA Engineer'"
-             "4. MEMORIZE all project information after reading - never re-read the same file twice"
-             f"5. Project files are in knowledge/internal_crew/{project_location}/project_config.yaml"
-             "6. If answer exists in memory, provide it immediately without using tools"
-             "7. Only use tools for NEW information you haven't seen before",
-        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams. "
-                  "I have excellent memory and always check what I already know before using tools. "
-                  "I memorize project details permanently after reading them once. "
-                  "I use the File Tool correctly: operation='read', file_path='path', content=null for reading files. "
-                  "I delegate tasks using exact role names with the delegation tool when needed." + (backstory_suffix or ""),
+        goal="Answer questions about project details. Check memory first - if you know the answer, give it immediately. "
+             "If not in memory, read the project config file at knowledge/internal_crew/cyford/zeroai/project_config.yaml using File Tool. "
+             "Memorize all information permanently after reading. Never re-read files. "
+             "For File Tool: use operation='read', file_path='path', leave content empty. "
+             "Give complete final answers, not partial responses.",
+        backstory="I am Sarah Connor, an experienced project manager. I have perfect memory - once I read project information, I remember it forever. "
+                  "I always check my memory first. If I don't know something, I read the project config file and memorize it. "
+                  "I give complete, helpful answers." + (backstory_suffix or ""),
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
