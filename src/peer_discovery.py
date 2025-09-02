@@ -83,7 +83,6 @@ class PeerDiscovery:
             log_peer(f"Error loading {PEERS_CONFIG_PATH}: {e}", 1, "red")
             return []
 
-
     def _save_peers_to_config(self, peers: Dict[str, PeerNode]):
         """Save peer details with full capabilities to config file"""
         try:
@@ -136,7 +135,7 @@ class PeerDiscovery:
 
     def _get_system_load(self) -> float:
         try:
-            return psutil.cpu_percent(interval=0.1)  # Faster sampling
+            return psutil.cpu_percent(interval=0.1)
         except Exception:
             return 0.0
 
@@ -223,7 +222,6 @@ class PeerDiscovery:
         new_peers: Dict[str, PeerNode] = {}
         peers_to_check = self._load_all_peers()
         
-        # Parallel peer checking for better performance
         with ThreadPoolExecutor(max_workers=min(len(peers_to_check), 5)) as executor:
             future_to_peer = {executor.submit(self._check_single_peer, peer_info): peer_info for peer_info in peers_to_check}
             
@@ -244,66 +242,6 @@ class PeerDiscovery:
         self._save_peers_to_config(new_peers)
         available_count = len([p for p in new_peers.values() if p.capabilities.available])
         log_peer(f"🔍 Discovery complete: {available_count}/{len(new_peers)} peers available", 4, "cyan")
-
-    def _discovery_loop(self):
-        while True:
-            self._discovery_cycle()
-            time.sleep(PEER_DISCOVERY_INTERVAL)
-
-    def start_discovery_service(self):
-        if self.discovery_thread is None or not self.discovery_thread.is_alive():
-            self.discovery_thread = Thread(target=self._discovery_loop, daemon=True)
-            self.discovery_thread.start()
-
-    def get_peers(self, force_refresh: bool = False) -> List[PeerNode]:
-        """Get peers using cache if valid, otherwise trigger discovery"""
-        with self.peers_lock:
-            if not force_refresh and self._is_cache_valid() and self.cached_peers:
-                log_peer(f"📋 Using cached peers ({len(self.cached_peers)} peers)", 5)
-                return list(self.cached_peers.values())
-            
-            if not self.peers or force_refresh:
-                log_peer("🔄 Cache expired, refreshing peer discovery...", 4, "yellow")
-                self._discovery_cycle()
-            
-            return list(self.peers.values())
-    
-    def get_available_peers(self) -> List[PeerNode]:
-        """Get only available peers"""
-        return [peer for peer in self.get_peers() if peer.capabilities.available]
-    
-    @classmethod
-    def get_instance(cls):
-        """Get singleton instance"""
-        return cls()
-
-# Global singleton instance
-peer_discovery = PeerDiscovery.get_instance()k}
-            
-            for future in as_completed(future_to_peer):
-                peer_info = future_to_peer[future]
-                try:
-                    name, capabilities = future.result(timeout=PEER_PING_TIMEOUT * 2)
-                    new_peers[name] = PeerNode(name, peer_info['ip'], capabilities)
-                except Exception as e:
-                    log_peer(f"❌ {peer_info['name']}: {e}", 2, "red")
-                    new_peers[peer_info['name']] = PeerNode(peer_info['name'], peer_info['ip'], PeerCapabilities(available=False))
-        
-        with self.peers_lock:
-            self.peers = new_peers
-            self.cached_peers = new_peers.copy()
-            self.cache_timestamp = time.time()
-        
-        self._save_peers_to_config(new_peers)
-        available_count = len([p for p in new_peers.values() if p.capabilities.available])
-        log_peer(f"🔍 Discovery complete: {available_count}/{len(new_peers)} peers available", 4, "cyan")peer_info['name']] = PeerNode(peer_info['name'], peer_info['ip'], PeerCapabilities(available=False))
-        
-        with self.peers_lock:
-            self.peers = new_peers
-            self.cached_peers = new_peers.copy()
-            self.cache_timestamp = time.time()
-        
-        self._save_peers_to_config(new_peers)
 
     def _discovery_loop(self):
         while True:
