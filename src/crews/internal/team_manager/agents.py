@@ -47,42 +47,52 @@ class ErrorLogger:
 
 # Define the available agents in the system
 AVAILABLE_AGENTS = {
-    "Team Manager": {
-        "description": "Coordinates tasks and manages teams of specialists",
-        "capabilities": ["task coordination", "requirement analysis", "team management", "task delegation",
-                         "progress monitoring"]
-    },
-    "Developer": {
-        "description": "Implements code solutions and fixes bugs",
-        "capabilities": ["coding", "debugging", "code optimization", "technical design", "unit testing"]
-    },
-    "Documentation Specialist": {
+    "Documentation Writer": {
         "description": "Creates and maintains technical documentation",
-        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams",
-                         "markdown expertise"]
+        "capabilities": ["technical writing", "API documentation", "user guides", "system diagrams"]
     },
-    "Testing Engineer": {
-        "description": "Designs and implements tests for code quality",
-        "capabilities": ["unit testing", "integration testing", "test automation", "QA", "test case design"]
+    "Scheduler": {
+        "description": "Manages project timelines and schedules",
+        "capabilities": ["task scheduling", "timeline management", "resource allocation"]
     },
-    "Security Analyst": {
-        "description": "Analyzes and enhances security measures",
-        "capabilities": ["security audits", "vulnerability assessment", "secure coding practices", "threat modeling"]
+    "Code Researcher": {
+        "description": "Analyzes and researches code patterns and solutions",
+        "capabilities": ["code analysis", "pattern research", "solution finding"]
     },
-    "Research Specialist": {
-        "description": "Gets all details relating to the project for the team and users. answers all project related questions",
-        "capabilities": ["Project Details", "github details", "working directory details", "unknown details"]
+    "Senior Developer": {
+        "description": "Implements complex code solutions and architectural decisions",
+        "capabilities": ["advanced coding", "architecture design", "code optimization", "technical leadership"]
     },
-    "DevOps Engineer": {
-        "description": "Handles deployment and infrastructure automation",
-        "capabilities": ["CI/CD pipelines", "containerization", "infrastructure as code", "monitoring setup",
-                         "cloud deployment"]
+    "QA Engineer": {
+        "description": "Designs and implements comprehensive testing strategies",
+        "capabilities": ["test automation", "quality assurance", "bug detection", "test case design"]
+    },
+    "Git Operator": {
+        "description": "Manages version control and repository operations",
+        "capabilities": ["git operations", "version control", "repository management", "branch management"]
+    },
+    "Internal Researcher": {
+        "description": "Specializes in internal project research and documentation analysis",
+        "capabilities": ["project details", "github details", "working directory analysis", "internal documentation"]
+    },
+    "Online Researcher": {
+        "description": "Performs comprehensive online research and information gathering",
+        "capabilities": ["web research", "information gathering", "external documentation", "trend analysis"]
+    },
+    "Project Manager": {
+        "description": "Manages project coordination and strategic planning",
+        "capabilities": ["project coordination", "strategic planning", "resource management", "stakeholder communication"]
+    },
+    "Junior Developer": {
+        "description": "Implements basic code solutions and assists with development tasks",
+        "capabilities": ["basic coding", "code implementation", "debugging assistance", "learning support"]
     }
 }
 
 
 def format_agent_list() -> str:
     agent_list = "# Available Specialist Teams\n\n"
+    agent_list += "**IMPORTANT: When using 'Ask question to coworker' tool, use EXACT role names (case-sensitive):**\n\n"
     for name, details in AVAILABLE_AGENTS.items():
         agent_list += f"## {name}\n"
         agent_list += f"- **Description**: {details['description']}\n"
@@ -229,7 +239,14 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
     # Use the helper function to get the LLM
     manager_llm = get_manager_llmc(router)
 
-    backstory = f"You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'."
+    backstory = f"""You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'.
+    
+    CRITICAL: When using the 'Ask question to coworker' tool, you MUST use the EXACT role names as they appear in your team list. The tool is case-sensitive.
+    
+    Your available team members are:
+    {format_agent_list()}
+    
+    For GitHub repository information, ask 'Internal Researcher' or 'Project Manager' using their exact role names."""
     goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'."
 
     return Agent(
