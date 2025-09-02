@@ -155,7 +155,6 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
                                  coworkers: Optional[List] = None, backstory_suffix=None) -> Agent:
     """Create a project manager agent."""
     llm = get_research_llm(router, category="management")
-    agent_memory = Memory()
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
@@ -171,7 +170,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     return Agent(
         role="Project Manager",
         name="Sarah Connor",
-        memory=agent_memory,
+        memory=True,
         coworkers=coworkers if coworkers is not None else [],
         learning={
             "enabled": True,
@@ -192,7 +191,8 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         },
         resources=[],
         goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory. "
-             "IMPORTANT: Project config files are located at knowledge/internal_crew/{project_location}/project_config.yaml where {project_location} follows the format 'company/project' (e.g., cyford/zeroai). "
+             "IMPORTANT: You can read all files in the knowledge/ directory for general information, however knowledge/internal_crew/ is private and requires a specific project_location to be used. "
+             "Project config files are located at knowledge/internal_crew/{project_location}/project_config.yaml where {project_location} follows the format 'company/project' (e.g., cyford/zeroai). "
              "Always use the EXACT relative path format: knowledge/internal_crew/cyford/zeroai/project_config.yaml (never use absolute paths starting with /). "
              "Read all YAML files in the project directory until memorized. "
              "Answer all project-related details accurately. "
