@@ -59,7 +59,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Debug: Check manager tools after crew creation
     console.print(f"🔧 Manager tools before crew creation: {getattr(manager_agent, 'tools', 'No tools attr')}", style="cyan")
     
-    # Create and return the crew with the correct agent list
+    # Create the crew with the correct agent list
     crew = Crew(
         agents=crew_agents,
         tasks=manager_tasks,
@@ -69,11 +69,28 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         full_output=full_output,
     )
     
-    # Debug: Check manager tools after crew creation
-    console.print(f"🔧 Manager tools after crew creation: {getattr(manager_agent, 'tools', 'No tools attr')}", style="cyan")
-    if hasattr(manager_agent, 'tools') and manager_agent.tools:
-        for tool in manager_agent.tools:
-            console.print(f"🔧 Tool: {tool.name if hasattr(tool, 'name') else str(tool)}", style="cyan")
+    # CRITICAL FIX: Manually set up delegation tools
+    try:
+        # Force CrewAI to recognize the crew agents for delegation
+        if hasattr(crew, '_setup_manager_tools'):
+            crew._setup_manager_tools()
+        elif hasattr(crew, 'manager_agent') and hasattr(crew.manager_agent, '_setup_tools'):
+            crew.manager_agent._setup_tools(crew.agents)
+        
+        # Alternative: Directly set the available agents for delegation
+        if hasattr(manager_agent, 'tools'):
+            for tool in manager_agent.tools:
+                if hasattr(tool, 'agents') or hasattr(tool, 'coworkers'):
+                    if hasattr(tool, 'agents'):
+                        tool.agents = crew_agents
+                    if hasattr(tool, 'coworkers'):
+                        tool.coworkers = crew_agents
+                    console.print(f"🔧 Fixed delegation tool: {tool.name}", style="green")
+    except Exception as e:
+        console.print(f"🔧 Failed to fix delegation: {e}", style="red")
+    
+    # Debug: Check manager tools after fix
+    console.print(f"🔧 Manager tools after fix: {len(getattr(manager_agent, 'tools', []))}", style="cyan")
     
     return crew
 
