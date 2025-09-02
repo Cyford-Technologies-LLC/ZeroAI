@@ -140,7 +140,9 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
     """
     Loads and configures all available coworker agents from discovered crews.
     """
+    console.print("🔍 Loading coworkers...", style="blue")
     discovered_crews = discover_available_crews()
+    console.print(f"📋 Discovered crews: {list(discovered_crews.keys())}", style="dim")
     agent_creator_functions = {}
 
     if isinstance(discovered_crews, dict):
@@ -169,6 +171,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         try:
             temp_agent = creator_func(**kwargs_to_pass)
             temp_coworkers.append(temp_agent)
+            console.print(f"✅ Created temporary agent: {temp_agent.role}", style="green")
         except Exception as e:
             console.print(f"❌ Error creating temporary agent with {creator_func.__name__}: {e}", style="red")
 
@@ -185,9 +188,13 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         try:
             full_agent = creator_func(**kwargs_to_pass)
             all_coworkers.append(full_agent)
+            console.print(f"✅ Created full agent: {full_agent.role}", style="green")
         except Exception as e:
             console.print(f"❌ Error creating full agent with {creator_func.__name__}: {e}", style="red")
 
+    console.print(f"👥 Total coworkers loaded: {len(all_coworkers)}", style="blue")
+    for coworker in all_coworkers:
+        console.print(f"  - {coworker.role} ({coworker.name})", style="dim")
     return all_coworkers
 
 # --- End of Helper function ---

@@ -15,13 +15,17 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
 
-    # Then, create the manager agent without the 'coworkers' argument
+    # Create the manager agent with coworkers - this is the key fix
     manager_agent = create_team_manager_agent(
         router=router,
         project_id=inputs.get("project_id"),
         working_dir=inputs.get("working_dir", Path("/tmp")),
         inputs=inputs,
+        tools=tools
     )
+    
+    # Set the coworkers for the manager agent after creation
+    manager_agent.coworkers = all_coworkers
 
     # Define tasks directly within this function
     manager_tasks = [
