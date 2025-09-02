@@ -246,7 +246,7 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
     manager_memory = Memory()
 
     # Use the helper function to get the LLM
-    manager_llm = get_manager_llmc()
+    manager_llm = get_manager_llmc(router)
 
     backstory = f"You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'."
     goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'."
