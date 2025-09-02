@@ -127,6 +127,34 @@ class PeerDiscovery:
             return False, f"Failed to add peer: {e}"
 
     def _load_all_peers(self) -> List[Dict[str, Any]]:
+        # Try to load from peers.yml first
+        peers_yml = Path("src/peers.yml")
+        if peers_yml.exists():
+            try:
+                import yaml
+                with open(peers_yml, 'r') as f:
+                    yml_data = yaml.safe_load(f)
+                    peers = []
+                    for name, config in yml_data.items():
+                        peers.append({
+                            "name": name,
+                            "ip": config["ip"],
+                            "port": config.get("port", 11434),
+                            "available": False,
+                            "models": [],
+                            "load_avg": 0.0,
+                            "memory_gb": 0.0,
+                            "gpu_available": False,
+                            "gpu_memory_gb": 0.0,
+                            "cpu_cores": 0,
+                            "last_updated": 0
+                        })
+                    if peers:
+                        return peers
+            except Exception as e:
+                log_peer(f"Error loading peers.yml: {e}", 1, "red")
+        
+        # Fallback to peers.json
         peers = self._load_peers_from_config()
         if peers:
             return peers
@@ -254,16 +282,8 @@ class PeerDiscovery:
             self.discovery_thread.start()
 
     def get_peers(self, force_refresh: bool = False) -> List[PeerNode]:
-        """Get peers using cache if valid, otherwise trigger discovery"""
-        if force_refresh:
-            log_peer("🔄 Force refresh requested...", 4, "yellow")
-            self._discovery_cycle()
-        elif not self._is_cache_valid() or not self.cached_peers:
-            log_peer("🔄 Cache expired, refreshing peer discovery...", 4, "yellow")
-            self._discovery_cycle()
-        else:
-            log_peer(f"📋 Using cached peers ({len(self.cached_peers)} peers)", 5)
-        
+        """Get peers - always run discovery"""
+        self._discovery_cycle()
         with self.peers_lock:
             return list(self.peers.values())
     
