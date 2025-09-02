@@ -1,0 +1,49 @@
+{
+  "Company": {
+    "Name": "TestCorp Solutions",
+    "Industry": "Software Development",
+    "Size": "Medium (50-200 employees)",
+    "Founded": "2020",
+    "Location": "Austin, TX"
+  },
+  "Projects": {
+    "GIT_TOKEN_KEY": "GITHUB_TOKEN_TESTCORP",
+    "Primary_Repository": "https://github.com/testcorp/main-project",
+    "Active_Projects": [
+      {
+        "name": "WebApp Dashboard",
+        "repository": "https://github.com/testcorp/webapp-dashboard",
+        "tech_stack": ["React", "Node.js", "PostgreSQL"],
+        "status": "Active Development"
+      },
+      {
+        "name": "API Gateway",
+        "repository": "https://github.com/testcorp/api-gateway",
+        "tech_stack": ["Python", "FastAPI", "Redis"],
+        "status": "Maintenance"
+      }
+    ]
+  },
+  "Team": {
+    "Development": {
+      "Lead": "Sarah Johnson",
+      "Developers": ["Mike Chen", "Lisa Rodriguez", "David Kim"],
+      "Tech_Stack": ["Python", "JavaScript", "React", "PostgreSQL"]
+    },
+    "DevOps": {
+      "Lead": "Alex Thompson",
+      "Tools": ["Docker", "Kubernetes", "Jenkins", "AWS"]
+    }
+  },
+  "Preferences": {
+    "Code_Style": "PEP8 for Python, ESLint for JavaScript",
+    "Testing": "pytest for Python, Jest for JavaScript",
+    "Documentation": "Sphinx for Python, JSDoc for JavaScript",
+    "Deployment": "Docker containers on AWS ECS"
+  },
+  "ZeroAI_Config": {
+    "Knowledge_Path": "knowledge/internal_crew/testcorp/zeroai",
+    "Project_Name": "TestCorp ZeroAI Implementation",
+    "Current_Version": "0.1.0"
+  }
+}

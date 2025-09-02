@@ -1,69 +1,174 @@
 # ZeroAI Changelog
 
-All notable changes to the ZeroAI project will be documented in this file.
+## [0.0.0.0.1.1] - 2024-12-19
 
-## [Unreleased] - 2025-01-02
+### 🔧 Major Fixes
 
-### Added
-- Distributed AI network with peer discovery system
-- Agent-to-agent communication for task routing
-- GPU node integration (149.36.1.65) with 21GB RAM and RTX capabilities
-- Response caching system to avoid re-processing identical queries
-- Smart model routing based on task complexity and system resources
-- Peer service HTTP endpoints for capability exposure and task processing
-- Code generation tool with distributed routing support
+#### GitHub Token Authentication System
+- **Fixed**: GitHub token configuration system using `GH_TOKEN_CYFORD` environment variable
+- **Added**: Dynamic token loading for all `GITHUB_TOKEN_*` and `GH_TOKEN_*` patterns
+- **Enhanced**: Agent tool configuration to automatically use configured tokens
+- **Modified**: `config.json` to include `"GIT_TOKEN_KEY": "{GH_TOKEN_CYFORD}"` mapping
+- **Updated**: `src/config.py` for dynamic GitHub token discovery
+- **Fixed**: `tool_factory.py` GitHub tool integration with proper token handling
 
-### Fixed
-- **Critical**: Fixed `litellm.BadRequestError` by correcting model name format from `Ollama/` to `ollama/`
-- **Critical**: Fixed NoneType string concatenation error in `create_project_manager_agent`
-- **Critical**: Fixed research crew agent loading issues preventing coworker discovery
-- Fixed distributed router FileNotFoundError typo
-- Fixed OnlineSearchTool BaseTool implementation to work with CrewAI
-- Fixed missing function call in research crew creation
-- Fixed SerperDevTool error handling when API key is missing
-- Fixed transformers package dependency issue
+#### Schema Validation & Tool Integration
+- **Fixed**: Pydantic validation errors in File System Tool and File Tool schemas
+- **Added**: Dual parameter support for 'path' and 'file_path' in file tools
+- **Enhanced**: `src/crews/internal/tools/file_tool.py` with proper schema validation
+- **Implemented**: `ConfiguredGithubTool` class for automatic token usage
+- **Updated**: `src/utils/tool_initializer.py` to accept both `repo_token` and `repo_token_key`
 
-### Enhanced
-- **tool_factory.py**: Added comprehensive error handling for all dependencies
-- **research/agents.py**: Added robust import handling with fallbacks
-- **research/tasks.py**: Improved task descriptions with structured requirements
-- **distributed_router.py**: Reverted to stable Langchain Ollama implementation
-- Added graceful degradation when optional components are missing
+#### Import & Module Resolution
+- **Fixed**: Missing task imports in research crew module
+- **Resolved**: Circular import issues between `distributed_router` and `base_agents`
+- **Fixed**: Import path conflicts between main and development branches
+- **Removed**: Non-existent `internal_analysis_task` import from research module
+- **Added**: Missing `create_writer` and `create_custom_agent` functions
 
-### Performance
-- **Local Processing**: llama3.2:1b processes tasks in ~32 seconds
-- **GPU Processing**: CodeLlama:13b processes tasks in ~3.6 seconds (9x faster)
-- **Memory Optimization**: Configured for 3GB local VM with 256 max_tokens
-- **Caching**: Prevents re-processing of identical requests
+#### API & Service Restoration
+- **Fixed**: Missing FastAPI app object that caused container crashes
+- **Restored**: API functionality from backup to fix container startup
+- **Fixed**: Undefined console variable in `ai_crew.py`
+- **Enhanced**: API stability and error handling
 
-### Configuration
-- Environment variables now take precedence over settings.yaml
-- Added .env override system for flexible configuration
-- Optimized model settings for resource-constrained environments
-- Added peer discovery configuration with automatic capability detection
+### 🚀 Performance Improvements
 
-### Infrastructure
-- **Local Node**: 3GB RAM, llama3.2:1b model
-- **GPU Node**: 21GB RAM, 4 CPUs, RTX GPU with CodeLlama:13b and llama3.1:8b
-- **Network**: UFW firewall configuration for peer communication
-- **Services**: Background peer services with health monitoring
+#### Memory & Resource Optimization
+- **Enhanced**: Project Manager agent to prioritize memory usage over redundant tool calls
+- **Fixed**: Broken peer discovery caching causing fallback to low-memory local server
+- **Improved**: Caching logic to properly return current peers from `src/peers.yml`
+- **Optimized**: Agent memory management and tool call efficiency
+- **Added**: Performance monitoring and logging controls
 
-### Known Issues
-- Team Manager only has itself as coworker due to research agent loading issues (partially resolved)
-- Pydantic deprecation warnings from CrewAI dependencies (cosmetic only)
-- SERPER_API_KEY required for online search functionality
+#### Peer Discovery & Distributed Computing
+- **Fixed**: Peer discovery caching issues with 60-second cache validity
+- **Enhanced**: GPU server utilization over local fallback
+- **Improved**: Distributed routing performance
+- **Added**: Better peer health monitoring
 
-### Dependencies
-- Added: transformers package for token calculation
-- Enhanced: crewai_tools with error handling
-- Maintained: All existing functionality with backward compatibility
+### 📚 Documentation & Project Structure
+
+#### Comprehensive Documentation
+- **Created**: `docs/commands.md` - Complete commands reference guide
+- **Created**: `docs/project-structure.md` - Detailed project hierarchy documentation
+- **Added**: Setup, API, CLI, DevOps, and troubleshooting sections
+- **Documented**: Agent system breakdown and specialized agent roster
+- **Added**: Infrastructure components and security model documentation
+
+#### Project Organization
+- **Organized**: All command references by category
+- **Documented**: Complete directory hierarchy with descriptions
+- **Added**: Key component explanations
+- **Created**: Developer and user-friendly documentation structure
+
+### 🛠️ DevOps & Infrastructure
+
+#### Docker & Deployment
+- **Enhanced**: Docker configuration for both CPU-only and GPU-enabled systems
+- **Fixed**: Container startup issues and service dependencies
+- **Improved**: API deployment on port 3939 and peer service on port 8080
+- **Added**: GPU override configuration support
+
+#### Development Workflow
+- **Fixed**: Script execution duplication issues
+- **Enhanced**: Development branch stability
+- **Improved**: Git workflow and branch management
+- **Added**: Better error handling and logging
+
+### 🔒 Security & Stability
+
+#### Token Security
+- **Secured**: GitHub token handling with environment variable patterns
+- **Enhanced**: Token extraction and validation logic
+- **Improved**: Secure token passing between components
+- **Added**: Token key mapping system
+
+#### System Stability
+- **Fixed**: Zombie process issues (1020+ processes)
+- **Enhanced**: Resource management and cleanup
+- **Improved**: Error handling and recovery mechanisms
+- **Added**: Better logging and monitoring
+
+### 🤖 Agent System Enhancements
+
+#### Internal Working Team Agents
+- **Enhanced**: Developer Crew (Dr. Alan Parse, Tony Kyles, Tom Kyles, Lara Croft)
+- **Improved**: DevOps & Infrastructure agents (Deon Sanders, Documentation Agent)
+- **Optimized**: Security & Maintenance agents
+- **Enhanced**: Website Management agents
+
+#### Agent Communication
+- **Fixed**: CrewAI hierarchical vs sequential process visibility
+- **Enhanced**: Agent conversation logging with verbose mode
+- **Improved**: Task assignment and execution flow
+- **Added**: Better agent coordination and memory sharing
+
+### 📊 Technical Improvements
+
+#### Code Quality
+- **Fixed**: Multiple Pydantic schema validation issues
+- **Enhanced**: Error handling across all modules
+- **Improved**: Code organization and structure
+- **Added**: Better type hints and documentation
+
+#### Configuration Management
+- **Enhanced**: `config/settings.yaml` structure
+- **Improved**: Environment variable handling
+- **Added**: Dynamic configuration loading
+- **Fixed**: Configuration validation and error handling
+
+### 🐛 Bug Fixes
+
+#### Critical Fixes
+- **Fixed**: API container crashes due to missing FastAPI app
+- **Resolved**: Circular import chains breaking module loading
+- **Fixed**: Console definition errors preventing module imports
+- **Resolved**: Tool schema validation failures
+
+#### Minor Fixes
+- **Fixed**: Import path inconsistencies between branches
+- **Resolved**: Missing function definitions in base agents
+- **Fixed**: Peer discovery cache reading from wrong location
+- **Corrected**: Token parameter naming inconsistencies
+
+### 📈 Metrics & Monitoring
+
+#### Performance Metrics
+- **Added**: Better logging controls for performance monitoring
+- **Enhanced**: Resource usage tracking
+- **Improved**: Agent execution time monitoring
+- **Added**: System health checks
+
+#### Debugging & Troubleshooting
+- **Enhanced**: Error logging and stack traces
+- **Improved**: Debug information availability
+- **Added**: Better troubleshooting documentation
+- **Enhanced**: Development debugging tools
 
 ---
 
-## Previous Versions
+### 🔄 Migration Notes
 
-### [Initial Setup] - 2025-01-01
-- Basic ZeroAI framework with Ollama integration
-- CrewAI agent system implementation
-- Local AI processing capabilities
-- Configuration management system
+For users upgrading to version 0.0.0.0.1.1:
+
+1. **Environment Variables**: Ensure GitHub tokens follow `GH_TOKEN_*` or `GITHUB_TOKEN_*` pattern
+2. **Configuration**: Update `config.json` with proper `GIT_TOKEN_KEY` mapping
+3. **Docker**: Use updated Docker configurations for better performance
+4. **Documentation**: Review new documentation structure in `docs/` folder
+
+### 🎯 Next Version Preview
+
+Planned for next release:
+- Enhanced AI model integration
+- Improved distributed computing features
+- Advanced security features
+- Extended agent capabilities
+- Better cloud integration options
+
+---
+
+**Total Commits**: 150+ commits focused on performance, stability, and feature enhancements
+**Branch**: 0.0.0.0.1.1
+**Release Date**: December 19, 2024
+**Compatibility**: Backward compatible with previous configurations

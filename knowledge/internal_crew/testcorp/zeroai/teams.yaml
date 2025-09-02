@@ -1,0 +1,39 @@
+teams:
+  development:
+    lead: "Sarah Johnson"
+    members:
+      - name: "Mike Chen"
+        role: "Senior Developer"
+        specialization: "Backend/Python"
+      - name: "Lisa Rodriguez"
+        role: "Frontend Developer"
+        specialization: "React/TypeScript"
+      - name: "David Kim"
+        role: "Full Stack Developer"
+        specialization: "API Development"
+    
+  devops:
+    lead: "Alex Thompson"
+    members:
+      - name: "Jordan Smith"
+        role: "DevOps Engineer"
+        specialization: "AWS/Kubernetes"
+      - name: "Taylor Brown"
+        role: "Site Reliability Engineer"
+        specialization: "Monitoring/Performance"
+    
+  qa:
+    lead: "Morgan Davis"
+    members:
+      - name: "Casey Wilson"
+        role: "QA Engineer"
+        specialization: "Automated Testing"
+    
+working_hours:
+  timezone: "America/Chicago"
+  core_hours: "9:00 AM - 5:00 PM CST"
+  
+communication:
+  primary: "Slack"
+  meetings: "Google Meet"
+  documentation: "Confluence"

@@ -23,7 +23,7 @@ share/python-wheels/
 MANIFEST
 peers.json
 config/peers.json
-
+knowledge/internal_crew/cyford
 
 
 # Virtual environments

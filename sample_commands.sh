@@ -58,7 +58,9 @@ clear ; python3 run/examples/advanced_analysis.py
 
 
 # curl  api  linux endpoint test ..   in or outside containers
- curl -X POST "http://localhost:3939/run_crew_ai/"   -H "Content-Type: application/json"   -d '{ "inputs": { "topic": "what is your name", "context": "general", "focus": "standard" } }'
+curl -X POST "http://localhost:3939/run_crew_ai_json/" \
+  -H "Content-Type: application/json" \
+  -d '{ "inputs": { "topic": "what is your name", "context": "general", "focus": "standard" } }'
 
 
 #windows curl test outside containers

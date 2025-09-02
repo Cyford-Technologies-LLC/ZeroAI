@@ -1,0 +1,37 @@
+usage_examples:
+  code_review:
+    description: "Automated code review for pull requests"
+    command: "python run/internal/run_dev_ops.py --project=webapp-dashboard 'Review PR #123 for security vulnerabilities'"
+    expected_output: "Security analysis report with recommendations"
+    
+  bug_fixing:
+    description: "Automated bug identification and fixing"
+    command: "python run/internal/run_dev_ops.py --project=api-gateway 'Fix authentication timeout issue'"
+    expected_output: "Code changes and test cases for timeout handling"
+    
+  documentation:
+    description: "Generate API documentation"
+    command: "python run/internal/run_dev_ops.py --project=api-gateway 'Update API documentation for v2.1'"
+    expected_output: "Updated OpenAPI specs and README files"
+    
+  testing:
+    description: "Generate comprehensive test suites"
+    command: "python run/internal/run_dev_ops.py --project=webapp-dashboard 'Create unit tests for user authentication module'"
+    expected_output: "Jest test files with 90%+ coverage"
+    
+  deployment:
+    description: "Automated deployment pipeline"
+    command: "python run/internal/run_dev_ops.py --project=main-project 'Deploy v2.1.0 to staging environment'"
+    expected_output: "Deployment scripts and rollback procedures"
+
+common_workflows:
+  daily_standup:
+    - "Generate daily progress report"
+    - "Identify blockers and dependencies"
+    - "Update project status dashboard"
+    
+  weekly_review:
+    - "Code quality metrics analysis"
+    - "Performance benchmarking"
+    - "Security vulnerability scan"
+    - "Documentation updates"
