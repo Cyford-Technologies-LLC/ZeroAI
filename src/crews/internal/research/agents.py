@@ -191,12 +191,15 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Read project files to learn all project details and memorize them permanently. "
-             "Use File Tool to read knowledge/internal_crew/cyford/zeroai/project_config.yaml and any other project files. "
-             "Answer questions from memory after reading. Never re-read files once memorized.",
-        backstory="I am Sarah Connor, project manager. I read project files using File Tool to learn all project details. "
-                  "I have perfect memory - once I read a file, I remember everything in it forever. "
-                  "I use tools when I need information I haven't read yet." + (backstory_suffix or ""),
+        goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory."
+             "The Project given to you can be used to find yaml file in the specific directory. Example if the project is cyford/zeroai then the project would be in knowledge/internal_crew/cyford/zeroai/project_config.yaml"
+             f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml"
+             "make sure you read all yamls in project directory till it is memorized"
+             "you will answer all project related details "
+             f"IMPORTANT: If repository URL was provided in command ({repository}), use that URL. Otherwise use the URL from project config file."
+             "if the answer do not exist, say we do not have that information. do not make any details up or say anything not true"
+             "You can delegate tasks to other team members when needed using the delegation tool.",
+        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
