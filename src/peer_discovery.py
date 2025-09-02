@@ -282,8 +282,15 @@ class PeerDiscovery:
             self.discovery_thread.start()
 
     def get_peers(self, force_refresh: bool = False) -> List[PeerNode]:
-        """Get peers - always run discovery"""
+        """Get peers - use cache first, refresh if needed"""
+        with self.peers_lock:
+            # Return cached results immediately if available
+            if not force_refresh and self.peers and self._is_cache_valid():
+                return list(self.peers.values())
+        
+        # Cache miss or expired - run discovery
         self._discovery_cycle()
+        
         with self.peers_lock:
             return list(self.peers.values())
     
