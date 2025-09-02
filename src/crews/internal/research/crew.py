@@ -32,7 +32,8 @@ def get_research_crew(router, tools, project_config, use_new_memory=False):
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     researcher_agent = create_internal_researcher_agent(router, inputs)
     analyst_agent = create_online_researcher_agent(router, inputs)
-    project_manager_agent = create_project_manager_agent
+    # Fixed: Call the function instead of just referencing it
+    project_manager_agent = create_project_manager_agent(router, inputs)
 
     tasks = [
         internal_research_task(researcher_agent, inputs),
@@ -40,7 +41,7 @@ def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full
     ]
 
     return Crew(
-        agents=[researcher_agent, analyst_agent,project_manager_agent],
+        agents=[researcher_agent, analyst_agent, project_manager_agent],
         tasks=tasks,
         process=Process.sequential,
         verbose=config.agents.verbose,

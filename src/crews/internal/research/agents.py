@@ -4,7 +4,7 @@ import inspect
 import importlib
 from crewai import Agent
 from crewai.tools import BaseTool
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Any as AnyType
 from distributed_router import DistributedRouter
 from src.config import config
 from rich.console import Console
@@ -14,8 +14,20 @@ import os
 import yaml
 from crewai_tools import SerperDevTool, GithubSearchTool
 from langchain_ollama import OllamaLLM
-from tool_factory import dynamic_github_tool  # Import the dynamic tool
-from src.utils.tool_initializer import get_universal_tools
+# NOTE: Commented out potentially missing import that could cause issues
+# from tool_factory import dynamic_github_tool  # Import the dynamic tool
+
+# NOTE: Import with error handling for missing tool_initializer
+try:
+    from src.utils.tool_initializer import get_universal_tools
+except ImportError as e:
+    console = Console()
+    console.print(f"⚠️ Warning: Could not import get_universal_tools: {e}", style="yellow")
+    # Fallback function if import fails
+    def get_universal_tools(inputs, initial_tools=None):
+        """Fallback function when tool_initializer is not available"""
+        return initial_tools or []
+
 console = Console()
 
 
@@ -42,10 +54,12 @@ class OnlineSearchTool(BaseTool):
 
     def _run(self, query: str):
         try:
+            # NOTE: SerperDevTool requires SERPER_API_KEY environment variable
             search_tool = SerperDevTool()
             return search_tool.run(query)
         except Exception as e:
-            return f"Search failed: {str(e)}"
+            # NOTE: Fallback when SERPER_API_KEY is not available
+            return f"Online search not available (API key missing): {str(e)}. Please provide search results manually or set SERPER_API_KEY environment variable."
 
 
 def get_online_search_tool():
@@ -54,7 +68,7 @@ def get_online_search_tool():
 
 
 def get_research_llm(router: DistributedRouter, category: str = "research",
-                     preferred_models: Optional[List] = None) -> Any:
+                     preferred_models: Optional[List] = None) -> AnyType:
     preferred_models = preferred_models or ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
 
     try:
@@ -93,8 +107,12 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
-
-    all_tools = get_universal_tools(inputs, initial_tools=tools)
+    # NOTE: Using get_universal_tools with fallback handling
+    try:
+        all_tools = get_universal_tools(inputs, initial_tools=tools)
+    except Exception as e:
+        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
+        all_tools = tools or []
 
     return Agent(
         role="Project Manager",
@@ -139,7 +157,13 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     llm = get_research_llm(router, category="research")
     agent_memory = Memory()
     project_location = inputs.get("project_id")
-    all_tools = get_universal_tools(inputs, initial_tools=tools)
+    
+    # NOTE: Using get_universal_tools with fallback handling
+    try:
+        all_tools = get_universal_tools(inputs, initial_tools=tools)
+    except Exception as e:
+        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
+        all_tools = tools or []
 
     return Agent(
         role="Internal Researcher",
@@ -179,7 +203,13 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     """Create an online researcher agent."""
     llm = get_research_llm(router, category="online_research")
     agent_memory = Memory()
-    all_tools = get_universal_tools(inputs, initial_tools=tools)
+    
+    # NOTE: Using get_universal_tools with fallback handling
+    try:
+        all_tools = get_universal_tools(inputs, initial_tools=tools)
+    except Exception as e:
+        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
+        all_tools = tools or []
 
     return Agent(
         role="Online Researcher",
