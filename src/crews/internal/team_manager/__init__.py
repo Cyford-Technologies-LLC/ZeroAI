@@ -1,7 +1,17 @@
 # src/crews/internal/team_manager/__init__.py
 
-from .agents import ErrorLogger, AVAILABLE_AGENTS, format_agent_list
+from .agents import ErrorLogger, AVAILABLE_AGENTS, format_agent_list, create_team_manager_agent, load_all_coworkers
+from .crew import create_team_manager_crew
+from .tasks import create_docker_task, create_project_task, create_agent_listing_task
 
-# You might want to define which functions or classes to expose
-# from the package using __all__ for cleaner imports.
-__all__ = ["get_team_manager_crew", "ErrorLogger", "AVAILABLE_AGENTS", "format_agent_list"]
+__all__ = [
+    "create_team_manager_crew", 
+    "create_team_manager_agent",
+    "load_all_coworkers",
+    "ErrorLogger", 
+    "AVAILABLE_AGENTS", 
+    "format_agent_list",
+    "create_docker_task",
+    "create_project_task", 
+    "create_agent_listing_task"
+]

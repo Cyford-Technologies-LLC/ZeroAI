@@ -249,7 +249,7 @@ def get_manager_llmc(router: Any) -> Any:
 def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None,
                               working_dir: Optional[Path] = None) -> Agent:
     """Creates the Team Manager agent with memory and learning capabilities."""
-    coworkers = load_all_coworkers(router, inputs, tools)
+    # NOTE: coworkers will be set by the crew.py after creation to avoid circular dependency
     manager_memory = Memory()
 
     # Use the helper function to get the LLM
@@ -262,7 +262,7 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         role="Team Manager",
         name="Samantha",
         memory=manager_memory,
-        coworkers=coworkers,
+        coworkers=[],  # Will be set by crew.py after creation
         learning={
             "enabled": True,
             "learning_rate": 0.05,
