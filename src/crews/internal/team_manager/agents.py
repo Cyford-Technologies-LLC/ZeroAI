@@ -86,7 +86,7 @@ AVAILABLE_AGENTS = {
         "capabilities": ["web research", "information gathering", "external documentation", "trend analysis"]
     },
     "Project Manager": {
-        "description": "Manages project coordination and strategic planning",
+        "description": "Manages project coordination and strategic planning.  Any questions relating to a project should go to her",
         "capabilities": ["project coordination", "strategic planning", "resource management", "stakeholder communication"]
     },
     "Junior Developer": {
