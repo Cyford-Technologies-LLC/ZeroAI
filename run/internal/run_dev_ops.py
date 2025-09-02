@@ -234,11 +234,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     router = get_router()
     project_config = load_project_config(args.project, project_root)
-    execute_devops_task(router, args, project_config) not args.repo and project_config.get("repository"):
-            args.repo = project_config.get("repository")
-
-        # Use the branch from the config if not specified on the command line
-        if not args.branch and project_config.get("default_branch"):
+    execute_devops_task(router, args, project_config)
             args.branch = project_config.get("default_branch")
 
         # Initialize peer discovery and router
