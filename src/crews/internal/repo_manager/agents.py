@@ -11,7 +11,9 @@ from src.utils.memory import Memory
 
 # Assume config is correctly loaded from the root directory
 from src.config import config
-from src.utils.llm_utils import get_llm_for_role
+
+
+from src.utils.tool_initializer import get_universal_tools
 
 # Create the console instance so it can be used in this module
 console = Console()
@@ -21,7 +23,7 @@ def get_repo_manager_llm(router: DistributedRouter, category: str = "repo_manage
                          preferred_models: Optional[List] = None) -> Any:
     # (function implementation remains the same)
     # ...
-    llm = get_llm_for_role(category, router, preferred_models)
+    llm = router.get_llm_for_role("devops_diagnostician")
     console.print(
         f"🔗 {category.capitalize()} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
         style="blue")
