@@ -175,6 +175,7 @@ def execute_devops_task(router, args, project_config):
             "verbose": args.verbose,
             "dry_run": args.dry_run,
             "task_id": task_id,
+            "project_id": args.project,
         }
 
         # Redirect stdout to capture verbose logs
@@ -193,21 +194,19 @@ def execute_devops_task(router, args, project_config):
 
         if result and result.get("success"):
             console.print(f"\n✅ [bold green]DevOps Task completed successfully![/bold green]")
+            if result.get("result"):
+                console.print(result["result"])
         else:
             console.print(f"\n❌ [bold red]DevOps Task failed.[/bold red]")
 
             # Handle diagnostics after task failure
             console.print("\n🔬 [bold blue]Running Diagnostic Crew to analyze failure...[/bold blue]")
 
-            # The full_log_output is captured, but diagnostics now depends on the internal crew's
-            # diagnostics module, which should be part of the crew's workflow.
-            # The following diagnostic logic may need to be moved or adapted
-            # based on how the internal crew reports errors.
             full_log_output = log_stream.getvalue()
 
             # Placeholder for diagnostic logic:
             console.print(f"Diagnostic report based on log output:\n{full_log_output}", style="yellow")
-            if 'error' in result:
+            if result and 'error' in result:
                  console.print(f"Error from result: {result['error']}", style="red")
 
         return result
@@ -217,7 +216,6 @@ def execute_devops_task(router, args, project_config):
         console.print(f"\n❌ [bold red]An unexpected error occurred during DevOps task execution: {e}[/bold red]")
         console.print(traceback.format_exc(), style="red")
         return {"success": False, "error": str(e)}
-
 
 
 def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> dict[str, Any]:
@@ -230,18 +228,41 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> dict[str, Any]:
 
 # Main entry point for the script
 if __name__ == "__main__":
-    parser = setup_arg_parser()
-    args = parser.parse_args()
-    router = get_router()
-    project_config = load_project_config(args.project, project_root)
-    execute_devops_task(router, args, project_config)eturned None)'
+    try:
+        parser = setup_arg_parser()
+        args = parser.parse_args()
+        
+        # Load project config, which now uses the dynamic path and project_root
+        project_config = load_project_config(args.project, project_root)
+
+        # Use the repository from the config if not specified on the command line
+        if not args.repo and project_config.get("repository"):
+            args.repo = project_config.get("repository")
+
+        # Use the branch from the config if not specified on the command line
+        if not args.branch and project_config.get("default_branch"):
+            args.branch = project_config.get("default_branch")
+
+        # Initialize peer discovery and router
+        discovery = PeerDiscovery()
+        router = get_router()
+
+        # Execute the task
+        result = execute_devops_task(router, args, project_config)
+
+        console.print("\n--- Final Result ---")
+        # Check if result is not None before trying to call .get()
+        if result and result.get("success"):
+            console.print(result.get("message", "Success"), style="green")
+            if result.get("result"):
+                console.print(result["result"])
+        else:
+            # Provide a default error message if result is None
+            error_message = result.get('error') if result else 'Unknown Error (Task function returned None)'
             console.print(f"Error: {error_message}", style="red")
             sys.exit(1)
 
     except Exception as e:
         console.print(f"\n❌ [bold red]Execution failed[/bold red]")
         console.print(f"Reason: {e}", style="red")
-        logger.error(f"Execution failed: {e}", exc_info=True)
         sys.exit(1)
-
-
