@@ -191,13 +191,13 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory."
-             "The Project given to you can be used to find yaml file in the specific directory. Example if the project is cyford/zeroai then the project would be in knowledge/internal_crew/cyford/zeroai/project_config.yaml"
-             f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml (use relative path, not absolute path starting with /)"
-             "make sure you read all yamls in project directory till it is memorized"
-             "you will answer all project related details "
-             f"IMPORTANT: If repository URL was provided in command ({repository}), use that URL. Otherwise use the URL from project config file."
-             "if the answer do not exist, say we do not have that information. do not make any details up or say anything not true"
+        goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory. "
+             "IMPORTANT: Project config files are located at knowledge/internal_crew/{project_location}/project_config.yaml where {project_location} follows the format 'company/project' (e.g., cyford/zeroai). "
+             "Always use the EXACT relative path format: knowledge/internal_crew/cyford/zeroai/project_config.yaml (never use absolute paths starting with /). "
+             "Read all YAML files in the project directory until memorized. "
+             "Answer all project-related details accurately. "
+             f"IMPORTANT: If repository URL was provided in command ({repository}), use that URL. Otherwise use the URL from project config file. "
+             "If information doesn't exist, say 'we do not have that information' - never make up details. "
              "You can delegate tasks to other team members when needed using the delegation tool.",
         backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
         llm=llm,
