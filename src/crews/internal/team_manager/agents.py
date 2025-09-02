@@ -194,7 +194,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
 
     console.print(f"👥 Total coworkers loaded: {len(all_coworkers)}", style="blue")
     for coworker in all_coworkers:
-        console.print(f"  - {coworker.role} ({coworker.name})", style="dim")
+        console.print(f"  - {coworker.role}", style="dim")
     return all_coworkers
 
 # --- End of Helper function ---
