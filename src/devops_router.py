@@ -38,7 +38,7 @@ class DevOpsDistributedRouter(DistributedRouter):
         start_time = time.time()
         while not self.peer_discovery.get_peers() and (time.time() - start_time) < max_wait:
             console.print(f"Waiting for peers... ({int(time.time() - start_time)}s)", style="yellow")
-            time.sleep(1)
+            time.sleep(0)
         
         if self.peer_discovery.get_peers():
             console.print(f"Found {len(self.peer_discovery.get_peers())} peers in {int(time.time() - start_time)}s", style="green")
@@ -201,7 +201,7 @@ def get_router():
         
         # Wait a bit more to ensure the discovery cycle completes
         while not peer_discovery_instance.get_peers() and (time.time() - start_time) < timeout:
-            time.sleep(0.5)
+            time.sleep(0)
         
         if peer_discovery_instance.get_peers():
             console.print(f"Found {len(peer_discovery_instance.get_peers())} peers during router initialization", style="green")
