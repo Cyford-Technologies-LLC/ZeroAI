@@ -63,6 +63,9 @@ clear ; python3 run/examples/advanced_analysis.py
 # Simple task
 python run/internal/run_dev_ops.py "Fix a simple bug in the login form validation"
 
+# Run as module (recommended for Docker)
+python -m run.internal.run_dev_ops "Fix a simple bug in the login form validation"
+
 # With category specification
 python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
 
@@ -84,6 +87,9 @@ python run/internal/run_dev_ops.py "Fix a bug in the code where user login fails
 # Category-specific development task
 cd /opt/ZeroAI
 python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
+
+# Docker container usage (module format)
+docker exec -it zeroai_api-prod python -m run.internal.run_dev_ops "Task description"
 ```
 
 ## Learning System Commands

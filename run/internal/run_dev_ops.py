@@ -9,13 +9,18 @@ It provides a secure command-line interface to trigger internal maintenance task
 
 import sys
 import os
+from pathlib import Path
+
+# Add the project root to the Python path FIRST to make imports work
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 import argparse
 import json
 import time
 import uuid
 import logging
 import traceback
-from pathlib import Path
 from rich.console import Console
 import yaml
 from src.crews.internal.diagnostics.agents import create_diagnostic_agent
@@ -38,10 +43,6 @@ crew_type = os.getenv("CREW_TYPE")
 from src.learning.task_manager import TaskManager
 
 task_manager = TaskManager()
-
-# Add the project root to the Python path to make imports work
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
 
 # Configure console for rich output
 console = Console()
