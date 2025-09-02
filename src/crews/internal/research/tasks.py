@@ -43,16 +43,19 @@ def internal_analysis_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
 
 def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     user_question = inputs.get('topic', inputs.get('question', 'general project inquiry'))
+    project_location = inputs.get('project_id', 'unknown')
     
     return Task(
         description=f"""
         Answer the user's question about the project in a conversational, helpful manner.
         User question: {user_question}
+        Project location: {project_location}
         
         STEP-BY-STEP PROCESS:
         1. FIRST: Check local knowledge files using File Tool:
-           - Read knowledge/internal_crew/cyford/zeroai/project_config.yaml
-           - Check other files in knowledge/ directory if needed
+           - Browse knowledge/ directory for general information
+           - For project-specific info: knowledge/internal_crew/{project_location}/project_config.yaml
+           - ALWAYS use relative paths (never absolute paths starting with /)
         2. Use your memory to recall previously learned information
         3. ONLY if local files don't have the answer, then consider other tools
         4. Provide a natural, conversational answer to the user's question
@@ -63,6 +66,7 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
         - If asking about a company, explain what they do and their projects
         - Be concise but informative
         - Prioritize local knowledge over external sources
+        - Adapt to any project by using the project_location variable
         
         Remember: You are having a conversation with a human, not providing a data dump.
         """,
