@@ -6,39 +6,47 @@ from typing import Dict, Any
 def internal_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
     topic = inputs.get('topic', 'general project research')
+    project_location = inputs.get('project_id', 'unknown')
     
     return Task(
         description=f"""
-        Perform focused internal research for the project.
+        Gather detailed information on internal project specifics.
         Working directory: {working_dir}
+        Research topic: {topic}
+        Project location: {project_location}
+        
+        INTERNAL RESEARCH TASKS:
+        1. Read project configuration files from knowledge/internal_crew/{project_location}/
+        2. Analyze project structure and components
+        3. Review internal documentation and README files
+        4. Extract key project details, dependencies, and settings
+        5. Document all findings in structured format
+        
+        Focus on internal project files and configurations.
+        Sign off all responses with 'Internal Research Specialist'.
+        """,
+        agent=agent,
+        expected_output="A comprehensive internal research report with project details, structure analysis, and key findings signed by Internal Research Specialist."
+    )
+
+def online_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
+    topic = inputs.get('topic', 'general online research')
+    
+    return Task(
+        description=f"""
+        Perform comprehensive online searches to find external information.
         Research topic: {topic}
         
         Tasks:
-        1. Analyze project structure and configuration files
-        2. Review documentation and README files
-        3. Identify key project components and dependencies
-        4. Document findings in a structured format
-        """,
-        agent=agent,
-        expected_output="A comprehensive research report with project details, structure analysis, and key findings."
-    )
-
-def internal_analysis_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
-    topic = inputs.get('topic', 'project analysis')
-    
-    return Task(
-        description=f"""
-        Analyze the research findings and provide actionable insights.
-        Project context: {topic}
+        1. Search for relevant online information about the topic
+        2. Find external documentation and resources
+        3. Gather information from web sources
+        4. Provide search results with source URLs
         
-        Tasks:
-        1. Review the research report from the internal researcher
-        2. Identify key patterns and insights
-        3. Highlight potential issues or opportunities
-        4. Provide recommendations for next steps
+        Focus on external sources and web-based information.
         """,
         agent=agent,
-        expected_output="An analytical summary with key insights, recommendations, and actionable next steps based on the research findings."
+        expected_output="Comprehensive online search results with source URLs and external information findings."
     )
 
 def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
@@ -47,29 +55,28 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     
     return Task(
         description=f"""
-        Answer the user's question about the project in a conversational, helpful manner.
+        Coordinate research tasks and provide final answers to user questions.
         User question: {user_question}
         Project location: {project_location}
         
-        STEP-BY-STEP PROCESS:
+        COORDINATION PROCESS:
         1. FIRST: Check local knowledge files using File Tool:
            - Browse knowledge/ directory for general information
            - For project-specific info: knowledge/internal_crew/{project_location}/project_config.yaml
            - ALWAYS use relative paths (never absolute paths starting with /)
         2. Use your memory to recall previously learned information
-        3. ONLY if local files don't have the answer, then consider other tools
+        3. Coordinate with team members if needed using delegation tool
         4. Provide a natural, conversational answer to the user's question
         
         CRITICAL INSTRUCTIONS:
         - NEVER return raw file contents, YAML, JSON, or technical dumps
         - Interpret the information and explain it in human-friendly terms
-        - If asking about a company, explain what they do and their projects
+        - Coordinate research efforts and synthesize findings
         - Be concise but informative
         - Prioritize local knowledge over external sources
-        - Adapt to any project by using the project_location variable
         
-        Remember: You are having a conversation with a human, not providing a data dump.
+        Remember: You are managing the research process and providing final answers.
         """,
         agent=agent,
-        expected_output="A complete answer to the user's request with accurate project information."
+        expected_output="A complete coordinated answer to the user's request with accurate project information."
     )

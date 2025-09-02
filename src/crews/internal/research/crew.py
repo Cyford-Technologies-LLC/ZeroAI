@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.research.agents  import create_project_manager_agent , create_internal_researcher_agent, create_online_researcher_agent
-from src.crews.internal.research.tasks import internal_research_task, internal_analysis_task, project_management_task
+from src.crews.internal.research.tasks import internal_research_task, online_research_task, project_management_task
 
 def get_research_crew(router, tools, project_config, use_new_memory=False):
     """
@@ -30,19 +30,20 @@ def get_research_crew(router, tools, project_config, use_new_memory=False):
 
 
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
-    researcher_agent = create_internal_researcher_agent(router, inputs)
-    analyst_agent = create_online_researcher_agent(router, inputs)
-    # Fixed: Call the function instead of just referencing it
-    project_manager_agent = create_project_manager_agent(router, inputs)
+    # Create agents with proper role assignments
+    internal_researcher = create_internal_researcher_agent(router, inputs)
+    online_researcher = create_online_researcher_agent(router, inputs)
+    project_manager = create_project_manager_agent(router, inputs)
 
+    # Create tasks specific to each agent's role
     tasks = [
-        internal_research_task(researcher_agent, inputs),
-        internal_analysis_task(analyst_agent, inputs),
-        project_management_task(project_manager_agent, inputs),
+        internal_research_task(internal_researcher, inputs),
+        online_research_task(online_researcher, inputs),
+        project_management_task(project_manager, inputs),
     ]
 
     return Crew(
-        agents=[researcher_agent, analyst_agent, project_manager_agent],
+        agents=[internal_researcher, online_researcher, project_manager],
         tasks=tasks,
         process=Process.sequential,
         verbose=config.agents.verbose,
