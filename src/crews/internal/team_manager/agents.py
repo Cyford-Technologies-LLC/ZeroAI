@@ -158,7 +158,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
                 except Exception as e:
                     console.print(f"❌ Failed to get agent creators from {module_name}: {e}", style="red")
 
-    temp_coworkers = []
+    all_coworkers = []
     for creator_func in agent_creator_functions.values():
         sig = inspect.signature(creator_func)
         kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
@@ -169,28 +169,11 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         if 'working_dir' in sig.parameters:
             kwargs_to_pass['working_dir'] = inputs.get('working_dir')
         try:
-            temp_agent = creator_func(**kwargs_to_pass)
-            temp_coworkers.append(temp_agent)
-            console.print(f"✅ Created temporary agent: {temp_agent.role}", style="green")
+            agent = creator_func(**kwargs_to_pass)
+            all_coworkers.append(agent)
+            console.print(f"✅ Created agent: {agent.role}", style="green")
         except Exception as e:
-            console.print(f"❌ Error creating temporary agent with {creator_func.__name__}: {e}", style="red")
-
-    all_coworkers = []
-    for creator_func in agent_creator_functions.values():
-        sig = inspect.signature(creator_func)
-        kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
-        if 'coworkers' in sig.parameters:
-            kwargs_to_pass['coworkers'] = temp_coworkers
-        if 'project_config' in sig.parameters:
-            kwargs_to_pass['project_config'] = inputs.get('project_config')
-        if 'working_dir' in sig.parameters:
-            kwargs_to_pass['working_dir'] = inputs.get('working_dir')
-        try:
-            full_agent = creator_func(**kwargs_to_pass)
-            all_coworkers.append(full_agent)
-            console.print(f"✅ Created full agent: {full_agent.role}", style="green")
-        except Exception as e:
-            console.print(f"❌ Error creating full agent with {creator_func.__name__}: {e}", style="red")
+            console.print(f"❌ Error creating agent with {creator_func.__name__}: {e}", style="red")
 
     console.print(f"👥 Total coworkers loaded: {len(all_coworkers)}", style="blue")
     for coworker in all_coworkers:
