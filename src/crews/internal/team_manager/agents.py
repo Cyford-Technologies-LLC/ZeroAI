@@ -247,9 +247,8 @@ def get_manager_llmc(router: Any) -> Any:
     return manager_llm
 
 def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None,
-                              working_dir: Optional[Path] = None) -> Agent:
+                              working_dir: Optional[Path] = None, coworkers: Optional[List] = None) -> Agent:
     """Creates the Team Manager agent with memory and learning capabilities."""
-    # NOTE: coworkers will be set by the crew.py after creation to avoid circular dependency
     manager_memory = Memory()
 
     # Use the helper function to get the LLM
@@ -262,7 +261,7 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
         role="Team Manager",
         name="Samantha",
         memory=manager_memory,
-        coworkers=[],  # Will be set by crew.py after creation
+        coworkers=coworkers if coworkers is not None else [],
         learning={
             "enabled": True,
             "learning_rate": 0.05,
@@ -286,16 +285,11 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
             "team_management_best_practices.md",
             "effective_delegation.pdf"
         ],
-        expertise=[
-            "Project Management", "Team Coordination", "Strategic Planning", "Resource Allocation",
-            "Performance Monitoring", "Conflict Resolution"
-        ],
         goal=goal,
         backstory=backstory,
         llm=manager_llm,
-        tools=tools,  # Pass the tools from the function argument
-        verbose=config.agents.verbose,  # Corrected verbose flag
-        inputs=inputs,  # Add the missing inputs argument
+        tools=tools,
+        verbose=config.agents.verbose,
         allow_delegation=True
     )
 
