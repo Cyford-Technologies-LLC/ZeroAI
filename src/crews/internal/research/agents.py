@@ -85,7 +85,7 @@ def get_research_llm(router: DistributedRouter, category: str = "research",
 
 
 def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                 coworkers: Optional[List] = None) -> Agent:
+                                 coworkers: Optional[List] = None, backstory_suffix=None) -> Agent:
     """Create a project manager agent."""
     llm = get_research_llm(router, category="management")
     agent_memory = Memory()
@@ -119,7 +119,12 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory.",
+        goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory."
+             "The Project givin too you  can be used to find yaml file in the specific  directory. Example  if the project is cyford/zeroai    then the project would be in knowledge/internal_crew/cyford/zeroai/project_config.yaml"
+             f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml"
+             "make sure you read all yamls  in project directory till it is memorized"
+             "you  will answer all project related details "
+             "if the answer do not exsist,   sy  we do not have that information.   do not make any details up or say anything not true",
         backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + backstory_suffix,
         llm=llm,
         tools=all_tools,

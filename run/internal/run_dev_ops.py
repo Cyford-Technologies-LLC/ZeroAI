@@ -20,7 +20,7 @@ from rich.console import Console
 import yaml
 from src.crews.internal.diagnostics.agents import create_diagnostic_agent
 from crewai import Agent, Crew, Task, Process
-from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely
+from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely, AIOpsCrewManager
 from io import StringIO
 from ast import literal_eval
 from typing import Dict, Any, List, Optional
@@ -37,7 +37,6 @@ crew_type = os.getenv("CREW_TYPE")
 
 from src.learning.task_manager import TaskManager
 
-logger = logging.getLogger(__name__)
 task_manager = TaskManager()
 
 # Add the project root to the Python path to make imports work
@@ -221,6 +220,14 @@ def execute_devops_task(router, args, project_config):
 
 
 
+def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> dict[str, Any]:
+    """
+    Securely run the AI DevOps Crew.
+    """
+    manager = AIOpsCrewManager(router, project_id, inputs)
+    return manager.execute()
+
+
 # Main entry point for the script
 if __name__ == "__main__":
     parser = setup_arg_parser()
@@ -267,9 +274,3 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> dict[str, Any]:
-    """
-    Securely run the AI DevOps Crew.
-    """
-    manager = AIOpsCrewManager(router, project_id, inputs)
-    return manager.execute()
