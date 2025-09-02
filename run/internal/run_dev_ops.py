@@ -234,17 +234,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     router = get_router()
     project_config = load_project_config(args.project, project_root)
-    execute_devops_task(router, args, project_config)roject_config)
-
-        console.print("\n--- Final Result ---")
-        # Check if result is not None before trying to call .get()
-        if result and result.get("success"):
-            console.print(result.get("message", "Success"), style="green")
-            if result.get("result"):
-                console.print(result["result"])
-        else:
-            # Provide a default error message if result is None
-            error_message = result.get('error') if result else 'Unknown Error (Task function returned None)'
+    execute_devops_task(router, args, project_config)eturned None)'
             console.print(f"Error: {error_message}", style="red")
             sys.exit(1)
 
