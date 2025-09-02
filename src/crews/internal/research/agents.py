@@ -93,22 +93,6 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
-    # Initialize tool list
-    tool_to_add = []
-    backstory_suffix = ""
-
-    # Add Project Config Reader if available
-    if project_location and os.path.exists(f"knowledge/internal_crew/{project_location}/project_config.yaml"):
-        tool_to_add.append(ProjectConfigReaderTool(project_location=project_location))
-        backstory_suffix = f""" with access to internal documentation for project '{project_location}'."""
-    else:
-        tool_to_add.append(get_online_search_tool())
-        backstory_suffix = f"""; no project context available, operating with public knowledge only."""
-
-    # Add dynamic_github_tool instead of GithubSearchTool
-    if repository:
-        tool_to_add.append(dynamic_github_tool)
-        backstory_suffix += f" Access to GitHub repository: {repository}."
 
     all_tools = get_universal_tools(inputs, initial_tools=tools)
 
@@ -138,7 +122,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory.",
         backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + backstory_suffix,
         llm=llm,
-        tools=tools,
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=True
     )
@@ -179,7 +163,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
         backstory="""An expert at internal research, finding and documenting all project-specific information.
         All responses are signed off with 'Internal Research Specialist'""",
         llm=llm,
-        tools=(tools or []) + tool_to_add,
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=False,
     )
@@ -219,7 +203,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
         goal="Perform comprehensive online searches to find information.",
         backstory="""A specialized agent for efficient online information retrieval.""",
         llm=llm,
-        tools=tools,
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )
