@@ -212,7 +212,7 @@ class AIOpsCrewManager:
         self.project_config = self._load_project_config()
 
         # Ensure 'repository' key exists before accessing it
-        if self.repository and 'repository' not in self.project_config:
+        if 'repository' not in self.project_config:
             self.project_config['repository'] = {}
 
         # Override repository URL if provided in inputs
