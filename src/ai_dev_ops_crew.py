@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from rich.console import Console
 from rich.table import Table
+from pathvalidate import sanitize_filepath
+
 
 from crewai import Crew
 from distributed_router import DistributedRouter
@@ -282,6 +284,7 @@ class AIOpsCrewManager:
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
+            sanitized_project_id = sanitize_filepath(self.project_id)
             start_time = time.time()
             log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
             custom_logger = CustomLogger(output_file=str(log_output_path))
@@ -329,6 +332,12 @@ class AIOpsCrewManager:
 
                 repo_token_key = self.project_config.get("repository", {}).get("REPO_TOKEN_KEY")
                 repo_token = os.getenv(repo_token_key) if repo_token_key else None
+
+                # --- Debugging print statements ---
+                console.print(f"DEBUG: Token key from config: {repo_token_key}", style="magenta")
+                # --- Debugging print statements ---
+                console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
+                console.print(f"DEBUG: Looking for token with key: {repo_token_key}", style="magenta")
                 # --- End repo logic ---
 
                 task_inputs = {
