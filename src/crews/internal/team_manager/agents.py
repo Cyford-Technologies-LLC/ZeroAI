@@ -206,7 +206,7 @@ def get_manager_llmc(router: Any) -> Any:
     """
     try:
         manager_llm = OllamaLLM(
-            model="your_model_name",  # Specify the model name
+            model="llama3.1:8b",  # Specify the model name
             base_url="http://149.36.1.65:11434"
         )
         # Test the connection by getting a number of tokens
