@@ -160,7 +160,7 @@ class PeerDiscovery:
                     return PeerCapabilities(available=True, models=ollama_models)
             except requests.exceptions.RequestException as e:
                 console.print(f"❌ Failed to connect to peer {peer_name} at {ollama_ip} (Attempt {attempt + 1}/{PEER_PING_RETRIES}): {e}", style="red")
-                time.sleep(1)
+                time.sleep(0)
         console.print(f"❌ Failed to connect to peer {peer_name} after {PEER_PING_RETRIES} retries. Marking unavailable.", style="red")
         return PeerCapabilities(available=False)
 
