@@ -49,14 +49,20 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
         Answer the user's question about the project in a conversational, helpful manner.
         User question: {user_question}
         
+        STEP-BY-STEP PROCESS:
+        1. FIRST: Check local knowledge files using File Tool:
+           - Read knowledge/internal_crew/cyford/zeroai/project_config.yaml
+           - Check other files in knowledge/ directory if needed
+        2. Use your memory to recall previously learned information
+        3. ONLY if local files don't have the answer, then consider other tools
+        4. Provide a natural, conversational answer to the user's question
+        
         CRITICAL INSTRUCTIONS:
-        1. Read relevant project files to understand the context
-        2. Provide a natural, conversational answer to the user's question
-        3. NEVER return raw file contents, YAML, JSON, or technical dumps
-        4. Interpret the information and explain it in human-friendly terms
-        5. If asking about a company, explain what they do and their projects
-        6. Be concise but informative
-        7. If you don't have specific information, say so clearly
+        - NEVER return raw file contents, YAML, JSON, or technical dumps
+        - Interpret the information and explain it in human-friendly terms
+        - If asking about a company, explain what they do and their projects
+        - Be concise but informative
+        - Prioritize local knowledge over external sources
         
         Remember: You are having a conversation with a human, not providing a data dump.
         """,
