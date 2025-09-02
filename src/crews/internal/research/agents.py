@@ -125,7 +125,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
              "make sure you read all yamls  in project directory till it is memorized"
              "you  will answer all project related details "
              "if the answer do not exsist,   sy  we do not have that information.   do not make any details up or say anything not true",
-        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + backstory_suffix,
+        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
