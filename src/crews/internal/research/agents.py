@@ -193,7 +193,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         resources=[],
         goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory."
              "The Project given to you can be used to find yaml file in the specific directory. Example if the project is cyford/zeroai then the project would be in knowledge/internal_crew/cyford/zeroai/project_config.yaml"
-             f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml"
+             f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml (use relative path, not absolute path starting with /)"
              "make sure you read all yamls in project directory till it is memorized"
              "you will answer all project related details "
              f"IMPORTANT: If repository URL was provided in command ({repository}), use that URL. Otherwise use the URL from project config file."
