@@ -6,6 +6,9 @@ from src.config import config
 from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
+from rich.console import Console
+
+console = Console()
 
 
 def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], tools: List,
