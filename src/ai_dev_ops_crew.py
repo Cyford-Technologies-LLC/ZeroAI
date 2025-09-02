@@ -210,6 +210,19 @@ class AIOpsCrewManager:
 
         # Load project-specific config
         self.project_config = self._load_project_config()
+        
+        # Debug output
+        console.print(f"DEBUG: project_config type: {type(self.project_config)}", style="magenta")
+        console.print(f"DEBUG: project_config value: {self.project_config}", style="magenta")
+        
+        # Ensure project_config is not None
+        if self.project_config is None:
+            console.print("WARNING: project_config is None, creating default", style="yellow")
+            self.project_config = {
+                "project": {"name": self.project_id},
+                "repository": {},
+                "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
+            }
 
         # Ensure 'repository' key exists before accessing it
         if 'repository' not in self.project_config:
