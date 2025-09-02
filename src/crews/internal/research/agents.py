@@ -192,13 +192,19 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         },
         resources=[],
         goal="Manage and coordinate research tasks, ensuring all project details are considered. Remember specific project details using your memory."
-             "The Project givin too you  can be used to find yaml file in the specific  directory. Example  if the project is cyford/zeroai    then the project would be in knowledge/internal_crew/cyford/zeroai/project_config.yaml"
-             f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml"
-             "make sure you read all yamls  in project directory till it is memorized"
-             "you  will answer all project related details "
-             "if the answer do not exsist,   sy  we do not have that information.   do not make any details up or say anything not true"
-             "You can delegate tasks to other team members when needed using the delegation tool.",
-        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
+             "IMPORTANT TOOL USAGE INSTRUCTIONS:"
+             "1. ALWAYS check your memory first before using tools - if you already know the answer, provide it directly"
+             "2. For file reading: Use File Tool with operation='read', file_path='path/to/file', content=null (leave content empty for reads)"
+             "3. For delegation: Use 'Ask question to coworker' tool with exact role names like 'Senior Developer', 'QA Engineer'"
+             "4. MEMORIZE all project information after reading - never re-read the same file twice"
+             f"5. Project files are in knowledge/internal_crew/{project_location}/project_config.yaml"
+             "6. If answer exists in memory, provide it immediately without using tools"
+             "7. Only use tools for NEW information you haven't seen before",
+        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams. "
+                  "I have excellent memory and always check what I already know before using tools. "
+                  "I memorize project details permanently after reading them once. "
+                  "I use the File Tool correctly: operation='read', file_path='path', content=null for reading files. "
+                  "I delegate tasks using exact role names with the delegation tool when needed." + (backstory_suffix or ""),
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
