@@ -31,6 +31,10 @@ from crews.coding.agents import create_coding_developer_agent, create_qa_enginee
 from crews.tech_support.agents import create_tech_support_agent
 from crews.customer_service.agents import create_customer_service_agent
 
+# Initialize console first
+console = Console()
+logger = logging.getLogger(__name__)
+
 # --- Import learning module ---
 try:
     from learning.feedback_loop import feedback_loop, record_task_result
@@ -52,10 +56,6 @@ class UsageMetrics(BaseModel):
     prompt_tokens: Optional[int] = 0
     completion_tokens: Optional[int] = 0
     successful_requests: Optional[int] = 0
-
-
-console = Console()
-logger = logging.getLogger(__name__)
 
 
 # --- Get model preferences helper function ---
