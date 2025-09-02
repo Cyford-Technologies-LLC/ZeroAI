@@ -1,19 +1,48 @@
-# src/crews/documentation/agents.py
+# src/crews/internal/documentation/agents.py
 from crewai import Agent
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 from tools.file_tool import file_tool
+from src.utils.memory import Memory
 
-def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
+def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+    """Create a Documentation Writer agent."""
     task_description = "Generate or update documentation based on project changes."
     llm = router.get_llm_for_task(task_description)
+    agent_memory = Memory()
+
     return Agent(
         role="Documentation Writer",
+        name="William White",
+        memory=agent_memory,
+        coworkers=coworkers if coworkers is not None else [],
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["analytical", "detail-oriented", "methodical", "collaborative"],
+                "quirks": ["prefers clear instructions", "uses bullet points extensively"],
+                "communication_preferences": ["prefers direct questions", "responds with structured examples"]
+            },
+        communication_style={
+                "formality": "professional",
+                "verbosity": "descriptive",
+                "tone": "cooperative",
+                "technical_level": "expert"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
         goal="Create clear and concise documentation for software projects.",
-        backstory="A skilled technical writer who translates complex code into understandable documentation.",
+        backstory="""A skilled technical writer who translates complex code into understandable documentation. All responses are signed off with 'William White'""",
         llm=llm,
-        tools=[file_tool],
+        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )

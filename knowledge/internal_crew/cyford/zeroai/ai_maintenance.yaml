@@ -1,0 +1,57 @@
+# ai_maintenance.yaml for release structure maintenance
+
+maintenance_instructions:
+  - task: "Update release progress"
+    trigger: "Code commits to main branch"
+    actions:
+      - "Scan commit messages for references to specific goals or milestones"
+      - "Update status fields in corresponding YAML files"
+      - "Generate progress summaries for each active goal"
+
+  - task: "Create new release version"
+    trigger: "Completion of all goals in current version"
+    actions:
+      - "Create new version directory with incremented version number"
+      - "Copy template files for overview, features, and milestones"
+      - "Migrate incomplete goals to new version if applicable"
+
+  - task: "Track dependencies between goals"
+    trigger: "New goal creation or modification"
+    actions:
+      - "Analyze goal requirements for dependencies"
+      - "Update dependency fields in related goal files"
+      - "Verify consistency of dependency references"
+
+  - task: "Generate reports"
+    trigger: "Weekly or on-demand"
+    actions:
+      - "Create summary of all active goals and their status"
+      - "Highlight blockers and critical path items"
+      - "Recommend prioritization based on dependencies"
+
+file_patterns:
+  - pattern: "src/crews/"
+    relevance: "Sub-crew implementations"
+    updates:
+      - target: "goals/*/implementation.yaml"
+        field: "components.completion"
+
+  - pattern: "src/tools/"
+    relevance: "Custom tools development"
+    updates:
+      - target: "goals/custom_tools/progress.yaml"
+        field: "status"
+
+  - pattern: "tests/"
+    relevance: "Testing progress"
+    updates:
+      - target: "goals/*/testing.yaml"
+        field: "test_coverage"
+
+version_naming:
+  format: "v{major}.{minor}.{patch}.{build}"
+  rules:
+    - "Major: Breaking changes or significant feature additions"
+    - "Minor: New features with backward compatibility"
+    - "Patch: Bug fixes and minor improvements"
+    - "Build: Incremental development builds"

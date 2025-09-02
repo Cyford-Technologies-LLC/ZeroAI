@@ -1,6 +1,6 @@
 from crewai import Crew, Task
 from typing import Dict, Any
-from config import config
+from src.config import config
 from distributed_router import DistributedRouter
 from .agents import create_classifier_agent
 

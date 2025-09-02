@@ -9,7 +9,17 @@ __version__ = "1.0.0"
 __author__ = "ZeroAI Team"
 __email__ = "hello@zeroai.dev"
 
-from .zeroai import ZeroAI
-from .config import Config
+# Global variable to determine which imports to use
+import os
+CREW_TYPE = os.environ.get("CREW_TYPE", "full")
 
-__all__ = ["ZeroAI", "Config"]
+# For internal crew, avoid importing the full chain
+if CREW_TYPE == "internal":
+    # Skip importing ZeroAI and other components that cause circular imports
+    from .config import Config
+    __all__ = ["Config"]
+else:
+    # Regular imports for full functionality
+    from .zeroai import ZeroAI
+    from .config import Config
+    __all__ = ["ZeroAI", "Config"]

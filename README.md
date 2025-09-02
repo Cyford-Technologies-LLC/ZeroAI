@@ -21,31 +21,88 @@
 - **✍️ Content Creation**: Multi-agent writing and editing workflows  
 - **📊 Business Intelligence**: Market research and competitive analysis
 - **🎧 Customer Support**: Intelligent ticket routing and responses
-- **👨‍💻 Code Review**: Automated code analysis and documentation
+- **👨💻 Code Review**: Automated code analysis and documentation
 - **🤖 Personal Assistant**: Task automation and scheduling
+- **🏢 Internal Working Teams**: Automated DevOps, security, and infrastructure management
+
+## 🛠️ Internal Working Team Agents
+
+ZeroAI includes specialized internal agents that can autonomously manage your development infrastructure:
+
+### 👨💻 Developer Crew
+- **Code Researcher (Dr. Alan Parse)**: Analyzes codebases and identifies issues
+- **Senior Developer (Tony Kyles)**: Implements complex code solutions
+- **Junior Developer (Tom Kyles)**: Handles routine development tasks
+- **QA Engineer (Lara Croft)**: Ensures code quality through testing
+
+### 🔧 DevOps & Infrastructure
+- **Git Operator (Deon Sanders)**: Manages repository operations and version control
+- **Documentation Agent**: Maintains project documentation automatically
+- **Research Agent**: Gathers technical intelligence and best practices
+- **Project Manager**: Orchestrates multi-agent workflows
+
+### 🔒 Security & Maintenance
+- **Security Auditor**: Scans for vulnerabilities and compliance issues
+- **Infrastructure Monitor**: Tracks system health and performance
+- **Automated Deployment**: Handles CI/CD pipelines and releases
+
+### 🌐 Website Management
+- **Content Manager**: Updates website content and documentation
+- **SEO Optimizer**: Improves search engine visibility
+- **Performance Monitor**: Tracks website metrics and optimization
+
+These agents work together to provide a complete autonomous development and operations workforce that runs entirely on your infrastructure.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **RAM**: 16GB minimum (32GB recommended)
+- **RAM**: 16GB minimum (32GB recommended for GPU)
 - **Storage**: 10GB free space
 - **OS**: Windows, macOS, or Linux
-- **Python**: 3.8 or higher
+- **Docker**: Docker and Docker Compose installed
+- **GPU** (Optional): NVIDIA GPU with Docker GPU support for enhanced performance
 
-### 1-Minute Setup
+### 1-Minute Docker Setup
 
 ```bash
 # Clone ZeroAI
 git clone https://github.com/Cyford-Technologies-LLC/ZeroAI.git
 cd ZeroAI
 
+# For CPU-only systems
+docker-compose up -d
+
+# For GPU-enabled systems (NVIDIA)
+docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+
+# Access ZeroAI API at http://localhost:3939
+# Access ZeroAI Peer Service at http://localhost:8080
+```
+
+### Windows Installation
+
+```cmd
+# Clone ZeroAI
+git clone https://github.com/Cyford-Technologies-LLC/ZeroAI.git
+cd ZeroAI
+
+# For CPU-only systems
+docker-compose up -d
+
+# For GPU-enabled systems (NVIDIA with WSL2)
+docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+```
+
+### Manual Setup (Alternative)
+
+```bash
 # Install Ollama (choose your platform)
 # Linux/Mac:
 curl -fsSL https://ollama.ai/install.sh | sh
 # Windows: Download from https://ollama.ai/download
 
 # Download AI model
-ollama pull llama3.1:8b
+ollama pull llama3.2:1b
 ollama serve
 
 # Install Python dependencies
@@ -70,6 +127,18 @@ result = crew.kickoff(inputs={
 })
 
 print(result)
+```
+
+### Internal DevOps Crew
+```bash
+# Run internal development tasks
+python run/internal/run_dev_ops.py "Fix login validation bug"
+
+# With specific project and repository
+python run/internal/run_dev_ops.py --project=myapp --repo=https://github.com/user/repo.git "Add error handling"
+
+# Dry run for testing
+python run/internal/run_dev_ops.py --dry-run "Test task without changes"
 ```
 
 ### Smart Hybrid Mode
@@ -104,11 +173,23 @@ result2 = zero.process("Comprehensive market analysis with strategic recommendat
 ZeroAI/
 ├── src/                    # Core ZeroAI framework
 │   ├── agents/            # Pre-built agent templates
+│   ├── crews/             # Agent crew definitions
+│   │   ├── internal/      # Internal working team agents
+│   │   │   ├── developer/ # Development crew
+│   │   │   ├── repo_manager/ # Repository management
+│   │   │   ├── research/  # Research and analysis
+│   │   │   └── documentation/ # Documentation crew
+│   │   └── public/        # Public-facing crews
 │   ├── tasks/             # Task definitions
 │   ├── providers/         # GPU and cloud providers
 │   └── zeroai.py          # Main ZeroAI class
+├── API/                   # REST API endpoints
+├── run/                   # Execution scripts
+│   └── internal/          # Internal crew runners
 ├── examples/              # Ready-to-run examples
 ├── config/                # Configuration files
+├── docker-compose.yml     # Main Docker configuration
+├── docker-compose.gpu.override.yml # GPU support
 ├── docs/                  # Comprehensive documentation
 └── tests/                 # Test suite
 ```

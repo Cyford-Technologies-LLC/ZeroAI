@@ -1,7 +1,7 @@
 # Path: crews/tech_support/agents.py
 
 from crewai import Agent
-from config import config
+from src.config import config
 from distributed_router import DistributedRouter # Import router
 from langchain_community.llms.ollama import Ollama # If you use it for the Agent llm
 

@@ -67,7 +67,7 @@ class SmartRouter:
             if not self.prime_url.endswith('/api'):
                 return f"{self.prime_url}/api"
             return self.prime_url
-        return "http://localhost:11434"
+        return "http://ollama:11434"
 
 # Global router instance
 router = SmartRouter()

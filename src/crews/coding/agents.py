@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from rich.console import Console
 from crewai import Agent
 from langchain_community.llms.ollama import Ollama
-from config import config
+from src.config import config
 from distributed_router import DistributedRouter
 
 console = Console()

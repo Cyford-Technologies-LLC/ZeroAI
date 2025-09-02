@@ -2,7 +2,7 @@ from crewai import Agent
 from crewai.tools import BaseTool
 from typing import Dict, Any, Optional, List
 from distributed_router import DistributedRouter
-from config import config
+from src.config import config
 
 
 class TechnicalSupportTool(BaseTool):

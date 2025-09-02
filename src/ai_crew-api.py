@@ -12,7 +12,7 @@ from pathlib import Path
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import config
+from src.config import config
 from distributed_router import distributed_router
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task

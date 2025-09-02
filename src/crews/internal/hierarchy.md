@@ -73,7 +73,8 @@ The next step is to begin implementing the contents of these sub-crews and tools
 │   │           └── crew.py
 │   ├── tools/
 │   │   └── git_tool.py           # Contains GitTool and FileTool
-│   └── your_secure_internal_router_setup.py # Secure router config
+│   ├── your_secure_internal_router_setup.py # Secure router config
+│   └── learning
 ├── run/
 │   └── internal/
 │       └── run_dev_ops.py        # Secure internal trigger script
@@ -94,21 +95,110 @@ The next step is to begin implementing the contents of these sub-crews and tools
 └── src/
     └── ai_dev_ops_crew.py              # Reads YAML files to configure crew tasks
 
+1. Developer Crew (Code Researcher, Senior Developer, QA Engineer)
+Best: codellama:13b (specialized for code generation)
+Next: llama3.1:8b (strong generalist with good coding)
+Fallback: llama3.2:latest (capable generalist)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+2. Research Crew (Internal Research Agent)
+Best: llama3.1:8b (powerful reasoning and analysis)
+Next: llama3.2:latest (strong generalist for research)
+Fallback: gemma2:2b (smaller, still capable for many research tasks)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+3. Documentation Crew (Documentation Agent)
+Best: llama3.2:latest (strong language generation and summarization)
+Next: llama3.1:8b (good alternative for text generation)
+Fallback: gemma2:2b (efficient for text tasks)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+4. DevOps Orchestrator Agent
+Best: llama3.2:latest (superior reasoning and task delegation)
+Next: llama3.1:8b (powerful alternative for orchestration)
+Fallback: gemma2:2b (capable of coordinating simpler tasks)
+Slowest: llama3.2:1b (lightweight, local fallback) 
+5. Repo Management Crew (Repo Manager Agent)
+Best: llama3.2:latest (well-rounded for general repo tasks)
+Next: llama3.1:8b (capable for standard instructions)
+Fallback: gemma2:2b (efficient for basic operations)
+Slowest: llama3.2:1b (lightweight, local fallback)
+
+
+
+
+
+
+
+## Token-Based Learning
+The token-based learning you mentioned could be implemented as part of the feedback loop. Here's how it would work:
+1. **Token Collection**: Each task execution collects "tokens" (success points) based on:
+    - Task completion success
+    - Code quality (passing tests)
+    - Time efficiency
+    - Resource efficiency
+
+2. **Token Distribution**: Tokens are distributed to:
+    - The models used (to improve model preference rankings)
+    - The keyword mappings used (to improve category detection)
+    - The peers used (to improve routing)
+
+3. **Preference Adjustment**: As tokens accumulate, the system adjusts its preferences to favor higher-scoring components.
+
+This creates a reinforcement learning mechanism where successful strategies are rewarded and become more likely to be chosen in the future.
+Would you like me to focus on implementing any specific part of this system first?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #  test example
 python run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
 
 
+cd /opt/ZeroAI
+python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
+
+
+python run/internal/analyze_learning.py --action=summary
+
+
+python run/internal/analyze_learning.py --action=models
 
 
 
+# Basic usage
+python run/internal/run_dev_ops.py "Fix a simple bug in the login form validation"
+
+# With category
+python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
+
+# With project and repository
+python run/internal/run_dev_ops.py --project=zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "Add error handling to the peer discovery system"
+
+# Dry run for testing
+python run/internal/run_dev_ops.py --dry-run "Test task that won't make changes"
+
+# Verbose output
+python run/internal/run_dev_ops.py -v "Task with detailed logging"
+
+# Simple task
+python run/internal/run_dev_ops.py "Fix a simple bug in the login form validation"
+
+# With category and project
+python run/internal/run_dev_ops.py --project=zeroai --category=developer "Add error handling to the peer discovery system"
+
+# Dry run for testing
+python run/internal/run_dev_ops.py --dry-run "Test task that won't make changes"
 
 
-
-
-
-
-
-
-
+python run/internal/analyze_learning.py --action=summary
+python run/internal/analyze_learning.py --action=models

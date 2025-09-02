@@ -1,45 +1,150 @@
-# src/crews/developer/agents.py
-from crewai import Agent
-from typing import Dict, Any
-from distributed_router import DistributedRouter
-from config import config
-from tools.file_tool import file_tool
+# src/crews/internal/code_fixer/agents.py
 
-def create_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    task_description = "Analyze bug reports, code, and project context."
-    llm = router.get_llm_for_task(task_description)
+from crewai import Agent
+from typing import Dict, Any, Optional, List
+from distributed_router import DistributedRouter
+from src.config import config
+from src.crews.internal.tools.git_tool import GitTool, FileTool # Corrected import
+from src.utils.memory import Memory
+from langchain_ollama import OllamaLLM
+from rich.console import Console
+
+console = Console()
+
+def get_code_fixer_llm(router: DistributedRouter, category: str) -> Any:
+    """
+    Selects the optimal LLM for code fixer tasks,
+    with a fallback mechanism.
+    """
+    llm = None
+    try:
+        task_description = f"Perform {category} tasks."
+        llm = router.get_llm_for_task(task_description)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for {category} agent via router: {e}", style="yellow")
+        # Ensure the fallback uses the correct config for base_url and model name
+        llm = OllamaLLM(model=config.model.name, base_url=config.model.base_url)
+
+    if not llm:
+        raise ValueError(f"Failed to get LLM for {category} agent after all attempts.")
+
+    console.print(
+        f"🔗 {category.capitalize()} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    return llm
+
+def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+    llm = get_code_fixer_llm(router, category="code_research")
+    agent_memory = Memory()
     return Agent(
         role="Code Researcher",
+        name="Timothy",
+        memory=agent_memory,
+        coworkers=coworkers if coworkers is not None else [],
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["analytical", "detail-oriented", "methodical", "curious"],
+                "quirks": ["uses scientific analogies", "responds with examples", "starts sentences with 'Hmm, let's see...'"],
+                "communication_preferences": ["prefers open-ended questions", "responds with potential solutions"]
+            },
+        communication_style={
+                "formality": "semi-professional",
+                "verbosity": "descriptive",
+                "tone": "cooperative",
+                "technical_level": "intermediate"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
         goal="Understand and analyze bug reports to find the root cause.",
-        backstory="An expert in software analysis, specializing in finding code issues.",
+        backstory="An expert in software analysis, specializing in finding code issues. Responses are signed with the name Timothy.",
         llm=llm,
-        tools=[file_tool],
+        tools=tools,
         verbose=config.agents.verbose,
-        allow_delegation=False
+        allow_delegation=False,
     )
 
-def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    task_description = "Write and apply code changes to fix bugs."
-    llm = router.get_llm_for_task(task_description)
+
+def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+    llm = get_code_fixer_llm(router, category="coding")
+    agent_memory = Memory()
     return Agent(
         role="Senior Developer",
+        name="Anthony Gates",
+        memory=agent_memory,
+        coworkers=coworkers if coworkers is not None else [],
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["experienced", "problem-solver", "mentor"],
+                "quirks": ["prefers clean code", "uses analogies to explain complex issues"],
+                "communication_preferences": ["prefers direct questions", "responds with practical examples"]
+            },
+        communication_style={
+                "formality": "professional",
+                "verbosity": "descriptive",
+                "tone": "confident",
+                "technical_level": "expert"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
         goal="Implement bug fixes and write clean, maintainable code.",
-        backstory="A seasoned developer with a knack for solving complex coding problems.",
+        backstory="A seasoned developer with a knack for solving complex coding problems. Responses are signed with the name Anthony Gates.",
         llm=llm,
-        tools=[file_tool],
+        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )
 
-def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    task_description = "Write and run tests to verify code fixes."
-    llm = router.get_llm_for_task(task_description)
+
+def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+    llm = get_code_fixer_llm(router, category="testing")
+    agent_memory = Memory()
     return Agent(
         role="QA Engineer",
+        name="Emily",
+        memory=agent_memory,
+        coworkers=coworkers if coworkers is not None else [],
+        learning={
+                "enabled": True,
+                "learning_rate": 0.05,
+                "feedback_incorporation": "immediate",
+                "adaptation_strategy": "progressive"
+            },
+        personality={
+                "traits": ["meticulous", "thorough", "critical thinker"],
+                "quirks": ["prefers clear instructions", "questions assumptions"],
+                "communication_preferences": ["prefers direct questions", "responds with potential issues"]
+            },
+        communication_style={
+                "formality": "professional",
+                "verbosity": "detailed",
+                "tone": "objective",
+                "technical_level": "expert"
+            },
+        resources=[
+                "testing_frameworks.md",
+                "code_quality_guidelines.pdf",
+                "https://testing-best-practices.com"
+            ],
         goal="Ensure all bug fixes are verified with comprehensive tests.",
-        backstory="A meticulous QA engineer who ensures code quality and correctness.",
+        backstory="A meticulous QA engineer who ensures code quality and correctness. Responses are signed with the name Emily.",
         llm=llm,
-        tools=[file_tool],
+        tools=tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )

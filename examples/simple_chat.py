@@ -16,7 +16,7 @@ from ai_crew import AICrewManager
 from distributed_router import distributed_router, DistributedRouter
 from peer_discovery import PeerDiscovery
 from langchain_ollama import ChatOllama
-from config import config
+from src.config import config
 from rich.console import Console
 from langchain_core.messages import HumanMessage, SystemMessage
 

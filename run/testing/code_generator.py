@@ -6,7 +6,7 @@ import litellm
 
 # Fix: Import from the new package as suggested by the deprecation warning
 from langchain_ollama import ChatOllama
-from config import config
+from src.config import config
 from rich.console import Console
 from peer_discovery import PeerDiscovery
 from distributed_router import DistributedRouter

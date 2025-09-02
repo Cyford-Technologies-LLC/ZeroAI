@@ -12,12 +12,23 @@ import json
 import warnings
 from functools import lru_cache
 
-# FIX: Correct the import to get the PeerDiscovery class directly
 from peer_discovery import PeerDiscovery, PeerNode
 from langchain_community.llms.ollama import Ollama
 from config import config
 
 console = Console()
+
+# Debug levels: 0=silent, 1=errors, 2=warnings, 3=info, 4=debug, 5=verbose
+ROUTER_DEBUG_LEVEL = int(os.getenv('ROUTER_DEBUG_LEVEL', '3'))
+ENABLE_ROUTER_LOGGING = os.getenv('ENABLE_ROUTER_LOGGING', 'true').lower() == 'true'
+
+def log_router(message: str, level: int = 3, style: str = None):
+    """Log router messages based on debug level"""
+    if ENABLE_ROUTER_LOGGING and level <= ROUTER_DEBUG_LEVEL:
+        if style:
+            console.print(message, style=style)
+        else:
+            console.print(message)
 
 # Mapping model names to their approximate system memory requirements in GB
 MODEL_MEMORY_MAP = {
@@ -30,9 +41,46 @@ MODEL_MEMORY_MAP = {
     "llava:7b": 5.0,
 }
 
-# --- Shared instance of PeerDiscovery for the entire application lifecycle ---
-# FIX: Instantiate the class directly
-peer_discovery_instance = PeerDiscovery()
+# --- Model preference lists based on agent roles ---
+MODEL_PREFERENCES = {
+    "developer": ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
+    "research": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "documentation": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "devops_orchestrator": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "repo_manager": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "general": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llava:7b", "llama3.2:1b"],
+    "customer_service": ["llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "tech_support": ["llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
+}
+
+KEYWORDS_TO_CATEGORY = {
+    "coding": "developer",
+    "php": "developer",
+    "python": "developer",
+    "javascript": "developer",
+    "html": "developer",
+    "css": "developer",
+    "sql": "developer",
+    "fix": "developer",
+    "bug": "developer",
+    "issue": "developer",
+    "research": "research",
+    "analyze": "research",
+    "documentation": "documentation",
+    "write": "documentation",
+    "orchestrator": "devops_orchestrator",
+    "maintenance": "general",
+    "health": "general",
+    "project health": "general",
+    "dependencies": "general",
+    "test suites": "general",
+    "support": "tech_support",
+    "customer": "customer_service",
+    "greeting": "customer_service"
+}
+
+peer_discovery_instance = PeerDiscovery.get_instance()
 
 
 class DistributedRouter:
@@ -43,23 +91,17 @@ class DistributedRouter:
         self.peer_discovery.start_discovery_service()
 
     def _get_local_ollama_models(self) -> List[str]:
-        """
-        Reads the pre-pulled models from the generated JSON file.
-        This list is already filtered for local memory requirements.
-        """
         try:
             with open("pulled_models.json", "r") as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
+            log_router("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", 2, "yellow")
             return []
 
-    # Add the get_local_llm() method here
-    def get_local_llm(self, model_name: str) -> Optional[Ollama]:
-        """Gets an Ollama LLM instance for a specific model running on localhost."""
+    def get_local_llm(self, model_name: str, base_url: str = None) -> Optional[Ollama]:
         if model_name in self._get_local_ollama_models():
-            base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-            # FIX: Ensure model name is prefixed for LiteLLM compatibility
+            if base_url is None:
+                base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
             prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
                 "model": prefixed_model_name,
@@ -68,142 +110,109 @@ class DistributedRouter:
             }
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]",
-                              style="blue")
+                log_router(f"🔗 Using local LLM for '{model_name}' at {base_url}", 4, "blue")
                 return Ollama(**llm_config)
         return None
 
-    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None) -> Tuple[
-        str, str, str]:
+    def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
+                                       model_preference_list: Optional[List[str]] = None) -> Tuple[
+        Optional[str], Optional[str], Optional[str]]:
         if failed_peers is None:
             failed_peers = []
 
+        if model_preference_list is None:
+            prompt_lower = prompt.lower()
+            category = next((cat for key, cat in KEYWORDS_TO_CATEGORY.items() if key in prompt_lower), "default")
+            model_preference_list = MODEL_PREFERENCES.get(category, MODEL_PREFERENCES["default"])
+
         all_peers = self.peer_discovery.get_peers()
-        is_coding_task = any(
-            keyword in prompt.lower() for keyword in ['code', 'php', 'python', 'javascript', 'html', 'css', 'sql']
-        )
-
-        model_preference = [
-            "codellama:13b", "llama3.1:8b", "codellama:7b", "gemma2:2b",
-            "llama3.2:latest", "llava:7b", "llama3.2:1b"
-        ] if is_coding_task else [
-            "llama3.1:8b", "llama3.2:latest", "gemma2:2b",
-            "llava:7b", "llama3.2:1b"
-        ]
-
         all_candidates = []
         local_ollama_models = self._get_local_ollama_models()
+        
+        log_router(f"🔎 Analyzing peers for task with model preference: {model_preference_list}", 4, "blue")
 
         for peer in all_peers:
             if peer.name in failed_peers:
+                log_router(f"   🚫 Skipping failed peer: {peer.name}", 4, "yellow")
                 continue
 
             available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
+            log_router(f"   Peer {peer.name} reports available models: {available_models}", 5)
 
-            for model in model_preference:
+            if not available_models:
+                log_router(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", 4, "red")
+                continue
+
+            for model in model_preference_list:
                 if model in available_models:
                     required_memory = MODEL_MEMORY_MAP.get(model)
                     if required_memory is None:
+                        log_router(f"      - ⚠️ Skipping model {model}: memory requirements unknown.", 4, "yellow")
                         continue
 
-                    if required_memory <= peer.capabilities.memory:
+                    peer_memory = peer.capabilities.gpu_memory if peer.capabilities.gpu_available else peer.capabilities.memory
+                    if required_memory <= peer_memory:
                         all_candidates.append({
                             "peer": peer,
                             "model": model
                         })
+                        log_router(f"      - ✅ Candidate found: Model={model} on Peer={peer.name}", 5)
+                    else:
+                        log_router(f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).", 5)
+                else:
+                    log_router(f"      - 🚫 Model {model} not available on peer {peer.name}.", 5)
 
-        # --- REVISED SORTING LOGIC ---
-        # Sort all candidates based on the specified priority using a more granular scoring system.
-        # Higher score is better.
         def get_score(candidate):
             peer = candidate['peer']
-
-            # Heavy weight for GPU, prioritizing peers with a GPU first.
             gpu_score = 1000 if peer.capabilities.gpu_available else 0
-
-            # Prioritize higher GPU and system memory.
             memory_score = peer.capabilities.gpu_memory * 10 + peer.capabilities.memory
-
-            # Strong penalty for high load average. Invert load_avg for sorting.
-            # A load_avg of 0 gets a high score, a high load_avg gets a low score.
             load_score = max(0, 100 - peer.capabilities.load_avg)
-
-            # Prioritize better models as a tie-breaker.
-            model_index_score = len(model_preference) - model_preference.index(candidate['model'])
-
+            model_index_score = len(model_preference_list) - model_preference_list.index(candidate['model'])
             return (gpu_score + memory_score + load_score + model_index_score)
 
         all_candidates.sort(key=get_score, reverse=True)
 
-        # Return the best candidate if found
         if all_candidates:
             best_candidate = all_candidates[0]
             peer = best_candidate['peer']
             model = best_candidate['model']
-            console.print(
-                f"Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]",
-                style="green")
+            log_router(f"✅ Optimal Endpoint Selected: Peer={peer.name}, Model={model}", 3, "green")
             return f"http://{peer.ip}:11434", peer.name, model
 
-        # If no candidates meet requirements, use a final fallback
-        console.print("❌ No suitable peer/model combination found. Falling back to smallest local model.", style="red")
-        local_peer_info = next((peer for peer in all_peers if peer.name == "local-node"), None)
-        if local_peer_info:
-            fallback_model = "llama3.2:1b"
-            return f"http://{local_peer_info.ip}:11434", "local-node", fallback_model
-
+        log_router("❌ No suitable peer/model combination found. Routing failed.", 1, "red")
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
 
-
-    def get_llm_for_task(self, prompt: str) -> Ollama:
-        """Gets an Ollama LLM instance based on the prompt using the router's logic."""
+    def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
         base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
-
-        # FIX: Add the 'ollama/' prefix for LiteLLM compatibility
-        prefixed_model_name = f"ollama/{model_name}"
-
-        # CORRECTED: Pass the model name directly, without the "ollama/" prefix
-        llm_config = {
-            "model": prefixed_model_name,
-            "base_url": base_url,
-            "temperature": config.model.temperature
-        }
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            return Ollama(**llm_config)
-
-    def get_llm_for_role(self, role: str) -> Optional[Ollama]:
-        """Gets an Ollama LLM instance based on the role using the router's logic."""
-        prompt = ""
-        if "coding" in role.lower() or "developer" in role.lower():
-            # Use a coding-focused prompt or preference for coding models
-            prompt = "Please provide code or resolve a coding issue."
-        elif "qa" in role.lower() or "quality" in role.lower():
-            # Use a general-purpose or reasoning-focused model for QA tasks
-            prompt = "Please analyze and provide a critique of a code's functionality."
-        else:
-            # Default to the general routing logic
-            prompt = "General purpose query."
-
-        # Call the existing routing logic with a specific prompt
-        try:
-            base_url, _, model_name = self.get_optimal_endpoint_and_model(prompt)
-            # Pass the model and URL directly to Ollama, as required by LangChain
+        if base_url:
+            prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
-                "model": model_name,
+                "model": prefixed_model_name,
                 "base_url": base_url,
                 "temperature": config.model.temperature
             }
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 return Ollama(**llm_config)
-        except Exception as e:
-            console.print(f"❌ Failed to get LLM for role {role}: {e}", style="red")
-            return None
+        return None
+
+    def get_llm_for_role(self, role: str) -> Optional[Ollama]:
+        prompt = f"LLM selection for a {role} role."
+        base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
+        if base_url:
+            prefixed_model_name = f"ollama/{model_name}"
+            llm_config = {
+                "model": prefixed_model_name,
+                "base_url": base_url,
+                "temperature": config.model.temperature
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                return Ollama(**llm_config)
+        return None
 
 
-# --- Use @lru_cache for dependency to reuse the same instance ---
 @lru_cache()
 def get_distributed_router_dependency() -> DistributedRouter:
     """FastAPI dependency to provide a cached instance of the DistributedRouter."""
-    return DistributedRouter(peer_discovery_instance)
+    return DistributedRouter(PeerDiscovery.get_instance())

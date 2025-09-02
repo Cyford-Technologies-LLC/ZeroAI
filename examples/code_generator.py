@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from crewai import LLM
-from config import config
+from src.config import config
 from distributed_router import distributed_router
 from agent_communication import process_code_generation
 from rich.console import Console

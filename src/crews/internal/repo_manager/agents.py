@@ -1,19 +1,102 @@
+import os
+import inspect
+from typing import Dict, Any, List, Optional
 from crewai import Agent
-from typing import Dict, Any
 from distributed_router import DistributedRouter
-from config import config
-from tools.git_tool import git_tool, file_tool
+from rich.console import Console
 
-def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any]) -> Agent:
-    task_description = "Perform Git and file system operations."
-    llm = router.get_llm_for_task(task_description)
+# Import the custom tools
+from src.tools.file_tool import FileTool
+from src.utils.memory import Memory
+
+# Assume config is correctly loaded from the root directory
+from src.config import config
+
+
+from src.utils.tool_initializer import get_universal_tools
+
+# Create the console instance so it can be used in this module
+console = Console()
+
+
+def get_repo_manager_llm(router: DistributedRouter, category: str = "repo_management",
+                         preferred_models: Optional[List] = None) -> Any:
+    # (function implementation remains the same)
+    # ...
+    llm = router.get_llm_for_role("devops_diagnostician")
+    console.print(
+        f"🔗 {category.capitalize()} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    return llm
+
+
+def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                              coworkers: Optional[List] = None) -> Agent:
+    """Create a Git Operator agent."""
+
+    agent_memory = Memory()
+    llm = get_repo_manager_llm(router, category="repo_management")
+
+    # Get repository URL from inputs
+    repo_path = inputs.get("repository")
+    repo_token_key = inputs.get("repo_token_key")
+    token = os.getenv(repo_token_key) if repo_token_key else None
+
+    # Instantiate the File tool regardless
+    working_dir = inputs.get("working_dir", "/tmp")
+    file_tool = FileTool(working_dir=working_dir)
+
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
+
+    # Check for a valid repo path and token before creating the GitTool
+    if repo_path and isinstance(repo_path, str) and repo_path.strip() and token:
+        try:
+            from src.tools.git_tool import GitTool
+            git_tool = GitTool(repo_path=repo_path)
+            all_tools.append(git_tool)
+            console.print("✅ GitTool added to the tool list.", style="green")
+        except Exception as e:
+            console.print(f"❌ Error adding GitTool: {e}", style="red")
+    else:
+        console.print(
+            "⚠️ Skipping GitTool creation: Missing valid repository URL or authentication token. Git tools will not be available.",
+            style="yellow")
+
     return Agent(
         role="Git Operator",
+        name="Deon Sanders",
+        memory=agent_memory,
+        coworkers=coworkers if coworkers is not None else [],
+        learning={
+            "enabled": True,
+            "learning_rate": 0.05,
+            "feedback_incorporation": "immediate",
+            "adaptation_strategy": "progressive"
+        },
+        personality={
+            "traits": ["precise", "efficient", "methodical", "detail-oriented"],
+            "quirks": ["prefers command-line interfaces", "avoids unnecessary conversation"],
+            "communication_preferences": ["prefers direct commands", "responds with confirmation"]
+        },
+        communication_style={
+            "formality": "professional",
+            "verbosity": "concise",
+            "tone": "authoritative",
+            "technical_level": "expert"
+        },
+        resources=[
+            "testing_frameworks.md",
+            "code_quality_guidelines.pdf",
+            "https://testing-best-practices.com"
+        ],
+        expertise=[
+            "GIT", "Bit Bucket"
+        ],
+        expertise_level=9.2,
         goal="Execute Git commands and file manipulations to manage project repositories.",
-        backstory="An automated system for performing repository management tasks.",
+        backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
         llm=llm,
-        tools=[git_tool, file_tool],
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=False
     )
-

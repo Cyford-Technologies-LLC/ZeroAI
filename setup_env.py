@@ -37,7 +37,7 @@ def main():
     env_vars["OLLAMA_BASE_URL"] = Prompt.ask(
         "Ollama server URL",
 
-        default="http://localhost:11434"
+        default="http://ollama:11434"
     )
     env_vars["DEFAULT_MODEL"] = Prompt.ask(
         "Default model name", 

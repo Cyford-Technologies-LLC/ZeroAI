@@ -1,6 +1,6 @@
 from crewai import Crew, Process, Agent
 from typing import Dict, Any, List
-from config import config
+from src.config import config
 from distributed_router import DistributedRouter
 
 from .agents import create_customer_service_agent

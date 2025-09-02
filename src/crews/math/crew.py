@@ -3,7 +3,7 @@
 from crewai import Crew, Process
 from typing import Dict, Any
 from langchain_community.llms.ollama import Ollama
-from config import config
+from src.config import config
 from .agents import create_mathematician_agent
 from .tasks import create_math_task
 from distributed_router import DistributedRouter # Import router

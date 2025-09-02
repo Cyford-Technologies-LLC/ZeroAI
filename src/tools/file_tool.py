@@ -1,12 +1,20 @@
 # src/tools/file_tool.py
 from crewai.tools import BaseTool
+from pydantic import BaseModel, Field
+from typing import Optional
 import os
+
+class FileToolInput(BaseModel):
+    operation: str = Field(description="Operation to perform: 'read' or 'write'")
+    file_path: str = Field(description="Path to the file")
+    content: Optional[str] = Field(None, description="Content for write operations (not needed for read)")
 
 class FileTool(BaseTool):
     name: str = "File Tool"
     description: str = "A tool for performing file operations like reading and writing."
+    args_schema: type[BaseModel] = FileToolInput
 
-    def _run(self, operation: str, file_path: str, content: str = None) -> str:
+    def _run(self, operation: str, file_path: str, content: Optional[str] = None) -> str:
         """Executes file operations."""
         full_path = os.path.normpath(file_path)
         if operation == "read":

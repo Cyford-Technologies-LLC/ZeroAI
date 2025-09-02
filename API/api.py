@@ -27,7 +27,6 @@ from cache_manager import cache
 
 
 
-
 # Define a placeholder class for UsageMetrics since it's removed in new CrewAI versions
 class UsageMetrics:
     def __init__(self, total_tokens=0, prompt_tokens=0, completion_tokens=0, successful_requests=0):
@@ -273,4 +272,3 @@ async def run_crew_ai_json(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-

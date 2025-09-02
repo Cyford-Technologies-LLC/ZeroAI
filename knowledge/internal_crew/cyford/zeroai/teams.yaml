@@ -1,0 +1,35 @@
+teams:
+  management:
+    - name: "Project Manager"
+      responsibilities:
+        - "Overall project coordination"
+        - "Resource allocation"
+        - "Timeline management"
+        - "Stakeholder communication"
+
+  development:
+    - name: "Developer 1"
+      role: "Senior Developer"
+      focus_areas: ["Backend", "Security"]
+      active_since: "v0.3.0"
+
+    - name: "Developer 2"
+      role: "Full Stack Developer"
+      focus_areas: ["Frontend", "API Design"]
+      active_since: "v0.3.0"
+
+    - name: "Developer 3"
+      role: "DevOps Engineer"
+      focus_areas: ["Infrastructure", "CI/CD"]
+      active_since: "v0.3.0"
+
+  ai:
+    - name: "AI Development Lead"
+      role: "AI Architect"
+      focus_areas: ["Model Selection", "Crew Design"]
+      active_since: "v0.1.0"
+
+    - name: "AI Security Specialist"
+      role: "Security Researcher"
+      focus_areas: ["Secure AI Design", "Threat Modeling"]
+      active_since: "v0.2.0"

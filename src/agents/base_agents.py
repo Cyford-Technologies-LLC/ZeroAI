@@ -1,160 +1,252 @@
-"""Base agent definitions for common use cases."""
+# src/agents/base_agents.py
 
-from crewai import Agent, LLM
-from typing import Optional, List
-from distributed_router import DistributedRouter # Import router
-from config import config # Assuming your config is accessible
+from crewai import Agent
+from typing import Dict, Any, List, Optional
+from src.config import config
 from rich.console import Console
 
 console = Console()
 
-def create_researcher(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
-    """Create a research specialist agent using the distributed router."""
-    task_description = "Conduct thorough research and gather comprehensive information on any given topic"
+def create_researcher(router, inputs: Dict[str, Any], category: str = "research") -> Agent:
+    """Create a Researcher agent with feedback loop integration."""
+    task_description = "Conduct thorough research on code, projects, and technical solutions."
+    
+    # Model preference order: llama3.1:8b -> llama3.2:latest -> gemma2:2b -> llama3.2:1b
+    preferred_models = ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
+    
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass  # Learning module not available
+    
     llm = None
     try:
-        llm = router.get_llm_for_task(task_description)
+        # Use the updated get_llm_for_task with preferred models
+        llm = router.get_llm_for_task(task_description, preferred_models)
     except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for researcher via router: {e}", style="yellow")
+        console.print(f"⚠️ Failed to get optimal LLM for researcher agent via router: {e}", style="yellow")
+        # Fall back to local model
         llm = router.get_local_llm("llama3.2:1b")
-
+    
     if not llm:
-        raise ValueError("Failed to get LLM for researcher agent.")
-
-    if not llm.model.startswith("ollama/"):
-        llm.model = f"ollama/{llm.model}"
-
+        raise ValueError("Failed to get LLM for researcher agent after all attempts.")
+    
+    console.print(
+        f"🔗 Researcher Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
     return Agent(
-        role="Senior Research Specialist",
-        goal="Conduct thorough research and gather comprehensive information on any given topic",
-        backstory="""You are a seasoned research specialist with expertise in information 
-        gathering, fact-checking, and data analysis. You excel at finding reliable sources, 
-        synthesizing complex information, and identifying key insights from large amounts of data.""",
+        role="Research Specialist",
+        goal="Analyze codebases, technical documents, and project requirements to provide thorough insights.",
+        backstory="An expert researcher with deep technical knowledge, specializing in understanding complex systems and extracting key insights.",
         llm=llm,
         verbose=config.agents.verbose,
-        allow_delegation=False,
-        max_iter=3
+        allow_delegation=False
     )
 
-
-def create_writer(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
-    """Create a professional writer agent using the distributed router."""
-    task_description = "Create clear, engaging, and well-structured written content based on research findings"
+def create_analyst(router, inputs: Dict[str, Any], category: str = "research") -> Agent:
+    """Create an Analyst agent with feedback loop integration."""
+    task_description = "Analyze research findings and provide actionable insights."
+    
+    # Model preference order: llama3.1:8b -> llama3.2:latest -> gemma2:2b -> llama3.2:1b
+    preferred_models = ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
+    
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass  # Learning module not available
+    
     llm = None
     try:
-        llm = router.get_llm_for_task(task_description)
+        # Use the updated get_llm_for_task with preferred models
+        llm = router.get_llm_for_task(task_description, preferred_models)
     except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for writer via router: {e}", style="yellow")
+        console.print(f"⚠️ Failed to get optimal LLM for analyst agent via router: {e}", style="yellow")
+        # Fall back to local model
         llm = router.get_local_llm("llama3.2:1b")
-
+    
     if not llm:
-        raise ValueError("Failed to get LLM for writer agent.")
-
-    if not llm.model.startswith("ollama/"):
-        llm.model = f"ollama/{llm.model}"
-
+        raise ValueError("Failed to get LLM for analyst agent after all attempts.")
+    
+    console.print(
+        f"🔗 Analyst Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
     return Agent(
-        role="Professional Content Writer",
-        goal="Create clear, engaging, and well-structured written content based on research findings",
-        backstory="""You are an experienced content writer with a talent for transforming 
-        complex research into accessible, engaging content. You excel at structuring information 
-        logically, maintaining reader engagement, and adapting your writing style to different audiences.""",
+        role="Research Analyst",
+        goal="Synthesize research findings into actionable insights and recommendations.",
+        backstory="A skilled analyst with expertise in interpreting complex data and research findings.",
         llm=llm,
         verbose=config.agents.verbose,
-        allow_delegation=False,
-        max_iter=3
+        allow_delegation=False
     )
 
-def create_analyst(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
-    """Create a data analyst agent using the distributed router."""
-    task_description = "Analyze data patterns, trends, and insights to provide actionable recommendations"
+def create_writer(router, inputs: Dict[str, Any], category: str = "writing") -> Agent:
+    """Create a Writer agent with feedback loop integration."""
+    task_description = "Write clear, engaging content and documentation."
+    
+    preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model and category_model not in preferred_models:
+            preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
+    
     llm = None
     try:
-        llm = router.get_llm_for_task(task_description)
+        llm = router.get_llm_for_task(task_description, preferred_models)
     except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for analyst via router: {e}", style="yellow")
+        console.print(f"⚠️ Failed to get optimal LLM for writer agent via router: {e}", style="yellow")
         llm = router.get_local_llm("llama3.2:1b")
-
+    
     if not llm:
-        raise ValueError("Failed to get LLM for analyst agent.")
-
-    if not llm.model.startswith("ollama/"):
-        llm.model = f"ollama/{llm.model}"
-
+        raise ValueError("Failed to get LLM for writer agent after all attempts.")
+    
+    console.print(
+        f"🔗 Writer Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
     return Agent(
-        role="Senior Data Analyst",
-        goal="Analyze data patterns, trends, and insights to provide actionable recommendations",
-        backstory="""You are a skilled data analyst with expertise in statistical analysis, 
-        pattern recognition, and business intelligence. You excel at interpreting complex data, 
-        identifying meaningful trends, and translating analytical findings into strategic recommendations.""",
+        role="Content Writer",
+        goal="Create clear, engaging, and well-structured written content.",
+        backstory="A skilled writer with expertise in technical communication and content creation.",
         llm=llm,
         verbose=config.agents.verbose,
-        allow_delegation=False,
-        max_iter=3
+        allow_delegation=False
     )
 
-
-def create_strategist(router: DistributedRouter, inputs: dict[str, any]) -> Agent:
-    """Create a strategic planning agent using the distributed router."""
-    task_description = "Develop comprehensive strategies and actionable plans based on research and analysis"
+def create_custom_agent(router, inputs: Dict[str, Any], role: str, goal: str, backstory: str, category: str = "general") -> Agent:
+    """Create a custom agent with specified role, goal, and backstory."""
+    task_description = f"Perform tasks as a {role}."
+    
+    preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model and category_model not in preferred_models:
+            preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
+    
     llm = None
     try:
-        llm = router.get_llm_for_task(task_description)
+        llm = router.get_llm_for_task(task_description, preferred_models)
     except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for strategist via router: {e}", style="yellow")
+        console.print(f"⚠️ Failed to get optimal LLM for {role} agent via router: {e}", style="yellow")
         llm = router.get_local_llm("llama3.2:1b")
-
+    
     if not llm:
-        raise ValueError("Failed to get LLM for strategist agent.")
-
-    if not llm.model.startswith("ollama/"):
-        llm.model = f"ollama/{llm.model}"
-
-    return Agent(
-        role="Strategic Planning Consultant",
-        goal="Develop comprehensive strategies and actionable plans based on research and analysis",
-        backstory="""You are a strategic planning expert with extensive experience in business 
-        strategy, market analysis, and organizational development. You excel at synthesizing 
-        information from multiple sources to create comprehensive, actionable strategic plans.""",
-        llm=llm,
-        verbose=config.agents.verbose,
-        allow_delegation=False,
-        max_iter=3
-    )
-
-
-def create_custom_agent(
-    role: str,
-    goal: str,
-    backstory: str,
-    router: DistributedRouter, # Change LLM to router
-    tools: Optional[List] = None,
-    verbose: bool = True,
-    allow_delegation: bool = False,
-    max_iter: int = 3
-) -> Agent:
-    """Create a custom agent with specified parameters using the distributed router."""
-    task_description = goal # Use the goal as the task description for the router
-    llm = None
-    try:
-        llm = router.get_llm_for_task(task_description)
-    except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for custom agent via router: {e}", style="yellow")
-        llm = router.get_local_llm("llama3.2:1b")
-
-    if not llm:
-        raise ValueError(f"Failed to get LLM for custom agent with role: {role}.")
-
-    if not llm.model.startswith("ollama/"):
-        llm.model = f"ollama/{llm.model}"
-
+        raise ValueError(f"Failed to get LLM for {role} agent after all attempts.")
+    
+    console.print(
+        f"🔗 {role} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
     return Agent(
         role=role,
         goal=goal,
         backstory=backstory,
         llm=llm,
-        tools=tools or [],
-        verbose=verbose,
-        allow_delegation=allow_delegation,
-        max_iter=max_iter
+        verbose=config.agents.verbose,
+        allow_delegation=False
+    )
+
+# Add more base agent creators as needed...
+
+def create_documentation_specialist(router, inputs: Dict[str, Any], category: str = "documentation") -> Agent:
+    """Create a Documentation Specialist agent with feedback loop integration."""
+    task_description = "Create and update technical documentation for code and projects."
+    
+    # Model preference order: llama3.2:latest -> llama3.1:8b -> gemma2:2b -> llama3.2:1b
+    preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass  # Learning module not available
+    
+    llm = None
+    try:
+        # Use the updated get_llm_for_task with preferred models
+        llm = router.get_llm_for_task(task_description, preferred_models)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for documentation agent via router: {e}", style="yellow")
+        # Fall back to local model
+        llm = router.get_local_llm("llama3.2:1b")
+    
+    if not llm:
+        raise ValueError("Failed to get LLM for documentation agent after all attempts.")
+    
+    console.print(
+        f"🔗 Documentation Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
+    return Agent(
+        role="Technical Documentation Specialist",
+        goal="Create clear, comprehensive, and accurate technical documentation.",
+        backstory="An expert technical writer with experience documenting complex software systems and APIs.",
+        llm=llm,
+        verbose=config.agents.verbose,
+        allow_delegation=False
+    )
+
+def create_repo_manager(router, inputs: Dict[str, Any], category: str = "repo_management") -> Agent:
+    """Create a Repository Manager agent with feedback loop integration."""
+    task_description = "Manage Git repositories, branches, and code organization."
+    
+    # Model preference order: llama3.2:latest -> llama3.1:8b -> gemma2:2b -> llama3.2:1b
+    preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    
+    # Try to get learning-based model preference
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model:
+            if category_model not in preferred_models:
+                preferred_models.insert(0, category_model)
+    except ImportError:
+        pass  # Learning module not available
+    
+    llm = None
+    try:
+        # Use the updated get_llm_for_task with preferred models
+        llm = router.get_llm_for_task(task_description, preferred_models)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for repo manager agent via router: {e}", style="yellow")
+        # Fall back to local model
+        llm = router.get_local_llm("llama3.2:1b")
+    
+    if not llm:
+        raise ValueError("Failed to get LLM for repo manager agent after all attempts.")
+    
+    console.print(
+        f"🔗 Repo Manager Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
+    return Agent(
+        role="Repository Manager",
+        goal="Efficiently manage code repositories, versioning, and Git operations.",
+        backstory="An experienced DevOps engineer specializing in version control systems and repository management.",
+        llm=llm,
+        verbose=config.agents.verbose,
+        allow_delegation=False
     )

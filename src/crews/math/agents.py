@@ -5,7 +5,7 @@ from .tools import calculator_tool# crews/math/agents.py
 from crewai import Agent
 from langchain_community.llms.ollama import Ollama
 # Assuming your config is accessible here
-from config import config
+from src.config import config
 # Assuming you have an updated router and a way to get it
 from distributed_router import DistributedRouter
 
