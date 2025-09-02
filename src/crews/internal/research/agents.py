@@ -15,6 +15,33 @@ import yaml
 from crewai_tools import SerperDevTool, GithubSearchTool
 from langchain_ollama import OllamaLLM
 
+
+class DelegationTool(BaseTool):
+    name: str = "Ask question to coworker"
+    description: str = "Delegate a task or question to a specific coworker by their exact role name."
+    coworkers: List[Agent]
+    
+    def __init__(self, coworkers: List[Agent]):
+        super().__init__(coworkers=coworkers)
+    
+    def _run(self, coworker_role: str, question: str) -> str:
+        """Delegate a question to a specific coworker."""
+        target_coworker = None
+        for coworker in self.coworkers:
+            if coworker.role == coworker_role:
+                target_coworker = coworker
+                break
+        
+        if not target_coworker:
+            available_roles = [c.role for c in self.coworkers]
+            return f"Coworker '{coworker_role}' not found. Available coworkers: {', '.join(available_roles)}"
+        
+        try:
+            response = target_coworker.execute_task(question)
+            return f"Response from {coworker_role}: {response}"
+        except Exception as e:
+            return f"Error delegating to {coworker_role}: {str(e)}"
+
 # NOTE: Import tool_factory with error handling
 try:
     from tool_factory import dynamic_github_tool
@@ -134,6 +161,12 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     repository = inputs.get("repository")
 
     all_tools = _get_tools_with_github(inputs, tools)
+    
+    # Add delegation tools if coworkers are provided
+    if coworkers:
+        delegation_tool = DelegationTool(coworkers=coworkers)
+        all_tools.append(delegation_tool)
+        console.print(f"🔧 Added delegation tool to Project Manager with {len(coworkers)} coworkers", style="green")
 
     return Agent(
         role="Project Manager",
@@ -163,7 +196,8 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
              f"Projects are in knowledge/internal_crew/{project_location}/project_config.yaml"
              "make sure you read all yamls  in project directory till it is memorized"
              "you  will answer all project related details "
-             "if the answer do not exsist,   sy  we do not have that information.   do not make any details up or say anything not true",
+             "if the answer do not exsist,   sy  we do not have that information.   do not make any details up or say anything not true"
+             "You can delegate tasks to other team members when needed using the delegation tool.",
         backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
         llm=llm,
         tools=all_tools,
