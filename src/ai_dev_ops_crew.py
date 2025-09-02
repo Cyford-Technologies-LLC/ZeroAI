@@ -224,8 +224,8 @@ class AIOpsCrewManager:
                 "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
             }
 
-        # Ensure 'repository' key exists before accessing it
-        if 'repository' not in self.project_config:
+        # Ensure 'repository' key exists and is not None before accessing it
+        if 'repository' not in self.project_config or self.project_config['repository'] is None:
             self.project_config['repository'] = {}
 
         # Override repository URL if provided in inputs
