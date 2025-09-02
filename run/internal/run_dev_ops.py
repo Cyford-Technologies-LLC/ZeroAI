@@ -11,6 +11,9 @@ import sys
 import os
 from pathlib import Path
 
+# Set CREW_TYPE for internal operations BEFORE any imports
+os.environ["CREW_TYPE"] = "internal"
+
 # Add the project root to the Python path FIRST to make imports work
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
