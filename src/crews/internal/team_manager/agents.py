@@ -196,37 +196,29 @@ def get_manager_llmc(router: Any) -> Any:
     """
     try:
         manager_llm = OllamaLLM(
-            model="ollama/llama3.1:8b",  # Specify the model name
+            model="ollama/llama3.1:8b",
             base_url="http://149.36.1.65:11434"
         )
-        # Test the connection by getting a number of tokens
         manager_llm.get_num_tokens("test")
         console.print(
-            f"🔗 Manager LLM connected to: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
+            f"🔗 Manager LLM connected to GPU: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
             style="blue"
         )
         return manager_llm
     except Exception as e:
-        console.print(f"❌ Failed to connect to LLM: {e}. Falling back to router.", style="red")
+        console.print(f"❌ GPU connection failed: {e}. Using router...", style="red")
 
-    # If manual connection fails, fall back to the original router logic
     try:
-        # Attempt to get LLM via the router for the 'general' role
         manager_llm = router.get_llm_for_role("general")
+        console.print(f"🔗 Manager LLM via router: [bold yellow]{manager_llm.model}[/bold yellow]", style="blue")
+        return manager_llm
     except Exception as e:
-        console.print(f"⚠️ Failed to get optimal LLM for manager via router: {e}", style="yellow")
-        manager_llm = None
+        console.print(f"⚠️ Router failed: {e}. Using local config...", style="yellow")
 
-    if not manager_llm:
-        # Fallback to local LLM using the centralized config
-        manager_llm = OllamaLLM(model=config.model.name, base_url=config.model.base_url)
-        console.print(
-            f"🔗 Manager LLM connecting to local model: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
-            style="blue")
-
-    if not manager_llm:
-        raise ValueError("Failed to get LLM for manager agent after all attempts.")
-
+    manager_llm = OllamaLLM(model=config.model.name, base_url=config.model.base_url)
+    console.print(
+        f"🔗 Manager LLM local fallback: [bold yellow]{manager_llm.model}[/bold yellow] at [bold green]{manager_llm.base_url}[/bold green]",
+        style="blue")
     return manager_llm
 
 def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None, project_id: str = None,
