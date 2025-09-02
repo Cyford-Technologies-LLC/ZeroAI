@@ -2,13 +2,12 @@
 
 from crewai import Agent
 from typing import Dict, Any, List, Optional
-from distributed_router import DistributedRouter
 from src.config import config
 from rich.console import Console
 
 console = Console()
 
-def create_researcher(router: DistributedRouter, inputs: Dict[str, Any], category: str = "research") -> Agent:
+def create_researcher(router, inputs: Dict[str, Any], category: str = "research") -> Agent:
     """Create a Researcher agent with feedback loop integration."""
     task_description = "Conduct thorough research on code, projects, and technical solutions."
     
@@ -50,7 +49,7 @@ def create_researcher(router: DistributedRouter, inputs: Dict[str, Any], categor
         allow_delegation=False
     )
 
-def create_analyst(router: DistributedRouter, inputs: Dict[str, Any], category: str = "research") -> Agent:
+def create_analyst(router, inputs: Dict[str, Any], category: str = "research") -> Agent:
     """Create an Analyst agent with feedback loop integration."""
     task_description = "Analyze research findings and provide actionable insights."
     
@@ -92,9 +91,83 @@ def create_analyst(router: DistributedRouter, inputs: Dict[str, Any], category: 
         allow_delegation=False
     )
 
+def create_writer(router, inputs: Dict[str, Any], category: str = "writing") -> Agent:
+    """Create a Writer agent with feedback loop integration."""
+    task_description = "Write clear, engaging content and documentation."
+    
+    preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model and category_model not in preferred_models:
+            preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
+    
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description, preferred_models)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for writer agent via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+    
+    if not llm:
+        raise ValueError("Failed to get LLM for writer agent after all attempts.")
+    
+    console.print(
+        f"🔗 Writer Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
+    return Agent(
+        role="Content Writer",
+        goal="Create clear, engaging, and well-structured written content.",
+        backstory="A skilled writer with expertise in technical communication and content creation.",
+        llm=llm,
+        verbose=config.agents.verbose,
+        allow_delegation=False
+    )
+
+def create_custom_agent(router, inputs: Dict[str, Any], role: str, goal: str, backstory: str, category: str = "general") -> Agent:
+    """Create a custom agent with specified role, goal, and backstory."""
+    task_description = f"Perform tasks as a {role}."
+    
+    preferred_models = ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"]
+    
+    try:
+        from learning.feedback_loop import feedback_loop
+        category_model = feedback_loop.get_model_preference(category)
+        if category_model and category_model not in preferred_models:
+            preferred_models.insert(0, category_model)
+    except ImportError:
+        pass
+    
+    llm = None
+    try:
+        llm = router.get_llm_for_task(task_description, preferred_models)
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for {role} agent via router: {e}", style="yellow")
+        llm = router.get_local_llm("llama3.2:1b")
+    
+    if not llm:
+        raise ValueError(f"Failed to get LLM for {role} agent after all attempts.")
+    
+    console.print(
+        f"🔗 {role} Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+    
+    return Agent(
+        role=role,
+        goal=goal,
+        backstory=backstory,
+        llm=llm,
+        verbose=config.agents.verbose,
+        allow_delegation=False
+    )
+
 # Add more base agent creators as needed...
 
-def create_documentation_specialist(router: DistributedRouter, inputs: Dict[str, Any], category: str = "documentation") -> Agent:
+def create_documentation_specialist(router, inputs: Dict[str, Any], category: str = "documentation") -> Agent:
     """Create a Documentation Specialist agent with feedback loop integration."""
     task_description = "Create and update technical documentation for code and projects."
     
@@ -136,7 +209,7 @@ def create_documentation_specialist(router: DistributedRouter, inputs: Dict[str,
         allow_delegation=False
     )
 
-def create_repo_manager(router: DistributedRouter, inputs: Dict[str, Any], category: str = "repo_management") -> Agent:
+def create_repo_manager(router, inputs: Dict[str, Any], category: str = "repo_management") -> Agent:
     """Create a Repository Manager agent with feedback loop integration."""
     task_description = "Manage Git repositories, branches, and code organization."
     
