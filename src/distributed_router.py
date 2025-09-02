@@ -14,7 +14,6 @@ from functools import lru_cache
 
 from peer_discovery import PeerDiscovery, PeerNode
 from langchain_community.llms.ollama import Ollama
-from crewai import LLM
 from src.config import config
 
 console = Console()
@@ -87,18 +86,21 @@ class DistributedRouter:
             console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
             return []
 
-    def get_local_llm(self, model_name: str, base_url: str = None) -> Optional[LLM]:
+    def get_local_llm(self, model_name: str, base_url: str = None) -> Optional[Ollama]:
         if model_name in self._get_local_ollama_models():
             if base_url is None:
                 base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-            console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]",
-                          style="blue")
-            llm = LLM(
-                model=f"ollama/{model_name}",
-                base_url=base_url,
-                temperature=config.model.temperature
-            )
-            return llm
+            prefixed_model_name = f"ollama/{model_name}"
+            llm_config = {
+                "model": prefixed_model_name,
+                "base_url": base_url,
+                "temperature": config.model.temperature
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                console.print(f"🔗 Using local LLM for '{model_name}' at [bold green]{base_url}[/bold green]",
+                              style="blue")
+                return Ollama(**llm_config)
         return None
 
     def get_optimal_endpoint_and_model(self, prompt: str, failed_peers: Optional[List[str]] = None,
@@ -177,27 +179,33 @@ class DistributedRouter:
         console.print("❌ No suitable peer/model combination found. Routing failed.", style="red")
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
 
-    def get_llm_for_task(self, prompt: str) -> Optional[LLM]:
+    def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
         base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
         if base_url:
-            llm = LLM(
-                model=f"ollama/{model_name}",
-                base_url=base_url,
-                temperature=config.model.temperature
-            )
-            return llm
+            prefixed_model_name = f"ollama/{model_name}"
+            llm_config = {
+                "model": prefixed_model_name,
+                "base_url": base_url,
+                "temperature": config.model.temperature
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                return Ollama(**llm_config)
         return None
 
-    def get_llm_for_role(self, role: str) -> Optional[LLM]:
+    def get_llm_for_role(self, role: str) -> Optional[Ollama]:
         prompt = f"LLM selection for a {role} role."
         base_url, peer_name, model_name = self.get_optimal_endpoint_and_model(prompt)
         if base_url:
-            llm = LLM(
-                model=f"ollama/{model_name}",
-                base_url=base_url,
-                temperature=config.model.temperature
-            )
-            return llm
+            prefixed_model_name = f"ollama/{model_name}"
+            llm_config = {
+                "model": prefixed_model_name,
+                "base_url": base_url,
+                "temperature": config.model.temperature
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                return Ollama(**llm_config)
         return None
 
 
