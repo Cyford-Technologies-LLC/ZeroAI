@@ -234,15 +234,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     router = get_router()
     project_config = load_project_config(args.project, project_root)
-    execute_devops_task(router, args, project_config)
-            args.branch = project_config.get("default_branch")
-
-        # Initialize peer discovery and router
-        discovery = PeerDiscovery()
-        router = get_router()
-
-        # Execute the task
-        result = execute_devops_task(router, args, project_config)
+    execute_devops_task(router, args, project_config)roject_config)
 
         console.print("\n--- Final Result ---")
         # Check if result is not None before trying to call .get()
