@@ -1,11 +1,21 @@
 # tool_factory.py
 
 import os
-from crewai_tools import GithubSearchTool
+from typing import Optional, Any
 from crewai.tools import BaseTool
 
-from typing import Optional, Any
-from src.config import config # Ensure this is the correct import
+# Import with error handling
+try:
+    from crewai_tools import GithubSearchTool
+    GITHUB_TOOL_AVAILABLE = True
+except ImportError:
+    GITHUB_TOOL_AVAILABLE = False
+
+try:
+    from src.config import config
+    CONFIG_AVAILABLE = True
+except ImportError:
+    CONFIG_AVAILABLE = False
 
 class DynamicGithubTool(BaseTool):
     name: str = "Dynamic GitHub Search Tool"
@@ -15,36 +25,76 @@ class DynamicGithubTool(BaseTool):
         """
         Dynamically creates and runs a GithubSearchTool for a given repository.
         """
+        # Check if GitHub tool is available
+        if not GITHUB_TOOL_AVAILABLE:
+            return "Error: GithubSearchTool not available. Please install crewai_tools."
+        
+        # Check if config is available
+        if not CONFIG_AVAILABLE:
+            return "Error: Configuration not available. Cannot access GitHub tokens."
+        
         if not token_key:
             return "Error: No token key provided for the GitHub search."
 
-        # Access the gh_token from the consolidated config
-        gh_token_value = config.github_tokens.get(token_key.lower()) or config.github_tokens.get("general")
-
-        if not gh_token_value:
-            return f"Error: GitHub token not found for key '{token_key or 'general'}'."
-
         try:
-            # Assuming ZeroAI and Company_Details are at the top level in your settings.yaml or env.
-            # Adjust the path based on your final settings.yaml structure.
-            company_details = config.Company_Details
-            if not company_details:
-                return "Error: 'Company_Details' not found in config."
+            # Access the gh_token from the consolidated config
+            gh_token_value = None
+            if hasattr(config, 'github_tokens') and config.github_tokens:
+                gh_token_value = config.github_tokens.get(token_key.lower()) or config.github_tokens.get("general")
+            
+            # Fallback to environment variable
+            if not gh_token_value:
+                env_key = f"GITHUB_TOKEN_{token_key.upper()}"
+                gh_token_value = os.getenv(env_key) or os.getenv("GITHUB_TOKEN_GENERAL") or os.getenv("GITHUB_TOKEN")
+            
+            if not gh_token_value:
+                return f"Error: GitHub token not found for key '{token_key or 'general'}'. Please set GITHUB_TOKEN environment variable."
 
-            github_url = company_details.get("Projects", {}).get("GItHUB_URL")
-            if not github_url:
-                return "Error: 'GItHUB_URL' not found in config under Company_Details.Projects."
+            # Get GitHub URL from config or use default
+            github_url = "https://github.com"
+            if hasattr(config, 'Company_Details') and config.Company_Details:
+                company_details = config.Company_Details
+                if isinstance(company_details, dict):
+                    projects = company_details.get("Projects", {})
+                    if isinstance(projects, dict):
+                        github_url = projects.get("GItHUB_URL", github_url)
 
             # Construct the repo URL
-            repo_url = f"{github_url}/{repo_name}"
+            if not repo_name.startswith("http"):
+                repo_url = f"{github_url}/{repo_name}"
+            else:
+                repo_url = repo_name
+
+            # Extract token value if it's a SecretStr
+            if hasattr(gh_token_value, 'get_secret_value'):
+                token_str = gh_token_value.get_secret_value()
+            else:
+                token_str = str(gh_token_value)
 
             github_tool = GithubSearchTool(
                 github_repo=repo_url,
-                gh_token=gh_token_value.get_secret_value()
+                gh_token=token_str
             )
             return github_tool.run(query=query)
+            
         except Exception as e:
             return f"Error running GitHub tool for {repo_name}: {e}"
 
-# Instantiate the dynamic tool once
-dynamic_github_tool = DynamicGithubTool()
+# Create a safe instance that handles all error cases
+def create_dynamic_github_tool():
+    """Factory function to create DynamicGithubTool with error handling"""
+    try:
+        return DynamicGithubTool()
+    except Exception as e:
+        # Return a dummy tool if creation fails
+        class DummyGithubTool(BaseTool):
+            name: str = "GitHub Search (Unavailable)"
+            description: str = "GitHub search tool is not available due to missing dependencies."
+            
+            def _run(self, *args, **kwargs) -> str:
+                return f"GitHub search tool unavailable: {e}"
+        
+        return DummyGithubTool()
+
+# Instantiate the dynamic tool with error handling
+dynamic_github_tool = create_dynamic_github_tool()

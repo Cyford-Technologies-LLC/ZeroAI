@@ -14,8 +14,16 @@ import os
 import yaml
 from crewai_tools import SerperDevTool, GithubSearchTool
 from langchain_ollama import OllamaLLM
-# NOTE: Commented out potentially missing import that could cause issues
-# from tool_factory import dynamic_github_tool  # Import the dynamic tool
+
+# NOTE: Import tool_factory with error handling
+try:
+    from tool_factory import dynamic_github_tool
+    TOOL_FACTORY_AVAILABLE = True
+except ImportError as e:
+    console = Console()
+    console.print(f"⚠️ Warning: Could not import tool_factory: {e}", style="yellow")
+    TOOL_FACTORY_AVAILABLE = False
+    dynamic_github_tool = None
 
 # NOTE: Import with error handling for missing tool_initializer
 try:
@@ -98,6 +106,24 @@ def get_research_llm(router: DistributedRouter, category: str = "research",
     return llm
 
 
+def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None) -> List:
+    """Helper function to get tools including dynamic_github_tool when available"""
+    base_tools = tools or []
+    
+    # Add dynamic_github_tool if available
+    if TOOL_FACTORY_AVAILABLE and dynamic_github_tool:
+        base_tools = base_tools + [dynamic_github_tool]
+    
+    # Use get_universal_tools with fallback handling
+    try:
+        all_tools = get_universal_tools(inputs, initial_tools=base_tools)
+    except Exception as e:
+        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
+        all_tools = base_tools
+    
+    return all_tools
+
+
 def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
                                  coworkers: Optional[List] = None, backstory_suffix=None) -> Agent:
     """Create a project manager agent."""
@@ -107,12 +133,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
-    # NOTE: Using get_universal_tools with fallback handling
-    try:
-        all_tools = get_universal_tools(inputs, initial_tools=tools)
-    except Exception as e:
-        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
-        all_tools = tools or []
+    all_tools = _get_tools_with_github(inputs, tools)
 
     return Agent(
         role="Project Manager",
@@ -158,12 +179,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     
-    # NOTE: Using get_universal_tools with fallback handling
-    try:
-        all_tools = get_universal_tools(inputs, initial_tools=tools)
-    except Exception as e:
-        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
-        all_tools = tools or []
+    all_tools = _get_tools_with_github(inputs, tools)
 
     return Agent(
         role="Internal Researcher",
@@ -204,12 +220,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     llm = get_research_llm(router, category="online_research")
     agent_memory = Memory()
     
-    # NOTE: Using get_universal_tools with fallback handling
-    try:
-        all_tools = get_universal_tools(inputs, initial_tools=tools)
-    except Exception as e:
-        console.print(f"⚠️ Warning: get_universal_tools failed: {e}", style="yellow")
-        all_tools = tools or []
+    all_tools = _get_tools_with_github(inputs, tools)
 
     return Agent(
         role="Online Researcher",
