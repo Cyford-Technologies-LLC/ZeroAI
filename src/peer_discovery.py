@@ -38,12 +38,22 @@ class PeerNode:
 
 
 class PeerDiscovery:
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self):
-        self.peers: Dict[str, PeerNode] = {}
-        self.peers_lock = Lock()
-        self.discovery_thread: Optional[Thread] = None
-        self.cache_timestamp = 0
-        self.cached_peers: Dict[str, PeerNode] = {}
+        if not self._initialized:
+            self.peers: Dict[str, PeerNode] = {}
+            self.peers_lock = Lock()
+            self.discovery_thread: Optional[Thread] = None
+            self.cache_timestamp = 0
+            self.cached_peers: Dict[str, PeerNode] = {}
+            PeerDiscovery._initialized = True
 
     def _load_peers_from_config(self) -> List[Dict[str, Any]]:
         if not PEERS_CONFIG_PATH.exists():
@@ -108,10 +118,8 @@ class PeerDiscovery:
     def _load_all_peers(self) -> List[Dict[str, Any]]:
         peers = self._load_peers_from_config()
         if peers:
-            console.print(f"[green]✅ Loaded {len(peers)} peers from configuration.[/green]")
             return peers
         else:
-            console.print("[yellow]Warning: No peers configured. Using default local-node.[/yellow]")
             return [{"name": "local-node", "ip": "ollama", "port": 11434, "available": False, "models": [], "load_avg": 0.0, "memory_gb": 0.0, "gpu_available": False, "gpu_memory_gb": 0.0, "cpu_cores": 0, "last_updated": 0}]
 
     def _get_system_load(self) -> float:
@@ -200,7 +208,6 @@ class PeerDiscovery:
         return time.time() - self.cache_timestamp < CACHE_DURATION
 
     def _discovery_cycle(self):
-        console.print("\n🔍 Initiating peer discovery cycle...", style="cyan")
         new_peers: Dict[str, PeerNode] = {}
         peers_to_check = self._load_all_peers()
         
@@ -213,8 +220,6 @@ class PeerDiscovery:
                 try:
                     name, capabilities = future.result(timeout=PEER_PING_TIMEOUT * 2)
                     new_peers[name] = PeerNode(name, peer_info['ip'], capabilities)
-                    if capabilities.available:
-                        console.print(f"✅ {name}: {len(capabilities.models or [])} models", style="green")
                 except Exception as e:
                     console.print(f"❌ {peer_info['name']}: {e}", style="red")
                     new_peers[peer_info['name']] = PeerNode(peer_info['name'], peer_info['ip'], PeerCapabilities(available=False))
@@ -225,7 +230,6 @@ class PeerDiscovery:
             self.cache_timestamp = time.time()
         
         self._save_peers_to_config(new_peers)
-        console.print(f"🔍 Discovery complete: {len([p for p in new_peers.values() if p.capabilities.available])} available peers", style="cyan")
 
     def _discovery_loop(self):
         while True:
@@ -244,7 +248,6 @@ class PeerDiscovery:
                 return list(self.cached_peers.values())
             
             if not self.peers or force_refresh:
-                console.print("[yellow]Cache expired or forced refresh, performing discovery...[/yellow]")
                 self._discovery_cycle()
             
             return list(self.peers.values())
@@ -252,5 +255,11 @@ class PeerDiscovery:
     def get_available_peers(self) -> List[PeerNode]:
         """Get only available peers"""
         return [peer for peer in self.get_peers() if peer.capabilities.available]
+    
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance"""
+        return cls()
 
-peer_discovery = PeerDiscovery()
+# Global singleton instance
+peer_discovery = PeerDiscovery.get_instance()

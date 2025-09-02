@@ -68,7 +68,7 @@ KEYWORDS_TO_CATEGORY = {
     "greeting": "customer_service"
 }
 
-peer_discovery_instance = PeerDiscovery()
+peer_discovery_instance = PeerDiscovery.get_instance()
 
 
 class DistributedRouter:
@@ -114,10 +114,14 @@ class DistributedRouter:
             category = next((cat for key, cat in KEYWORDS_TO_CATEGORY.items() if key in prompt_lower), "default")
             model_preference_list = MODEL_PREFERENCES.get(category, MODEL_PREFERENCES["default"])
 
+        # Use cached peers to avoid constant discovery
         all_peers = self.peer_discovery.get_peers()
         all_candidates = []
         local_ollama_models = self._get_local_ollama_models()
-
+        
+        # Only show analysis if we're actually doing discovery
+        if not self.peer_discovery._is_cache_valid():
+            console.print("Ran peer discovery cycle to refresh peer list")
         console.print(f"🔎 Analyzing peers for task with model preference: {model_preference_list}", style="blue")
 
         for peer in all_peers:
@@ -126,8 +130,7 @@ class DistributedRouter:
                 continue
 
             available_models = local_ollama_models if peer.name == "local-node" else peer.capabilities.models
-            console.print(f"   Peer [bold cyan]{peer.name}[/bold cyan] reports available models: {available_models}",
-                          style="dim")
+            console.print(f"   Peer {peer.name} reports available models: {available_models}")
 
             if not available_models:
                 console.print(f"      - 🚫 Skipping peer {peer.name}: No models reported as available.", style="red")
@@ -147,15 +150,11 @@ class DistributedRouter:
                             "peer": peer,
                             "model": model
                         })
-                        console.print(
-                            f"      - ✅ Candidate found: Model=[bold yellow]{model}[/bold yellow] on Peer=[bold cyan]{peer.name}[/bold cyan]",
-                            style="green")
+                        console.print(f"      - ✅ Candidate found: Model={model} on Peer={peer.name}")
                     else:
-                        console.print(
-                            f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).",
-                            style="red")
+                        console.print(f"      - 🚫 Skipping model {model} on peer {peer.name}: insufficient memory ({required_memory} GiB required, {peer_memory} GiB available).")
                 else:
-                    console.print(f"      - 🚫 Model {model} not available on peer {peer.name}.", style="red")
+                    console.print(f"      - 🚫 Model {model} not available on peer {peer.name}.")
 
         def get_score(candidate):
             peer = candidate['peer']
@@ -171,12 +170,10 @@ class DistributedRouter:
             best_candidate = all_candidates[0]
             peer = best_candidate['peer']
             model = best_candidate['model']
-            console.print(
-                f"✅ Optimal Endpoint Selected: Peer=[bold cyan]{peer.name}[/bold cyan], Model=[bold yellow]{model}[/bold yellow]",
-                style="green")
+            console.print(f"✅ Optimal Endpoint Selected: Peer={peer.name}, Model={model}")
             return f"http://{peer.ip}:11434", peer.name, model
 
-        console.print("❌ No suitable peer/model combination found. Routing failed.", style="red")
+        console.print("❌ No suitable peer/model combination found. Routing failed.")
         raise RuntimeError("No suitable peer or model found. All attempts failed.")
 
     def get_llm_for_task(self, prompt: str) -> Optional[Ollama]:
@@ -212,4 +209,4 @@ class DistributedRouter:
 @lru_cache()
 def get_distributed_router_dependency() -> DistributedRouter:
     """FastAPI dependency to provide a cached instance of the DistributedRouter."""
-    return DistributedRouter(peer_discovery_instance)
+    return DistributedRouter(PeerDiscovery.get_instance())
