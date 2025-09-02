@@ -40,12 +40,12 @@ class OnlineSearchTool(BaseTool):
     name: str = "Online Search"
     description: str = "Performs online searches to find information from websites."
 
-    def __init__(self):
-        super().__init__()
-        self.search_tool = SerperDevTool()
-
     def _run(self, query: str):
-        return self.search_tool.run(query)
+        try:
+            search_tool = SerperDevTool()
+            return search_tool.run(query)
+        except Exception as e:
+            return f"Search failed: {str(e)}"
 
 
 def get_online_search_tool():
@@ -179,7 +179,6 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     """Create an online researcher agent."""
     llm = get_research_llm(router, category="online_research")
     agent_memory = Memory()
-    online_search_tool = get_online_search_tool()
     all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(

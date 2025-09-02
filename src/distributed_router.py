@@ -82,13 +82,14 @@ class DistributedRouter:
         try:
             with open("pulled_models.json", "r") as f:
                 return json.load(f)
-        except (FileNotFoundNotFoundError, json.JSONDecodeError):
+        except (FileNotFoundError, json.JSONDecodeError):
             console.print("⚠️ pulled_models.json not found or is invalid. Assuming no local models.", style="yellow")
             return []
 
-    def get_local_llm(self, model_name: str) -> Optional[Ollama]:
+    def get_local_llm(self, model_name: str, base_url: str = None) -> Optional[Ollama]:
         if model_name in self._get_local_ollama_models():
-            base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+            if base_url is None:
+                base_url = os.getenv("OLLAMA_HOST", "http://ollama:11434")
             prefixed_model_name = f"ollama/{model_name}"
             llm_config = {
                 "model": prefixed_model_name,
