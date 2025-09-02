@@ -1,5 +1,11 @@
 # src/crews/internal/team_manager/agents.py
 
+# Suppress ML framework warnings
+try:
+    import suppress_warnings
+except ImportError:
+    pass
+
 import importlib
 import inspect
 import sys
@@ -241,13 +247,10 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], tools: Option
 
     backstory = f"""You are a highly experienced and strategic Team Manager responsible for overseeing the collaboration of multiple specialist teams on project '{project_id}'.
     
-    CRITICAL: When using the 'Ask question to coworker' tool, you MUST use the EXACT role names as they appear in your team list. The tool is case-sensitive.
+    You have access to project tools and can directly access project information. For GitHub repository URLs, check the project configuration files in the knowledge/internal_crew/{inputs.get('project_id', 'unknown')}/project_config.yaml directory.
     
-    Your available team members are:
-    {format_agent_list()}
-    
-    For GitHub repository information, ask 'Internal Researcher' or 'Project Manager' using their exact role names."""
-    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'."
+    If you need to delegate tasks, use the exact coworker names as they appear in the delegation tool descriptions. The available coworkers will be shown in your tool descriptions."""
+    goal = f"Coordinate the efforts of specialist agents and manage the workflow effectively for project '{project_id}'. Use your available tools to find project information directly when possible."
 
     return Agent(
         role="Team Manager",
