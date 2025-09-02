@@ -7,6 +7,8 @@ from src.config import config
 from typing import Dict, Any, List, Optional
 from distributed_router import DistributedRouter
 
+from src.utils.tool_initializer import get_universal_tools
+
 
 # --- Helper function to get LLM ---
 def get_scheduler_llm(router: DistributedRouter, category: str = "scheduling") -> Any:

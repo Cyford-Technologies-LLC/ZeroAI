@@ -15,7 +15,7 @@ import yaml
 from crewai_tools import SerperDevTool, GithubSearchTool
 from langchain_ollama import OllamaLLM
 from tool_factory import dynamic_github_tool  # Import the dynamic tool
-
+from src.utils.tool_initializer import get_universal_tools
 console = Console()
 
 
@@ -110,7 +110,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         tool_to_add.append(dynamic_github_tool)
         backstory_suffix += f" Access to GitHub repository: {repository}."
 
-    tools = (tools or []) + tool_to_add
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="Project Manager",
@@ -149,12 +149,8 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     """Create a specialized internal researcher agent."""
     llm = get_research_llm(router, category="research")
     agent_memory = Memory()
-
     project_location = inputs.get("project_id")
-    tool_to_add = []
-    if project_location:
-        tool_to_add.append(ProjectConfigReaderTool(project_location=project_location))
-    tool_to_add.append(get_online_search_tool())
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="Internal Researcher",
@@ -195,7 +191,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     llm = get_research_llm(router, category="online_research")
     agent_memory = Memory()
     online_search_tool = get_online_search_tool()
-    tools = (tools or []) + [online_search_tool]
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="Online Researcher",
