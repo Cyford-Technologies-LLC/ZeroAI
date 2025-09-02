@@ -255,15 +255,16 @@ class PeerDiscovery:
 
     def get_peers(self, force_refresh: bool = False) -> List[PeerNode]:
         """Get peers using cache if valid, otherwise trigger discovery"""
+        if force_refresh:
+            log_peer("🔄 Force refresh requested...", 4, "yellow")
+            self._discovery_cycle()
+        elif not self._is_cache_valid() or not self.cached_peers:
+            log_peer("🔄 Cache expired, refreshing peer discovery...", 4, "yellow")
+            self._discovery_cycle()
+        else:
+            log_peer(f"📋 Using cached peers ({len(self.cached_peers)} peers)", 5)
+        
         with self.peers_lock:
-            if not force_refresh and self._is_cache_valid() and self.cached_peers:
-                log_peer(f"📋 Using cached peers ({len(self.cached_peers)} peers)", 5)
-                return list(self.cached_peers.values())
-            
-            if not self.peers or force_refresh:
-                log_peer("🔄 Cache expired, refreshing peer discovery...", 4, "yellow")
-                self._discovery_cycle()
-            
             return list(self.peers.values())
     
     def get_available_peers(self) -> List[PeerNode]:
