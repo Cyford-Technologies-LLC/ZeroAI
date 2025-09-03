@@ -263,10 +263,10 @@ if __name__ == "__main__":
         else:
             # Provide a default error message if result is None
             error_message = result.get('error') if result else 'Unknown Error (Task function returned None)'
-            console.print(f"Error: {error_message}", style="red")
+            console.print(f"Error: {error_message}", style="red", markup=False)
             sys.exit(1)
 
     except Exception as e:
         console.print(f"\n❌ [bold red]Execution failed[/bold red]")
-        console.print(f"Reason: {e}", style="red")
+        console.print(f"Reason: {str(e)}", style="red", markup=False)
         sys.exit(1)
