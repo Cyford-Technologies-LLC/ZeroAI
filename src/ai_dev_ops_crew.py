@@ -17,7 +17,7 @@ load_secure_env()
 
 
 from crewai import Crew
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config  # Keep only one import
 from src.utils.config_loader import load_internal_config
 # from src.utils.custom_logger import CustomLogger
