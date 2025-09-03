@@ -22,7 +22,7 @@ def fix_imports_in_file(file_path):
             (r'from peer_discovery import', 'from src.peer_discovery import'),
             (r'from config import', 'from src.config import'),
             (r'from env_loader import', 'from src.utils.env_loader import'),
-            (r'from devops_router import', 'from src.distributed_router import'),
+            (r'import distributed_router', 'import src.distributed_router'),
         ]
         
         for pattern, replacement in fixes:
@@ -32,12 +32,12 @@ def fix_imports_in_file(file_path):
         if content != original_content:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"✅ Fixed: {file_path}")
+            print(f"Fixed: {file_path}")
             return True
         return False
         
     except Exception as e:
-        print(f"❌ Error fixing {file_path}: {e}")
+        print(f"Error fixing {file_path}: {e}")
         return False
 
 def main():

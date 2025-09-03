@@ -92,6 +92,10 @@ AVAILABLE_AGENTS = {
     "Junior Developer": {
         "description": "Implements basic code solutions and assists with development tasks",
         "capabilities": ["basic coding", "code implementation", "debugging assistance", "learning support"]
+    },
+    "CrewAI Diagnostic Agent": {
+        "description": "Monitors system health, analyzes errors, and provides diagnostic reports for internal issues",
+        "capabilities": ["error analysis", "log parsing", "system diagnostics", "task queue monitoring", "issue resolution"]
     }
 }
 
@@ -120,7 +124,7 @@ def discover_available_crews() -> dict[str, list[str]] | dict[str, dict[str, str
         return {"errors": errors}
 
     for crew_dir in crews_path.iterdir():
-        if crew_dir.is_dir() and crew_dir.name not in ["__pycache__", "team_manager", "diagnostics"]:
+        if crew_dir.is_dir() and crew_dir.name not in ["__pycache__", "team_manager"]:
             crew_name = crew_dir.name
             crew_info = {"path": str(crew_dir)}
             try:

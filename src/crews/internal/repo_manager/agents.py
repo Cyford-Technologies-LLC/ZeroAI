@@ -3,6 +3,7 @@ import inspect
 from typing import Dict, Any, List, Optional
 from crewai import Agent
 from src.distributed_router import DistributedRouter
+from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 
 # Import the custom tools
@@ -94,7 +95,11 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         ],
         expertise_level=9.2,
         goal="Execute Git commands and file manipulations to manage project repositories.",
-        backstory="""An automated system for performing repository management tasks. All responses are signed off with 'Deon Sanders'""",
+        backstory=f"""An automated system for performing repository management tasks.
+        
+        {get_shared_context_for_agent("Git Operator")}
+        
+        All responses are signed off with 'Deon Sanders'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,

@@ -6,6 +6,7 @@ from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
+from src.utils.shared_knowledge import get_shared_context_for_agent
 
 from src.utils.tool_initializer import get_universal_tools
 
@@ -44,8 +45,8 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
 
     return Agent(
         role="Scheduler",
-        goal="Schedule events and appointments based on requests from the team manager.",
-        backstory="An expert in calendar management, proficient at scheduling, organizing, and managing events and appointments efficiently.",
+        goal="Schedule events and appointments based on requests from the team manager. or project manager",
+        backstory=f"An expert in calendar management, proficient at scheduling, organizing, and managing events and appointments efficiently.\n\n{get_shared_context_for_agent('Scheduler')}\n\nAll responses are signed off with 'Scheduler'",
         tools=all_tools,
         llm=llm,
         allow_delegation=False,

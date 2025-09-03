@@ -3,8 +3,9 @@ from crewai import Agent
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
-from tools.file_tool import file_tool
+from src.crews.internal.tools.file_tool import FileTool
 from src.utils.memory import Memory
+from src.utils.shared_knowledge import get_shared_context_for_agent
 
 def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     """Create a Documentation Writer agent."""
@@ -40,7 +41,11 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "https://testing-best-practices.com"
             ],
         goal="Create clear and concise documentation for software projects.",
-        backstory="""A skilled technical writer who translates complex code into understandable documentation. All responses are signed off with 'William White'""",
+        backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
+        
+        {get_shared_context_for_agent("Documentation Writer")}
+        
+        All responses are signed off with 'William White'""",
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,

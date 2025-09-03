@@ -7,6 +7,7 @@ from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
 from src.distributed_router import DistributedRouter
 from src.config import config
+from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 from src.utils.memory import Memory
 from pathlib import Path
@@ -223,7 +224,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
              "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
              f"REPOSITORY: Use {repository} if provided, otherwise use memorized project config info. "
              "If information doesn't exist in your memory or knowledge files, say 'we do not have that information' - never make up details.",
-        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
+        backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
@@ -264,7 +265,10 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
         },
         resources=[],
         goal="Gather information on internal project details.",
-        backstory="""An expert at internal research, finding and documenting all project-specific information.
+        backstory=f"""An expert at internal research, finding and documenting all project-specific information.
+        
+        {get_shared_context_for_agent("Internal Researcher")}
+        
         All responses are signed off with 'Internal Research Specialist'""",
         llm=llm,
         tools=all_tools,
@@ -305,7 +309,11 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
         },
         resources=[],
         goal="Perform comprehensive online searches to find information.",
-        backstory="""A specialized agent for efficient online information retrieval.""",
+        backstory=f"""A specialized agent for efficient online information retrieval.
+        
+        {get_shared_context_for_agent("Online Researcher")}
+        
+        All responses are signed off with 'Web-Crawler 3000'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,

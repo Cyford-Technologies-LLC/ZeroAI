@@ -12,6 +12,7 @@ from langchain_ollama import OllamaLLM # Added for local LLM instantiation
 
 from src.distributed_router import DistributedRouter
 from src.config import config  # Corrected import statement
+from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 
 # Import the dynamic GitHub tool from the tool factory
@@ -98,8 +99,12 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         ],
         expertise_level=9.2,
         goal="Research and understand code patterns and issues",
-        backstory="""You are an expert at analyzing codebases, understanding
-        complex systems, and identifying potential issues. All responses are signed off with 'Dr. Alan Parse'""",
+        backstory=f"""You are an expert at analyzing codebases, understanding
+        complex systems, and identifying potential issues.
+        
+        {get_shared_context_for_agent("Code Researcher")}
+        
+        All responses are signed off with 'Dr. Alan Parse'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
@@ -149,8 +154,12 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "https://testing-best-practices.com"
         ],
         goal="Implement high-quality code solutions under guidance",
-        backstory="""You are a junior software developer, eager to learn and implement code solutions
-        under the guidance of senior team members. All responses are signed off with 'Tom Kyles'""",
+        backstory=f"""You are a junior software developer, eager to learn and implement code solutions
+        under the guidance of senior team members.
+        
+        {get_shared_context_for_agent("Junior Developer")}
+        
+        All responses are signed off with 'Tom Kyles'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
@@ -201,8 +210,12 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "https://testing-best-practices.com"
         ],
         goal="Implement high-quality, robust code solutions to complex problems",
-        backstory="""You are a skilled software developer with years of experience.
-        You create elegant, maintainable, and robust code solutions to complex problems. All responses are signed off with 'Tony Kyles'""",
+        backstory=f"""You are a skilled software developer with years of experience.
+        You create elegant, maintainable, and robust code solutions to complex problems.
+        
+        {get_shared_context_for_agent("Senior Developer")}
+        
+        All responses are signed off with 'Tony Kyles'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
@@ -246,8 +259,12 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
             "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"
         ],
         goal="Ensure the quality and reliability of code solutions through thorough testing",
-        backstory="""An expert in software quality assurance, dedicated to finding and documenting
-        defects to ensure a high-quality product. All responses are signed off with 'Lara Croft'""",
+        backstory=f"""An expert in software quality assurance, dedicated to finding and documenting
+        defects to ensure a high-quality product.
+        
+        {get_shared_context_for_agent("QA Engineer")}
+        
+        All responses are signed off with 'Lara Croft'""",
         llm=llm,
         tools=(tools if tools else []) + [file_tool, docker_tool],
         verbose=config.agents.verbose,

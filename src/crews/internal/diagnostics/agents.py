@@ -6,6 +6,7 @@ from .tools import LogAnalysisTool, DiagnosticFileHandlerTool
 from src.utils.memory import Memory
 from crewai.tools import BaseTool
 from src.learning.task_manager import TaskManager
+from src.utils.shared_knowledge import get_shared_context_for_agent
 import json
 
 console = Console()
@@ -60,6 +61,9 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         DiagnosticFileHandlerTool()
     ]
 
+    # Load shared team knowledge
+    shared_context = get_shared_context_for_agent("CrewAI Diagnostic Agent")
+    
     return Agent(
         role="CrewAI Diagnostic Agent",
         name="Agent-Dr. Watson",
@@ -70,6 +74,9 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         backstory=f"""You are a specialized diagnostic AI for CrewAI multi-agent systems, like a seasoned detective.
         Your expertise lies in monitoring the task queue, parsing logs, and detecting the root causes of communication breakdowns and runtime errors.
         Your tools are the Task Queue Monitor Tool, Task Manager Logger Tool, Log Analysis Tool, and Diagnostic File Handler Tool.
+        
+        {shared_context}
+        
         All responses are signed off with 'Agent-Dr. Watson'""",
         llm=llm,
         tools=diagnostic_tools if tools is None else tools,

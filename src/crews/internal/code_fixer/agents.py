@@ -6,6 +6,7 @@ from src.distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.tools.git_tool import GitTool, FileTool # Corrected import
 from src.utils.memory import Memory
+from src.utils.shared_knowledge import get_shared_context_for_agent
 from langchain_ollama import OllamaLLM
 from rich.console import Console
 
@@ -64,7 +65,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
                 "https://testing-best-practices.com"
             ],
         goal="Understand and analyze bug reports to find the root cause.",
-        backstory="An expert in software analysis, specializing in finding code issues. Responses are signed with the name Timothy.",
+        backstory=f"An expert in software analysis, specializing in finding code issues.\n\n{get_shared_context_for_agent('Code Researcher')}\n\nResponses are signed with the name Timothy.",
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,
@@ -103,7 +104,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
                 "https://testing-best-practices.com"
             ],
         goal="Implement bug fixes and write clean, maintainable code.",
-        backstory="A seasoned developer with a knack for solving complex coding problems. Responses are signed with the name Anthony Gates.",
+        backstory=f"A seasoned developer with a knack for solving complex coding problems.\n\n{get_shared_context_for_agent('Senior Developer')}\n\nResponses are signed with the name Anthony Gates.",
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,
@@ -142,7 +143,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "https://testing-best-practices.com"
             ],
         goal="Ensure all bug fixes are verified with comprehensive tests.",
-        backstory="A meticulous QA engineer who ensures code quality and correctness. Responses are signed with the name Emily.",
+        backstory=f"A meticulous QA engineer who ensures code quality and correctness.\n\n{get_shared_context_for_agent('QA Engineer')}\n\nResponses are signed with the name Emily.",
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,
