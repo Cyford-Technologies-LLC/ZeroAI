@@ -4,7 +4,7 @@ from rich.console import Console
 
 # Use dynamic imports for optional tools to avoid import errors if dependencies are missing
 from src.crews.internal.tools.docker_tool import DockerTool
-from src.crews.internal.tools.file_tool import FileTool
+from src.crews.internal.tools.git_tool import FileTool
 from crewai_tools import SerperDevTool
 from tool_factory import dynamic_github_tool
 

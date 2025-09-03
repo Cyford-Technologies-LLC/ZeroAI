@@ -121,12 +121,6 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
-    working_dir = inputs.get("working_dir")
-
-    file_tool = FileTool(working_dir=working_dir)
-    docker_tool = DockerTool()
-    git_tool = GitTool()
-
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
     return Agent(
@@ -179,12 +173,6 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     """Create a Senior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
-
-    working_dir = inputs.get("working_dir")
-
-    file_tool = FileTool(working_dir=working_dir)
-    docker_tool = DockerTool()
-    git_tool = GitTool()
 
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
@@ -239,9 +227,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
     llm = get_developer_llm(router, category="qa")
     agent_memory = Memory()
 
-    working_dir = inputs.get("working_dir")
-    file_tool = FileTool(working_dir=working_dir)
-    docker_tool = DockerTool()
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="QA Engineer",
@@ -278,7 +264,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         
         All responses are signed off with 'Lara Croft'""",
         llm=llm,
-        tools=(tools if tools else []) + [file_tool, docker_tool],
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []
