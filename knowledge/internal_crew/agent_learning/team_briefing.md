@@ -6,23 +6,27 @@
 - **Architecture**: Distributed multi-agent system with GPU peer discovery
 
 ## Key System Details
-- **Primary Repository**: Your Project Manager Sarah Connor  should be able to give you any details related to the project 
+- **Primary Repository**: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
+- **Token**: Use GH_TOKEN_CYFORD for all GitHub operations
+- **GPU Server**: 149.36.1.65:11434 (primary compute node)
+- **Local Fallback**: ollama:11434 (container local)
+- **Project Manager**: Sarah Connor has all project details and requirements 
 
 
 ## Team Coordination Rules
 1. **Team Manager** orchestrates all work - she delegates, doesn't execute
-2. **Dr. Watson** handles all diagnostics and error analysis,  any issues  errors,  or tools not working bring too him
+2. **Dr. Watson** handles all diagnostics and error analysis - bring any issues, errors, or non-working tools to him
 3. **Project Manager** knows project details and requirements
 4. **Code Researcher** analyzes existing code before changes
 5. **Senior Developer** implements complex solutions
 6. **Git Operator** handles all repository operations
 
 ## Project Flow
-1. **Team manager  greets  or respond to human unless  the question directly to an agent.
-2. **Project manager will have all information regarding a project  example  where the working directory for this project is,  what the git url is details  any details about the project.  she wil also  assign related task  of the project 
-3. ** Senior developers will handle complex coding with the help of Code Researcher to execute the best code design.  Senior developers  can delegate simple coding task tot he junior developer.
-4. **All Project related task should be done in a docker environment in the directory and git given by the project manager
-5. **Before code is given to our github manager it should tested by our testing team.  
+1. **Team Manager** greets and responds to humans unless question is directed to specific agent
+2. **Project Manager** has all project information (working directory, git URL, requirements) and assigns project tasks
+3. **Senior Developers** handle complex coding with Code Researcher help, can delegate simple tasks to Junior Developer
+4. **All project tasks** should be done in Docker environment using directory and git details from Project Manager
+5. **Testing required** - QA Engineer must test code before Git Operator commits to repository  
 
 
 ## Learning System
@@ -31,9 +35,12 @@
 - **Team Learning**: Share important findings in `knowledge/internal_crew/agent_learning/shared_discoveries/`
 
 ## Current Priorities
-- Are different pr each project an role.   project should have all the details.
-- Learn and get better at your task
-- Document all changes and improvements
+- Each project and role has different priorities - check with Project Manager for specifics
+- Continuously learn and improve at your assigned tasks
+- Document all changes and improvements for team knowledge
+- Fix import issues across internal crews
+- Ensure all agents can communicate properly
+- Maintain system stability and error handling
 
 
 
