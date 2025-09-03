@@ -36,7 +36,14 @@ class CrewDaemon:
         
     def start_default_crews(self):
         """Start default persistent crews."""
-        projects = ["zeroai", "testcorp"]
+        from src.utils.config_loader import load_internal_config
+        
+        internal_config = load_internal_config()
+        if not internal_config.get("persistent_crews", {}).get("enabled", True):
+            console.print("🚫 [yellow]Persistent crews disabled in configuration[/yellow]")
+            return
+            
+        projects = internal_config.get("persistent_crews", {}).get("default_projects", ["zeroai", "testcorp"])
         
         for project_id in projects:
             console.print(f"🚀 [blue]Starting persistent crew for {project_id}[/blue]")
