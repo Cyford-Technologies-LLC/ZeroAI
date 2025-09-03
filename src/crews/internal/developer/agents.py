@@ -10,7 +10,7 @@ from src.crews.internal.tools.git_tool import GitTool, FileTool
 from crewai_tools import SerperDevTool
 from langchain_ollama import OllamaLLM # Added for local LLM instantiation
 
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config  # Corrected import statement
 from rich.console import Console
 

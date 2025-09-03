@@ -2,7 +2,7 @@ import os
 import inspect
 from typing import Dict, Any, List, Optional
 from crewai import Agent
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from rich.console import Console
 
 # Import the custom tools

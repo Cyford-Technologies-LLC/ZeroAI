@@ -2,7 +2,7 @@
 
 from crewai import Agent
 from typing import Dict, Any, Optional, List
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.tools.git_tool import GitTool, FileTool # Corrected import
 from src.utils.memory import Memory

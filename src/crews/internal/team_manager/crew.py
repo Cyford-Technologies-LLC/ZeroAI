@@ -1,7 +1,7 @@
 # src/crews/internal/team_manager/crew.py
 from crewai import Crew, Process, Task
 from typing import Dict, Any, List, Optional
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger

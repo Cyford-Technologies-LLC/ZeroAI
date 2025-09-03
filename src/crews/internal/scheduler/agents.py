@@ -5,7 +5,7 @@ from langchain_ollama import OllamaLLM
 from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
 from typing import Dict, Any, List, Optional
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 
 from src.utils.tool_initializer import get_universal_tools
 
