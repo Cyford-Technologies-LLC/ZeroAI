@@ -18,59 +18,30 @@ from langchain_ollama import OllamaLLM
 
 
 class DelegationTool(BaseTool):
-    name: str = "Delegate work to coworker"
-    description: str = "Delegate a specific task to one of the following coworkers: Documentation Writer, CrewAI Diagnostic Agent, Scheduler, Code Researcher, Senior Developer, QA Engineer, Git Operator, Internal Researcher, Online Researcher, Junior Developer, QA Engineer, Senior Developer\nThe input to this tool should be the coworker, the task you want them to do, and ALL necessary context to execute the task, they know nothing about the task, so share absolutely everything you know, don't reference things but instead explain them."
-    coworkers: List[Agent]
-    
-    def __init__(self, coworkers: List[Agent]):
-        super().__init__(coworkers=coworkers)
-    
-    def _run(self, task: str, context: str, coworker: str) -> str:
-        """Delegate a task to a specific coworker."""
-        target_coworker = None
-        for c in self.coworkers:
-            if c.role == coworker:
-                target_coworker = c
-                break
-        
-        if not target_coworker:
-            available_roles = [c.role for c in self.coworkers]
-            return f"Coworker '{coworker}' not found. Available coworkers: {', '.join(available_roles)}"
-        
-        try:
-            full_task = f"Task: {task}\nContext: {context}"
-            response = target_coworker.execute_task(full_task)
-            return f"Response from {coworker}: {response}"
-        except Exception as e:
-            return f"Error delegating to {coworker}: {str(e)}"
-
-
-class QuestionTool(BaseTool):
     name: str = "Ask question to coworker"
-    description: str = "Ask a specific question to one of the following coworkers: Documentation Writer, CrewAI Diagnostic Agent, Scheduler, Code Researcher, Senior Developer, QA Engineer, Git Operator, Internal Researcher, Online Researcher, Junior Developer, QA Engineer, Senior Developer\nThe input to this tool should be the coworker, the question you have for them, and ALL necessary context to ask the question properly, they know nothing about the question, so share absolutely everything you know, don't reference things but instead explain them."
+    description: str = "Delegate a task or question to a specific coworker by their exact role name."
     coworkers: List[Agent]
     
     def __init__(self, coworkers: List[Agent]):
         super().__init__(coworkers=coworkers)
     
-    def _run(self, question: str, context: str, coworker: str) -> str:
-        """Ask a question to a specific coworker."""
+    def _run(self, coworker_role: str, question: str) -> str:
+        """Delegate a question to a specific coworker."""
         target_coworker = None
-        for c in self.coworkers:
-            if c.role == coworker:
-                target_coworker = c
+        for coworker in self.coworkers:
+            if coworker.role == coworker_role:
+                target_coworker = coworker
                 break
         
         if not target_coworker:
             available_roles = [c.role for c in self.coworkers]
-            return f"Coworker '{coworker}' not found. Available coworkers: {', '.join(available_roles)}"
+            return f"Coworker '{coworker_role}' not found. Available coworkers: {', '.join(available_roles)}"
         
         try:
-            full_question = f"Question: {question}\nContext: {context}"
-            response = target_coworker.execute_task(full_question)
-            return f"Response from {coworker}: {response}"
+            response = target_coworker.execute_task(question)
+            return f"Response from {coworker_role}: {response}"
         except Exception as e:
-            return f"Error asking {coworker}: {str(e)}"
+            return f"Error delegating to {coworker_role}: {str(e)}"
 
 # NOTE: Import tool_factory with error handling
 try:
@@ -96,37 +67,39 @@ except ImportError as e:
 console = Console()
 
 
-class ProjectConfigReaderTool(BaseTool):
-    name: str = "Project Config Reader"
-    description: str = "Reads project details from a YAML file based on the project location."
-    project_location: str
+class ProjectTool(BaseTool):
+    name: str = "Project Tool"
+    description: str = "Get project information. Use 'all' to get full config, 'file' to get file path, or specify a key like 'repository.url' or 'project.name'."
 
-    def __init__(self, project_location: str):
-        super().__init__(project_location=project_location)
+    def _run(self, project_location: str, mode: str, key: str = None) -> str:
+        config_path = Path("knowledge") / "internal_crew" / project_location / "project_config.yaml"
+        
+        if mode == "file":
+            return str(config_path)
+        
+        if not config_path.is_file():
+            return f"Error: No project configuration found for '{project_location}'."
+        
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f) or {}
+        
+        if mode == "all":
+            return yaml.dump(config, default_flow_style=False)
+        
+        if key:
+            # Navigate nested keys like 'repository.url'
+            value = config
+            for k in key.split('.'):
+                if isinstance(value, dict) and k in value:
+                    value = value[k]
+                else:
+                    return f"Key '{key}' not found in project config."
+            return str(value)
+        
+        return "Specify mode: 'all', 'file', or provide a key like 'repository.url'"
 
-    def _run(self, *args, **kwargs):
-        config_path = Path("knowledge") / "internal_crew" / self.project_location / "project_config.yaml"
-        if config_path.is_file():
-            with open(config_path, 'r') as f:
-                return yaml.safe_load(f)
-        else:
-            return f"Error: No project configuration found for '{self.project_location}'."
 
 
-class KnowledgeBaseTool(BaseTool):
-    name: str = "Knowledge Base"
-    description: str = "ALWAYS CHECK THIS FIRST for common project questions like git URL, project name, company name. Provides immediate answers without needing files or external tools."
-
-    def _run(self, question: str) -> str:
-        question_lower = question.lower()
-        if "git url" in question_lower or "repository url" in question_lower or "repo url" in question_lower or "git" in question_lower:
-            return "ANSWER: Our git URL is https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
-        elif "project name" in question_lower:
-            return "ANSWER: Our project name is ZeroAI"
-        elif "company" in question_lower or "organization" in question_lower:
-            return "ANSWER: Our organization is Cyford-Technologies-LLC"
-        else:
-            return f"No immediate knowledge about: {question}. Try other tools if needed."
 
 
 class OnlineSearchTool(BaseTool):
@@ -232,16 +205,11 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
     all_tools = _get_tools_with_github(inputs, tools)
     
-    # Add knowledge base tool for immediate answers
-    knowledge_tool = KnowledgeBaseTool()
-    all_tools.insert(0, knowledge_tool)  # Put it first so agent tries it first
-    
     # Add delegation tools if coworkers are provided
     if coworkers:
         delegation_tool = DelegationTool(coworkers=coworkers)
-        question_tool = QuestionTool(coworkers=coworkers)
-        all_tools.extend([delegation_tool, question_tool])
-        console.print(f"🔧 Added delegation tools to Project Manager with {len(coworkers)} coworkers", style="green")
+        all_tools.append(delegation_tool)
+        console.print(f"🔧 Added delegation tool to Project Manager with {len(coworkers)} coworkers", style="green")
 
     return Agent(
         role="Project Manager",
@@ -266,13 +234,17 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="ALWAYS check Knowledge Base tool FIRST for any question. If Knowledge Base has the answer, use it and respond immediately. "
-             "TOOL ORDER: 1) Knowledge Base (for common questions), 2) Memory, 3) File tools only if needed for specific details. "
-             "KNOWN ANSWERS: Git URL = https://github.com/Cyford-Technologies-LLC/ZeroAI.git, Project = ZeroAI, Company = Cyford-Technologies-LLC. "
-             "CRITICAL: Never try to read URLs as file paths. URLs are not files. "
-             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. "
-             "If you don't know something, say 'I don't have that information' - never make up details.",
-        backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams. \n\nIMPORTANT TOOL USAGE RULES:\n- NEVER add 'Use the' prefix to tool names\n- Tool names are EXACT: 'File Tool', 'Git Operator Tool', 'Knowledge Base'\n- For git URL questions, the answer is: https://github.com/Cyford-Technologies-LLC/ZeroAI.git\n- Answer simple questions directly without tools\n\nKNOWN FACTS:\n- Git URL: https://github.com/Cyford-Technologies-LLC/ZeroAI.git\n- Project: ZeroAI\n- Company: Cyford-Technologies-LLC\n\n{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
+        goal="Manage and coordinate research tasks, ensuring all project details are considered. "
+             f"MEMORY PRIORITY: Always check your memory first before using any tools and the first thing you should always read is th project details in knowledge/internal_crew/{project_location}/project_config.yaml  if it exist. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
+             "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
+             "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
+             f"KNOWLEDGE FILES: For project info, read knowledge/internal_crew/{project_location}/project_config.yaml once and memorize it. "
+             f"KNOWLEDGE FILES: all details in  knowledge/internal_crew/{project_location}/  should be memorize. "
+             "KNOWLEDGE FILES: all information in . knowledge/ is public information and can be used to learn.  knowledge/internal_crew/  is private information an only should be accessed if you need to store your personal learning files (knowledge/internal_crew/agent_learning)..  or the project specifies this a directory in here as its project  "
+             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
+             f"REPOSITORY: Use {repository} if provided, otherwise use memorized project config info. "
+             "If information doesn't exist in your memory or knowledge files, say 'we do not have that information' - never make up details.",
+        backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
