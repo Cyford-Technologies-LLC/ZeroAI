@@ -248,13 +248,11 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Manage and coordinate research tasks, ensuring all project details are considered. "
-             f"PROJECT CONFIG: Use Project Tool with project_location='{project_location}' to get project info. Project config is in knowledge/ directory, NOT in working directory. "
-             f"WORKING DIRECTORY: /tmp/internal_crew/zeroai/ is for creating NEW files, not reading project config. "
-             "MEMORY: Remember what you've already learned to avoid redundant tool usage. "
-             "DELEGATION: For file creation tasks, delegate to Senior Developer with specific instructions. "
-             "ANSWERS: Provide conversational, human-readable responses. Never return raw YAML/JSON. ",
-        backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
+        goal="Provide project details and coordinate team. For file creation tasks, provide clear requirements and delegate to Senior Developer. "
+             f"PROJECT INFO: Use Project Tool with project_location='{project_location}' to get project details when needed. "
+             "COORDINATION ONLY: You coordinate and provide requirements - you don't create files yourself. "
+             "CLEAR DELEGATION: When delegating file creation, provide specific requirements: filename, location, and basic content structure.",
+        backstory=f"An experienced project manager who coordinates teams and provides project context. You analyze requirements, provide project details, and delegate implementation tasks to appropriate team members. You don't implement solutions yourself - that's what developers are for.\n\nROLE: Coordinate, analyze, and delegate - never implement.\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
