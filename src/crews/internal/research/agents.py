@@ -142,6 +142,8 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
         repo_token_key = inputs.get("repo_token_key")
         if repo_token_key:
             console.print(f"🔧 Configuring GitHub tool with token key: {repo_token_key}", style="green")
+        else:
+            console.print(f"⚠️ No repo_token_key found in inputs: {list(inputs.keys())}", style="yellow")
             # Create a configured version that uses the specific token key
             class ConfiguredGithubTool(dynamic_github_tool.__class__):
                 name: str = "Dynamic GitHub Search Tool"
@@ -149,7 +151,7 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
                 
                 def _run(self, repo_name: str, token_key: Optional[str] = None, query: str = "") -> str:
                     # Always use the configured token key, ignore what agent passes
-                    console.print(f"🔧 GitHub tool using configured token key: {repo_token_key}", style="dim")
+                    console.print(f"🔧 GitHub tool using configured token key: {repo_token_key} (agent passed: {token_key})", style="dim")
                     return super()._run(repo_name, repo_token_key, query)
             
             configured_tool = ConfiguredGithubTool()
