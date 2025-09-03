@@ -71,7 +71,7 @@ class ProjectTool(BaseTool):
     name: str = "Project Tool"
     description: str = "Get project information. Use 'all' to get full config, 'file' to get file path, or specify a key like 'repository.url' or 'project.name'."
 
-    def _run(self, project_location: str, mode: str, key: str = None) -> str:
+    def _run(self, project_location: str, mode: str, key: Optional[str] = None) -> str:
         config_path = Path("knowledge") / "internal_crew" / project_location / "project_config.yaml"
         
         # Try fallback paths if main path doesn't exist
@@ -94,6 +94,17 @@ class ProjectTool(BaseTool):
         
         if mode == "all":
             return yaml.dump(config, default_flow_style=False)
+        
+        # Handle key-based access (when mode contains a dot, treat it as a key)
+        if '.' in mode:
+            key = mode
+            value = config
+            for k in key.split('.'):
+                if isinstance(value, dict) and k in value:
+                    value = value[k]
+                else:
+                    return f"Key '{key}' not found in project config."
+            return str(value)
         
         if key:
             # Navigate nested keys like 'repository.url'
