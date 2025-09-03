@@ -9,6 +9,7 @@ It provides a secure command-line interface to trigger internal maintenance task
 
 import sys
 import os
+import signal
 from pathlib import Path
 
 # Set CREW_TYPE for internal operations BEFORE any imports
@@ -33,7 +34,7 @@ from io import StringIO
 from ast import literal_eval
 from typing import Dict, Any, List, Optional
 from src.config import config
-from src.devops_router import get_router
+from src.distributed_router import DistributedRouter
 from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers
 from src.utils.loop_detection import LoopDetector  # Import the new class
 
@@ -49,6 +50,22 @@ task_manager = TaskManager()
 
 # Configure console for rich output
 console = Console()
+
+# Global flag for graceful shutdown
+shutdown_requested = False
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C gracefully"""
+    global shutdown_requested
+    shutdown_requested = True
+    console.print("\n\n🛑 [bold yellow]Shutdown requested. Cleaning up...[/bold yellow]")
+    console.print("Press Ctrl+C again to force exit.", style="dim")
+    
+    # Set a second handler for force exit
+    signal.signal(signal.SIGINT, lambda s, f: sys.exit(1))
+
+# Register signal handler
+signal.signal(signal.SIGINT, signal_handler)
 
 
 # Helper function to ensure directory exists
@@ -162,6 +179,11 @@ def execute_devops_task(router, args, project_config):
     original_stdout = sys.stdout
 
     try:
+        # Check for shutdown request at start
+        if shutdown_requested:
+            console.print("Shutdown requested. Aborting task execution.", style="yellow")
+            return {"success": False, "error": "Task aborted by user"}
+            
         start_time = time.time()
         task_id = args.task_id or str(uuid.uuid4())
 
@@ -186,6 +208,11 @@ def execute_devops_task(router, args, project_config):
         if args.verbose:
             sys.stdout = log_stream
 
+        # Check for shutdown request before crew execution
+        if shutdown_requested:
+            console.print("Shutdown requested. Aborting crew execution.", style="yellow")
+            return {"success": False, "error": "Crew execution aborted by user"}
+            
         # Call the new entry point, which now handles manager and crew setup
         result = run_ai_dev_ops_crew_securely(
             router=router,
@@ -215,6 +242,10 @@ def execute_devops_task(router, args, project_config):
 
         return result
 
+    except KeyboardInterrupt:
+        sys.stdout = original_stdout
+        console.print("\n\n🛑 [bold yellow]Task execution interrupted by user[/bold yellow]")
+        return {"success": False, "error": "Task interrupted by user"}
     except Exception as e:
         sys.stdout = original_stdout
         console.print(f"\n❌ [bold red]An unexpected error occurred during DevOps task execution: {e}[/bold red]")
@@ -236,6 +267,11 @@ if __name__ == "__main__":
         parser = setup_arg_parser()
         args = parser.parse_args()
         
+        # Check for shutdown request
+        if shutdown_requested:
+            console.print("Shutdown requested during startup. Exiting.", style="yellow")
+            sys.exit(0)
+        
         # Load project config, which now uses the dynamic path and project_root
         project_config = load_project_config(args.project, project_root)
 
@@ -249,9 +285,13 @@ if __name__ == "__main__":
 
         # Initialize peer discovery and router
         discovery = PeerDiscovery()
-        router = get_router()
+        router = DistributedRouter(discovery)
 
         # Execute the task
+        if shutdown_requested:
+            console.print("Shutdown requested before task execution. Exiting.", style="yellow")
+            sys.exit(0)
+            
         result = execute_devops_task(router, args, project_config)
 
         console.print("\n--- Final Result ---")
@@ -263,10 +303,14 @@ if __name__ == "__main__":
         else:
             # Provide a default error message if result is None
             error_message = result.get('error') if result else 'Unknown Error (Task function returned None)'
-            console.print(f"Error: {error_message}", style="red")
+            console.print(f"Error: {error_message}", style="red", markup=False)
             sys.exit(1)
 
+    except KeyboardInterrupt:
+        console.print("\n\n🛑 [bold yellow]Task interrupted by user[/bold yellow]")
+        console.print("Exiting gracefully...", style="dim")
+        sys.exit(0)
     except Exception as e:
         console.print(f"\n❌ [bold red]Execution failed[/bold red]")
-        console.print(f"Reason: {e}", style="red")
+        console.print(f"Reason: {str(e)}", style="red", markup=False)
         sys.exit(1)

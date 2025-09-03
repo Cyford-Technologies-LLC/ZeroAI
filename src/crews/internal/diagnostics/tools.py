@@ -11,10 +11,14 @@ console = Console()
 
 class LogAnalysisTool(BaseTool):
     name: str = "Log Analysis Tool"
-    # Corrected description to be a static string.
     description: str = "Analyzes a string of CrewAI verbose logs to find the root cause of delegation failures. It does not access files directly."
+    coworker_names: List[str] = []
+    
+    def __init__(self, coworker_names: List[str] = None):
+        super().__init__()
+        self.coworker_names = coworker_names or []
 
-    def _run(self, log_output: str, coworker_names: List[str]) -> str:
+    def _run(self, log_output: str) -> str:
         # ... (rest of the _run method from previous response) ...
         # This part of the code correctly parses the log_output.
         # It's not shown here for brevity but should be from the latest corrected version.
@@ -26,7 +30,7 @@ class LogAnalysisTool(BaseTool):
         match = re.search(r"Failed Delegate work to coworker.*?Agent name: (.*?)\n", log_output)
         if match:
             failed_agent_name = match.group(1).strip()
-            if failed_agent_name not in coworker_names:
+            if failed_agent_name not in self.coworker_names:
                 return f"Diagnosis: The manager attempted to delegate to an unknown agent named '{failed_agent_name}'. Check if this agent exists and if its name is correct."
 
         delegation_calls = re.findall(r"Delegate work to coworker.*?Agent name: .*?\n", log_output)

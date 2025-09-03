@@ -51,3 +51,13 @@ def get_secure_token(token_key: str) -> str:
     
     print(f"⚠️ Token {token_key} not found in any configuration")
     return None
+
+# Create ENV object for backward compatibility
+class EnvDict:
+    def get(self, key, default=None):
+        return os.getenv(key, default)
+    
+    def __getitem__(self, key):
+        return os.getenv(key)
+
+ENV = EnvDict()

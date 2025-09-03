@@ -74,6 +74,13 @@ python -m run.internal.run_dev_ops --dry-run "Test task that won't make changes"
 
 # Verbose output
 python -m run.internal.run_dev_ops -v "Task with detailed logging"
+
+# Start persistent crews (24/7 operation - no startup delays)
+python run/internal/persistent_crew_daemon.py
+
+# Submit tasks instantly to running crews
+python examples/quick_task_submit.py "Fix login bug"
+python examples/quick_task_submit.py status
 ```
 
 ### Complex Examples
@@ -192,6 +199,15 @@ GH_TOKEN_CYFORD=your_github_token_here
 ```
 
 ## Troubleshooting Commands
+
+### Import Issues After Merge
+```bash
+# Fix all import issues automatically
+python fix_imports.py
+
+# Complete post-merge fix (imports + rebuild)
+bash scripts/post-merge.sh
+```
 
 ### Common Issues
 ```bash

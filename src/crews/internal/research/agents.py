@@ -5,8 +5,9 @@ import importlib
 from crewai import Agent
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
+from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 from src.utils.memory import Memory
 from pathlib import Path
@@ -66,21 +67,49 @@ except ImportError as e:
 console = Console()
 
 
-class ProjectConfigReaderTool(BaseTool):
-    name: str = "Project Config Reader"
-    description: str = "Reads project details from a YAML file based on the project location."
-    project_location: str
+class ProjectTool(BaseTool):
+    name: str = "Project Tool"
+    description: str = "Get project information. Use 'all' to get full config, 'file' to get file path, or specify a key like 'repository.url' or 'project.name'."
 
-    def __init__(self, project_location: str):
-        super().__init__(project_location=project_location)
+    def _run(self, project_location: str, mode: str) -> str:
+        config_path = Path("knowledge") / "internal_crew" / project_location / "project_config.yaml"
+        
+        # Try fallback paths if main path doesn't exist
+        if not config_path.is_file():
+            # Try common patterns like cyford/zeroai, company/project
+            base_path = Path("knowledge") / "internal_crew"
+            for item in base_path.rglob("project_config.yaml"):
+                if project_location.lower() in str(item).lower():
+                    config_path = item
+                    break
+        
+        if mode == "file":
+            return str(config_path)
+        
+        if not config_path.is_file():
+            return f"Error: No project configuration found for '{project_location}'. Searched in knowledge/internal_crew/"
+        
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f) or {}
+        
+        if mode == "all":
+            return yaml.dump(config, default_flow_style=False)
+        
+        # Handle key-based access (when mode contains a dot, treat it as a key)
+        if '.' in mode:
+            key = mode
+            value = config
+            for k in key.split('.'):
+                if isinstance(value, dict) and k in value:
+                    value = value[k]
+                else:
+                    return f"Key '{key}' not found in project config."
+            return str(value)
+        
+        return "Specify mode: 'all', 'file', or provide a key like 'repository.url'"
 
-    def _run(self, *args, **kwargs):
-        config_path = Path("knowledge") / "internal_crew" / self.project_location / "project_config.yaml"
-        if config_path.is_file():
-            with open(config_path, 'r') as f:
-                return yaml.safe_load(f)
-        else:
-            return f"Error: No project configuration found for '{self.project_location}'."
+
+
 
 
 class OnlineSearchTool(BaseTool):
@@ -142,8 +171,6 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
         repo_token_key = inputs.get("repo_token_key")
         if repo_token_key:
             console.print(f"🔧 Configuring GitHub tool with token key: {repo_token_key}", style="green")
-        else:
-            console.print(f"⚠️ No repo_token_key found in inputs: {list(inputs.keys())}", style="yellow")
             # Create a configured version that uses the specific token key
             class ConfiguredGithubTool(dynamic_github_tool.__class__):
                 name: str = "Dynamic GitHub Search Tool"
@@ -159,6 +186,7 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
             base_tools = [tool for tool in base_tools if not (hasattr(tool, 'name') and 'GitHub' in tool.name)]
             base_tools.append(configured_tool)
         else:
+            console.print(f"⚠️ No repo_token_key found in inputs: {list(inputs.keys())}", style="yellow")
             base_tools = base_tools + [dynamic_github_tool]
     
     # Use get_universal_tools with fallback handling but exclude duplicate GitHub tools
@@ -186,6 +214,10 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     repository = inputs.get("repository")
 
     all_tools = _get_tools_with_github(inputs, tools)
+    
+    # Add project tool
+    project_tool = ProjectTool()
+    all_tools.append(project_tool)
     
     # Add delegation tools if coworkers are provided
     if coworkers:
@@ -216,15 +248,11 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Manage and coordinate research tasks, ensuring all project details are considered. "
-             "MEMORY PRIORITY: Always check your memory first before using any tools. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
-             "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
-             "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
-             "KNOWLEDGE FILES: For ZeroAI project info, read knowledge/internal_crew/cyford/zeroai/project_config.yaml once and memorize it. For company info, read knowledge/cyford_technologies.md once and memorize it. "
-             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
-             f"REPOSITORY: Use {repository} if provided, otherwise use memorized project config info. "
-             "If information doesn't exist in your memory or knowledge files, say 'we do not have that information' - never make up details.",
-        backstory="An experienced project manager who excels at planning, execution, and coordinating research teams." + (backstory_suffix or ""),
+        goal="Provide project details and coordinate team. For file creation tasks, provide clear requirements and delegate to Senior Developer. "
+             f"PROJECT INFO: Use Project Tool with project_location='{project_location}' to get project details when needed. "
+             "COORDINATION ONLY: You coordinate and provide requirements - you don't create files yourself. "
+             "CLEAR DELEGATION: When delegating file creation, provide specific requirements: filename, location, and basic content structure.",
+        backstory=f"An experienced project manager who coordinates teams and provides project context. You analyze requirements, provide project details, and delegate implementation tasks to appropriate team members. You don't implement solutions yourself - that's what developers are for.\n\nROLE: Coordinate, analyze, and delegate - never implement.\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
@@ -264,8 +292,13 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "technical_level": "expert"
         },
         resources=[],
-        goal="Gather information on internal project details.",
-        backstory="""An expert at internal research, finding and documenting all project-specific information.
+        goal="Gather information on internal project details. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
+        backstory=f"""An expert at internal research, finding and documenting all project-specific information.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
+        
+        {get_shared_context_for_agent("Internal Researcher")}
+        
         All responses are signed off with 'Internal Research Specialist'""",
         llm=llm,
         tools=all_tools,
@@ -305,8 +338,14 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Perform comprehensive online searches to find information.",
-        backstory="""A specialized agent for efficient online information retrieval.""",
+        goal="Perform comprehensive online searches to find information. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
+        backstory=f"""A specialized agent for efficient online information retrieval.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
+        
+        {get_shared_context_for_agent("Online Researcher")}
+        
+        All responses are signed off with 'Web-Crawler 3000'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,

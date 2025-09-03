@@ -7,14 +7,16 @@ services:
     ports:
       - "3939:3939"
     volumes:
+      - .:/app
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
+      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
     env_file:
-      - /etc/cyford/zeroai/.env
       - .env
+      - /etc/cyford/zeroai/.env
     depends_on:
       - ollama
     restart: unless-stopped
@@ -25,14 +27,16 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      - .:/app
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
+      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
     env_file:
-      - /etc/cyford/zeroai/.env
       - .env
+      - /etc/cyford/zeroai/.env
     depends_on:
       - ollama
     restart: unless-stopped

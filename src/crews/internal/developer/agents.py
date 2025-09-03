@@ -10,8 +10,9 @@ from src.crews.internal.tools.git_tool import GitTool, FileTool
 from crewai_tools import SerperDevTool
 from langchain_ollama import OllamaLLM # Added for local LLM instantiation
 
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config  # Corrected import statement
+from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 
 # Import the dynamic GitHub tool from the tool factory
@@ -97,9 +98,17 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "API Development", "Microservices Architecture", "PHP", "JavaScript"
         ],
         expertise_level=9.2,
-        goal="Research and understand code patterns and issues",
-        backstory="""You are an expert at analyzing codebases, understanding
-        complex systems, and identifying potential issues. All responses are signed off with 'Dr. Alan Parse'""",
+        goal="Research existing code patterns and issues. If asked to create new files that don't exist, immediately delegate to Senior Developer instead of searching for non-existent files. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
+        backstory=f"""You are an expert at analyzing codebases, understanding
+        complex systems, and identifying potential issues.
+        
+        IMPORTANT: If asked to create NEW files that don't exist, don't waste time searching for them. Instead, immediately delegate to Senior Developer with clear instructions.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
+        
+        {get_shared_context_for_agent("Code Researcher")}
+        
+        All responses are signed off with 'Dr. Alan Parse'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
@@ -113,12 +122,6 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     """Create a Junior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
-
-    working_dir = inputs.get("working_dir")
-
-    file_tool = FileTool(working_dir=working_dir)
-    docker_tool = DockerTool()
-    git_tool = GitTool()
 
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
@@ -148,9 +151,22 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "code_quality_guidelines.pdf",
             "https://testing-best-practices.com"
         ],
-        goal="Implement high-quality code solutions under guidance",
-        backstory="""You are a junior software developer, eager to learn and implement code solutions
-        under the guidance of senior team members. All responses are signed off with 'Tom Kyles'""",
+        goal="Implement high-quality code solutions under guidance. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
+        backstory=f"""You are a junior software developer, eager to learn and implement code solutions
+        under the guidance of senior team members.
+        
+        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool with these parameters:
+        - action: "write"
+        - path: "/tmp/internal_crew/zeroai/filename.ext"
+        - content: "the actual file content here"
+        
+        Don't just provide code in your response - create the actual files!
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
+        
+        {get_shared_context_for_agent("Junior Developer")}
+        
+        All responses are signed off with 'Tom Kyles'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
@@ -164,12 +180,6 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     """Create a Senior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
-
-    working_dir = inputs.get("working_dir")
-
-    file_tool = FileTool(working_dir=working_dir)
-    docker_tool = DockerTool()
-    git_tool = GitTool()
 
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
@@ -200,9 +210,22 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "code_quality_guidelines.pdf",
             "https://testing-best-practices.com"
         ],
-        goal="Implement high-quality, robust code solutions to complex problems",
-        backstory="""You are a skilled software developer with years of experience.
-        You create elegant, maintainable, and robust code solutions to complex problems. All responses are signed off with 'Tony Kyles'""",
+        goal="Implement high-quality, robust code solutions to complex problems. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
+        backstory=f"""You are a skilled software developer with years of experience.
+        You create elegant, maintainable, and robust code solutions to complex problems.
+        
+        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool with these parameters:
+        - action: "write"
+        - path: "/tmp/internal_crew/zeroai/filename.ext"
+        - content: "the actual file content here"
+        
+        Don't just provide code in your response - create the actual files!
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
+        
+        {get_shared_context_for_agent("Senior Developer")}
+        
+        All responses are signed off with 'Tony Kyles'""",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
@@ -216,9 +239,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
     llm = get_developer_llm(router, category="qa")
     agent_memory = Memory()
 
-    working_dir = inputs.get("working_dir")
-    file_tool = FileTool(working_dir=working_dir)
-    docker_tool = DockerTool()
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
 
     return Agent(
         role="QA Engineer",
@@ -245,11 +266,17 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         expertise=[
             "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"
         ],
-        goal="Ensure the quality and reliability of code solutions through thorough testing",
-        backstory="""An expert in software quality assurance, dedicated to finding and documenting
-        defects to ensure a high-quality product. All responses are signed off with 'Lara Croft'""",
+        goal="Ensure the quality and reliability of code solutions through thorough testing. IMPORTANT: Before starting any testing, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional testing needed.' and stop.",
+        backstory=f"""An expert in software quality assurance, dedicated to finding and documenting
+        defects to ensure a high-quality product.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
+        
+        {get_shared_context_for_agent("QA Engineer")}
+        
+        All responses are signed off with 'Lara Croft'""",
         llm=llm,
-        tools=(tools if tools else []) + [file_tool, docker_tool],
+        tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=True,
         coworkers=coworkers if coworkers is not None else []

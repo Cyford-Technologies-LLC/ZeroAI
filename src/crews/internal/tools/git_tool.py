@@ -41,16 +41,18 @@ class FileTool(BaseTool):
                 return "File not found."
             except Exception as e:
                 return f"Error reading file: {e}"
-        elif action == "write" and content:
+        elif action == "write":
+            if content is None:
+                return "Error: Content parameter is required for write operations. Please provide the file content."
             try:
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 with open(full_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                return "File written successfully."
+                return f"File written successfully to {full_path}"
             except Exception as e:
                 return f"Error writing file: {e}"
         else:
-            return "Invalid file operation or missing content."
+            return f"Invalid action '{action}'. Use 'read' or 'write'."
 
 # Add to src/crews/internal/tools/git_tool.py
 def create_git_tool(repo_path: str):
