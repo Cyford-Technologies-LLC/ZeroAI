@@ -217,7 +217,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         },
         resources=[],
         goal="Manage and coordinate research tasks, ensuring all project details are considered. "
-             "MEMORY PRIORITY: Always check your memory first before using any tools. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
+             f"MEMORY PRIORITY: Always check your memory first before using any tools and the first thing you should always read is th project details in knowledge/internal_crew/{project_location}/project_config.yaml  if it exist. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
              "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
              "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
              f"KNOWLEDGE FILES: For project info, read knowledge/internal_crew/{project_location}/project_config.yaml once and memorize it. "
