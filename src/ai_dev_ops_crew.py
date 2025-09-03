@@ -10,6 +10,10 @@ from typing import Dict, Any, Optional, List
 from rich.console import Console
 from rich.table import Table
 from pathvalidate import sanitize_filepath
+from src.utils.env_loader import load_secure_env, get_secure_token
+
+# Load secure environment variables at startup
+load_secure_env()
 
 
 from crewai import Crew
@@ -210,9 +214,22 @@ class AIOpsCrewManager:
 
         # Load project-specific config
         self.project_config = self._load_project_config()
+        
+        # Debug output
+        console.print(f"DEBUG: project_config type: {type(self.project_config)}", style="magenta")
+        console.print(f"DEBUG: project_config value: {self.project_config}", style="magenta")
+        
+        # Ensure project_config is not None
+        if self.project_config is None:
+            console.print("WARNING: project_config is None, creating default", style="yellow")
+            self.project_config = {
+                "project": {"name": self.project_id},
+                "repository": {},
+                "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
+            }
 
-        # Ensure 'repository' key exists before accessing it
-        if self.repository and 'repository' not in self.project_config:
+        # Ensure 'repository' key exists and is not None before accessing it
+        if 'repository' not in self.project_config or self.project_config['repository'] is None:
             self.project_config['repository'] = {}
 
         # Override repository URL if provided in inputs
@@ -237,17 +254,28 @@ class AIOpsCrewManager:
                 console.print(f"⚠️ No config found for project '{self.project_id}', using default", style="yellow")
                 project_config = {
                     "project": {"name": self.project_id},
+                    "repository": {},
                     "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
                 }
             else:
                 from src.utils.yaml_utils import load_yaml_config
                 project_config = load_yaml_config(config_path)
                 console.print(f"✅ Loaded project config for '{self.project_id}'", style="green")
+                
+                # Ensure repository key exists
+                if not project_config:
+                    project_config = {}
+                if 'repository' not in project_config:
+                    project_config['repository'] = {}
 
             return project_config
         except Exception as e:
-            # ... (original error handling) ...
-            pass  # Removed for brevity
+            console.print(f"❌ Error loading project config: {e}", style="red")
+            return {
+                "project": {"name": self.project_id},
+                "repository": {},
+                "crewai_settings": {"working_directory": f"/tmp/internal_crew/{self.project_id}/"}
+            }
 
     # src/ai_dev_ops_crew.py
 
@@ -349,32 +377,43 @@ class AIOpsCrewManager:
                     final_repo_url = self.repository
                     console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
 
-                # Get token key from Company_Details.Projects.GIT_TOKEN_KEY
+                # Get token key from project_config.yaml repository.REPO_TOKEN_KEY
                 repo_token_key = None
                 repo_token = None
                 
-                if hasattr(config, 'Company_Details') and config.Company_Details:
-                    company_details = config.Company_Details
-                    if isinstance(company_details, dict):
-                        projects = company_details.get("Projects", {})
-                        if isinstance(projects, dict):
-                            repo_token_key = projects.get("GIT_TOKEN_KEY", "")
-                            # Remove curly braces if present: {GH_TOKEN_CYFORD} -> GH_TOKEN_CYFORD
-                            if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
-                                repo_token_key = repo_token_key[1:-1]
-                            
-                            # Get token from environment or config.github_tokens
-                            if repo_token_key:
-                                repo_token = os.getenv(repo_token_key)
-                                if not repo_token and hasattr(config, 'github_tokens') and config.github_tokens:
-                                    repo_token = config.github_tokens.get(repo_token_key.lower().replace('gh_token_', '').replace('github_token_', ''))
-                                    if hasattr(repo_token, 'get_secret_value'):
-                                        repo_token = repo_token.get_secret_value()
+                # Get token key from project config
+                if self.project_config and 'repository' in self.project_config:
+                    repo_config = self.project_config['repository']
+                    if isinstance(repo_config, dict):
+                        repo_token_key = repo_config.get('REPO_TOKEN_KEY', '')
+                
+                # Default token key based on project name if not found in config
+                if not repo_token_key:
+                    if "cyford" in self.project_id.lower():
+                        repo_token_key = "GH_TOKEN_CYFORD"
+                    elif "testcorp" in self.project_id.lower():
+                        repo_token_key = "GITHUB_TOKEN_TESTCORP"
+                    else:
+                        repo_token_key = "GITHUB_TOKEN"  # Generic fallback
+                
+                # Remove curly braces if present: {GH_TOKEN_CYFORD} -> GH_TOKEN_CYFORD
+                if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
+                    repo_token_key = repo_token_key[1:-1]
+                
+                # Get token using secure loader
+                if repo_token_key:
+                    repo_token = get_secure_token(repo_token_key)
+                    if not repo_token and hasattr(config, 'github_tokens') and config.github_tokens:
+                        repo_token = config.github_tokens.get(repo_token_key.lower().replace('gh_token_', '').replace('github_token_', ''))
+                        if hasattr(repo_token, 'get_secret_value'):
+                            repo_token = repo_token.get_secret_value()
 
-                # --- Debugging print statements ---
+                # --- Enhanced debugging ---
                 console.print(f"DEBUG: Token key from Company_Details: {repo_token_key}", style="magenta")
                 console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
                 console.print(f"DEBUG: Retrieved repo_token: {'***' if repo_token else 'None'}", style="magenta")
+                console.print(f"DEBUG: Environment check - {repo_token_key}: {'SET' if os.getenv(repo_token_key) else 'NOT SET'}", style="magenta")
+                console.print(f"DEBUG: Available env vars: {[k for k in os.environ.keys() if 'TOKEN' in k or 'GH_' in k]}", style="magenta")
                 # --- End repo logic ---
 
                 task_inputs = {

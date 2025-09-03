@@ -13,10 +13,10 @@ done
 ### Peer Management
 ```bash
 # Add GPU peer
-python3 run/internal/peer_manager.py --ip 149.36.1.65 --name GPU-01 --model codellama:13b add
+python -m run.internal.peer_manager --ip 149.36.1.65 --name GPU-01 --model codellama:13b add
 
 # List peers
-python3 run/internal/peer_manager.py list
+python -m run.internal.peer_manager list
 ```
 
 ## Public API Commands
@@ -38,22 +38,22 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:3939/run_crew_ai_json/" -C
 ### Basic Crew Operations
 ```bash
 # Simple chat interface
-clear ; python3 run/internal/simple_chat.py
+clear ; python -m run.internal.simple_chat
 
 # API crew test
-clear ; python3 run/internal/api_crew.py
+clear ; python -m run.internal.api_crew
 
 # Smart AI demo
-clear ; python3 run/internal/smart_ai_demo.py
+clear ; python -m run.internal.smart_ai_demo
 
 # Code generator
-clear ; python3 run/internal/code_generator.py
+clear ; python -m run.internal.code_generator
 
 # Basic crew example
-clear ; python3 run/internal/basic_crew.py
+clear ; python -m run.internal.basic_crew
 
 # Advanced analysis
-clear ; python3 run/examples/advanced_analysis.py
+clear ; python -m run.examples.advanced_analysis
 ```
 
 ## Internal DevOps Commands
@@ -61,29 +61,31 @@ clear ; python3 run/examples/advanced_analysis.py
 ### Basic Usage
 ```bash
 # Simple task
-python run/internal/run_dev_ops.py "Fix a simple bug in the login form validation"
+python -m run.internal.run_dev_ops "Fix a simple bug in the login form validation"
 
 # With category specification
-python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
+python -m run.internal.run_dev_ops --category=developer "Fix a simple bug in the login form validation"
 
 # With project and repository
-python run/internal/run_dev_ops.py --project=zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "Add error handling to the peer discovery system"
+python -m run.internal.run_dev_ops --project=zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "Add error handling to the peer discovery system"
 
 # Dry run for testing
-python run/internal/run_dev_ops.py --dry-run "Test task that won't make changes"
+python -m run.internal.run_dev_ops --dry-run "Test task that won't make changes"
 
 # Verbose output
-python run/internal/run_dev_ops.py -v "Task with detailed logging"
+python -m run.internal.run_dev_ops -v "Task with detailed logging"
 ```
 
 ### Complex Examples
 ```bash
 # Bug fix with repository operations
-python run/internal/run_dev_ops.py "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
+python -m run.internal.run_dev_ops "Fix a bug in the code where user login fails for repo https://github.com/myuser/my-test-app.git, update the README to reflect the change, and push the changes to a new branch 'fix-login'."
 
 # Category-specific development task
-cd /opt/ZeroAI
-python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the login form validation"
+python -m run.internal.run_dev_ops --category=developer "Fix a simple bug in the login form validation"
+
+# Docker container usage
+docker exec -it zeroai_api-prod python -m run.internal.run_dev_ops "Task description"
 ```
 
 ## Learning System Commands
@@ -91,10 +93,10 @@ python run/internal/run_dev_ops.py --category=developer "Fix a simple bug in the
 ### Analysis Commands
 ```bash
 # View learning summary
-python run/internal/analyze_learning.py --action=summary
+python -m run.internal.analyze_learning --action=summary
 
 # View model performance
-python run/internal/analyze_learning.py --action=models
+python -m run.internal.analyze_learning --action=models
 ```
 
 ## Docker Commands
@@ -126,18 +128,18 @@ docker exec -it zeroai_api-prod bash
 ### Testing
 ```bash
 # Test internal crews individually
-python run/testing/simple.py
-python run/testing/code_generator.py
+python -m run.testing.simple
+python -m run.testing.code_generator
 ```
 
 ### Debugging
 ```bash
 # Check peer discovery
-python3 run/internal/peer_manager.py list
+python -m run.internal.peer_manager list
 
 # Test specific crew categories
-python run/internal/run_dev_ops.py --category=research "Research latest AI developments"
-python run/internal/run_dev_ops.py --category=documentation "Update project documentation"
+python -m run.internal.run_dev_ops --category=research "Research latest AI developments"
+python -m run.internal.run_dev_ops --category=documentation "Update project documentation"
 ```
 
 ## Model Preferences by Crew Type
@@ -167,6 +169,9 @@ python run/internal/run_dev_ops.py --category=documentation "Update project docu
 # GitHub token for repository operations
 export GH_TOKEN_CYFORD=your_github_token_here
 
+# Python path for module execution
+export PYTHONPATH=/app:$PYTHONPATH
+
 # Ollama configuration
 export OLLAMA_HOST=http://ollama:11434
 export OLLAMA_MODEL_NAME=llama3.2:1b
@@ -176,6 +181,14 @@ export PEER_DEBUG_LEVEL=3
 export ROUTER_DEBUG_LEVEL=3
 export ENABLE_PEER_LOGGING=true
 export ENABLE_ROUTER_LOGGING=true
+```
+
+### Docker Environment Variables
+```bash
+# Set in docker-compose.yml or .env file
+PYTHONPATH=/app
+OLLAMA_HOST=http://ollama:11434
+GH_TOKEN_CYFORD=your_github_token_here
 ```
 
 ## Troubleshooting Commands
