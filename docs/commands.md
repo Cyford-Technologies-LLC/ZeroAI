@@ -193,6 +193,15 @@ GH_TOKEN_CYFORD=your_github_token_here
 
 ## Troubleshooting Commands
 
+### Import Issues After Merge
+```bash
+# Fix all import issues automatically
+python fix_imports.py
+
+# Complete post-merge fix (imports + rebuild)
+bash scripts/post-merge.sh
+```
+
 ### Common Issues
 ```bash
 # Check container status
