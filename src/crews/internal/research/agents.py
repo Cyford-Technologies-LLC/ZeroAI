@@ -113,6 +113,22 @@ class ProjectConfigReaderTool(BaseTool):
             return f"Error: No project configuration found for '{self.project_location}'."
 
 
+class KnowledgeBaseTool(BaseTool):
+    name: str = "Knowledge Base"
+    description: str = "ALWAYS CHECK THIS FIRST for common project questions like git URL, project name, company name. Provides immediate answers without needing files or external tools."
+
+    def _run(self, question: str) -> str:
+        question_lower = question.lower()
+        if "git url" in question_lower or "repository url" in question_lower or "repo url" in question_lower or "git" in question_lower:
+            return "ANSWER: Our git URL is https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
+        elif "project name" in question_lower:
+            return "ANSWER: Our project name is ZeroAI"
+        elif "company" in question_lower or "organization" in question_lower:
+            return "ANSWER: Our organization is Cyford-Technologies-LLC"
+        else:
+            return f"No immediate knowledge about: {question}. Try other tools if needed."
+
+
 class OnlineSearchTool(BaseTool):
     name: str = "Online Search"
     description: str = "Performs online searches to find information from websites."
@@ -216,6 +232,10 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
     all_tools = _get_tools_with_github(inputs, tools)
     
+    # Add knowledge base tool for immediate answers
+    knowledge_tool = KnowledgeBaseTool()
+    all_tools.insert(0, knowledge_tool)  # Put it first so agent tries it first
+    
     # Add delegation tools if coworkers are provided
     if coworkers:
         delegation_tool = DelegationTool(coworkers=coworkers)
@@ -246,14 +266,13 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Answer user questions directly using existing knowledge. Only use tools when you genuinely don't know the answer. "
-             "DIRECT ANSWERS FIRST: For simple questions, provide direct answers from your knowledge without using tools. "
-             "KNOWN INFORMATION: The project repository is https://github.com/Cyford-Technologies-LLC/ZeroAI.git - use this for git URL questions. "
-             f"MEMORY PRIORITY: Check your memory first. Only read knowledge/internal_crew/{project_location}/project_config.yaml if you need specific project details you don't already know. "
-             "TOOL USAGE: Only use tools when you genuinely need new information you don't have. "
+        goal="ALWAYS check Knowledge Base tool FIRST for any question. If Knowledge Base has the answer, use it and respond immediately. "
+             "TOOL ORDER: 1) Knowledge Base (for common questions), 2) Memory, 3) File tools only if needed for specific details. "
+             "KNOWN ANSWERS: Git URL = https://github.com/Cyford-Technologies-LLC/ZeroAI.git, Project = ZeroAI, Company = Cyford-Technologies-LLC. "
+             "CRITICAL: Never try to read URLs as file paths. URLs are not files. "
              "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. "
              "If you don't know something, say 'I don't have that information' - never make up details.",
-        backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
+        backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams. \n\nIMPORTANT TOOL USAGE RULES:\n- NEVER add 'Use the' prefix to tool names\n- Tool names are EXACT: 'File Tool', 'Git Operator Tool', 'Knowledge Base'\n- For git URL questions, the answer is: https://github.com/Cyford-Technologies-LLC/ZeroAI.git\n- Answer simple questions directly without tools\n\nKNOWN FACTS:\n- Git URL: https://github.com/Cyford-Technologies-LLC/ZeroAI.git\n- Project: ZeroAI\n- Company: Cyford-Technologies-LLC\n\n{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
         verbose=config.agents.verbose,
