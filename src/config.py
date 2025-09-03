@@ -6,7 +6,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, SecretStr
-from env_loader import ENV
+from src.utils.env_loader import ENV
 from dotenv import find_dotenv, load_dotenv
 
 # Find and load environment variables from .env
