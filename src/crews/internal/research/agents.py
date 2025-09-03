@@ -249,13 +249,11 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         },
         resources=[],
         goal="Manage and coordinate research tasks, ensuring all project details are considered. "
-             f"PROJECT TOOL USAGE: Use Project Tool to get project info - examples: Project Tool(project_location='{project_location}', mode='all') for full config, Project Tool(project_location='{project_location}', mode='repository.url') for git URL. "
-             f"MEMORY PRIORITY: Always check your memory first before using any tools. Use Project Tool to get project details from {project_location} if needed. "
-             "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
-             "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
-             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
-             f"REPOSITORY: Use Project Tool to get repository info if needed. "
-             "If information doesn't exist in your memory or project config, say 'we do not have that information' - never make up details.",
+             f"PROJECT CONFIG: Use Project Tool with project_location='{project_location}' to get project info. Project config is in knowledge/ directory, NOT in working directory. "
+             f"WORKING DIRECTORY: /tmp/internal_crew/zeroai/ is for creating NEW files, not reading project config. "
+             "MEMORY: Remember what you've already learned to avoid redundant tool usage. "
+             "DELEGATION: For file creation tasks, delegate to Senior Developer with specific instructions. "
+             "ANSWERS: Provide conversational, human-readable responses. Never return raw YAML/JSON. ",
         backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
