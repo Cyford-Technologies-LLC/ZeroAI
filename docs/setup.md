@@ -177,6 +177,38 @@ logging:
   file: "logs/ai_crew.log"   # Log file location
 ```
 
+### 🔐 Optional: Persistent Secure Keys
+
+For production deployments, set up persistent secure environment variables:
+
+```bash
+# Create secure system directory
+sudo mkdir -p /etc/cyford/zeroai
+sudo chmod 700 /etc/cyford/zeroai
+
+# Create secure environment file
+sudo tee /etc/cyford/zeroai/.env << EOF
+# GitHub Tokens
+GH_TOKEN_CYFORD=your_private_token_here
+GITHUB_TOKEN_TESTCORP=your_test_token_here
+
+# Other secure variables
+OPENAI_API_KEY=your_openai_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here
+EOF
+
+# Secure permissions (root only)
+sudo chmod 600 /etc/cyford/zeroai/.env
+sudo chown root:root /etc/cyford/zeroai/.env
+```
+
+**Benefits:**
+- ✅ **Survives Docker rebuilds** - Tokens persist across container recreations
+- ✅ **Secure permissions** - Only root can read/write
+- ✅ **Not in repository** - Tokens never committed to git
+- ✅ **Automatic loading** - Docker automatically loads these variables
+- ✅ **Fallback support** - Still works with local `.env` for development
+
 ### Advanced Configuration
 
 For production deployments, consider:
@@ -323,6 +355,12 @@ If you encounter issues:
 - [ ] API accessible: `curl http://localhost:3939/health`
 - [ ] Peer service accessible: `curl http://localhost:8080/peers`
 - [ ] Internal crew functional: `python run/internal/run_dev_ops.py "test"`
+
+### Optional: Secure Keys Setup
+- [ ] System secure directory created: `/etc/cyford/zeroai/`
+- [ ] Secure `.env` file created with proper permissions
+- [ ] GitHub tokens configured and accessible
+- [ ] Docker containers can access secure environment variables
 
 ## 📖 Next Steps
 

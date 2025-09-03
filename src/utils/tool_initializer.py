@@ -34,9 +34,17 @@ def get_universal_tools(inputs: Dict[str, Any], initial_tools: Optional[List] = 
         except Exception as e:
             console.print(f"❌ Error adding GitTool: {e}", style="red")
     else:
+        missing_items = []
+        if not repo_path or not isinstance(repo_path, str) or not repo_path.strip():
+            missing_items.append("repository URL")
+        if not repo_token:
+            missing_items.append("authentication token")
+        
         console.print(
-            "⚠️ Skipping GitTool creation: Missing valid repository URL or authentication token. Git tools will not be available.",
+            f"⚠️ Skipping GitTool creation: Missing {' and '.join(missing_items)}. Git tools will not be available.",
             style="yellow")
+        console.print(f"   Repository URL: {'✅' if repo_path else '❌'} {repo_path or 'Not provided'}", style="dim")
+        console.print(f"   Auth Token: {'✅' if repo_token else '❌'} {'***' if repo_token else 'Not provided'}", style="dim")
 
     # Add FileTool if a working directory is provided
     if working_dir:
