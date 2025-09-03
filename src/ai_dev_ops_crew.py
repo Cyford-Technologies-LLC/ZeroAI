@@ -1,5 +1,6 @@
 import os
 import sys
+import signal
 import uuid
 import time
 import importlib
@@ -34,6 +35,18 @@ from src.utils.custom_logger_callback import CustomLogger
 
 # Configure console
 console = Console()
+
+# Global flag for graceful shutdown
+shutdown_requested = False
+
+def signal_handler(signum, frame):
+    """Handle interruption signals gracefully"""
+    global shutdown_requested
+    shutdown_requested = True
+    console.print("\n\n🛑 [bold yellow]Crew execution interrupted. Cleaning up...[/bold yellow]")
+
+# Register signal handler
+signal.signal(signal.SIGINT, signal_handler)
 
 
 # The preload_internal_crews function remains unchanged
@@ -333,6 +346,11 @@ class AIOpsCrewManager:
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
         try:
+            # Check for shutdown request at start
+            if shutdown_requested:
+                console.print("Shutdown requested. Aborting crew execution.", style="yellow")
+                return {"success": False, "error": "Crew execution aborted by user"}
+                
             # Sanitize project_id to prevent path traversal vulnerabilities
             sanitized_project_id = sanitize_filepath(self.project_id)
 
@@ -455,6 +473,12 @@ class AIOpsCrewManager:
                     }
 
                 console.print(f"🚀 Executing Team Manager crew for task: {self.prompt}", style="blue")
+                
+                # Check for shutdown request before crew kickoff
+                if shutdown_requested:
+                    console.print("Shutdown requested before crew kickoff. Aborting.", style="yellow")
+                    return {"success": False, "error": "Crew kickoff aborted by user"}
+                    
                 result = crew.kickoff()
 
                 custom_logger.save_log()
@@ -502,6 +526,9 @@ class AIOpsCrewManager:
                     "crews_status": self.crews_status
                 }
 
+        except KeyboardInterrupt:
+            console.print("\n\n🛑 [bold yellow]Crew execution interrupted by user[/bold yellow]")
+            return {"success": False, "error": "Crew execution interrupted by user"}
         except Exception as e:
             console.print(f"❌ Error executing task: {e}", style="red")
             console.print("Traceback:", style="red")
