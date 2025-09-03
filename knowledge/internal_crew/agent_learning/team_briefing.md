@@ -1,16 +1,15 @@
-# ZeroAI Team Briefing - Shared Knowledge Base
+# ZeroAI Team Briefing - Universal AI Agent Framework
 
-## Global Context
-- **Project**: ZeroAI - Zero Cost AI Agent Framework
-- **Mission**: Build autonomous AI workforce running entirely on local hardware
-- **Architecture**: Distributed multi-agent system with GPU peer discovery
+## Framework Purpose
+- **Mission**: Universal AI agent framework for any project type
+- **Scope**: Public websites, security audits, code improvement, business analysis, etc.
+- **Architecture**: Distributed multi-agent system with dynamic project adaptation
 
-## Key System Details
-- **Project Manager**: Sarah Connor has all project-specific details (repository, tokens, working directory)
-- **GPU Server**: 149.36.1.65:11434 (primary compute node)
-- **Local Fallback**: ollama:11434 (container local)
-- **Project Config**: Located at `knowledge/internal_crew/{project_location}/project_config.yaml`
-- **Dynamic Paths**: All project details are loaded dynamically based on current project 
+## Dynamic Project System
+- **Project Manager**: Has all project-specific details from dynamic configuration
+- **Project Config**: Always at `knowledge/internal_crew/{project_location}/project_config.yaml`
+- **No Hardcoding**: All paths, tokens, repositories are loaded from project configuration
+- **Universal Tools**: Adapt to any project's technology stack and requirements 
 
 
 ## Team Coordination Rules
@@ -21,12 +20,12 @@
 5. **Senior Developer** implements complex solutions
 6. **Git Operator** handles all repository operations
 
-## Project Flow
-1. **Team Manager** greets and responds to humans unless question is directed to specific agent
-2. **Project Manager** has all project information (working directory, git URL, requirements) and assigns project tasks
-3. **Senior Developers** handle complex coding with Code Researcher help, can delegate simple tasks to Junior Developer
-4. **All project tasks** should be done in Docker environment using directory and git details from Project Manager
-5. **Testing required** - QA Engineer must test code before Git Operator commits to repository  
+## Universal Project Flow
+1. **Team Manager** coordinates all work - adapts to any project type
+2. **Project Manager** loads project-specific configuration and assigns appropriate tasks
+3. **Specialists** (developers, researchers, security experts) adapt tools and approach to project needs
+4. **Environment**: Use project-specified environment (Docker, local, cloud) from configuration
+5. **Quality Assurance**: Testing and validation appropriate to project type before deployment  
 
 
 ## Learning System
@@ -34,13 +33,13 @@
 - **Personal Learning**: Store discoveries in `knowledge/internal_crew/agent_learning/{agent_role}/`
 - **Team Learning**: Share important findings in `knowledge/internal_crew/agent_learning/shared_discoveries/`
 
-## Current Priorities
-- Each project and role has different priorities - check with Project Manager for specifics
-- Continuously learn and improve at your assigned tasks
-- Document all changes and improvements for team knowledge
-- Fix import issues across internal crews
-- Ensure all agents can communicate properly
-- Maintain system stability and error handling
+## Universal Priorities
+- **Project Adaptation**: Each project has unique requirements - always check project configuration first
+- **Dynamic Resource Loading**: Use project-specific tokens, repositories, and tools
+- **Technology Agnostic**: Adapt to any tech stack (Python, JavaScript, PHP, security tools, etc.)
+- **Quality Standards**: Maintain high standards regardless of project type
+- **Documentation**: Document discoveries for future projects
+- **Continuous Learning**: Improve framework capabilities with each project
 
 
 

@@ -60,10 +60,9 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
         Project location: {project_location}
         
         COORDINATION PROCESS:
-        1. Analyze if the question requires project-specific information
+        1. Analyze if the question requires project-specific information.  If it is a simple question  try an give a simple answer.
         2. If project-related, check local knowledge files using File Tool:
-           - For ZeroAI project info: knowledge/internal_crew/cyford/zeroai/project_config.yaml
-           - For company info: knowledge/cyford_technologies.md
+           - For project info: knowledge/internal_crew/{project_location}/project_config.yaml
            - ALWAYS use relative paths (never absolute paths starting with /)
         3. For general questions, use your existing knowledge and memory
         4. Coordinate with team members if additional research is needed
