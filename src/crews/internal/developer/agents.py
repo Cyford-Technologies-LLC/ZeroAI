@@ -153,7 +153,12 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         backstory=f"""You are a junior software developer, eager to learn and implement code solutions
         under the guidance of senior team members.
         
-        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool to actually write the files to the working directory. Don't just provide code in your response - create the actual files!
+        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool with these parameters:
+        - action: "write"
+        - path: "/tmp/internal_crew/zeroai/filename.ext"
+        - content: "the actual file content here"
+        
+        Don't just provide code in your response - create the actual files!
         
         WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
@@ -207,7 +212,12 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         backstory=f"""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.
         
-        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool to actually write the files to the working directory. Don't just provide code in your response - create the actual files!
+        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool with these parameters:
+        - action: "write"
+        - path: "/tmp/internal_crew/zeroai/filename.ext"
+        - content: "the actual file content here"
+        
+        Don't just provide code in your response - create the actual files!
         
         WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
