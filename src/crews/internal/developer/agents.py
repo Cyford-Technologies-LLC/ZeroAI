@@ -98,9 +98,11 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "API Development", "Microservices Architecture", "PHP", "JavaScript"
         ],
         expertise_level=9.2,
-        goal="Research and understand code patterns and issues. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If the Project Manager has answered the question completely, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
+        goal="Research existing code patterns and issues. If asked to create new files that don't exist, immediately delegate to Senior Developer instead of searching for non-existent files. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""You are an expert at analyzing codebases, understanding
         complex systems, and identifying potential issues.
+        
+        IMPORTANT: If asked to create NEW files that don't exist, don't waste time searching for them. Instead, immediately delegate to Senior Developer with clear instructions.
         
         WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
