@@ -220,7 +220,9 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
              "MEMORY PRIORITY: Always check your memory first before using any tools. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
              "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
              "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
-             "KNOWLEDGE FILES: For ZeroAI project info, read knowledge/internal_crew/cyford/zeroai/project_config.yaml once and memorize it. For company info, read knowledge/cyford_technologies.md once and memorize it. "
+             f"KNOWLEDGE FILES: For project info, read knowledge/internal_crew/{project_location}/project_config.yaml once and memorize it. "
+             f"KNOWLEDGE FILES: all details in  knowledge/internal_crew/{project_location}/  should be memorize. "
+             "KNOWLEDGE FILES: all information in . knowledge/ is public information and can be used to learn.  knowledge/internal_crew/  is private information an only should be accessed if you need to store your personal learning files (knowledge/internal_crew/agent_learning)..  or the project specifies this a directory in here as its project  "
              "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
              f"REPOSITORY: Use {repository} if provided, otherwise use memorized project config info. "
              "If information doesn't exist in your memory or knowledge files, say 'we do not have that information' - never make up details.",

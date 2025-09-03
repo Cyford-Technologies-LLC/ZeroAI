@@ -6,11 +6,11 @@
 - **Architecture**: Distributed multi-agent system with GPU peer discovery
 
 ## Key System Details
-- **Primary Repository**: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
-- **Token**: Use GH_TOKEN_CYFORD for all GitHub operations
+- **Project Manager**: Sarah Connor has all project-specific details (repository, tokens, working directory)
 - **GPU Server**: 149.36.1.65:11434 (primary compute node)
 - **Local Fallback**: ollama:11434 (container local)
-- **Project Manager**: Sarah Connor has all project details and requirements 
+- **Project Config**: Located at `knowledge/internal_crew/{project_location}/project_config.yaml`
+- **Dynamic Paths**: All project details are loaded dynamically based on current project 
 
 
 ## Team Coordination Rules
