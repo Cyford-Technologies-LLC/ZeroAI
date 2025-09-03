@@ -296,8 +296,10 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "technical_level": "expert"
         },
         resources=[],
-        goal="Gather information on internal project details.",
+        goal="Gather information on internal project details. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""An expert at internal research, finding and documenting all project-specific information.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
         {get_shared_context_for_agent("Internal Researcher")}
         
@@ -340,8 +342,10 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Perform comprehensive online searches to find information.",
+        goal="Perform comprehensive online searches to find information. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""A specialized agent for efficient online information retrieval.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
         {get_shared_context_for_agent("Online Researcher")}
         

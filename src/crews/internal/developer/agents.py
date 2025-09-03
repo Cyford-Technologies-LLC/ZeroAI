@@ -98,9 +98,11 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "API Development", "Microservices Architecture", "PHP", "JavaScript"
         ],
         expertise_level=9.2,
-        goal="Research and understand code patterns and issues",
+        goal="Research and understand code patterns and issues. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If the Project Manager has answered the question completely, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""You are an expert at analyzing codebases, understanding
         complex systems, and identifying potential issues.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
         {get_shared_context_for_agent("Code Researcher")}
         
@@ -153,9 +155,11 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "code_quality_guidelines.pdf",
             "https://testing-best-practices.com"
         ],
-        goal="Implement high-quality code solutions under guidance",
+        goal="Implement high-quality code solutions under guidance. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a junior software developer, eager to learn and implement code solutions
         under the guidance of senior team members.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
         {get_shared_context_for_agent("Junior Developer")}
         
@@ -209,9 +213,11 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "code_quality_guidelines.pdf",
             "https://testing-best-practices.com"
         ],
-        goal="Implement high-quality, robust code solutions to complex problems",
+        goal="Implement high-quality, robust code solutions to complex problems. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
         {get_shared_context_for_agent("Senior Developer")}
         
@@ -258,9 +264,11 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         expertise=[
             "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"
         ],
-        goal="Ensure the quality and reliability of code solutions through thorough testing",
+        goal="Ensure the quality and reliability of code solutions through thorough testing. IMPORTANT: Before starting any testing, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional testing needed.' and stop.",
         backstory=f"""An expert in software quality assurance, dedicated to finding and documenting
         defects to ensure a high-quality product.
+        
+        WORKFLOW EFFICIENCY: Always check if previous team members (especially Project Manager) have already answered the user's question completely. If they have, don't duplicate work - simply acknowledge their answer and stop.
         
         {get_shared_context_for_agent("QA Engineer")}
         
