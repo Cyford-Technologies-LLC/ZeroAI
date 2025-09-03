@@ -142,8 +142,6 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
         repo_token_key = inputs.get("repo_token_key")
         if repo_token_key:
             console.print(f"🔧 Configuring GitHub tool with token key: {repo_token_key}", style="green")
-        else:
-            console.print(f"⚠️ No repo_token_key found in inputs: {list(inputs.keys())}", style="yellow")
             # Create a configured version that uses the specific token key
             class ConfiguredGithubTool(dynamic_github_tool.__class__):
                 name: str = "Dynamic GitHub Search Tool"
@@ -159,6 +157,7 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
             base_tools = [tool for tool in base_tools if not (hasattr(tool, 'name') and 'GitHub' in tool.name)]
             base_tools.append(configured_tool)
         else:
+            console.print(f"⚠️ No repo_token_key found in inputs: {list(inputs.keys())}", style="yellow")
             base_tools = base_tools + [dynamic_github_tool]
     
     # Use get_universal_tools with fallback handling but exclude duplicate GitHub tools

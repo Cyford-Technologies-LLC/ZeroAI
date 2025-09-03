@@ -394,12 +394,12 @@ class AIOpsCrewManager:
                 
                 # Default token key based on project name if not found in config
                 if not repo_token_key:
-                    if "cyford" in self.project_id.lower():
+                    if "cyford" in self.project_id.lower() or "zeroai" in self.project_id.lower():
                         repo_token_key = "GH_TOKEN_CYFORD"
                     elif "testcorp" in self.project_id.lower():
                         repo_token_key = "GITHUB_TOKEN_TESTCORP"
                     else:
-                        repo_token_key = "GITHUB_TOKEN"  # Generic fallback
+                        repo_token_key = "GH_TOKEN_CYFORD"  # Default to Cyford token
                 
                 # Remove curly braces if present: {GH_TOKEN_CYFORD} -> GH_TOKEN_CYFORD
                 if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
@@ -432,6 +432,7 @@ class AIOpsCrewManager:
                     "working_dir": self.working_dir,
                     "repo_token": repo_token,  # Pass the token here
                     "repo_token_key": repo_token_key,  # Pass the token key here
+                    "project_config": self.project_config,  # Pass project config to agents
                 }
 
                 crew = create_team_manager_crew(
