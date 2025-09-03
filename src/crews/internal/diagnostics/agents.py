@@ -2,10 +2,10 @@
 from crewai import Agent
 from rich.console import Console
 from typing import Dict, Any, List, Optional
-from src.crews.internal.diagnostics.tools import LogAnalysisTool, DiagnosticFileHandlerTool
+from .tools import LogAnalysisTool, DiagnosticFileHandlerTool
 from src.utils.memory import Memory
-from crewai.tools import BaseTool  # FIX: Import BaseTool
-from src.learning.task_manager import TaskManager  # FIX: Import TaskManager
+from crewai.tools import BaseTool
+from src.learning.task_manager import TaskManager
 import json
 
 console = Console()
