@@ -18,30 +18,59 @@ from langchain_ollama import OllamaLLM
 
 
 class DelegationTool(BaseTool):
-    name: str = "Ask question to coworker"
-    description: str = "Delegate a task or question to a specific coworker by their exact role name."
+    name: str = "Delegate work to coworker"
+    description: str = "Delegate a specific task to one of the following coworkers: Documentation Writer, CrewAI Diagnostic Agent, Scheduler, Code Researcher, Senior Developer, QA Engineer, Git Operator, Internal Researcher, Online Researcher, Junior Developer, QA Engineer, Senior Developer\nThe input to this tool should be the coworker, the task you want them to do, and ALL necessary context to execute the task, they know nothing about the task, so share absolutely everything you know, don't reference things but instead explain them."
     coworkers: List[Agent]
     
     def __init__(self, coworkers: List[Agent]):
         super().__init__(coworkers=coworkers)
     
-    def _run(self, coworker_role: str, question: str) -> str:
-        """Delegate a question to a specific coworker."""
+    def _run(self, task: str, context: str, coworker: str) -> str:
+        """Delegate a task to a specific coworker."""
         target_coworker = None
-        for coworker in self.coworkers:
-            if coworker.role == coworker_role:
-                target_coworker = coworker
+        for c in self.coworkers:
+            if c.role == coworker:
+                target_coworker = c
                 break
         
         if not target_coworker:
             available_roles = [c.role for c in self.coworkers]
-            return f"Coworker '{coworker_role}' not found. Available coworkers: {', '.join(available_roles)}"
+            return f"Coworker '{coworker}' not found. Available coworkers: {', '.join(available_roles)}"
         
         try:
-            response = target_coworker.execute_task(question)
-            return f"Response from {coworker_role}: {response}"
+            full_task = f"Task: {task}\nContext: {context}"
+            response = target_coworker.execute_task(full_task)
+            return f"Response from {coworker}: {response}"
         except Exception as e:
-            return f"Error delegating to {coworker_role}: {str(e)}"
+            return f"Error delegating to {coworker}: {str(e)}"
+
+
+class QuestionTool(BaseTool):
+    name: str = "Ask question to coworker"
+    description: str = "Ask a specific question to one of the following coworkers: Documentation Writer, CrewAI Diagnostic Agent, Scheduler, Code Researcher, Senior Developer, QA Engineer, Git Operator, Internal Researcher, Online Researcher, Junior Developer, QA Engineer, Senior Developer\nThe input to this tool should be the coworker, the question you have for them, and ALL necessary context to ask the question properly, they know nothing about the question, so share absolutely everything you know, don't reference things but instead explain them."
+    coworkers: List[Agent]
+    
+    def __init__(self, coworkers: List[Agent]):
+        super().__init__(coworkers=coworkers)
+    
+    def _run(self, question: str, context: str, coworker: str) -> str:
+        """Ask a question to a specific coworker."""
+        target_coworker = None
+        for c in self.coworkers:
+            if c.role == coworker:
+                target_coworker = c
+                break
+        
+        if not target_coworker:
+            available_roles = [c.role for c in self.coworkers]
+            return f"Coworker '{coworker}' not found. Available coworkers: {', '.join(available_roles)}"
+        
+        try:
+            full_question = f"Question: {question}\nContext: {context}"
+            response = target_coworker.execute_task(full_question)
+            return f"Response from {coworker}: {response}"
+        except Exception as e:
+            return f"Error asking {coworker}: {str(e)}"
 
 # NOTE: Import tool_factory with error handling
 try:
@@ -190,8 +219,9 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     # Add delegation tools if coworkers are provided
     if coworkers:
         delegation_tool = DelegationTool(coworkers=coworkers)
-        all_tools.append(delegation_tool)
-        console.print(f"🔧 Added delegation tool to Project Manager with {len(coworkers)} coworkers", style="green")
+        question_tool = QuestionTool(coworkers=coworkers)
+        all_tools.extend([delegation_tool, question_tool])
+        console.print(f"🔧 Added delegation tools to Project Manager with {len(coworkers)} coworkers", style="green")
 
     return Agent(
         role="Project Manager",
@@ -216,16 +246,13 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         resources=[],
-        goal="Manage and coordinate research tasks, ensuring all project details are considered. "
-             f"MEMORY PRIORITY: Always check your memory first before using any tools and the first thing you should always read is th project details in knowledge/internal_crew/{project_location}/project_config.yaml  if it exist. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
-             "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
-             "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
-             f"KNOWLEDGE FILES: For project info, read knowledge/internal_crew/{project_location}/project_config.yaml once and memorize it. "
-             f"KNOWLEDGE FILES: all details in  knowledge/internal_crew/{project_location}/  should be memorize. "
-             "KNOWLEDGE FILES: all information in . knowledge/ is public information and can be used to learn.  knowledge/internal_crew/  is private information an only should be accessed if you need to store your personal learning files (knowledge/internal_crew/agent_learning)..  or the project specifies this a directory in here as its project  "
-             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
-             f"REPOSITORY: Use {repository} if provided, otherwise use memorized project config info. "
-             "If information doesn't exist in your memory or knowledge files, say 'we do not have that information' - never make up details.",
+        goal="Answer user questions directly using existing knowledge. Only use tools when you genuinely don't know the answer. "
+             "DIRECT ANSWERS FIRST: For simple questions, provide direct answers from your knowledge without using tools. "
+             "KNOWN INFORMATION: The project repository is https://github.com/Cyford-Technologies-LLC/ZeroAI.git - use this for git URL questions. "
+             f"MEMORY PRIORITY: Check your memory first. Only read knowledge/internal_crew/{project_location}/project_config.yaml if you need specific project details you don't already know. "
+             "TOOL USAGE: Only use tools when you genuinely need new information you don't have. "
+             "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. "
+             "If you don't know something, say 'I don't have that information' - never make up details.",
         backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
