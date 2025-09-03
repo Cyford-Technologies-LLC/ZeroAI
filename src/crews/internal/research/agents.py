@@ -74,11 +74,20 @@ class ProjectTool(BaseTool):
     def _run(self, project_location: str, mode: str, key: str = None) -> str:
         config_path = Path("knowledge") / "internal_crew" / project_location / "project_config.yaml"
         
+        # Try fallback paths if main path doesn't exist
+        if not config_path.is_file():
+            # Try common patterns like cyford/zeroai, company/project
+            base_path = Path("knowledge") / "internal_crew"
+            for item in base_path.rglob("project_config.yaml"):
+                if project_location.lower() in str(item).lower():
+                    config_path = item
+                    break
+        
         if mode == "file":
             return str(config_path)
         
         if not config_path.is_file():
-            return f"Error: No project configuration found for '{project_location}'."
+            return f"Error: No project configuration found for '{project_location}'. Searched in knowledge/internal_crew/"
         
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f) or {}
@@ -205,6 +214,10 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
     all_tools = _get_tools_with_github(inputs, tools)
     
+    # Add project tool
+    project_tool = ProjectTool()
+    all_tools.append(project_tool)
+    
     # Add delegation tools if coworkers are provided
     if coworkers:
         delegation_tool = DelegationTool(coworkers=coworkers)
@@ -235,15 +248,13 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         },
         resources=[],
         goal="Manage and coordinate research tasks, ensuring all project details are considered. "
-             f"MEMORY PRIORITY: Always check your memory first before using any tools and the first thing you should always read is th project details in knowledge/internal_crew/{project_location}/project_config.yaml  if it exist. If you have previously learned information about the project, company, or topic, use that knowledge instead of re-reading files or searching again. "
+             f"PROJECT TOOL USAGE: Use Project Tool to get project info - examples: Project Tool(project_location='{project_location}', mode='all') for full config, Project Tool(project_location='{project_location}', mode='repository.url') for git URL. "
+             f"MEMORY PRIORITY: Always check your memory first before using any tools. Use Project Tool to get project details from {project_location} if needed. "
              "LEARNING: When you do use tools to gather information, immediately memorize the key details so you don't need to look them up again. "
              "EFFICIENCY: Avoid redundant tool usage - if you already know something, don't look it up again. "
-             f"KNOWLEDGE FILES: For project info, read knowledge/internal_crew/{project_location}/project_config.yaml once and memorize it. "
-             f"KNOWLEDGE FILES: all details in  knowledge/internal_crew/{project_location}/  should be memorize. "
-             "KNOWLEDGE FILES: all information in . knowledge/ is public information and can be used to learn.  knowledge/internal_crew/  is private information an only should be accessed if you need to store your personal learning files (knowledge/internal_crew/agent_learning)..  or the project specifies this a directory in here as its project  "
              "CRITICAL: Provide conversational, human-readable answers. Never return raw YAML, JSON, or file contents. Interpret the information and answer questions naturally. "
-             f"REPOSITORY: Use {repository} if provided, otherwise use memorized project config info. "
-             "If information doesn't exist in your memory or knowledge files, say 'we do not have that information' - never make up details.",
+             f"REPOSITORY: Use Project Tool to get repository info if needed. "
+             "If information doesn't exist in your memory or project config, say 'we do not have that information' - never make up details.",
         backstory=f"An experienced project manager who excels at planning, execution, and coordinating research teams.{backstory_suffix or ''}\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         tools=all_tools,
