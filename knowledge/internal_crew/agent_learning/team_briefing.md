@@ -30,6 +30,7 @@
 
 ## Learning System
 - **Shared Knowledge**: All agents read this file during initialization
+- **Tool Usage Guide**: `knowledge/internal_crew/agent_learning/tool_usage_guide.md` - Essential reference for all tools
 - **Personal Learning**: Store discoveries in `knowledge/internal_crew/agent_learning/{agent_role}/`
 - **Team Learning**: Share important findings in `knowledge/internal_crew/agent_learning/shared_discoveries/`
 
