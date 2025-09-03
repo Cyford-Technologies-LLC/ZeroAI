@@ -12,9 +12,9 @@ import json
 import warnings
 from functools import lru_cache
 
-from peer_discovery import PeerDiscovery, PeerNode
+from src.peer_discovery import PeerDiscovery, PeerNode
 from langchain_community.llms.ollama import Ollama
-from config import config
+from src.config import config
 
 console = Console()
 

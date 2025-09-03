@@ -33,7 +33,7 @@ from io import StringIO
 from ast import literal_eval
 from typing import Dict, Any, List, Optional
 from src.config import config
-from src.devops_router import get_router
+from src.distributed_router import DistributedRouter
 from src.crews.internal.team_manager.agents import create_team_manager_agent, load_all_coworkers
 from src.utils.loop_detection import LoopDetector  # Import the new class
 
@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
         # Initialize peer discovery and router
         discovery = PeerDiscovery()
-        router = get_router()
+        router = DistributedRouter(discovery)
 
         # Execute the task
         result = execute_devops_task(router, args, project_config)
