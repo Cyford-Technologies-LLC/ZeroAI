@@ -37,3 +37,19 @@ smart_routing:
   local_only_mode: false          # Force all tasks to local processing
   fallback_provider: "openai"     # Fallback when Thunder fails
   auto_shutdown_delay: 1800       # Auto-shutdown Thunder after 30 min idle
+
+internal:
+  persistent_crews:
+    enabled: true                 # Enable 24/7 persistent crew operations
+    auto_start: true             # Auto-start persistent crews on system boot
+    max_queue_size: 100          # Maximum tasks in queue per crew
+    idle_timeout: 3600           # Shutdown crew after 1 hour idle (0 = never)
+    default_projects: ["zeroai", "testcorp"]  # Projects to start by default
+  interactive_mode:
+    enabled: true                # Enable real-time crew communication
+    graceful_shutdown: true      # Allow graceful shutdown on Ctrl+C
+    status_updates: true         # Show live status updates
+  resource_management:
+    memory_limit: "2GB"          # Memory limit per persistent crew
+    cpu_limit: 2                 # CPU cores per crew
+    cleanup_interval: 300        # Cleanup interval in seconds

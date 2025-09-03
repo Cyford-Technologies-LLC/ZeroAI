@@ -19,6 +19,7 @@ load_secure_env()
 from crewai import Crew
 from distributed_router import DistributedRouter
 from src.config import config  # Keep only one import
+from src.utils.config_loader import load_internal_config
 # from src.utils.custom_logger import CustomLogger
 from src.utils.yaml_utils import load_yaml_config
 
@@ -206,6 +207,10 @@ class AIOpsCrewManager:
         self.peer_used = "unknown"
         self.token_usage = {"total_tokens": 0}
         self.base_url = None
+        
+        # Load internal configuration
+        self.internal_config = load_internal_config()
+        self.persistent_enabled = self.internal_config.get("persistent_crews", {}).get("enabled", True)
 
         self.crews_status = inputs.get("crews_status", {})
         if not self.crews_status:
