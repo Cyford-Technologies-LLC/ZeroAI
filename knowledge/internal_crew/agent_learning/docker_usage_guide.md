@@ -134,7 +134,32 @@
 -   "compose_file": Path to the compose file.
 -   "command": The specific compose command ("up", "down", or "exec").
 -   "service": (Required for "exec") The service name within the compose file.
-    "command": (Required for "exec") The command to run inside the service.
+-   "command": (Required for "exec") The command to run inside the service.
+
+// Start a service defined in a compose file
+{
+  "action": "compose",
+  "compose_file": "./docker-compose.yml",
+  "command": "up"
+}
+
+// Stop a service defined in a compose file
+{
+  "action": "compose",
+  "compose_file": "./docker-compose.yml",
+  "command": "down"
+}
+
+// Execute a command in a compose service
+{
+  "action": "compose",
+  "compose_file": "./docker-compose.yml",
+  "command": "exec",
+  "service": "ollama",
+  "command": "ollama list"
+}
+
+
 
 ## 🔧 Advanced Features
 
