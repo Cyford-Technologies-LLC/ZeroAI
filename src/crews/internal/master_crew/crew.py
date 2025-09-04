@@ -66,25 +66,42 @@ def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_o
     ]
 
     # --- Create all tasks and assign to correct agent ---
+
+    # --- Create all tasks and assign to correct agent ---
+    # First, create the tasks that will be referenced by others
+    research_task = internal_research_task(internal_researcher, inputs)
+    online_task = online_research_task(online_researcher, inputs)
+    project_task = project_management_task(project_manager, inputs)
+    diagnostics_task = create_diagnostics_task(diagnostic_agent, inputs)
+
+    analyze_fixer_task = analyze_codebase_task(fixer_researcher, inputs)
+    fix_fixer_bug_task = fix_bug_task(coder, inputs, context=[analyze_fixer_task])
+    write_fixer_tests = write_fixer_tests_task(fixer_tester, inputs, context=[fix_fixer_bug_task])
+
+    analyze_dev_codebase_task = analyze_dev_task(qa_engineer, inputs)
+    fix_dev_bug_task = fix_dev_task(senior_developer, inputs, context=[analyze_dev_codebase_task])
+    write_dev_tests = write_dev_tests_task(qa_engineer, inputs, context=[fix_dev_bug_task])
+    run_dev_tests = run_dev_tests_task(qa_engineer, inputs, context=[write_dev_tests])
+
     tasks = [
         # Research Tasks
-        internal_research_task(internal_researcher, inputs),
-        online_research_task(online_researcher, inputs),
-        project_management_task(project_manager, inputs),
+        research_task,
+        online_task,
+        project_task,
 
         # Diagnostic Task
-        create_diagnostics_task(diagnostic_agent, inputs),
+        diagnostics_task,
 
         # Code Fixer Tasks (sequential process)
-        analyze_codebase_task(fixer_researcher, inputs),
-        fix_bug_task(coder, inputs, context=[analyze_codebase_task(fixer_researcher, inputs)]),
-        write_fixer_tests_task(fixer_tester, inputs, context=[fix_bug_task(coder, inputs)]),
+        analyze_fixer_task,
+        fix_fixer_bug_task,
+        write_fixer_tests,
 
         # Developer Tasks (can be run in parallel or sequentially)
-        analyze_dev_task(qa_engineer, inputs),  # Example: QA engineer analyzes, not a researcher
-        fix_dev_task(senior_developer, inputs, context=[analyze_dev_task(qa_engineer, inputs)]),
-        write_dev_tests_task(qa_engineer, inputs, context=[fix_dev_task(senior_developer, inputs)]),
-        run_dev_tests_task(qa_engineer, inputs, context=[write_dev_tests_task(qa_engineer, inputs)])
+        analyze_dev_codebase_task,
+        fix_dev_bug_task,
+        write_dev_tests,
+        run_dev_tests
     ]
 
     # --- Final Crew Creation ---
