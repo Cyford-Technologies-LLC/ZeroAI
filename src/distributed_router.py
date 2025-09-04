@@ -175,7 +175,7 @@ class DistributedRouter:
         if all_candidates:
             best_candidate = all_candidates[0]
             peer = best_candidate['peer']
-            model = best_candidate['model']
+            model = 'mistral-nemo:latest' #best_candidate['model']
             log_router(f"✅ Optimal Endpoint Selected: Peer={peer.name}, Model={model}", 3, "green")
             return f"http://{peer.ip}:11434", peer.name, model
 
