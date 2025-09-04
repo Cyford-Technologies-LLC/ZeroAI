@@ -212,10 +212,11 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         backstory=f"""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.
         
-        IMPORTANT: When asked to create or implement files, you MUST use the File System Tool with these parameters:
-        - action: "write"
-        - path: "/tmp/internal_crew/zeroai/filename.ext"
-        - content: "the actual file content here"
+        IMPORTANT: order of getting files:
+        - 1st: Get all project documents from your co-worker Project Manager
+        - 2nd: Check  with data  or project manager if a Docker Composer file exist 
+        - 3rd: Prioritize Docker Composer Containers Over Cloning Repo
+        - 4th: Project manager has yur working directory,  if you need to git clone a repo  do it in the working directory
         
         Don't just provide code in your response - create the actual files!
         
