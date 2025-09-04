@@ -31,32 +31,29 @@ def get_master_crew(router, tools, project_config, use_new_memory=False) -> Crew
 
 
 def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
-    tools = [
-        # Instantiate your tools here, for example:
-        # FileSystemTool(),
-        # DockerOperatorTool(),
-        # DynamicGitHubSearchTool(),
-        # Other tools used by your agents
-    ]
+    tools = inputs.get("tools", [])
 
-    # --- Create all agents with unique variable names ---
+    # Get the LLM from the distributed router once
+    crew_llm = router.get_llm_for_role("general")
+
+    # --- Create all agents with unique variable names, passing the LLM ---
     # Research Team
-    internal_researcher = create_internal_researcher_agent(router, inputs)
-    online_researcher = create_online_researcher_agent(router, inputs)
-    project_manager = create_project_manager_agent(router, inputs)
+    internal_researcher = create_internal_researcher_agent(router, inputs, llm=crew_llm)
+    online_researcher = create_online_researcher_agent(router, inputs, llm=crew_llm)
+    project_manager = create_project_manager_agent(router, inputs, llm=crew_llm)
 
-    # Code Fixer Team (rename researcher to avoid collision)
-    fixer_researcher = create_fixer_researcher(router, inputs)
-    coder = create_coder_agent(router, inputs)
-    fixer_tester = create_tester_agent(router, inputs)
+    # Code Fixer Team
+    fixer_researcher = create_fixer_researcher(router, inputs, llm=crew_llm)
+    coder = create_coder_agent(router, inputs, llm=crew_llm)
+    fixer_tester = create_tester_agent(router, inputs, llm=crew_llm)
 
-    # Development Team (rename tester to avoid collision)
-    senior_developer = create_senior_developer_agent(router, inputs)
-    junior_developer = create_junior_developer_agent(router, inputs)
-    qa_engineer = create_qa_engineer_agent(router, inputs)
+    # Development Team
+    senior_developer = create_senior_developer_agent(router, inputs, llm=crew_llm)
+    junior_developer = create_junior_developer_agent(router, inputs, llm=crew_llm)
+    qa_engineer = create_qa_engineer_agent(router, inputs, llm=crew_llm)
 
     # Diagnostic Team
-    diagnostic_agent = create_diagnostic_agent(router, inputs, tools)
+    diagnostic_agent = create_diagnostic_agent(router, inputs, tools, llm=crew_llm)
 
     all_agents = [
         internal_researcher, online_researcher, project_manager,
@@ -65,43 +62,33 @@ def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_o
         diagnostic_agent
     ]
 
-    # --- Create all tasks and assign to correct agent ---
+    # --- Create tasks as variables for correct context handling ---
+    research_task_var = internal_research_task(internal_researcher, inputs)
+    online_task_var = online_research_task(online_researcher, inputs)
+    project_task_var = project_management_task(project_manager, inputs)
+    diagnostics_task_var = create_diagnostics_task(diagnostic_agent, inputs)
 
-    # --- Create all tasks and assign to correct agent ---
-    # First, create the tasks that will be referenced by others
-    research_task = internal_research_task(internal_researcher, inputs)
-    online_task = online_research_task(online_researcher, inputs)
-    project_task = project_management_task(project_manager, inputs)
-    diagnostics_task = create_diagnostics_task(diagnostic_agent, inputs)
+    analyze_fixer_task_var = analyze_codebase_task(fixer_researcher, inputs)
+    fix_fixer_bug_task_var = fix_bug_task(coder, inputs, context=[analyze_fixer_task_var])
+    write_fixer_tests_var = write_fixer_tests_task(fixer_tester, inputs, context=[fix_fixer_bug_task_var])
 
-    analyze_fixer_task = analyze_codebase_task(fixer_researcher, inputs)
-    fix_fixer_bug_task = fix_bug_task(coder, inputs, context=[analyze_fixer_task])
-    write_fixer_tests = write_fixer_tests_task(fixer_tester, inputs, context=[fix_fixer_bug_task])
-
-    analyze_dev_codebase_task = analyze_dev_task(qa_engineer, inputs)
-    fix_dev_bug_task = fix_dev_task(senior_developer, inputs, context=[analyze_dev_codebase_task])
-    write_dev_tests = write_dev_tests_task(qa_engineer, inputs, context=[fix_dev_bug_task])
-    run_dev_tests = run_dev_tests_task(qa_engineer, inputs, context=[write_dev_tests])
+    analyze_dev_task_var = analyze_dev_task(qa_engineer, inputs)
+    fix_dev_bug_task_var = fix_dev_task(senior_developer, inputs, context=[analyze_dev_task_var])
+    write_dev_tests_task_var = write_dev_tests_task(qa_engineer, inputs, context=[fix_dev_bug_task_var])
+    run_dev_tests_task_var = run_dev_tests_task(qa_engineer, inputs, context=[write_dev_tests_task_var])
 
     tasks = [
-        # Research Tasks
-        research_task,
-        online_task,
-        project_task,
-
-        # Diagnostic Task
-        diagnostics_task,
-
-        # Code Fixer Tasks (sequential process)
-        analyze_fixer_task,
-        fix_fixer_bug_task,
-        write_fixer_tests,
-
-        # Developer Tasks (can be run in parallel or sequentially)
-        analyze_dev_codebase_task,
-        fix_dev_bug_task,
-        write_dev_tests,
-        run_dev_tests
+        research_task_var,
+        online_task_var,
+        project_task_var,
+        diagnostics_task_var,
+        analyze_fixer_task_var,
+        fix_fixer_bug_task_var,
+        write_fixer_tests_var,
+        analyze_dev_task_var,
+        fix_dev_bug_task_var,
+        write_dev_tests_task_var,
+        run_dev_tests_task_var
     ]
 
     # --- Final Crew Creation ---
@@ -111,5 +98,7 @@ def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_o
         process=Process.sequential,
         verbose=config.agents.verbose,
         full_output=full_output,
-        memory=True
+        memory=True,
+        llm=crew_llm  # Pass the distributed LLM to the Crew object
     )
+
