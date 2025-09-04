@@ -528,6 +528,7 @@ class AIOpsCrewManager:
 # /app/src/ai_dev_ops_crew.py
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the master crew."""
+        result = None  # Initialize result to None to prevent UnboundLocalError
         try:
             # Check for shutdown request at start
             if shutdown_requested:
@@ -575,135 +576,96 @@ class AIOpsCrewManager:
                     "crews_status": self.crews_status
                 }
 
-            try:
-                console.print("🔄 Importing Master crew...", style="blue")
+            console.print("🔄 Importing Master crew...", style="blue")
 
-                # --- Handle repo URL override and token retrieval ---
-                final_repo_url = self.project_config.get("repository", {}).get("url")
-                if self.repository:  # self.repository is set from a CLI argument
-                    final_repo_url = self.repository
-                    console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
+            # --- Handle repo URL override and token retrieval ---
+            final_repo_url = self.project_config.get("repository", {}).get("url")
+            if self.repository:  # self.repository is set from a CLI argument
+                final_repo_url = self.repository
+                console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
 
-                repo_token_key = None
-                repo_token = None
+            repo_token_key = None
+            repo_token = None
 
-                if self.project_config and 'repository' in self.project_config:
-                    repo_config = self.project_config['repository']
-                    if isinstance(repo_config, dict):
-                        repo_token_key = repo_config.get('REPO_TOKEN_KEY', '')
+            if self.project_config and 'repository' in self.project_config:
+                repo_config = self.project_config['repository']
+                if isinstance(repo_config, dict):
+                    repo_token_key = repo_config.get('REPO_TOKEN_KEY', '')
 
-                if not repo_token_key:
-                    if "cyford" in self.project_id.lower() or "zeroai" in self.project_id.lower():
-                        repo_token_key = "GH_TOKEN_CYFORD"
-                    elif "testcorp" in self.project_id.lower():
-                        repo_token_key = "GITHUB_TOKEN_TESTCORP"
-                    else:
-                        repo_token_key = "GH_TOKEN_CYFORD"
+            if not repo_token_key:
+                if "cyford" in self.project_id.lower() or "zeroai" in self.project_id.lower():
+                    repo_token_key = "GH_TOKEN_CYFORD"
+                elif "testcorp" in self.project_id.lower():
+                    repo_token_key = "GITHUB_TOKEN_TESTCORP"
+                else:
+                    repo_token_key = "GH_TOKEN_CYFORD"
 
-                if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
-                    repo_token_key = repo_token_key[1:-1]
+            if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
+                repo_token_key = repo_token_key[1:-1]
 
-                if repo_token_key:
-                    repo_token = get_secure_token(repo_token_key)
-                    if not repo_token and hasattr(config, 'github_tokens') and config.github_tokens:
-                        repo_token = config.github_tokens.get(
-                            repo_token_key.lower().replace('gh_token_', '').replace('github_token_', ''))
-                        if hasattr(repo_token, 'get_secret_value'):
-                            repo_token = repo_token.get_secret_value()
+            if repo_token_key:
+                repo_token = get_secure_token(repo_token_key)
+                if not repo_token and hasattr(config, 'github_tokens') and config.github_tokens:
+                    repo_token = config.github_tokens.get(
+                        repo_token_key.lower().replace('gh_token_', '').replace('github_token_', ''))
+                    if hasattr(repo_token, 'get_secret_value'):
+                        repo_token = repo_token.get_secret_value()
 
-                console.print(f"DEBUG: Token key from Company_Details: {repo_token_key}", style="magenta")
-                console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
-                console.print(f"DEBUG: Retrieved repo_token: {'***' if repo_token else 'None'}", style="magenta")
-                console.print(
-                    f"DEBUG: Environment check - {repo_token_key}: {'SET' if os.getenv(repo_token_key) else 'NOT SET'}",
-                    style="magenta")
-                console.print(
-                    f"DEBUG: Available env vars: {[k for k in os.environ.keys() if 'TOKEN' in k or 'GH_' in k]}",
-                    style="magenta")
+            console.print(f"DEBUG: Token key from Company_Details: {repo_token_key}", style="magenta")
+            console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
+            console.print(f"DEBUG: Retrieved repo_token: {'***' if repo_token else 'None'}", style="magenta")
+            console.print(
+                f"DEBUG: Environment check - {repo_token_key}: {'SET' if os.getenv(repo_token_key) else 'NOT SET'}",
+                style="magenta")
+            console.print(
+                f"DEBUG: Available env vars: {[k for k in os.environ.keys() if 'TOKEN' in k or 'GH_' in k]}",
+                style="magenta")
 
-                task_inputs = {
-                    "project_id": sanitized_project_id,
-                    "prompt": self.prompt,
-                    "category": self.category,
-                    "repository": final_repo_url,
-                    "branch": self.branch,
-                    "task_id": self.task_id,
+            task_inputs = {
+                "project_id": sanitized_project_id,
+                "prompt": self.prompt,
+                "category": self.category,
+                "repository": final_repo_url,
+                "branch": self.branch,
+                "task_id": self.task_id,
+                "crews_status": self.crews_status,
+                "working_dir": self.working_dir,
+                "repo_token": repo_token,
+                "repo_token_key": repo_token_key,
+                "project_config": self.project_config,
+            }
+
+            crew = create_master_crew(
+                router=self.router,
+                tools=self.tools,
+                project_config=self.project_config,
+                inputs=task_inputs,
+            )
+
+            if crew is None:
+                error_msg = "❌ Error: Master Crew not created."
+                console.print(error_msg, style="red")
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "model_used": self.model_used,
+                    "peer_used": self.peer_used,
                     "crews_status": self.crews_status,
-                    "working_dir": self.working_dir,
-                    "repo_token": repo_token,
-                    "repo_token_key": repo_token_key,
-                    "project_config": self.project_config,
                 }
 
-                from src.crews.internal.master_crew.crew import get_master_crew as create_master_crew  # Adjusted import
-                crew = create_master_crew(
-                    router=self.router,
-                    tools=self.tools,
-                    project_config=self.project_config,
-                    inputs=task_inputs,
-                    # custom_logger=custom_logger # Assuming logger is handled inside the crew
-                )
+            console.print(f"🚀 Executing Master crew for task: {self.prompt}", style="blue")
 
-                if crew is None:
-                    error_msg = "❌ Error: Master Crew not created."
-                    console.print(error_msg, style="red")
-                    return {
-                        "success": False,
-                        "error": error_msg,
-                        "model_used": self.model_used,
-                        "peer_used": self.peer_used,
-                        "crews_status": self.crews_status,
-                    }
+            if shutdown_requested:
+                console.print("Shutdown requested before crew kickoff. Aborting.", style="yellow")
+                return {"success": False, "error": "Crew kickoff aborted by user"}
 
-                console.print(f"🚀 Executing Master crew for task: {self.prompt}", style="blue")
+            # Assign result variable before kickoff
+            result = crew.kickoff(inputs=task_inputs)
 
-                if shutdown_requested:
-                    console.print("Shutdown requested before crew kickoff. Aborting.", style="yellow")
-                    return {"success": False, "error": "Crew kickoff aborted by user"}
+            custom_logger.save_log()
 
-                result = crew.kickoff(inputs=task_inputs)  # Pass inputs to kickoff
-
-                custom_logger.save_log()
-
-                if self.project_config.get("crewai_settings", {}).get("verbose", 1):
-                    console.print(f"\nFinal Result:\n{result}")
-
-            except ImportError as e:
-                console.print(f"❌ Could not import Master crew: {e}", style="red")
-                console.print("Traceback:", style="red")
-                console.print(traceback.format_exc())
-
-                try:
-                    error_logger = ErrorLogger()
-                    error_logger.log_error(
-                        f"Failed to import Master crew: {str(e)}",
-                        {
-                            "project_id": self.project_id,
-                            "prompt": self.prompt,
-                            "traceback": traceback.format_exc()
-                        }
-                    )
-                except ImportError:
-                    console.print("❌ Error logging failed: could not import ErrorLogger", style="red")
-
-            except Exception as e:
-                error_msg = f"❌ Error executing Master crew: {str(e)}"
-                console.print(error_msg, style="red")
-                console.print("Traceback:", style="red")
-                console.print(traceback.format_exc())
-
-                try:
-                    error_logger = ErrorLogger()
-                    error_logger.log_error(
-                        error_msg,
-                        {
-                            "project_id": self.project_id,
-                            "prompt": self.prompt,
-                            "traceback": traceback.format_exc()
-                        }
-                    )
-                except ImportError:
-                    console.print("❌ Error logging failed: could not import ErrorLogger", style="red")
+            if self.project_config.get("crewai_settings", {}).get("verbose", 1):
+                console.print(f"\nFinal Result:\n{result}")
 
             return {
                 "success": True,
@@ -713,25 +675,41 @@ class AIOpsCrewManager:
                 "crews_status": self.crews_status,
             }
 
+        except ImportError as e:
+            error_msg = f"❌ Could not import Master crew: {e}"
+            console.print(error_msg, style="red")
+            console.print("Traceback:", style="red")
+            console.print(traceback.format_exc())
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                error_msg,
+                {
+                    "project_id": self.project_id,
+                    "prompt": self.prompt,
+                    "traceback": traceback.format_exc()
+                }
+            )
+            return {
+                "success": False,
+                "error": error_msg,
+                "model_used": self.model_used,
+                "peer_used": self.peer_used,
+                "crews_status": self.crews_status
+            }
         except Exception as e:
             error_msg = f"❌ An unexpected error occurred during DevOps task execution: {str(e)}"
             console.print(error_msg, style="red")
             console.print("Traceback:", style="red")
             console.print(traceback.format_exc())
-
-            try:
-                error_logger = ErrorLogger()
-                error_logger.log_error(
-                    error_msg,
-                    {
-                        "project_id": self.project_id,
-                        "prompt": self.prompt,
-                        "traceback": traceback.format_exc()
-                    }
-                )
-            except ImportError:
-                console.print("❌ Error logging failed: could not import ErrorLogger", style="red")
-
+            error_logger = ErrorLogger()
+            error_logger.log_error(
+                error_msg,
+                {
+                    "project_id": self.project_id,
+                    "prompt": self.prompt,
+                    "traceback": traceback.format_exc()
+                }
+            )
             return {
                 "success": False,
                 "error": error_msg,
@@ -739,7 +717,6 @@ class AIOpsCrewManager:
                 "peer_used": "unknown",
                 "crews_status": self.crews_status
             }
-
 
 
 def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
