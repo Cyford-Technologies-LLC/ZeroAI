@@ -61,7 +61,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     
     if project_manager:
         sequential_tasks.append(Task(
-            description=f"Analyze and plan the task: {inputs.get('prompt')}",
+            description=f"Analyze and plan the task,  Also  GET / SHARE  project details with the team: {inputs.get('prompt')}",
             agent=project_manager,
             expected_output="A detailed project plan and task breakdown.",
             callback=custom_logger.log_step_callback if custom_logger else None

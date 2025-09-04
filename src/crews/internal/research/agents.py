@@ -250,7 +250,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         resources=[],
         goal="Provide project details and coordinate team. For file creation tasks, provide clear requirements and delegate to Senior Developer. "
              f"PROJECT INFO: Use Project Tool with project_location='{project_location}' with mode=(All)  to get project details when needed. "
-             f"If you have problems with the project tool  you can use the file tool  with this directory (knowledge/internal_crew/{project_location}/project_config.yaml). "
+             f"If you have problems with the project tool  you can use the file tool  with this directory ( knowledge/internal_crew/{project_location}/project_config.yaml ). "
              f"Knowing that is it best to read everything regarding your project you will be maintaining all files in this directory knowledge/internal_crew/{project_location}/. "
              "COORDINATION ONLY: You coordinate and provide requirements - you don't create files yourself. "
              "CLEAR DELEGATION: When delegating file creation, provide specific requirements: filename, location, and basic content structure.",
