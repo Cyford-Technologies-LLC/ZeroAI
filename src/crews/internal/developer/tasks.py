@@ -13,13 +13,14 @@ def analyze_codebase_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
 
 def fix_bug_task(agent: Agent, inputs: Dict[str, Any], context: List[Task]) -> Task:
     return Task(
-        description=f"Fix bug #{inputs.get('bug_id')} in the project ."
-                    "**CRITICAL:** Review the codebase analysis provided in the context from the Researcher. Use ONLY this information to understand the issue and identify the relevant files. Implement the code solution to fix the bug, ensuring the fix aligns with the details provided in the context. DO NOT use your file tools unless the context explicitly requires you to."
-                    f"If you have issues  getting details from the project manager check the project details yourself (knowledge/internal_crew/{inputs.get('project_path')}/project_config.yaml"
-                    "Prioritize Docker Composer Over Git Clones"
-                    "based on the root cause analysis.",
-        agent=agent,
-        context=context,
+        description=(
+            f"Fix bug #{inputs.get('bug_id')} in the project. "
+            "**CRITICAL:** Review the codebase analysis provided in the context from the Researcher. Use ONLY this information to understand the issue and identify the relevant files. Implement the code solution to fix the bug, ensuring the fix aligns with the details provided in the context. DO NOT use your file tools unless the context explicitly requires you to. "
+            f"If you have issues getting details from the project manager check the project details yourself (knowledge/internal_crew/{inputs.get('project_path')}/project_config.yaml). "
+            "**WORKFLOW:** Prioritize Docker Composer Over Git Clones. "
+            "**ROOT CAUSE:** Base your fix on the root cause analysis provided in the context."
+        ),
+    context=context,
         expected_output="The updated code files with the bug fix applied.",
     )
 
