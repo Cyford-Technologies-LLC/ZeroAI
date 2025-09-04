@@ -27,5 +27,6 @@ def create_scheduler_crew(router: DistributedRouter, inputs: Dict[str, Any], ful
         tasks=[scheduler_task],
         process=Process.sequential,
         verbose=config.agents.verbose,
-        full_output=full_output
+        full_output=full_output,
+        memory=True
     )
