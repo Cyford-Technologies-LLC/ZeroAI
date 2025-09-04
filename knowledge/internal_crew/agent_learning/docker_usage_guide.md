@@ -2,7 +2,24 @@
 
 ## Available Actions
 
-### **1. Run Container**
+### **1. Bring up services with Composer**
+```json
+{
+  "action": "compose_up",
+  "compose_file": "/path/to/your/docker-compose.yml"
+}
+```
+
+
+### **1. Bring down services with Composer**
+```json
+{
+  "action": "compose_down",
+  "compose_file": "/path/to/your/docker-compose.yml"
+}
+```
+
+### **1. Bring up services with Composer**
 ```json
 {
   "action": "run",
@@ -14,6 +31,7 @@
   "detach": true
 }
 ```
+
 
 ### **2. Execute in Container**
 ```json

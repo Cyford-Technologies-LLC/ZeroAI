@@ -17,6 +17,23 @@ In the project_config.yaml file it will state the location of the Docker compose
 - `content`: File content (required for write operations)
 
 **Examples**:
+### **1. Bring up services with Composer**
+```json
+{
+  "action": "compose_up",
+  "compose_file": "/path/to/your/docker-compose.yml"
+}
+```
+
+
+### **1. Bring down services with Composer**
+```json
+{
+  "action": "compose_down",
+  "compose_file": "/path/to/your/docker-compose.yml"
+}
+```
+
 ```json
 // Write a file
 {
