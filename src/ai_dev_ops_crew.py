@@ -33,6 +33,8 @@ from src.crews.internal.tools.git_tool import GitTool, FileTool, create_git_tool
 from tool_factory import dynamic_github_tool
 from src.utils.custom_logger_callback import CustomLogger
 
+from src.crews.internal.master_crew.crew import create_master_crew, get_master_crew
+
 # Combine Crews
 from src.crews.internal.utils.crew_flow import run_project_flow
 
