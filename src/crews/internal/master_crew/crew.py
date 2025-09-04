@@ -31,6 +31,14 @@ def get_master_crew(router, tools, project_config, use_new_memory=False) -> Crew
 
 
 def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
+    tools = [
+        # Instantiate your tools here, for example:
+        # FileSystemTool(),
+        # DockerOperatorTool(),
+        # DynamicGitHubSearchTool(),
+        # Other tools used by your agents
+    ]
+
     # --- Create all agents with unique variable names ---
     # Research Team
     internal_researcher = create_internal_researcher_agent(router, inputs)

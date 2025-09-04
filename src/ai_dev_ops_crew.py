@@ -347,71 +347,292 @@ class AIOpsCrewManager:
         
         return tools
 
-    def execute(self) -> Dict[str, Any]:
-        """Execute the task specified in the prompt using the appropriate crew."""
+    # def execute(self) -> Dict[str, Any]:
+    #     """Execute the task specified in the prompt using the appropriate crew."""
+    #     try:
+    #         # Check for shutdown request at start
+    #         if shutdown_requested:
+    #             console.print("Shutdown requested. Aborting crew execution.", style="yellow")
+    #             return {"success": False, "error": "Crew execution aborted by user"}
+    #
+    #         # Sanitize project_id to prevent path traversal vulnerabilities
+    #         sanitized_project_id = sanitize_filepath(self.project_id)
+    #
+    #         start_time = time.time()
+    #         log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
+    #         custom_logger = CustomLogger(output_file=str(log_output_path))
+    #
+    #         self.model_used, self.peer_used = "unknown", "unknown"
+    #         try:
+    #             llm = self.router.get_llm_for_role("general")
+    #             if llm:
+    #                 self.model_used = llm.model.replace("ollama/", "")
+    #                 if hasattr(llm, 'base_url') and llm.base_url:
+    #                     self.base_url = llm.base_url
+    #                     try:
+    #                         # Safely split and extract peer_ip
+    #                         parts = self.base_url.split('//')
+    #                         if len(parts) > 1:
+    #                             peer_parts = parts[1].split(':')
+    #                             if peer_parts:
+    #                                 self.peer_used = peer_parts[0]
+    #                     except Exception as e:
+    #                         console.print(f"⚠️ Error parsing peer IP: {e}", style="yellow")
+    #                         self.peer_used = "unknown"
+    #         except Exception as e:
+    #             console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
+    #
+    #         # --- ORCHESTRATION OF CREWS ---
+    #         try:
+    #             console.print("🔄 Starting multi-crew project flow...", style="blue")
+    #
+    #             final_repo_url = self.project_config.get("repository", {}).get("url")
+    #             if self.repository:
+    #                 final_repo_url = self.repository
+    #                 console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
+    #
+    #             # NOTE: Your original logic for retrieving and handling tokens was moved here
+    #             # to be part of the setup for the project flow.
+    #             # Your existing token retrieval logic here...
+    #
+    #             final_result = run_project_flow(
+    #                 router=self.router,
+    #                 tools=self.tools,
+    #                 project_config=self.project_config
+    #             )
+    #
+    #             custom_logger.save_log()
+    #
+    #             if self.project_config.get("crewai_settings", {}).get("verbose", 1):
+    #                 console.print(f"\nFinal Result:\n{final_result}")
+    #
+    #         except Exception as e:
+    #             error_msg = f"❌ Error executing project flow: {str(e)}"
+    #             console.print(error_msg, style="red")
+    #             console.print("Traceback:", style="red")
+    #             console.print(traceback.format_exc())
+    #
+    #             error_logger = ErrorLogger()
+    #             error_logger.log_error(
+    #                 error_msg,
+    #                 {
+    #                     "project_id": self.project_id,
+    #                     "prompt": self.prompt,
+    #                     "traceback": traceback.format_exc()
+    #                 }
+    #             )
+    #
+    #             return {
+    #                 "success": False,
+    #                 "error": error_msg,
+    #                 "model_used": self.model_used,
+    #                 "peer_used": self.peer_used,
+    #                 "crews_status": self.crews_status,
+    #             }
+    #
+    #         # --- END ORCHESTRATION ---
+    #
+    #         return {
+    #             "success": True,
+    #             "result": final_result,
+    #             "model_used": self.model_used,
+    #             "peer_used": self.peer_used,
+    #             "crews_status": self.crews_status,
+    #         }
+    #     except Exception as e:
+    #         # Generic catch-all for any other unexpected errors
+    #         error_msg = f"❌ An unexpected error occurred during DevOps task execution: {str(e)}"
+    #         console.print(error_msg, style="red")
+    #         console.print("Traceback:", style="red")
+    #         console.print(traceback.format_exc())
+    #
+    #         error_logger = ErrorLogger()
+    #         error_logger.log_error(
+    #             error_msg,
+    #             {
+    #                 "project_id": self.project_id,
+    #                 "prompt": self.prompt,
+    #                 "traceback": traceback.format_exc()
+    #             }
+    #         )
+    #
+    #         return {
+    #             "success": False,
+    #             "error": error_msg,
+    #             "model_used": "unknown",
+    #             "peer_used": "unknown",
+    #             "crews_status": self.crews_status
+    #         }
+
+
+# /app/src/ai_dev_ops_crew.py
+
+def execute(self) -> Dict[str, Any]:
+    """Execute the task specified in the prompt using the master crew."""
+    try:
+        # Check for shutdown request at start
+        if shutdown_requested:
+            console.print("Shutdown requested. Aborting crew execution.", style="yellow")
+            return {"success": False, "error": "Crew execution aborted by user"}
+
+        # Sanitize project_id to prevent path traversal vulnerabilities
+        sanitized_project_id = sanitize_filepath(self.project_id)
+
+        start_time = time.time()
+        log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
+        custom_logger = CustomLogger(output_file=str(log_output_path))
+
+        self.model_used, self.peer_used = "unknown", "unknown"
         try:
-            # Check for shutdown request at start
-            if shutdown_requested:
-                console.print("Shutdown requested. Aborting crew execution.", style="yellow")
-                return {"success": False, "error": "Crew execution aborted by user"}
+            llm = self.router.get_llm_for_role("general")
+            if llm:
+                self.model_used = llm.model.replace("ollama/", "")
+                if hasattr(llm, 'base_url') and llm.base_url:
+                    self.base_url = llm.base_url
+                    try:
+                        # Safely split and extract peer_ip
+                        parts = self.base_url.split('//')
+                        if len(parts) > 1:
+                            peer_parts = parts[1].split(':')
+                            if peer_parts:
+                                self.peer_used = peer_parts[0]
+                    except Exception as e:
+                        console.print(f"⚠️ Error parsing peer IP: {e}", style="yellow")
+                        self.peer_used = "unknown"
+        except Exception as e:
+            console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
 
-            # Sanitize project_id to prevent path traversal vulnerabilities
-            sanitized_project_id = sanitize_filepath(self.project_id)
+        # Check if the master crew is available
+        if "master" not in self.crews_status or self.crews_status["master"]["status"] != "available":
+            error_msg = "Master crew is not available or has errors."
+            console.print(f"❌ {error_msg}", style="red")
+            if "master" in self.crews_status and "error" in self.crews_status["master"]:
+                error_msg += f" Error: {self.crews_status['master']['error']}"
+            return {
+                "success": False,
+                "error": error_msg,
+                "model_used": self.model_used,
+                "peer_used": self.peer_used,
+                "crews_status": self.crews_status
+            }
 
-            start_time = time.time()
-            log_output_path = self.working_dir / f"crew_log_{self.task_id}.json"
-            custom_logger = CustomLogger(output_file=str(log_output_path))
+        try:
+            console.print("🔄 Importing Master crew...", style="blue")
 
-            self.model_used, self.peer_used = "unknown", "unknown"
-            try:
-                llm = self.router.get_llm_for_role("general")
-                if llm:
-                    self.model_used = llm.model.replace("ollama/", "")
-                    if hasattr(llm, 'base_url') and llm.base_url:
-                        self.base_url = llm.base_url
-                        try:
-                            # Safely split and extract peer_ip
-                            parts = self.base_url.split('//')
-                            if len(parts) > 1:
-                                peer_parts = parts[1].split(':')
-                                if peer_parts:
-                                    self.peer_used = peer_parts[0]
-                        except Exception as e:
-                            console.print(f"⚠️ Error parsing peer IP: {e}", style="yellow")
-                            self.peer_used = "unknown"
-            except Exception as e:
-                console.print(f"⚠️ Could not extract model information: {e}", style="yellow")
+            # --- Handle repo URL override and token retrieval ---
+            final_repo_url = self.project_config.get("repository", {}).get("url")
+            if self.repository:  # self.repository is set from a CLI argument
+                final_repo_url = self.repository
+                console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
 
-            # --- ORCHESTRATION OF CREWS ---
-            try:
-                console.print("🔄 Starting multi-crew project flow...", style="blue")
+            repo_token_key = None
+            repo_token = None
 
-                final_repo_url = self.project_config.get("repository", {}).get("url")
-                if self.repository:
-                    final_repo_url = self.repository
-                    console.print(f"✅ Overriding project repository with CLI value: {final_repo_url}", style="green")
+            if self.project_config and 'repository' in self.project_config:
+                repo_config = self.project_config['repository']
+                if isinstance(repo_config, dict):
+                    repo_token_key = repo_config.get('REPO_TOKEN_KEY', '')
 
-                # NOTE: Your original logic for retrieving and handling tokens was moved here
-                # to be part of the setup for the project flow.
-                # Your existing token retrieval logic here...
+            if not repo_token_key:
+                if "cyford" in self.project_id.lower() or "zeroai" in self.project_id.lower():
+                    repo_token_key = "GH_TOKEN_CYFORD"
+                elif "testcorp" in self.project_id.lower():
+                    repo_token_key = "GITHUB_TOKEN_TESTCORP"
+                else:
+                    repo_token_key = "GH_TOKEN_CYFORD"
 
-                final_result = run_project_flow(
-                    router=self.router,
-                    tools=self.tools,
-                    project_config=self.project_config
-                )
+            if repo_token_key.startswith("{") and repo_token_key.endswith("}"):
+                repo_token_key = repo_token_key[1:-1]
 
-                custom_logger.save_log()
+            if repo_token_key:
+                repo_token = get_secure_token(repo_token_key)
+                if not repo_token and hasattr(config, 'github_tokens') and config.github_tokens:
+                    repo_token = config.github_tokens.get(
+                        repo_token_key.lower().replace('gh_token_', '').replace('github_token_', ''))
+                    if hasattr(repo_token, 'get_secret_value'):
+                        repo_token = repo_token.get_secret_value()
 
-                if self.project_config.get("crewai_settings", {}).get("verbose", 1):
-                    console.print(f"\nFinal Result:\n{final_result}")
+            console.print(f"DEBUG: Token key from Company_Details: {repo_token_key}", style="magenta")
+            console.print(f"DEBUG: Using final_repo_url: {final_repo_url}", style="magenta")
+            console.print(f"DEBUG: Retrieved repo_token: {'***' if repo_token else 'None'}", style="magenta")
+            console.print(
+                f"DEBUG: Environment check - {repo_token_key}: {'SET' if os.getenv(repo_token_key) else 'NOT SET'}",
+                style="magenta")
+            console.print(f"DEBUG: Available env vars: {[k for k in os.environ.keys() if 'TOKEN' in k or 'GH_' in k]}",
+                          style="magenta")
 
-            except Exception as e:
-                error_msg = f"❌ Error executing project flow: {str(e)}"
+            task_inputs = {
+                "project_id": sanitized_project_id,
+                "prompt": self.prompt,
+                "category": self.category,
+                "repository": final_repo_url,
+                "branch": self.branch,
+                "task_id": self.task_id,
+                "crews_status": self.crews_status,
+                "working_dir": self.working_dir,
+                "repo_token": repo_token,
+                "repo_token_key": repo_token_key,
+                "project_config": self.project_config,
+            }
+
+            from src.crews.internal.research.crew import get_master_crew as create_master_crew  # Adjusted import
+            crew = create_master_crew(
+                router=self.router,
+                tools=self.tools,
+                project_config=self.project_config,
+                inputs=task_inputs,
+                # custom_logger=custom_logger # Assuming logger is handled inside the crew
+            )
+
+            if crew is None:
+                error_msg = "❌ Error: Master Crew not created."
                 console.print(error_msg, style="red")
-                console.print("Traceback:", style="red")
-                console.print(traceback.format_exc())
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "model_used": self.model_used,
+                    "peer_used": self.peer_used,
+                    "crews_status": self.crews_status,
+                }
 
+            console.print(f"🚀 Executing Master crew for task: {self.prompt}", style="blue")
+
+            if shutdown_requested:
+                console.print("Shutdown requested before crew kickoff. Aborting.", style="yellow")
+                return {"success": False, "error": "Crew kickoff aborted by user"}
+
+            result = crew.kickoff(inputs=task_inputs)  # Pass inputs to kickoff
+
+            custom_logger.save_log()
+
+            if self.project_config.get("crewai_settings", {}).get("verbose", 1):
+                console.print(f"\nFinal Result:\n{result}")
+
+        except ImportError as e:
+            console.print(f"❌ Could not import Master crew: {e}", style="red")
+            console.print("Traceback:", style="red")
+            console.print(traceback.format_exc())
+
+            try:
+                error_logger = ErrorLogger()
+                error_logger.log_error(
+                    f"Failed to import Master crew: {str(e)}",
+                    {
+                        "project_id": self.project_id,
+                        "prompt": self.prompt,
+                        "traceback": traceback.format_exc()
+                    }
+                )
+            except ImportError:
+                console.print("❌ Error logging failed: could not import ErrorLogger", style="red")
+
+        except Exception as e:
+            error_msg = f"❌ Error executing Master crew: {str(e)}"
+            console.print(error_msg, style="red")
+            console.print("Traceback:", style="red")
+            console.print(traceback.format_exc())
+
+            try:
                 error_logger = ErrorLogger()
                 error_logger.log_error(
                     error_msg,
@@ -421,31 +642,24 @@ class AIOpsCrewManager:
                         "traceback": traceback.format_exc()
                     }
                 )
+            except ImportError:
+                console.print("❌ Error logging failed: could not import ErrorLogger", style="red")
 
-                return {
-                    "success": False,
-                    "error": error_msg,
-                    "model_used": self.model_used,
-                    "peer_used": self.peer_used,
-                    "crews_status": self.crews_status,
-                }
+        return {
+            "success": True,
+            "result": result,
+            "model_used": self.model_used,
+            "peer_used": self.peer_used,
+            "crews_status": self.crews_status,
+        }
 
-            # --- END ORCHESTRATION ---
+    except Exception as e:
+        error_msg = f"❌ An unexpected error occurred during DevOps task execution: {str(e)}"
+        console.print(error_msg, style="red")
+        console.print("Traceback:", style="red")
+        console.print(traceback.format_exc())
 
-            return {
-                "success": True,
-                "result": final_result,
-                "model_used": self.model_used,
-                "peer_used": self.peer_used,
-                "crews_status": self.crews_status,
-            }
-        except Exception as e:
-            # Generic catch-all for any other unexpected errors
-            error_msg = f"❌ An unexpected error occurred during DevOps task execution: {str(e)}"
-            console.print(error_msg, style="red")
-            console.print("Traceback:", style="red")
-            console.print(traceback.format_exc())
-
+        try:
             error_logger = ErrorLogger()
             error_logger.log_error(
                 error_msg,
@@ -455,14 +669,16 @@ class AIOpsCrewManager:
                     "traceback": traceback.format_exc()
                 }
             )
+        except ImportError:
+            console.print("❌ Error logging failed: could not import ErrorLogger", style="red")
 
-            return {
-                "success": False,
-                "error": error_msg,
-                "model_used": "unknown",
-                "peer_used": "unknown",
-                "crews_status": self.crews_status
-            }
+        return {
+            "success": False,
+            "error": error_msg,
+            "model_used": "unknown",
+            "peer_used": "unknown",
+            "crews_status": self.crews_status
+        }
 
 
 def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> Dict[str, Any]:
