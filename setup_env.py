@@ -41,7 +41,7 @@ def main():
     )
     env_vars["DEFAULT_MODEL"] = Prompt.ask(
         "Default model name", 
-        default="llama3.1:8b"
+        default="mistral-nemo:latest"
     )
     
     # Cloud providers
