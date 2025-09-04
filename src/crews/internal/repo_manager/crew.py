@@ -33,5 +33,6 @@ def create_repo_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         tasks=tasks,
         process=Process.sequential,
         verbose=config.agents.verbose,
-        full_output=full_output
+        full_output=full_output,
+        memory=True
     )

@@ -12,4 +12,5 @@ def create_diagnostics_crew(router, inputs: Dict[str, Any], tools: List) -> Crew
         tasks=[diagnostics_task],
         process=Process.sequential,
         verbose=inputs.get("verbose", False),
+        memory=True
     )

@@ -49,5 +49,6 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
         llm=llm,
         tools=tools,
         verbose=config.agents.verbose,
-        allow_delegation=False
+        allow_delegation=False,
+
     )

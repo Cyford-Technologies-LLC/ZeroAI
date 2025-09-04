@@ -98,6 +98,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         process=Process.sequential,
         verbose=True,  # Force verbose to see all conversations
         full_output=full_output,
+        memory=True
     )
 
     

@@ -208,15 +208,13 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "code_quality_guidelines.pdf",
             "https://testing-best-practices.com"
         ],
-        goal="Implement high-quality, robust code solutions to complex problems. When asked to create files, use the File System Tool to actually write the files to the working directory. ",
+        goal="Implement high-quality, robust code solutions to complex problems. When asked to create files, use the File System Tool to actually write the files to the working directory. "
+             "For speed and accuracy  get project  file names and locations from the project manager. Do not guess composer names or git repo urls.  The project manager has the information you need. "
+        ,
         backstory=f"""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.
         
-        IMPORTANT: order of getting files:
-        - 1st: Get all project documents from your co-worker Project Manager
-        - 2nd: Check  with data  or project manager if a Docker Composer file exist 
-        - 3rd: Prioritize Docker Composer Containers Over Cloning Repo
-        - 4th: Project manager has yur working directory,  if you need to git clone a repo  do it in the working directory
+
         
         Don't just provide code in your response - create the actual files!
         
