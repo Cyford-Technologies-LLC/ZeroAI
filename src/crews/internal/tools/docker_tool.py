@@ -26,7 +26,7 @@ class DockerToolSchema(BaseModel):
 
 class DockerTool(BaseTool):
     name: str = "Docker Operator Tool"
-    description: "Enhanced Docker tool for container management, networking, and orchestration."
+    description = "Enhanced Docker tool for container management, networking, and orchestration."
     args_schema: type[BaseModel] = DockerToolSchema
 
     def _run(self, action: str, image: Optional[str] = None, container: Optional[str] = None,
