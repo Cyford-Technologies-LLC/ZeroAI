@@ -1,6 +1,12 @@
 # 🛠️ Tool Usage Guide for ZeroAI Agents
 
 ## Available Tools
+**General Information**
+The Researcher / Project Manager / Sarah Connor  Has all project Information..    It is easy to find if you know the project_location.  knowledge/internal_crew/(project_location)/project_config.yaml
+In most cases  you should you should always try too use the Docker  or Docker Composer if it is available. 
+In the project_config.yaml file it will state the location of the Docker composer File (key=)
+
+
 
 ### 1. **File System Tool**
 **Purpose**: Read and write files to the working directory

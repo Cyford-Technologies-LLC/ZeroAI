@@ -6,6 +6,13 @@ project:
   id: "zeroai"
   description: "A Python-based AI tool suite using CrewAI, LangChain, and Ollama for distributed, modular agent workflows."
 
+Working_directory:
+  # The working directory for the project
+  project_work_type: "Docker Composer"
+  Composer_File_location: "/app/"
+  compose_file: "docker-compose.testing.yml"
+  working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
+
 # Repository details for the Git tools
 repository:
   url: "https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
@@ -59,8 +66,8 @@ crewai_settings:
 # Environment and development settings
 environment:
   container_orchestration: "docker-compose"
-  # Changed from docker-compose.test.yml to docker-compose.learning.yml
-  docker_compose_file: "docker-compose.learning.yml"
+  # Changed from docker-compose.test.yml to docker-compose.testing.yml
+  docker_compose_file: "docker-compose.testing.yml"
   dependencies:
     - "requirements.txt"
   testing_framework: "pytest"
