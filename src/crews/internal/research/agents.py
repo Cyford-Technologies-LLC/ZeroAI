@@ -133,7 +133,7 @@ def get_online_search_tool():
 
 def get_research_llm(router: DistributedRouter, category: str = "research",
                      preferred_models: Optional[List] = None) -> AnyType:
-    preferred_models = preferred_models or ["mistral-nemo", "llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
+    preferred_models = preferred_models or ["mistral-nemo:latest", "llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"]
 
     try:
         from learning.feedback_loop import feedback_loop
