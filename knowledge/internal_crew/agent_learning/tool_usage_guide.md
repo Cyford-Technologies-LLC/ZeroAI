@@ -54,10 +54,29 @@
 
 **Examples**:
 ```json
+
+{
+  "action": "compose",
+  "compose_file": "./docker-compose.yml",
+  "command": "up"
+},
+{
+  "action": "compose",
+  "compose_file": "./docker-compose.yml",
+  "command": "down"
+},
+
+{
+  "action": "compose",
+  "compose_file": "./docker-compose.yml",
+  "command": "exec",
+  "service": "ollama",
+  "command": "ollama list"
+},
+
 {
   "command": "docker ps"
-}
-
+},
 {
   "command": "docker run hello-world"
 }

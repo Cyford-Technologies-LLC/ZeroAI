@@ -127,6 +127,14 @@
   "environment": "NODE_ENV=production"
 }
 ```
+## Docker Compose
+- This action allows agents to orchestrate multi-container applications using a docker-compose.yml file.
+- Parameters:
+-   "action": "compose"
+-   "compose_file": Path to the compose file.
+-   "command": The specific compose command ("up", "down", or "exec").
+-   "service": (Required for "exec") The service name within the compose file.
+    "command": (Required for "exec") The command to run inside the service.
 
 ## 🔧 Advanced Features
 
