@@ -60,7 +60,7 @@ crewai_settings:
 environment:
   container_orchestration: "docker-compose"
   # Changed from docker-compose.test.yml to docker-compose.learning.yml
-  docker_compose_file: "/docker-compose.learning.yml"
+  docker_compose_file: "/app/docker-compose.learning.yml"
   dependencies:
     - "requirements.txt"
   testing_framework: "pytest"

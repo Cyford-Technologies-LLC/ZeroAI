@@ -28,6 +28,18 @@ def create_developer_crew(router: DistributedRouter, inputs: Dict[str, Any], ful
     junior_developer = create_junior_developer_agent(router, inputs)
     tester = create_qa_engineer_agent(router, inputs)
 
+
+
+
+
+
+
+
+
+
+
+
+
     analyze_task = analyze_codebase_task(researcher, inputs)
     fix_task = fix_bug_task(senior_developer, inputs, context=[analyze_task])
     write_tests_task_instance = write_tests_task(tester, inputs, context=[fix_task])

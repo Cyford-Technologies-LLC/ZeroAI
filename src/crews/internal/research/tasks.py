@@ -61,7 +61,7 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
         
         COORDINATION PROCESS:
         1. For simple questions, provide direct answers from your existing knowledge
-        2. The git URL is: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
+        2. After you get the project details,  Serialize the keys ,  read it all and provide the team with details it needs
         3. Only use tools if you genuinely don't know the answer
         4. If you need project-specific details you don't know, then check knowledge/internal_crew/{project_location}/project_config.yaml
         5. Provide a natural, conversational answer to the user's question
