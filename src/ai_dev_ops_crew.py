@@ -635,7 +635,7 @@ class AIOpsCrewManager:
                     "project_config": self.project_config,
                 }
 
-                from src.crews.internal.research.crew import get_master_crew as create_master_crew  # Adjusted import
+                from src.crews.internal.master_crew.crew import get_master_crew as create_master_crew  # Adjusted import
                 crew = create_master_crew(
                     router=self.router,
                     tools=self.tools,
