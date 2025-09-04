@@ -99,7 +99,7 @@ def main():
     parser.add_argument("--ip", help="IP address of peer to add")
     parser.add_argument("--port", type=int, default=8080, help="Port of peer (default: 8080)")
     parser.add_argument("--name", help="Name for the peer")
-    parser.add_argument("--model", default="llama3.2:1b", help="Model to test with (e.g., test command)")
+    parser.add_argument("--model", default="mistral-nemo", help="Model to test with (e.g., test command)")
     parser.add_argument("--prompt", default="test", help="Prompt to use for the test command (e.g., 'test' command)")
 
     args = parser.parse_args()
