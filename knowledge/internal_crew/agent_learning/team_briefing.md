@@ -27,10 +27,13 @@
 4. **Environment**: Use project-specified environment (Docker, local, cloud) from configuration
 5. **Quality Assurance**: Testing and validation appropriate to project type before deployment  
 
-## Getting Project Files
+## IMPORTANT:  Getting Project Files
 1. **Project Manager** has file names and locations  of what you need
 2. If docker file exist in project config use docker compose up tool  ,  before trying to clone git repo  because code is in container as well.
-3. 
+3. Check  with data she gave you   or ask the  project manager if a Docker Composer file exist 
+4. Prioritize Docker Composer Containers Over Cloning Repo
+5. Project manager has yur working directory,  if you need to git clone a repo  do it in the working directory
+
 
 
 ## Learning System
