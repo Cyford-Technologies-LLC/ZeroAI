@@ -12,7 +12,7 @@ import threading
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from peer_discovery import PeerDiscovery
+from src.peer_discovery import PeerDiscovery
 
 app = Flask(__name__)
 peer_discovery = PeerDiscovery()

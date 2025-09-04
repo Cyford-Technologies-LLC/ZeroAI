@@ -35,6 +35,7 @@ MODEL_MEMORY_MAP = {
     "llama3.1:8b": 5.6,
     "llama3.2:latest": 3.0,
     "llama3.2:1b": 2.3,
+    "mistral-nemo:latest":16,
     "codellama:13b": 8.0,
     "codellama:7b": 5.0,
     "gemma2:2b": 3.5,

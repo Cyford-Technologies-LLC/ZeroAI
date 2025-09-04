@@ -72,13 +72,13 @@ def get_model_preferences_for_category(category: str) -> List[str]:
     """
     # Default model preferences based on category
     default_preferences = {
-        "coding": ["codellama:13b", "codellama:7b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
-        "math": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
-        "research": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
-        "documentation": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-        "customer_service": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-        "tech_support": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-        "general": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+        "coding": ["mistral-nemo:latest", "codellama:13b", "codellama:7b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
+        "math": ["mistral-nemo:latest", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+        "research": ["mistral-nemo:latestb", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+        "documentation": ["mistral-nemo:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+        "customer_service": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+        "tech_support": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+        "general": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
     }
 
     # Get the default preferences for this category, or use general if not found
