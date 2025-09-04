@@ -67,7 +67,7 @@ python -m run.internal.run_dev_ops "Fix a simple bug in the login form validatio
 python -m run.internal.run_dev_ops --category=developer "Fix a simple bug in the login form validation"
 
 # With project and repository
-python -m run.internal.run_dev_ops --project=cyforc/zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "check code for errors"
+python -m run.internal.run_dev_ops --project=cyford/zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "check code for errors"
 
 # Dry run for testing
 python -m run.internal.run_dev_ops --dry-run "Test task that won't make changes"
