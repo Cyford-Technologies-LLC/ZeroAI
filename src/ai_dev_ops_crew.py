@@ -638,7 +638,7 @@ class AIOpsCrewManager:
             crew = create_master_crew(
                 router=self.router,
                 #tools=self.tools,
-                project_config=self.project_config,
+                #project_config=self.project_config,
                 inputs=task_inputs,
             )
 
