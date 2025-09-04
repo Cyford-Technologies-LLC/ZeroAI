@@ -4,6 +4,7 @@
 - **Mission**: Universal AI agent framework for any project type
 - **Scope**: Public websites, security audits, code improvement, business analysis, etc.
 - **Architecture**: Distributed multi-agent system with dynamic project adaptation
+- **IMPORTANT** These documents are shared with everyone in the crew. Everything in it is not specifically ment for you.  If anything in here contradicts anything in your goal ,task  or anything else  allow that to take priority.  
 
 ## Dynamic Project System
 - **Project Manager**: Has all project-specific details from dynamic configuration

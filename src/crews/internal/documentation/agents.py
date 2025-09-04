@@ -12,6 +12,9 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     task_description = "Generate or update documentation based on project changes."
     llm = router.get_llm_for_task(task_description)
     agent_memory = Memory()
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
 
     return Agent(
         role="Documentation Writer",
@@ -36,10 +39,9 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "technical_level": "expert"
             },
         resources=[
-                "testing_frameworks.md",
-                "code_quality_guidelines.pdf",
-                "https://testing-best-practices.com"
-            ],
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         goal="Create clear and concise documentation for software projects.",
         backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
         

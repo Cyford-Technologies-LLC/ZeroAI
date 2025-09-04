@@ -247,10 +247,15 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "tone": "confident",
             "technical_level": "intermediate"
         },
-        resources=[],
+        resources=[
+                   f"Project Directory:  knowledge/internal_crew/{project_location}"
+                   f"GIT Repository: {repository} ."
+                   ],
         goal="Provide project details and coordinate team. For file creation tasks, provide clear requirements and delegate to Senior Developer. "
-             f"PROJECT INFO: Use Project Tool with project_location='{project_location}' to get project details when needed. "
+             f"PROJECT INFO: Use Project Tool with project_location='{project_location}'  to get project details when needed. "
+             f"If you still have problems getting the project details  you can get them from this file. ( knowledge/internal_crew/{project_location}/project_config.yaml )"
              "COORDINATION ONLY: You coordinate and provide requirements - you don't create files yourself. "
+             "Things that you learn save it"
              "CLEAR DELEGATION: When delegating file creation, provide specific requirements: filename, location, and basic content structure.",
         backstory=f"An experienced project manager who coordinates teams and provides project context. You analyze requirements, provide project details, and delegate implementation tasks to appropriate team members. You don't implement solutions yourself - that's what developers are for.\n\nROLE: Coordinate, analyze, and delegate - never implement.\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
@@ -266,6 +271,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     llm = get_research_llm(router, category="research")
     agent_memory = Memory()
     project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
     
     all_tools = _get_tools_with_github(inputs, tools)
 
@@ -291,7 +297,10 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "tone": "objective",
             "technical_level": "expert"
         },
-        resources=[],
+        resources=[
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         goal="Gather information on internal project details. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""An expert at internal research, finding and documenting all project-specific information.
         
@@ -314,6 +323,8 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     agent_memory = Memory()
     
     all_tools = _get_tools_with_github(inputs, tools)
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
 
     return Agent(
         role="Online Researcher",
@@ -337,7 +348,10 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
             "tone": "confident",
             "technical_level": "intermediate"
         },
-        resources=[],
+        resources=[
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         goal="Perform comprehensive online searches to find information. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""A specialized agent for efficient online information retrieval.
         

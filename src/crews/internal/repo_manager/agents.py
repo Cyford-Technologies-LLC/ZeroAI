@@ -35,7 +35,13 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
                               coworkers: Optional[List] = None) -> Agent:
     """Create a Git Operator agent."""
 
+
     agent_memory = Memory()
+
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+
     llm = get_repo_manager_llm(router, category="repo_management")
 
     # Get repository URL from inputs
@@ -86,15 +92,14 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
             "technical_level": "expert"
         },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
         ],
         expertise=[
             "GIT", "Bit Bucket"
         ],
         expertise_level=9.2,
-        goal="Execute Git commands and file manipulations to manage project repositories.",
+        goal="On Project related changes  when the project is complete and tested by team,   the file final rebase can go to branch specified inthe project config .",
         backstory=f"""An automated system for performing repository management tasks.
         
         {get_shared_context_for_agent("Git Operator")}

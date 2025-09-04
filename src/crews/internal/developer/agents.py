@@ -65,6 +65,9 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     agent_memory = Memory()
     all_tools = get_universal_tools(inputs, initial_tools=tools)
 
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
 
 
     return Agent(
@@ -89,9 +92,8 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "expert"
         },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
         ],
         expertise=[
             "Python", "JavaScript", "Database Design",
@@ -123,6 +125,9 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
     return Agent(
@@ -147,9 +152,8 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "technical_level": "expert"
         },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
         ],
         goal="Implement high-quality code solutions under guidance. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a junior software developer, eager to learn and implement code solutions
@@ -181,6 +185,9 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
 
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
 
@@ -206,9 +213,8 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "technical_level": "expert"
         },
         resources=[
-            "testing_frameworks.md",
-            "code_quality_guidelines.pdf",
-            "https://testing-best-practices.com"
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
         ],
         goal="Implement high-quality, robust code solutions to complex problems. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a skilled software developer with years of experience.

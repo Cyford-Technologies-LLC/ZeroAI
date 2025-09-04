@@ -37,6 +37,12 @@ def get_code_fixer_llm(router: DistributedRouter, category: str) -> Any:
 def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     llm = get_code_fixer_llm(router, category="code_research")
     agent_memory = Memory()
+
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+
+
     return Agent(
         role="Code Researcher",
         name="Timothy",
@@ -60,10 +66,9 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
                 "technical_level": "intermediate"
             },
         resources=[
-                "testing_frameworks.md",
-                "code_quality_guidelines.pdf",
-                "https://testing-best-practices.com"
-            ],
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         goal="Understand and analyze bug reports to find the root cause.",
         backstory=f"An expert in software analysis, specializing in finding code issues.\n\n{get_shared_context_for_agent('Code Researcher')}\n\nResponses are signed with the name Timothy.",
         llm=llm,
@@ -76,6 +81,12 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     llm = get_code_fixer_llm(router, category="coding")
     agent_memory = Memory()
+
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+
+
     return Agent(
         role="Senior Developer",
         name="Anthony Gates",
@@ -99,10 +110,9 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
                 "technical_level": "expert"
             },
         resources=[
-                "testing_frameworks.md",
-                "code_quality_guidelines.pdf",
-                "https://testing-best-practices.com"
-            ],
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         goal="Implement bug fixes and write clean, maintainable code.",
         backstory=f"A seasoned developer with a knack for solving complex coding problems.\n\n{get_shared_context_for_agent('Senior Developer')}\n\nResponses are signed with the name Anthony Gates.",
         llm=llm,
@@ -115,6 +125,11 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
 def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
     llm = get_code_fixer_llm(router, category="testing")
     agent_memory = Memory()
+
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+
     return Agent(
         role="QA Engineer",
         name="Emily",
@@ -138,10 +153,9 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "technical_level": "expert"
             },
         resources=[
-                "testing_frameworks.md",
-                "code_quality_guidelines.pdf",
-                "https://testing-best-practices.com"
-            ],
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         goal="Ensure all bug fixes are verified with comprehensive tests.",
         backstory=f"A meticulous QA engineer who ensures code quality and correctness.\n\n{get_shared_context_for_agent('QA Engineer')}\n\nResponses are signed with the name Emily.",
         llm=llm,
