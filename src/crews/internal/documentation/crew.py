@@ -1,7 +1,7 @@
 # src/crews/internal/documentation/crew.py
 from crewai import Crew, Process
 from typing import Dict, Any, List
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 
 from src.crews.internal.documentation.agents import create_writer_agent

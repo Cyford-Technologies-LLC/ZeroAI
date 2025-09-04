@@ -10,7 +10,7 @@ import time
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from peer_discovery import peer_discovery, PeerNode
 from rich.console import Console
 

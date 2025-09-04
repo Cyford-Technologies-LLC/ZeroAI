@@ -1,7 +1,7 @@
 # src/crews/internal/code_fixer/crew.py
 from crewai import Crew, Process
 from typing import Dict, Any, List
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from .agents import create_code_researcher_agent, create_coder_agent, create_tester_agent
 from .tasks import analyze_codebase_task, fix_bug_task, write_tests_task, run_tests_task

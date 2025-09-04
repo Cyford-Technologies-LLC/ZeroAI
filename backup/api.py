@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Fix: Import specific components
 from peer_discovery import PeerDiscovery # Correct PeerDiscovery import
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from ai_crew import AICrewManager
 from cache_manager import cache
 

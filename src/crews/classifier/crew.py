@@ -1,7 +1,7 @@
 from crewai import Crew, Task
 from typing import Dict, Any
 from src.config import config
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from .agents import create_classifier_agent
 
 

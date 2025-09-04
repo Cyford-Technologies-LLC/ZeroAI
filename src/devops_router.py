@@ -6,7 +6,7 @@ import warnings
 import time
 from typing import Optional, List, Tuple
 from rich.console import Console
-from distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY, \
+from src.distributed_router import DistributedRouter, PeerDiscovery, MODEL_PREFERENCES, KEYWORDS_TO_CATEGORY, \
     MODEL_MEMORY_MAP
 from langchain_community.llms.ollama import Ollama
 from src.config import config

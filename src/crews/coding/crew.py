@@ -5,7 +5,7 @@ from typing import Dict, Any
 from src.config import config
 from .agents import create_coding_developer_agent, create_qa_engineer_agent
 from .tasks import create_coding_task
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 
 def create_coding_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     coding_developer = create_coding_developer_agent(router, inputs)

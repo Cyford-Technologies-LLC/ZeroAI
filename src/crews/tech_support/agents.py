@@ -2,7 +2,7 @@
 
 from crewai import Agent
 from src.config import config
-from distributed_router import DistributedRouter # Import router
+from src.distributed_router import DistributedRouter # Import router
 from langchain_community.llms.ollama import Ollama # If you use it for the Agent llm
 
 def create_tech_support_agent(router: DistributedRouter, inputs: dict) -> Agent:

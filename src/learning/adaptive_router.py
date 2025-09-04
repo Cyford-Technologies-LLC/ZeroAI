@@ -1,7 +1,7 @@
 # src/learning/adaptive_router.py
 
 from typing import Optional, List, Tuple, Dict, Any
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from peer_discovery import PeerDiscovery
 from learning.feedback_loop import FeedbackLoop
 import logging

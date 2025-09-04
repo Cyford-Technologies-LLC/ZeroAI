@@ -6,7 +6,7 @@ from langchain_community.llms.ollama import Ollama
 from src.config import config
 from .agents import create_mathematician_agent
 from .tasks import create_math_task
-from distributed_router import DistributedRouter # Import router
+from src.distributed_router import DistributedRouter # Import router
 
 def create_math_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     # Pass the router, not the llm instance

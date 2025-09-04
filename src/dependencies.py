@@ -2,7 +2,7 @@
 
 # Import all modules here
 from peer_discovery import peer_discovery
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 #from ai_crew import AICrewManager
 # Import AICrewManager lazily
 def get_ai_crew_manager():

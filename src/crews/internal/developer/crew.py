@@ -1,7 +1,7 @@
 # src/crews/developer/crew.py
 from crewai import Crew, Process
 from typing import Dict, Any
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from .agents import create_code_researcher_agent, create_senior_developer_agent, create_junior_developer_agent, \
     create_qa_engineer_agent

@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from src.utils.persistent_crew import crew_pool
 from src.ai_dev_ops_crew import AIOpsCrewManager
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from rich.console import Console
 
 console = Console()

@@ -1,7 +1,7 @@
 # src/crews/internal/scheduler/crew.py
 from crewai import Crew, Process
 from typing import Dict, Any, List
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from .agents import create_scheduler_agent
 from .tasks import schedule_management_task

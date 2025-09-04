@@ -1,7 +1,7 @@
 # src/crews/internal/research/crew.py
 from crewai import Crew, Process
 from typing import Dict, Any, List
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.research.agents  import create_project_manager_agent , create_internal_researcher_agent, create_online_researcher_agent
 from src.crews.internal.research.tasks import internal_research_task, online_research_task, project_management_task

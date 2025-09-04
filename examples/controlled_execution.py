@@ -9,7 +9,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.ai_dev_ops_crew import AIOpsCrewManager
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from rich.console import Console
 
 console = Console()

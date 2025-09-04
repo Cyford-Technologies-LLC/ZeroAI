@@ -1,7 +1,7 @@
 # src/crews/internal/repo_manager/crew.py
 from crewai import Crew, Process
 from typing import Dict, Any, List
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from src.config import config
 from .agents import create_git_operator_agent
 from .tasks import clone_repo_task, commit_and_push_task

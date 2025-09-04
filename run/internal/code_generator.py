@@ -9,7 +9,7 @@ from langchain_ollama import ChatOllama
 from src.config import config
 from rich.console import Console
 from peer_discovery import PeerDiscovery
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 
 console = Console()
 

@@ -7,7 +7,7 @@ from langchain_community.llms.ollama import Ollama
 # Assuming your config is accessible here
 from src.config import config
 # Assuming you have an updated router and a way to get it
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 
 def create_mathematician_agent(router: DistributedRouter, inputs: dict) -> Agent:
     task_description = "Solve mathematical problems."

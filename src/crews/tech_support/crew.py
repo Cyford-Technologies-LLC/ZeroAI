@@ -5,7 +5,7 @@ from typing import Dict, Any
 from src.config import config
 from .agents import create_tech_support_agent
 from .tasks import create_tech_support_task
-from distributed_router import DistributedRouter # Import router
+from src.distributed_router import DistributedRouter # Import router
 
 # Add `full_output` to the function signature with a default value of False
 def create_tech_support_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:

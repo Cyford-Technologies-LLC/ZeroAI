@@ -13,7 +13,7 @@ from langchain_community.llms.ollama import Ollama
 from src.config import config
 from agents.base_agents import create_researcher, create_writer, create_analyst
 from tasks.base_tasks import create_research_task, create_writing_task, create_analysis_task
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 from crews.classifier.agents import create_classifier_agent
 from crews.coding.crew import create_coding_crew
 from crews.math.crew import create_math_crew

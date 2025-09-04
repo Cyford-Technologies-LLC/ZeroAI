@@ -5,7 +5,7 @@ from rich.console import Console
 from crewai import Agent, Task
 from langchain_community.llms.ollama import Ollama
 from src.config import config
-from distributed_router import DistributedRouter
+from src.distributed_router import DistributedRouter
 
 console = Console()
 
