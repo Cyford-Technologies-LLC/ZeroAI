@@ -43,15 +43,15 @@ MODEL_MEMORY_MAP = {
 
 # --- Model preference lists based on agent roles ---
 MODEL_PREFERENCES = {
-    "developer": ["codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
-    "research": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
-    "documentation": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "devops_orchestrator": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "repo_manager": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
-    "general": ["llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llava:7b", "llama3.2:1b"],
-    "customer_service": ["llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
-    "tech_support": ["llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
-    "default": ["llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
+    "developer": ["mistral-nemo:latest", "codellama:13b", "llama3.1:8b", "llama3.2:latest", "llama3.2:1b"],
+    "research": ["mistral-nemo:latest", "llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "documentation": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "devops_orchestrator": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "repo_manager": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llama3.2:1b"],
+    "general": ["mistral-nemo:latest", "llama3.1:8b", "llama3.2:latest", "gemma2:2b", "llava:7b", "llama3.2:1b"],
+    "customer_service": ["mistral-nemo:latest", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "tech_support": ["mistral-nemo:latest", "llama3.2:latest", "gemma2:2b", "llama3.2:1b"],
+    "default": ["mistral-nemo:latest", "llama3.2:latest", "llama3.1:8b", "gemma2:2b", "llava:7b", "llama3.2:1b"]
 }
 
 KEYWORDS_TO_CATEGORY = {
