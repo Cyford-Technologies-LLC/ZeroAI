@@ -56,6 +56,17 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 # The preload_internal_crews function remains unchanged
+import importlib
+import os
+import traceback
+from pathlib import Path
+from typing import Dict, Any
+from rich.console import Console
+from rich.table import Table
+
+console = Console()
+
+
 def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
     """
     Preload all internal crew modules and check which ones are available.
@@ -65,7 +76,6 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
     crew_status = {}
     error_logger = None
 
-    # Try to import the ErrorLogger first
     try:
         from src.crews.internal.team_manager.agents import ErrorLogger
         error_logger = ErrorLogger()
@@ -87,9 +97,59 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
     table.add_column("Details", style="white")
     table.add_column("Files", style="dim")
 
-    crew_dirs = [d for d in internal_crews_dir.iterdir() if d.is_dir() and not d.name.startswith("__") and d.name != "tools"]
-
     console.print(f"🔍 [bold blue]Checking internal crews availability[/bold blue]")
+
+    # --- Manual check for the single master crew ---
+    crew_name = "master"
+    try:
+        import_path = "src.crews.internal.master_crew.crew"
+        module = importlib.import_module(import_path)
+
+        crew_status[crew_name] = {
+            "status": "available",
+            "error": None,
+            "files_present": ["crew.py"],
+            "directory": str(Path("src/crews/internal/master_crew")),
+            "agents": []
+        }
+
+        get_crew_func = "get_master_crew"
+        if hasattr(module, get_crew_func):
+            crew_status[crew_name]["get_crew_function"] = get_crew_func
+
+        # Get agent functions by assuming they exist in the master_crew directory
+        try:
+            agents_module = importlib.import_module("src.crews.internal.master_crew.agents")
+            for func_name in dir(agents_module):
+                if func_name.startswith("create_") and func_name.endswith("_agent"):
+                    crew_status[crew_name]["agents"].append(func_name)
+        except ImportError:
+            pass  # Ignore if agents.py doesn't exist for the master crew
+
+        table.add_row(
+            crew_name,
+            "✅ Available",
+            "Master crew manually verified",
+            "crew.py"
+        )
+    except Exception as e:
+        crew_status[crew_name] = {"status": "error", "error": str(e)}
+        table.add_row(
+            crew_name,
+            "❌ Import Error",
+            str(e),
+            ""
+        )
+        if error_logger:
+            error_logger.log_error(
+                f"Failed to load master crew: {str(e)}",
+                {"crew_name": crew_name, "traceback": traceback.format_exc()}
+            )
+    # --- End Manual Check ---
+
+    crew_dirs = [d for d in internal_crews_dir.iterdir() if
+                 d.is_dir() and not d.name.startswith("__") and d.name != "tools" and d.name != "master_crew"]
+
     console.print(f"Found {len(crew_dirs)} potential internal crews", style="blue")
 
     for crew_dir in crew_dirs:
@@ -99,7 +159,7 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
             "error": None,
             "files_present": [],
             "directory": str(crew_dir),
-            "agents": []  # Added to store agent creator function names
+            "agents": []
         }
 
         required_files = ["__init__.py", "agents.py", "tasks.py", "crew.py"]
@@ -126,7 +186,6 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
             import_path = f"src.crews.internal.{crew_name}.crew"
             module = importlib.import_module(import_path)
 
-            # Import the agents module as well
             agents_import_path = f"src.crews.internal.{crew_name}.agents"
             agents_module = importlib.import_module(agents_import_path)
 
@@ -137,12 +196,10 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
             if hasattr(module, get_crew_func):
                 crew_status[crew_name]["get_crew_function"] = get_crew_func
 
-            # Find agent creator functions in the agents module
             for func_name in dir(agents_module):
                 if func_name.startswith("create_") and func_name.endswith("_agent"):
                     crew_status[crew_name]["agents"].append(func_name)
 
-            # Check if any agent creation functions were found
             if not crew_status[crew_name]["agents"]:
                 crew_status[crew_name]["status"] = "incomplete"
                 crew_status[crew_name]["error"] = "No agent creator functions found."
@@ -194,7 +251,8 @@ def preload_internal_crews() -> Dict[str, Dict[str, Any]]:
     console.print(table)
 
     for crew_name, info in crew_status.items():
-        status_style = "green" if info["status"] == "available" else "yellow" if info["status"] == "incomplete" else "red"
+        status_style = "green" if info["status"] == "available" else "yellow" if info[
+                                                                                     "status"] == "incomplete" else "red"
         console.print(f"[bold]{crew_name}[/bold]: [{status_style}]{info['status']}[/{status_style}]")
         if info["error"]:
             console.print(f"  Error: {info['error']}")
