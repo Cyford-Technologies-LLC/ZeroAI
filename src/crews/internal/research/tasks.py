@@ -67,6 +67,7 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
         5. Provide a natural, conversational answer to the user's question
         
         CRITICAL INSTRUCTIONS:
+        - Share Project details before Delegating to others
         - NEVER return raw file contents, YAML, JSON, or technical dumps
         - Interpret the information and explain it in human-friendly terms
         - Coordinate research efforts and synthesize findings
