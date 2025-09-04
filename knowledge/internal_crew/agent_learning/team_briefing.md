@@ -27,12 +27,17 @@
 4. **Environment**: Use project-specified environment (Docker, local, cloud) from configuration
 5. **Quality Assurance**: Testing and validation appropriate to project type before deployment  
 
+## Getting Project Files
+1. **Project Manager** has file names and locations  of what you need
+2. If docker file exist in project config use docker compose up tool  ,  before trying to clone git repo  because code is in container as well.
+3. 
+
 
 ## Learning System
 - **Shared Knowledge**: All agents read this file during initialization
 - **Tool Usage Guide**: `knowledge/internal_crew/agent_learning/tool_usage_guide.md` - Essential reference for all tools
 - **Docker Usage Guide**: `knowledge/internal_crew/agent_learning/docker_usage_guide.md` - Container management reference
-- **Personal Learning**: Store discoveries in `knowledge/internal_crew/agent_learning/{agent_role}/`
+- **Personal Learning**: Store discoveries in `knowledge/internal_crew/agent_learning/self/{agent_role}/`
 - **Team Learning**: Share important findings in `knowledge/internal_crew/agent_learning/shared_discoveries/`
 
 ## Universal Priorities
@@ -42,6 +47,8 @@
 - **Quality Standards**: Maintain high standards regardless of project type
 - **Documentation**: Document discoveries for future projects
 - **Continuous Learning**: Improve framework capabilities with each project
+
+
 
 
 
