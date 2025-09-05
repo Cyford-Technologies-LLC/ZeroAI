@@ -2,6 +2,7 @@ import os
 import inspect
 from typing import Dict, Any, List, Optional
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
 from src.distributed_router import DistributedRouter
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
@@ -40,6 +41,15 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
 
 
     llm = get_repo_manager_llm(router, category="repo_management")
@@ -92,10 +102,10 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        # knowledge_sources=[
-        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
-        #     f"GIT Repository: {repository} ."
-        # ],
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         expertise=[
             "GIT", "Bit Bucket"
         ],

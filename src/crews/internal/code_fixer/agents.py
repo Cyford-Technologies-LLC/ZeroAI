@@ -1,6 +1,7 @@
 # src/crews/internal/code_fixer/agents.py
 
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
 from typing import Dict, Any, Optional, List
 from src.distributed_router import DistributedRouter
 from src.config import config
@@ -9,6 +10,9 @@ from src.utils.memory import Memory
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from langchain_ollama import OllamaLLM
 from rich.console import Console
+
+
+
 
 console = Console()
 
@@ -41,6 +45,16 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
 
 
     return Agent(
@@ -65,10 +79,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
                 "tone": "cooperative",
                 "technical_level": "intermediate"
             },
-        # knowledge_sources=[
-        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
-        #     f"GIT Repository: {repository} ."
-        # ],
+        knowledge_sources=[project_knowledge],
         goal="Understand and analyze bug reports to find the root cause.",
         backstory=f"An expert in software analysis, specializing in finding code issues.\n\n{get_shared_context_for_agent('Code Researcher')}\n\nResponses are signed with the name Timothy.",
         llm=llm,
@@ -84,6 +95,16 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
 
 
 
@@ -109,10 +130,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
                 "tone": "confident",
                 "technical_level": "expert"
             },
-        # knowledge_sources=[
-        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
-        #     f"GIT Repository: {repository} ."
-        # ],
+        knowledge_sources=[project_knowledge],
         goal="Implement bug fixes and write clean, maintainable code.",
         backstory=f"A seasoned developer with a knack for solving complex coding problems.\n\n{get_shared_context_for_agent('Senior Developer')}\n\nResponses are signed with the name Anthony Gates.",
         llm=llm,
@@ -128,6 +146,15 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
 
 
     return Agent(
@@ -153,10 +180,10 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "tone": "objective",
                 "technical_level": "expert"
             },
-        # knowledge_sources=[
-        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
-        #     f"GIT Repository: {repository} ."
-        # ],
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         goal="Ensure all bug fixes are verified with comprehensive tests.",
         backstory=f"A meticulous QA engineer who ensures code quality and correctness.\n\n{get_shared_context_for_agent('QA Engineer')}\n\nResponses are signed with the name Emily.",
         llm=llm,

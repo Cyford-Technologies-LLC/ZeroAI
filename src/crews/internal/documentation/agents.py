@@ -1,5 +1,6 @@
 # src/crews/internal/documentation/agents.py
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
@@ -14,6 +15,12 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    ),
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
 
 
     return Agent(
@@ -38,11 +45,11 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "tone": "cooperative",
                 "technical_level": "expert"
             },
-        # knowledge_sources=[
-        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
-        #     f"GIT Repository: {repository} ."
-        # ],
         resources=[],
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         goal="Create clear and concise documentation for software projects.",
         backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
         
