@@ -3,8 +3,8 @@
 import inspect
 import importlib
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledgefrom crewai_tools import SerperDevTool
-from crewai.tools import BaseTool
+from src.utils.knowledge_utils import get_common_knowledge
+from crewai_tools import SerperDevToolfrom crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
 
 from openai import resources
