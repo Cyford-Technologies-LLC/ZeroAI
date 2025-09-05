@@ -1,6 +1,6 @@
 # src/crews/internal/documentation/agents.py
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge
+from src.utils.knowledge_utils import get_common_knowledge_strings_strings
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
@@ -15,7 +15,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 

@@ -3,7 +3,7 @@
 import inspect
 import importlib
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge
+from src.utils.knowledge_utils import get_common_knowledge_strings_strings
 from crewai_tools import SerperDevTool
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
@@ -215,7 +215,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
     print(f"DEBUG: Type of common_knowledge: {type(common_knowledge)}")
     print(f"DEBUG: Content of common_knowledge: {common_knowledge}")
 
@@ -283,7 +283,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 
@@ -344,7 +344,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 

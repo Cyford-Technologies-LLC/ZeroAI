@@ -1,7 +1,7 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
 from crewai.tools import BaseTool
-from src.utils.knowledge_utils import get_common_knowledge
+from src.utils.knowledge_utils import get_common_knowledge_strings_strings
 
 
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
@@ -58,7 +58,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 

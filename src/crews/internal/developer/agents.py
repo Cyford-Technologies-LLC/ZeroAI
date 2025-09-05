@@ -3,7 +3,7 @@
 import os
 import inspect
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge
+from src.utils.knowledge_utils import get_common_knowledge_strings_strings
 from crewai_tools import SerperDevTool
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
@@ -68,7 +68,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 
@@ -135,7 +135,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 
@@ -202,7 +202,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
 
 
@@ -268,7 +268,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    common_knowledge = get_common_knowledge_strings(project_location, repository)
 
     all_tools = get_universal_tools(inputs, initial_tools=tools)
 
