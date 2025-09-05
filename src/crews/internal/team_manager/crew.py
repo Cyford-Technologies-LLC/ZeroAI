@@ -45,41 +45,23 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Create the list of agents for the crew (manager is handled separately)
     crew_agents = all_coworkers
 
-    project_id = inputs.get("project_id")
-    project_location = f"knowledge/internal_crew/{project_id}/project_config.yaml"
-    repository = inputs.get("repository")
-
-    # Get the common knowledge sources
-    common_knowledge = get_common_knowledge(
-        project_location=inputs.get(project_id),
-        repository=inputs.get(repository)
-    )
-
-    # Attach knowledge to agents using the explicit embedder instance
-    for agent in all_coworkers:
-        # Create a new Knowledge instance with the explicit embedder
-        agent.knowledge = Knowledge(
-            sources=common_knowledge,
-            embedder=ollama_embedder # Pass the explicit embedder instance
-        )
-
     # Enable verbose on all agents to show their conversations
     for agent in crew_agents:
         agent.verbose = True
-    
+
     console.print(f"🔧 CREW DEBUG: {len(crew_agents)} agents with verbose enabled", style="cyan")
     for i, agent in enumerate(crew_agents):
         console.print(f"🔧 Agent {i}: {agent.role} (verbose={getattr(agent, 'verbose', False)})", style="cyan")
-    
+
     # Use sequential process to show all agent conversations
     # Create tasks for multiple agents to demonstrate collaboration
     sequential_tasks = []
-    
+
     # Find key agents
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
-    
+
     if project_manager:
         sequential_tasks.append(Task(
             description=f"Analyze and plan the task: {inputs.get('prompt')}",
@@ -87,7 +69,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             expected_output="A detailed project plan and task breakdown.",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
-    
+
     if code_researcher:
         sequential_tasks.append(Task(
             description=f"Research and analyze code requirements for: {inputs.get('prompt')}",
@@ -95,7 +77,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             expected_output="Technical analysis and code recommendations.",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
-    
+
     if senior_dev:
         sequential_tasks.append(Task(
             description=f"Implement solution for: {inputs.get('prompt')}",
@@ -103,7 +85,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             expected_output="Complete implementation with code and documentation.",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
-    
+
     # Fallback to single task if no specific agents found
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
@@ -112,17 +94,39 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             expected_output="Complete solution to the user's request.",
             callback=custom_logger.log_step_callback if custom_logger else None
         )]
-    
+
+    # Get the project_id and repository from the inputs dictionary
+    project_id = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+    if not project_id:
+        raise ValueError("The 'project_id' key is missing from the inputs.")
+
+    # Get the common knowledge sources by passing the variables directly
+    common_knowledge = get_common_knowledge(
+        project_location=project_id,  # <-- Corrected: Use the variable directly
+        repository=repository  # <-- Corrected: Use the variable directly
+    )
+
+    # Attach knowledge to agents using the explicit embedder instance
+    for agent in all_coworkers:
+        if agent.knowledge:
+            agent.knowledge.sources = common_knowledge
+            agent.knowledge.set_embedder(ollama_embedder)
+
     crew1 = Crew(
         agents=crew_agents,
         tasks=sequential_tasks,
         process=Process.sequential,
         verbose=True,  # Force verbose to see all conversations
         full_output=full_output,
-        embedder=ollama_embedder,  # Pass the explicit embedder instance here too for good measure
+        embedder=ollama_embedder,
     )
 
+    # This loop is unnecessary if you've already set the embedder on the agent's knowledge
+    # for agent in crew_agents:
+    #    if agent.knowledge:
+    #        agent.knowledge.set_embedder(crew1.embedder)
 
-    
     return crew1
 
