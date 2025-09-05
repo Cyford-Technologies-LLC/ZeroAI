@@ -7,9 +7,9 @@ from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
-from src.utils.knowledge_utils import ollama_embedder, get_common_knowledge  # Import ollama_embedder
-from crewai.knowledge.knowledge import Knowledge
+from src.utils.knowledge_utils import ollama_embedder, get_common_knowledge  # Import both
 
+from crewai.knowledge.knowledge import Knowledge  # Import Knowledge for manual setup
 
 console = Console()
 
@@ -18,6 +18,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                              project_config: Dict[str, Any], full_output: bool = False,
                              custom_logger: Optional[CustomLogger] = None) -> Crew:
     """Creates a Team Manager crew using the distributed router."""
+
     # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
 
@@ -30,34 +31,18 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         coworkers=all_coworkers
     )
 
-    # Define tasks directly within this function
-    manager_tasks = [
-        Task(
-            description=inputs.get("prompt"),
-            agent=manager_agent,
-            expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
-                            "This may include code, documentation, or other relevant artifacts.",
-            # Pass the callback directly
-            callback=custom_logger.log_step_callback if custom_logger else None
-        )
-    ]
+    # ... (tasks definition) ...
+    sequential_tasks = []
+    # ... (populate sequential_tasks) ...
 
-    # Create the list of agents for the crew (manager is handled separately)
+    # Create the list of agents for the crew
     crew_agents = all_coworkers
 
-    # Enable verbose on all agents to show their conversations
+    # Enable verbose on all agents
     for agent in crew_agents:
         agent.verbose = True
 
-    console.print(f"🔧 CREW DEBUG: {len(crew_agents)} agents with verbose enabled", style="cyan")
-    for i, agent in enumerate(crew_agents):
-        console.print(f"🔧 Agent {i}: {agent.role} (verbose={getattr(agent, 'verbose', False)})", style="cyan")
-
-    # Use sequential process to show all agent conversations
-    # Create tasks for multiple agents to demonstrate collaboration
-    sequential_tasks = []
-
-    # Find key agents
+    # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
@@ -86,47 +71,52 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
 
-    # Fallback to single task if no specific agents found
+    # Fallback logic for tasks (your existing logic)
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
             description=inputs.get("prompt"),
-            agent=crew_agents[0],
+            agent=crew_agents,
             expected_output="Complete solution to the user's request.",
             callback=custom_logger.log_step_callback if custom_logger else None
         )]
 
-    # Get the project_id and repository from the inputs dictionary
+    # Fix the knowledge source creation here
     project_id = inputs.get("project_id")
     repository = inputs.get("repository")
 
     if not project_id:
         raise ValueError("The 'project_id' key is missing from the inputs.")
 
-    # Get the common knowledge sources by passing the variables directly
     common_knowledge = get_common_knowledge(
-        project_location=project_id,  # <-- Corrected: Use the variable directly
-        repository=repository  # <-- Corrected: Use the variable directly
+        project_location=project_id,
+        repository=repository
     )
 
     # Attach knowledge to agents using the explicit embedder instance
     for agent in all_coworkers:
-        if agent.knowledge:
-            agent.knowledge.sources = common_knowledge
-            agent.knowledge.set_embedder(ollama_embedder)
+        # Create a new Knowledge instance with the explicit embedder
+        agent.knowledge = Knowledge(
+            sources=common_knowledge,
+            embedder=ollama_embedder  # <-- Pass the object instance here
+        )
+
+    # Define the embedder as a dictionary for the Crew constructor
+    crew_embedder_config = {
+        "provider": "ollama",
+        "config": {
+            "model": "nomic-embed-text",
+            "base_url": "http://149.36.1.65:11434"
+        }
+    }
 
     crew1 = Crew(
         agents=crew_agents,
         tasks=sequential_tasks,
         process=Process.sequential,
-        verbose=True,  # Force verbose to see all conversations
+        verbose=True,
         full_output=full_output,
-        embedder=ollama_embedder,
+        embedder=crew_embedder_config,  # <-- Pass the dictionary here
     )
-
-    # This loop is unnecessary if you've already set the embedder on the agent's knowledge
-    # for agent in crew_agents:
-    #    if agent.knowledge:
-    #        agent.knowledge.set_embedder(crew1.embedder)
 
     return crew1
 
