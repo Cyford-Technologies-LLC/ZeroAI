@@ -6,6 +6,7 @@ from src.config import config
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.utils.shared_knowledge import get_shared_context_for_agent
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 from src.utils.tool_initializer import get_universal_tools
 
