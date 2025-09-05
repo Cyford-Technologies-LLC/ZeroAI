@@ -130,7 +130,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    # common_knowledge = get_common_knowledge(project_location, repository)
 
 
     return Agent(
