@@ -1,45 +1,26 @@
 import os
 import yaml
-from typing import List
+from typing import List, Tuple
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from crewai.utilities import OllamaEmbedder
+
 
 def get_yaml_content(project_location: str, filename: str) -> str:
+    # ... (your existing function)
+    pass
+
+
+def get_common_knowledge_and_embedder(project_location: str, repository: str) -> Tuple[
+    List[StringKnowledgeSource], OllamaEmbedder]:
     """
-    Reads a YAML file from the knowledge directory and returns its content as a string.
-
-    Args:
-        project_location: The sub-directory for the specific project.
-        filename: The name of the YAML file to read.
-
-    Returns:
-        The content of the YAML file, or an error message if not found/readable.
-    """
-    file_path = os.path.join(
-        "knowledge", "internal_crew", project_location, filename
-    )
-
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r") as f:
-                return f.read()
-        except Exception as e:
-            return f"Error reading YAML file at {file_path}: {e}"
-    else:
-        return f"YAML file not found at {file_path}"
-
-
-def get_common_knowledge(project_location: str, repository: str) -> List[StringKnowledgeSource]:
-    """
-    Retrieves and prepares knowledge sources for a CrewAI agent.
-
-    This version correctly formats knowledge sources as StringKnowledgeSource instances.
+    Retrieves knowledge sources and creates the OllamaEmbedder.
 
     Args:
         project_location: The sub-directory for the project's knowledge base.
         repository: The URL of the project's Git repository.
 
     Returns:
-        A list of StringKnowledgeSource instances.
+        A tuple containing a list of StringKnowledgeSource instances and the OllamaEmbedder instance.
     """
     knowledge_sources = []
 
@@ -60,5 +41,30 @@ def get_common_knowledge(project_location: str, repository: str) -> List[StringK
     )
     knowledge_sources.append(repo_source)
 
-    return knowledge_sources
+    # 3. Define the OllamaEmbedder instance
+    ollama_embedder = OllamaEmbedder(
+        model="nomic-embed-text",
+        base_url="http://149.36.1.65:11434"
+    )
 
+    return knowledge_sources, ollama_embedder
+
+
+# --- Usage Example ---
+from crewai import Crew, Agent
+
+# Get both the knowledge sources and the embedder from the utility function
+common_knowledge, ollama_embedder = get_common_knowledge_and_embedder(
+    project_location="cyford/zeroai",
+    repository="https://github.com/Cyford-Technologies-LCC/ZeroAI.git"
+)
+
+# Now, use them to create the crew and its agents
+master_crew = Crew(
+    agents=[
+        Agent(..., knowledge_sources=common_knowledge),
+        Agent(..., knowledge_sources=common_knowledge)
+    ],
+    tasks=[...],
+    embedder=ollama_embedder
+)
