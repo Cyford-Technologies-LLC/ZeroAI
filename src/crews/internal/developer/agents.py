@@ -27,6 +27,40 @@ from src.utils.tool_initializer import get_universal_tools  # New universal tool
 os.environ["CREW_TYPE"] = "internal"
 console = Console()
 
+def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
+    """Creates a QA engineer agent with dynamic LLM selection."""
+    llm = None
+    try:
+        # Use the dynamic router to select the optimal LLM for the 'qa' role
+        llm = router.get_llm_for_role("qa")
+    except Exception as e:
+        console.print(f"⚠️ Failed to get optimal LLM for QA engineer via router: {e}", style="yellow")
+        # Fallback to local LLM if routing fails
+        llm = router.get_local_llm("llama3.2:1b")
+
+    if not llm:
+        raise ValueError("Failed to get LLM for QA engineer agent.")
+
+    # FIX: Ensure the LLM instance is created with the LiteLLM prefix
+    if not llm.model.startswith("ollama/"):
+        llm.model = f"ollama/{llm.model}"
+
+    console.print(
+        f"🔗 QA Engineer Agent connecting to model: [bold yellow]{llm.model}[/bold yellow] at [bold green]{llm.base_url}[/bold green]",
+        style="blue")
+
+    return Agent(
+        role='QA Engineer',
+        goal='Review code for correctness, functionality, and adherence to best practices.',
+        backstory=(
+            "You are a meticulous QA Engineer with a keen eye for detail. Your mission is to find bugs and "
+            "ensure the code meets all requirements before deployment."
+        ),
+        llm=llm,
+        verbose=config.agents.verbose,
+        allow_delegation=False,
+    )
 
 
 def get_developer_llm(router: DistributedRouter, category: str = "coding") -> Any:
