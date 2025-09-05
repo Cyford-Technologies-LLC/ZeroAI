@@ -156,6 +156,10 @@ def discover_available_crews() -> dict[str, list[str]] | dict[str, dict[str, str
     return available_crews
 
 
+# src/crews/internal/team_manager/agents.py
+
+# ... (existing imports and functions)
+
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
     """
     Loads and configures all available coworker agents from discovered crews.
@@ -183,22 +187,20 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
         sig = inspect.signature(creator_func)
         kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
         if 'coworkers' in sig.parameters:
-            kwargs_to_pass['coworkers'] = []
+            kwargs_to_pass['coworkers'] = all_coworkers
         if 'project_config' in sig.parameters:
             kwargs_to_pass['project_config'] = inputs.get('project_config')
-        if 'working_dir' in sig.parameters:
-            kwargs_to_pass['working_dir'] = inputs.get('working_dir')
-        try:
-            agent = creator_func(**kwargs_to_pass)
-            all_coworkers.append(agent)
-            console.print(f"✅ Created agent: {agent.role}", style="green")
-        except Exception as e:
-            console.print(f"❌ Error creating agent with {creator_func.__name__}: {e}", style="red")
 
-    console.print(f"👥 Total coworkers loaded: {len(all_coworkers)}", style="blue")
-    for coworker in all_coworkers:
-        console.print(f"  - {coworker.role}", style="dim")
+        try:
+            new_agent = creator_func(**kwargs_to_pass)
+            all_coworkers.append(new_agent)
+            console.print(f"✅ Loaded agent: {new_agent.role}", style="green")
+        except Exception as e:
+            console.print(f"❌ Failed to instantiate agent with creator {creator_func.__name__}: {e}", style="red")
+            traceback.print_exc()
+
     return all_coworkers
+
 
 # --- End of Helper function ---
 
