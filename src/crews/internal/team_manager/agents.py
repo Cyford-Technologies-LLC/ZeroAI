@@ -269,10 +269,12 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], project_id: s
 
     return Agent(
         role="Team Manager",
+
         goal=goal,
         backstory=backstory,
         llm=manager_llm,
         verbose=config.agents.verbose,
+        base_url= "http://149.36.1.65:11434/api/embeddings",
         allow_delegation=True
     )
 
