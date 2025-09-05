@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from langchain_ollama import OllamaLLM
 from src.config import config
-
+from src.utils.knowledge_utils import get_common_knowledge
 from crewai import Agent
 from rich.console import Console
 from src.utils.memory import Memory
@@ -183,30 +183,22 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
                     console.print(f"❌ Failed to get agent creators from {module_name}: {e}", style="red")
 
     all_coworkers = []
+    # Pre-load knowledge sources once for efficiency
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
+
     for creator_func in agent_creator_functions.values():
         sig = inspect.signature(creator_func)
         kwargs_to_pass = {'router': router, 'inputs': inputs, 'tools': tools}
 
         # Check for and pass the 'knowledge_sources' if it's in the function signature.
-        # This resolves the previous validation error for the Senior Developer agent.
         if 'knowledge_sources' in sig.parameters:
-            knowledge_sources_func = getattr(sys.modules[creator_func.__module__], 'get_common_knowledge', None)
-            if knowledge_sources_func:
-                try:
-                    # Dynamically generate knowledge sources using the agent's utility function
-                    project_location = inputs.get("project_id")
-                    repository = inputs.get("repository")
-                    kwargs_to_pass['knowledge_sources'] = knowledge_sources_func(project_location, repository)
-                except Exception as e:
-                    console.print(f"⚠️ Failed to get common knowledge for agent creator {creator_func.__name__}: {e}",
-                                  style="yellow")
-                    kwargs_to_pass['knowledge_sources'] = None
+            kwargs_to_pass['knowledge_sources'] = common_knowledge
 
-        # Check for and pass 'coworkers' if it's in the function signature.
         if 'coworkers' in sig.parameters:
             kwargs_to_pass['coworkers'] = all_coworkers
 
-        # Check for and pass 'project_config' if it's in the function signature.
         if 'project_config' in sig.parameters:
             kwargs_to_pass['project_config'] = inputs.get('project_config')
 
@@ -219,7 +211,6 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
             traceback.print_exc()
 
     return all_coworkers
-
 # --- End of Helper function ---
 
 # src/crews/internal/team_manager/agents.py
