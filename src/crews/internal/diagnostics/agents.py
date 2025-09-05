@@ -1,7 +1,9 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
 from crewai.tools import BaseTool
-from crewai_tools import DirectorySearchTool
+from src.utils.knowledge_utils import get_common_knowledge
+
+
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from rich.console import Console
 from typing import Dict, Any, List, Optional
@@ -13,17 +15,7 @@ import json
 
 console = Console()
 
-# Define the Ollama configuration once
-ollama_config = {
-    "llm": {
-        "provider": "ollama",
-        "config": {"model": "llama3.1:8b"}
-    },
-    "embedder": {
-        "provider": "ollama",
-        "config": {"model": "nomic-embed-text"}
-    }
-}
+# Call the utility to get all common knowledge sources
 
 
 # FIX: Add a tool for monitoring the task queue
@@ -66,17 +58,9 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
 
-    # 1. Correctly instantiate DirectorySearchTool with Ollama config
-    project_knowledge_tool = DirectorySearchTool(
-        directory=f"knowledge/internal_crew/{project_location}",
-        config=ollama_config
-    )
 
-    # 2. Correctly instantiate StringKnowledgeSource for the repository variable
-    repo_knowledge = StringKnowledgeSource(
-        content=f"The project's Git repository is located at: {repository}"
-    )
 
     if coworker_names is None:
         coworker_names = []
@@ -86,9 +70,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         TaskQueueMonitorTool(task_manager=task_manager_instance),
         TaskManagerLoggerTool(task_manager=task_manager_instance),
         LogAnalysisTool(coworker_names=coworker_names),
-        DiagnosticFileHandlerTool(),
-        project_knowledge_tool  # Add the DirectorySearchTool to the tools list
-    ]
+        DiagnosticFileHandlerTool()    ]
 
     # Load shared team knowledge
     shared_context = get_shared_context_for_agent("CrewAI Diagnostic Agent")
@@ -98,7 +80,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         name="Agent-Dr. Watson",
         memory=agent_memory,
         knowledge_sources=[
-            repo_knowledge  # Use the string knowledge source
+            common_knowledge  # Use the string knowledge source
         ],
         goal="""Monitor the task queue for failed tasks, analyze the error details, and log them.
         When another crew accepts the task, archive it from the queue.

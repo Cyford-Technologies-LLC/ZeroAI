@@ -3,8 +3,7 @@
 import inspect
 import importlib
 from crewai import Agent
-from crewai_tools import DirectorySearchTool
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from src.utils.knowledge_utils import get_common_knowledge
 from crewai_tools import SerperDevTool
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
@@ -20,18 +19,6 @@ from pathlib import Path
 import os
 import yaml
 
-from langchain_ollama import OllamaLLM
-# Define the Ollama configuration once
-ollama_config = {
-    "llm": {
-        "provider": "ollama",
-        "config": {"model": "llama3.1:8b"}
-    },
-    "embedder": {
-        "provider": "ollama",
-        "config": {"model": "nomic-embed-text"}
-    }
-}
 
 class DelegationTool(BaseTool):
     name: str = "Ask question to coworker"
@@ -228,6 +215,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
 
     all_tools = _get_tools_with_github(inputs, tools)
     
@@ -235,16 +223,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_tool = ProjectTool()
     all_tools.append(project_tool)
 
-    # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge_tool = DirectorySearchTool(
-        directory=f"knowledge/internal_crew/{project_location}",
-        config=ollama_config
-    )
 
-    # 2. Instantiate StringKnowledgeSource for the repository variable
-    repo_knowledge = StringKnowledgeSource(
-        content=f"The project's Git repository is located at: {repository}"
-    )
 
 
 
@@ -277,8 +256,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "intermediate"
         },
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            common_knowledge  # Use the string knowledge source
         ],
         goal="Provide project details and coordinate team. For file creation tasks, provide clear requirements and delegate to Senior Developer. "
              f"PROJECT INFO: Use Project Tool with project_location='{project_location}'  to get project details when needed. "
@@ -299,8 +277,14 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     """Create a specialized internal researcher agent."""
     llm = get_research_llm(router, category="research")
     agent_memory = Memory()
+    
+    
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
+
+
+
 
     # 1. Instantiate DirectoryKnowledgeSource for the local directory
     project_knowledge_tool = DirectorySearchTool(
@@ -340,8 +324,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "technical_level": "expert"
         },
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            common_knowledge  # Use the string knowledge source
         ],
         goal="Gather information on internal project details. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""An expert at internal research, finding and documenting all project-specific information.
@@ -365,19 +348,10 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     agent_memory = Memory()
     
     all_tools = _get_tools_with_github(inputs, tools)
+    
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-
-    # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge_tool = DirectorySearchTool(
-        directory=f"knowledge/internal_crew/{project_location}",
-        config=ollama_config
-    )
-
-    # 2. Instantiate StringKnowledgeSource for the repository variable
-    repo_knowledge = StringKnowledgeSource(
-        content=f"The project's Git repository is located at: {repository}"
-    )
+    common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -407,8 +381,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
         reasoning=True,
         resources=[],
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            common_knowledge  # Use the string knowledge source
         ],
         goal="Perform comprehensive online searches to find information. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""A specialized agent for efficient online information retrieval.

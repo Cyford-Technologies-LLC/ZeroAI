@@ -1,8 +1,7 @@
 # src/crews/internal/scheduler/agents.py
 
 from crewai import Agent
-from crewai_tools import DirectorySearchTool
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from src.utils.knowledge_utils import get_common_knowledge
 from langchain_ollama import OllamaLLM
 from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
@@ -12,17 +11,6 @@ from src.utils.shared_knowledge import get_shared_context_for_agent
 
 from src.utils.tool_initializer import get_universal_tools
 
-# Define the Ollama configuration once
-ollama_config = {
-    "llm": {
-        "provider": "ollama",
-        "config": {"model": "llama3.1:8b"}
-    },
-    "embedder": {
-        "provider": "ollama",
-        "config": {"model": "nomic-embed-text"}
-    }
-}
 
 # --- Helper function to get LLM ---
 def get_scheduler_llm(router: DistributedRouter, category: str = "scheduling") -> Any:
@@ -55,19 +43,12 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
 
     # Use tools passed from the main crew manager
     all_tools = get_universal_tools(inputs, initial_tools=tools)
+    
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
 
-    # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge_tool = DirectorySearchTool(
-        directory=f"knowledge/internal_crew/{project_location}",
-        config=ollama_config
-    )
 
-    # 2. Instantiate StringKnowledgeSource for the repository variable
-    repo_knowledge = StringKnowledgeSource(
-        content=f"The project's Git repository is located at: {repository}"
-    )
 
 
     return Agent(
@@ -77,8 +58,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
         tools=all_tools,
         resources=[],
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            common_knowledge  # Use the string knowledge source
         ],
         llm=llm,
         allow_delegation=False,

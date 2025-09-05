@@ -2,8 +2,7 @@ import os
 import inspect
 from typing import Dict, Any, List, Optional
 from crewai import Agent
-from crewai_tools import DirectorySearchTool
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from src.utils.knowledge_utils import get_common_knowledge
 from src.distributed_router import DistributedRouter
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
@@ -42,6 +41,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
 
     project_knowledge_tool = DirectorySearchTool(
         directory=f"knowledge/internal_crew/{project_location}",
@@ -105,8 +105,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
             "technical_level": "expert"
         },
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            common_knowledge  # Use the string knowledge source
         ],
         expertise=[
             "GIT", "Bit Bucket"

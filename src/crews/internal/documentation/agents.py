@@ -1,7 +1,6 @@
 # src/crews/internal/documentation/agents.py
 from crewai import Agent
-from crewai_tools import DirectorySearchTool
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from src.utils.knowledge_utils import get_common_knowledge
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
@@ -16,6 +15,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    common_knowledge = get_common_knowledge(project_location, repository)
     project_knowledge_tool = DirectorySearchTool(
         directory=f"knowledge/internal_crew/{project_location}",
         config=ollama_config
@@ -49,8 +49,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
             },
         resources=[],
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            common_knowledge  # Use the string knowledge source
         ],
         goal="Create clear and concise documentation for software projects.",
         backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
