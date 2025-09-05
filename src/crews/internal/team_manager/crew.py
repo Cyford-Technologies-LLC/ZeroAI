@@ -7,7 +7,8 @@ from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
-from src.utils.knowledge_utils import ollama_embedder # Import ollama_embedder
+from src.utils.knowledge_utils import ollama_embedder, get_common_knowledge  # Import ollama_embedder
+from crewai.knowledge.knowledge import Knowledge
 
 
 console = Console()
@@ -43,7 +44,24 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     # Create the list of agents for the crew (manager is handled separately)
     crew_agents = all_coworkers
-    
+
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+    # Get the common knowledge sources
+    common_knowledge = get_common_knowledge(
+        project_location=inputs.get("project_location"),
+        repository=inputs.get("repository")
+    )
+
+    # Attach knowledge to agents using the explicit embedder instance
+    for agent in all_coworkers:
+        # Create a new Knowledge instance with the explicit embedder
+        agent.knowledge = Knowledge(
+            sources=common_knowledge,
+            embedder=ollama_embedder # Pass the explicit embedder instance
+        )
+
     # Enable verbose on all agents to show their conversations
     for agent in crew_agents:
         agent.verbose = True
@@ -100,18 +118,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         process=Process.sequential,
         verbose=True,  # Force verbose to see all conversations
         full_output=full_output,
-        embedder={
-            "provider": "ollama",
-            "config": {
-                "model": "nomic-embed-text",
-                "base_url": "http://149.36.1.65:11434/api/embeddings"
-            }
-        }
+        embedder=ollama_embedder,  # Pass the explicit embedder instance here too for good measure
     )
 
-    for agent in crew_agents:
-        if agent.knowledge:
-            agent.knowledge.set_embedder(crew1.embedder)
 
     
     return crew1
