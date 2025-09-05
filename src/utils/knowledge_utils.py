@@ -43,7 +43,7 @@ def get_common_knowledge(project_location: str, repository: str) -> List[Dict[st
     # Sanitize the output to ensure only strings are present in content
     sanitized_knowledge = []
     for item in knowledge_sources:
-        if isinstance(item, dict) and 'content' in item and isinstance(item['BaseKnowledgeSource'], str):
+        if isinstance(item, dict) and 'content' in item and isinstance(item['content'], str):
             sanitized_knowledge.append(item)
 
     return sanitized_knowledge
