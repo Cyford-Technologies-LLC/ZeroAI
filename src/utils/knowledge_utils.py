@@ -1,7 +1,9 @@
+# src/utils/knowledge_utils.py
 import os
 import yaml
+# Check this import path after reinstalling
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
-from typing import List, Optional
+from typing import List
 
 def get_common_knowledge(project_location: str, repository: str) -> List[StringKnowledgeSource]:
     """
