@@ -128,10 +128,10 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         knowledge_sources=[content_source],
         embedder={
             "provider": "ollama",  # Recommended for Claude users
-            "config": {
-                "model": "mxbai-embed-large",  # or "voyage-3-large" for best quality
-                "base_url": "http://149.36.1.65:11434/api/embeddings"
-            }
+            # "config": {
+            #     "model": "mxbai-embed-large",  # or "voyage-3-large" for best quality
+            #     "base_url": "http://149.36.1.65:11434/api/embeddings"
+            # }
         }
 
         # embedder=crew_embedder_config,  # <-- Pass the dictionary here
