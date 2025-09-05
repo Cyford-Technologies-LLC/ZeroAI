@@ -16,11 +16,11 @@ def get_ollama_client(base_url: str) -> OllamaClient:
     # so we'll pass the full URL and let the client parse it.
     return OllamaClient(host=base_url)
 
-os.environ['OLLAMA_HOST'] = "http://149.36.1.65:11434"
+os.environ['OLLAMA_HOST'] = "http://149.36.1.65:11434/v1"
 # Define the Ollama embedder and point to your local endpoint.
 ollama_embedder = OllamaEmbeddings(
     model="nomic-embed-text",
-    base_url="http://149.36.1.65:11434"
+    base_url="http://149.36.1.65:11434http://149.36.1.65:11434/v1"
 )
 
 
