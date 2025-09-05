@@ -4,7 +4,8 @@ import os
 import inspect
 from crewai import Agent
 from src.utils.knowledge_utils import get_common_knowledge
-from crewai_tools import SerperDevToolfrom typing import Dict, Any, Optional, List
+from crewai_tools import SerperDevTool
+from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
