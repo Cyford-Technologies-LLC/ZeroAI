@@ -109,6 +109,10 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         }
     )
 
+    for agent in crew_agents:
+        if agent.knowledge:
+            agent.knowledge.set_embedder(crew1.embedder)
+
     
     return crew1
 
