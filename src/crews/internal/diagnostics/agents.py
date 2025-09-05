@@ -15,7 +15,13 @@ import json
 console = Console()
 
 # Call the utility to get all common knowledge sources
-
+ollama_embedder_config = {
+    "provider": "ollama",
+    "config": {
+        "model": "nomic-embed-text",
+        "base_url": "http://149.36.1.65:11434"
+    }
+}
 
 # FIX: Add a tool for monitoring the task queue
 class TaskQueueMonitorTool(BaseTool):

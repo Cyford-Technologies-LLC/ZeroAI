@@ -16,7 +16,13 @@ from src.crews.internal.developer.agents import create_senior_developer_agent, c
     create_junior_developer_agent
 from src.crews.internal.developer.tasks import analyze_codebase_task as analyze_dev_task, fix_bug_task as fix_dev_task, \
     write_tests_task as write_dev_tests_task, run_tests_task as run_dev_tests_task
-
+ollama_embedder_config = {
+    "provider": "ollama",
+    "config": {
+        "model": "nomic-embed-text",
+        "base_url": "http://149.36.1.65:11434"
+    }
+}
 
 def get_master_crew(router, tools, project_config, use_new_memory=False) -> Crew:
     """
@@ -99,6 +105,7 @@ def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_o
         verbose=config.agents.verbose,
         full_output=full_output,
         memory=True,
-        llm=crew_llm  # Pass the distributed LLM to the Crew object
+        llm=crew_llm,  # Pass the distributed LLM to the Crew object
+        embedder = ollama_embedder_config
     )
 
