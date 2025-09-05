@@ -1,3 +1,4 @@
+# src/crews/internal/diagnostics/agents.py
 from crewai import Agent
 from crewai.tools import BaseTool
 from crewai_tools import DirectorySearchTool
@@ -9,7 +10,20 @@ from src.utils.memory import Memory
 from src.learning.task_manager import TaskManager
 from src.utils.shared_knowledge import get_shared_context_for_agent
 import json
+
 console = Console()
+
+# Define the Ollama configuration once
+ollama_config = {
+    "llm": {
+        "provider": "ollama",
+        "config": {"model": "llama3.1:8b"}
+    },
+    "embedder": {
+        "provider": "ollama",
+        "config": {"model": "nomic-embed-text"}
+    }
+}
 
 
 # FIX: Add a tool for monitoring the task queue
@@ -48,17 +62,18 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
     """Create a Diagnostic Agent."""
     llm = router.get_llm_for_role("devops_diagnostician")
     agent_memory = Memory()
-    task_manager_instance = TaskManager()  # FIX: Create a TaskManager instance
+    task_manager_instance = TaskManager()
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
-    # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge = DirectorySearchTool(
-        directory=f"knowledge/internal_crew/{project_location}"
+    # 1. Correctly instantiate DirectorySearchTool with Ollama config
+    project_knowledge_tool = DirectorySearchTool(
+        directory=f"knowledge/internal_crew/{project_location}",
+        config=ollama_config
     )
 
-    # 2. Instantiate StringKnowledgeSource for the repository variable
+    # 2. Correctly instantiate StringKnowledgeSource for the repository variable
     repo_knowledge = StringKnowledgeSource(
         content=f"The project's Git repository is located at: {repository}"
     )
@@ -71,29 +86,29 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         TaskQueueMonitorTool(task_manager=task_manager_instance),
         TaskManagerLoggerTool(task_manager=task_manager_instance),
         LogAnalysisTool(coworker_names=coworker_names),
-        DiagnosticFileHandlerTool()
+        DiagnosticFileHandlerTool(),
+        project_knowledge_tool  # Add the DirectorySearchTool to the tools list
     ]
 
     # Load shared team knowledge
     shared_context = get_shared_context_for_agent("CrewAI Diagnostic Agent")
-    
+
     return Agent(
         role="CrewAI Diagnostic Agent",
         name="Agent-Dr. Watson",
         memory=agent_memory,
         knowledge_sources=[
-            project_knowledge,  # This points to the local directory
-            repo_knowledge  # This provides the agent with the repository URL
+            repo_knowledge  # Use the string knowledge source
         ],
         goal="""Monitor the task queue for failed tasks, analyze the error details, and log them.
         When another crew accepts the task, archive it from the queue.
         If you find yourself in a repetitive loop, immediately deliver a 'Final Answer' acknowledging the loop and stating the inability to provide a conclusive diagnosis due to repetitive behavior.""",
         backstory=f"""You are a specialized diagnostic AI for CrewAI multi-agent systems, like a seasoned detective.
         Your expertise lies in monitoring the task queue, parsing logs, and detecting the root causes of communication breakdowns and runtime errors.
-        Your tools are the Task Queue Monitor Tool, Task Manager Logger Tool, Log Analysis Tool, and Diagnostic File Handler Tool.
-        
+        Your tools are the Task Queue Monitor Tool, Task Manager Logger Tool, Log Analysis Tool, Diagnostic File Handler Tool, and DirectorySearchTool.
+
         {shared_context}
-        
+
         All responses are signed off with 'Agent-Dr. Watson'""",
         llm=llm,
         tools=diagnostic_tools if tools is None else tools,
