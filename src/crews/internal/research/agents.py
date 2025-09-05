@@ -216,6 +216,8 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
     common_knowledge = get_common_knowledge(project_location, repository)
+    print(f"DEBUG: Type of common_knowledge: {type(common_knowledge)}")
+    print(f"DEBUG: Content of common_knowledge: {common_knowledge}")
 
     all_tools = _get_tools_with_github(inputs, tools)
     
