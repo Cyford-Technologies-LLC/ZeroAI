@@ -19,7 +19,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    # common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -46,9 +46,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "technical_level": "expert"
             },
         resources=[],
-        knowledge_sources=[
-            knowledge_sources  # Use the string knowledge source
-        ],
+        knowledge_sources=knowledge_sources,
         goal="Create clear and concise documentation for software projects.",
         backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
         

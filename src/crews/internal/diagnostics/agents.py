@@ -84,9 +84,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         role="CrewAI Diagnostic Agent",
         name="Agent-Dr. Watson",
         memory=agent_memory,
-        knowledge_sources=[
-            knowledge_sources  # Use the string knowledge source
-        ],
+        knowledge_sources=knowledge_sources,
         goal="""Monitor the task queue for failed tasks, analyze the error details, and log them.
         When another crew accepts the task, archive it from the queue.
         If you find yourself in a repetitive loop, immediately deliver a 'Final Answer' acknowledging the loop and stating the inability to provide a conclusive diagnosis due to repetitive behavior.""",

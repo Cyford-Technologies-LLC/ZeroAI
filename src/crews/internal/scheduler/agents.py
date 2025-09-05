@@ -56,9 +56,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
         backstory=f"An expert in calendar management, proficient at scheduling, organizing, and managing events and appointments efficiently.\n\n{get_shared_context_for_agent('Scheduler')}\n\nAll responses are signed off with 'Scheduler'",
         tools=all_tools,
         resources=[],
-        knowledge_sources=[
-            knowledge_sources  # Use the string knowledge source
-        ],
+        knowledge_sources=knowledge_sources,
         llm=llm,
         allow_delegation=False,
         verbose=config.agents.verbose
