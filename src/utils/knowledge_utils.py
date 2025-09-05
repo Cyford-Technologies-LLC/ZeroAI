@@ -2,7 +2,6 @@ import os
 import yaml
 from typing import List, Tuple
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
-from crewai.utilities import OllamaEmbedder
 
 # Define the Ollama embedder and point to your local endpoint.
 ollama_embedder = OllamaEmbedder(
