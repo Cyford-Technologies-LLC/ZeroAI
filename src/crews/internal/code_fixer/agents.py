@@ -10,6 +10,7 @@ from src.utils.memory import Memory
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from langchain_ollama import OllamaLLM
 from rich.console import Console
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 
 
@@ -37,8 +38,8 @@ def get_code_fixer_llm(router: DistributedRouter, category: str) -> Any:
         style="blue")
     return llm
 
-def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
-    llm = get_code_fixer_llm(router, category="code_research")
+def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     agent_memory = Memory()
 
     project_location = inputs.get("project_id")

@@ -63,7 +63,7 @@ def get_developer_llm(router: DistributedRouter, category: str = "coding") -> An
 
 
 def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                 coworkers: Optional[List] = None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a Code Researcher agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
@@ -131,7 +131,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
 
 def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                  coworkers: Optional[List] = None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a Junior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()

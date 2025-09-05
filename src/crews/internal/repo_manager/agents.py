@@ -6,6 +6,8 @@ from src.utils.knowledge_utils import get_common_knowledge
 from src.distributed_router import DistributedRouter
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+
 
 # Import the custom tools
 from src.tools.file_tool import FileTool
@@ -33,7 +35,7 @@ def get_repo_manager_llm(router: DistributedRouter, category: str = "repo_manage
 
 
 def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                              coworkers: Optional[List] = None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a Git Operator agent."""
 
 

@@ -7,8 +7,12 @@ from src.config import config
 from src.crews.internal.tools.file_tool import FileTool
 from src.utils.memory import Memory
 from src.utils.shared_knowledge import get_shared_context_for_agent
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
-def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+
+
+def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a Documentation Writer agent."""
     task_description = "Generate or update documentation based on project changes."
     llm = router.get_llm_for_task(task_description)
