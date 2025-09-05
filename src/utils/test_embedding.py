@@ -1,7 +1,6 @@
 import sys
 import logging
 from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
-from chromadb.utils.embedding_functions.ollama_embedding_function import DEFAULT_OLLAMA_URL
 
 # Set up logging for httpx and httpcore
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
