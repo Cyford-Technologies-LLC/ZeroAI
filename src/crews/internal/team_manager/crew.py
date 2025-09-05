@@ -31,17 +31,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         coworkers=all_coworkers
     )
 
-    # ... (tasks definition) ...
     sequential_tasks = []
-    # ... (populate sequential_tasks) ...
-
-    # Create the list of agents for the crew
-    crew_agents = all_coworkers
-
-    # Enable verbose on all agents
-    for agent in crew_agents:
-        agent.verbose = True
-
     # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
@@ -75,12 +65,18 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
             description=inputs.get("prompt"),
-            agent=crew_agents,
+            agent=crew_agents[0],
             expected_output="Complete solution to the user's request.",
             callback=custom_logger.log_step_callback if custom_logger else None
         )]
 
-    # Fix the knowledge source creation here
+    # Create the list of agents for the crew
+    crew_agents = all_coworkers
+
+    # Enable verbose on all agents
+    for agent in crew_agents:
+        agent.verbose = True
+
     project_id = inputs.get("project_id")
     repository = inputs.get("repository")
 
@@ -94,10 +90,12 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     # Attach knowledge to agents using the explicit embedder instance
     for agent in all_coworkers:
-        # Create a new Knowledge instance with the explicit embedder
+        # Create a new Knowledge instance with the explicit embedder and a unique collection name
         agent.knowledge = Knowledge(
             sources=common_knowledge,
-            embedder=ollama_embedder  # <-- Pass the object instance here
+            embedder=ollama_embedder,
+            # Pass a collection_name, derived from the project_id for uniqueness
+            collection_name=f"crew_knowledge_{project_id}"
         )
 
     # Define the embedder as a dictionary for the Crew constructor
@@ -115,8 +113,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         process=Process.sequential,
         verbose=True,
         full_output=full_output,
-        embedder=crew_embedder_config,  # <-- Pass the dictionary here
+        embedder=crew_embedder_config,
     )
 
     return crew1
+
 
