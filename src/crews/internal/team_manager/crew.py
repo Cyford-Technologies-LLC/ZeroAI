@@ -7,9 +7,9 @@ from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
-from src.utils.knowledge_utils import ollama_embedder, get_common_knowledge  # Import both
+from src.utils.knowledge_utils import ollama_embedder, get_common_knowledge
 
-from crewai.knowledge.knowledge import Knowledge  # Import Knowledge for manual setup
+from crewai.knowledge.knowledge import Knowledge
 
 console = Console()
 
@@ -22,6 +22,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
 
+    # Create the list of agents for the crew (manager is handled separately)
+    crew_agents = all_coworkers  # <-- Move this line up here
+
     # Create the manager agent with delegation tools
     manager_agent = create_team_manager_agent(
         router=router,
@@ -31,8 +34,31 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         coworkers=all_coworkers
     )
 
+    # Define tasks directly within this function
+    manager_tasks = [
+        Task(
+            description=inputs.get("prompt"),
+            agent=manager_agent,
+            expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
+                            "This may include code, documentation, or other relevant artifacts.",
+            # Pass the callback directly
+            callback=custom_logger.log_step_callback if custom_logger else None
+        )
+    ]
+
+    # Enable verbose on all agents to show their conversations
+    for agent in crew_agents:
+        agent.verbose = True
+
+    console.print(f"🔧 CREW DEBUG: {len(crew_agents)} agents with verbose enabled", style="cyan")
+    for i, agent in enumerate(crew_agents):
+        console.print(f"🔧 Agent {i}: {agent.role} (verbose={getattr(agent, 'verbose', False)})", style="cyan")
+
+    # Use sequential process to show all agent conversations
+    # Create tasks for multiple agents to demonstrate collaboration
     sequential_tasks = []
-    # Find key agents and create tasks (your existing logic)
+
+    # Find key agents
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
@@ -61,21 +87,14 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
 
-    # Fallback logic for tasks (your existing logic)
+    # Fallback logic for tasks
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
             description=inputs.get("prompt"),
-            agent=crew_agents[0],
+            agent=crew_agents,
             expected_output="Complete solution to the user's request.",
             callback=custom_logger.log_step_callback if custom_logger else None
         )]
-
-    # Create the list of agents for the crew
-    crew_agents = all_coworkers
-
-    # Enable verbose on all agents
-    for agent in crew_agents:
-        agent.verbose = True
 
     project_id = inputs.get("project_id")
     repository = inputs.get("repository")
@@ -88,13 +107,10 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         repository=repository
     )
 
-    # Attach knowledge to agents using the explicit embedder instance
     for agent in all_coworkers:
-        # Create a new Knowledge instance with the explicit embedder and a unique collection name
         agent.knowledge = Knowledge(
             sources=common_knowledge,
             embedder=ollama_embedder,
-            # Pass a collection_name, derived from the project_id for uniqueness
             collection_name=f"crew_knowledge_{project_id}"
         )
 
@@ -117,5 +133,3 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     )
 
     return crew1
-
-
