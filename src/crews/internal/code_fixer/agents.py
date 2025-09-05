@@ -81,7 +81,8 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     )
 
 
-def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None, coworkers: Optional[List] = None) -> Agent:
+def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     llm = get_code_fixer_llm(router, category="coding")
     agent_memory = Memory()
 
