@@ -210,8 +210,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
             console.print(f"❌ Failed to instantiate agent with creator {creator_func.__name__}: {e}", style="red")
             traceback.print_exc()
 
-    return all_coworkers
-# --- End of Helper function ---
+    return all_coworkers# --- End of Helper function ---
 
 # src/crews/internal/team_manager/agents.py
 
