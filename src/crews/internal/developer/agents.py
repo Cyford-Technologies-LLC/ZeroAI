@@ -25,7 +25,17 @@ from src.utils.tool_initializer import get_universal_tools  # New universal tool
 os.environ["CREW_TYPE"] = "internal"
 console = Console()
 
-
+# Define the Ollama configuration once
+ollama_config = {
+    "llm": {
+        "provider": "ollama",
+        "config": {"model": "llama3.1:8b"}
+    },
+    "embedder": {
+        "provider": "ollama",
+        "config": {"model": "nomic-embed-text"}
+    }
+}
 
 def get_developer_llm(router: DistributedRouter, category: str = "coding") -> Any:
     """

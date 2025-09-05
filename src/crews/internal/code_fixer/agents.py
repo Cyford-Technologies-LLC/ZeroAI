@@ -13,7 +13,17 @@ from langchain_ollama import OllamaLLM
 from rich.console import Console
 
 
-
+# Define the Ollama configuration once
+ollama_config = {
+    "llm": {
+        "provider": "ollama",
+        "config": {"model": "llama3.1:8b"}
+    },
+    "embedder": {
+        "provider": "ollama",
+        "config": {"model": "nomic-embed-text"}
+    }
+}
 
 console = Console()
 

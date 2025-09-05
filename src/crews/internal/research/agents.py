@@ -21,7 +21,17 @@ import os
 import yaml
 
 from langchain_ollama import OllamaLLM
-
+# Define the Ollama configuration once
+ollama_config = {
+    "llm": {
+        "provider": "ollama",
+        "config": {"model": "llama3.1:8b"}
+    },
+    "embedder": {
+        "provider": "ollama",
+        "config": {"model": "nomic-embed-text"}
+    }
+}
 
 class DelegationTool(BaseTool):
     name: str = "Ask question to coworker"

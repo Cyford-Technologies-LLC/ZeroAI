@@ -12,6 +12,17 @@ from src.utils.shared_knowledge import get_shared_context_for_agent
 
 from src.utils.tool_initializer import get_universal_tools
 
+# Define the Ollama configuration once
+ollama_config = {
+    "llm": {
+        "provider": "ollama",
+        "config": {"model": "llama3.1:8b"}
+    },
+    "embedder": {
+        "provider": "ollama",
+        "config": {"model": "nomic-embed-text"}
+    }
+}
 
 # --- Helper function to get LLM ---
 def get_scheduler_llm(router: DistributedRouter, category: str = "scheduling") -> Any:
