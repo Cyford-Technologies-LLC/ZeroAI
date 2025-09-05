@@ -7,8 +7,7 @@ from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
-from src.utils.knowledge_utils import ollama_embedder, get_common_knowledge
-
+from src.utils.knowledge_utils import get_common_knowledge  # No longer need to import the instance
 from crewai.knowledge.knowledge import Knowledge
 
 console = Console()
@@ -22,8 +21,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # First, load all coworkers
     all_coworkers = load_all_coworkers(router=router, inputs=inputs, tools=tools)
 
-    # Create the list of agents for the crew (manager is handled separately)
-    crew_agents = all_coworkers  # <-- Move this line up here
+    # Move assignment to the top so it's defined
+    crew_agents = all_coworkers
 
     # Create the manager agent with delegation tools
     manager_agent = create_team_manager_agent(
@@ -34,31 +33,14 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         coworkers=all_coworkers
     )
 
-    # Define tasks directly within this function
-    manager_tasks = [
-        Task(
-            description=inputs.get("prompt"),
-            agent=manager_agent,
-            expected_output="A final, complete, and thoroughly reviewed solution to the user's request. "
-                            "This may include code, documentation, or other relevant artifacts.",
-            # Pass the callback directly
-            callback=custom_logger.log_step_callback if custom_logger else None
-        )
-    ]
+    # ... (tasks definition) ...
+    sequential_tasks = []
 
-    # Enable verbose on all agents to show their conversations
+    # Enable verbose on all agents
     for agent in crew_agents:
         agent.verbose = True
 
-    console.print(f"🔧 CREW DEBUG: {len(crew_agents)} agents with verbose enabled", style="cyan")
-    for i, agent in enumerate(crew_agents):
-        console.print(f"🔧 Agent {i}: {agent.role} (verbose={getattr(agent, 'verbose', False)})", style="cyan")
-
-    # Use sequential process to show all agent conversations
-    # Create tasks for multiple agents to demonstrate collaboration
-    sequential_tasks = []
-
-    # Find key agents
+    # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
@@ -87,7 +69,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
 
-    # Fallback logic for tasks
+    # Fallback logic for tasks (your existing logic)
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
             description=inputs.get("prompt"),
@@ -107,14 +89,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         repository=repository
     )
 
-    for agent in all_coworkers:
-        agent.knowledge = Knowledge(
-            sources=common_knowledge,
-            embedder=ollama_embedder,
-            collection_name=f"crew_knowledge_{project_id}"
-        )
-
-    # Define the embedder as a dictionary for the Crew constructor
+    # Define the embedder as a dictionary for both Crew and Knowledge
     crew_embedder_config = {
         "provider": "ollama",
         "config": {
@@ -123,13 +98,21 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         }
     }
 
+    # Attach knowledge to agents using the embedder dictionary
+    for agent in all_coworkers:
+        agent.knowledge = Knowledge(
+            sources=common_knowledge,
+            embedder=crew_embedder_config,  # <-- Pass the dictionary here
+            collection_name=f"crew_knowledge_{project_id}"
+        )
+
     crew1 = Crew(
         agents=crew_agents,
         tasks=sequential_tasks,
         process=Process.sequential,
         verbose=True,
         full_output=full_output,
-        embedder=crew_embedder_config,
+        embedder=crew_embedder_config,  # <-- Pass the dictionary here
     )
 
     return crew1
