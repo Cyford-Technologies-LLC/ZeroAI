@@ -38,12 +38,12 @@ def get_common_knowledge(project_location: str, repository: str) -> List[Dict[st
 
     # 2. Prepare the repository variable
     repo_content = f"The project's Git repository is located at: {repository}"
-    knowledge_sources.append({"content": repo_content})
+    knowledge_sources.append({"BaseKnowledgeSource": repo_content})
 
     # Sanitize the output to ensure only strings are present in content
     sanitized_knowledge = []
     for item in knowledge_sources:
-        if isinstance(item, dict) and 'content' in item and isinstance(item['content'], str):
+        if isinstance(item, dict) and 'content' in item and isinstance(item['BaseKnowledgeSource'], str):
             sanitized_knowledge.append(item)
 
     return sanitized_knowledge
