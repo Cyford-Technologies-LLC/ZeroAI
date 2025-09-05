@@ -121,6 +121,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     crew1 = Crew(
         agents=crew_agents,
+        base_url='http://149.36.1.65:11434',
         tasks=sequential_tasks,
         process=Process.sequential,
         verbose=True,
