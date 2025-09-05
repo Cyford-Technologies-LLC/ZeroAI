@@ -1,7 +1,7 @@
 import os
 import yaml
-from typing import List, Dict, Any
-
+from typing import List
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 def get_yaml_content(project_location: str, filename: str) -> str:
     """
@@ -28,22 +28,37 @@ def get_yaml_content(project_location: str, filename: str) -> str:
         return f"YAML file not found at {file_path}"
 
 
-def get_common_knowledge(project_location: str, repository: str) -> List[Dict[str, Any]]:
+def get_common_knowledge(project_location: str, repository: str) -> List[StringKnowledgeSource]:
+    """
+    Retrieves and prepares knowledge sources for a CrewAI agent.
+
+    This version correctly formats knowledge sources as StringKnowledgeSource instances.
+
+    Args:
+        project_location: The sub-directory for the project's knowledge base.
+        repository: The URL of the project's Git repository.
+
+    Returns:
+        A list of StringKnowledgeSource instances.
+    """
     knowledge_sources = []
 
-    # 1. Read the YAML file content and prepare for the Agent
+    # 1. Read the YAML file content and wrap it in a StringKnowledgeSource
     yaml_content = get_yaml_content(project_location, "project_config.yaml")
     if not yaml_content.startswith("Error"):
-        knowledge_sources.append({"content": yaml_content})
+        yaml_source = StringKnowledgeSource(
+            title="Project Configuration",
+            content=yaml_content
+        )
+        knowledge_sources.append(yaml_source)
 
-    # 2. Prepare the repository variable
+    # 2. Prepare the repository information and wrap it in a StringKnowledgeSource
     repo_content = f"The project's Git repository is located at: {repository}"
-    knowledge_sources.append({"content": repo_content})
+    repo_source = StringKnowledgeSource(
+        title="Project Repository",
+        content=repo_content
+    )
+    knowledge_sources.append(repo_source)
 
-    # Sanitize the output to ensure only strings are present in content
-    sanitized_knowledge = []
-    for item in knowledge_sources:
-        if isinstance(item, dict) and 'content' in item and isinstance(item['content'], str):
-            sanitized_knowledge.append(item)
+    return knowledge_sources
 
-    return sanitized_knowledge
