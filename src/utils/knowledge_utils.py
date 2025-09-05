@@ -2,8 +2,8 @@ import os
 import yaml
 from typing import List, Tuple
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
-from langchain_ollama import OllamaEmbeddings
-#from langchain_community.embeddings import OllamaEmbeddings
+#from langchain_ollama import OllamaEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 from ollama import Client as OllamaClient # Import the client directly
 
 
