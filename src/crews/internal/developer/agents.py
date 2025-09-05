@@ -3,12 +3,11 @@
 import os
 import inspect
 from crewai import Agent
-# from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource
+from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource, SerperDevTool
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
-from crewai_tools import SerperDevTool
 from langchain_ollama import OllamaLLM # Added for local LLM instantiation
 
 from src.distributed_router import DistributedRouter

@@ -1,11 +1,10 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
-# from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource
+from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource, BaseTool
 from rich.console import Console
 from typing import Dict, Any, List, Optional
 from .tools import LogAnalysisTool, DiagnosticFileHandlerTool
 from src.utils.memory import Memory
-from crewai.tools import BaseTool
 from src.learning.task_manager import TaskManager
 from src.utils.shared_knowledge import get_shared_context_for_agent
 import json

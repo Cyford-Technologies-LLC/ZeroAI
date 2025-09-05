@@ -1,7 +1,7 @@
 # src/crews/internal/scheduler/agents.py
 
 from crewai import Agent
-# from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource
+from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource
 from langchain_ollama import OllamaLLM
 from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
