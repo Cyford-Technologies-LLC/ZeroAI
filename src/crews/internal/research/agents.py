@@ -247,7 +247,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "tone": "confident",
             "technical_level": "intermediate"
         },
-        resources=[
+        knowledge_sources=[
                    f"Project Directory:  knowledge/internal_crew/{project_location}"
                    f"GIT Repository: {repository} ."
                    ],
@@ -297,7 +297,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "tone": "objective",
             "technical_level": "expert"
         },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
@@ -348,7 +348,9 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
             "tone": "confident",
             "technical_level": "intermediate"
         },
-        resources=[
+        inject_date=True,
+        reasoning=True,
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],

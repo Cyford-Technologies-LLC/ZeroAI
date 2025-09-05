@@ -91,7 +91,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
@@ -112,9 +112,13 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         
         All responses are signed off with 'Dr. Alan Parse'""",
         llm=llm,
+        allow_code_execution=True,
+        code_execution_mode="safe",
+        max_retry_limit=3,
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
         allow_delegation=True,
+
         coworkers=coworkers if coworkers is not None else []
     )
 
@@ -151,7 +155,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
@@ -172,6 +176,8 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         
         All responses are signed off with 'Tom Kyles'""",
         llm=llm,
+        allow_code_execution=True,
+        code_execution_mode="safe",
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
         allow_delegation=False,
@@ -212,7 +218,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
@@ -233,6 +239,8 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         
         All responses are signed off with 'Tony Kyles'""",
         llm=llm,
+        allow_code_execution=True,
+        code_execution_mode="safe",
         tools=all_tools,
         verbose=config.agents.verbose,  # Corrected attribute
         allow_delegation=True,
@@ -268,7 +276,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
             "tone": "objective",
             "technical_level": "intermediate"
         },
-        resources=[],
+        knowledge_sources=[],
         expertise=[
             "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"
         ],
@@ -282,6 +290,8 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         
         All responses are signed off with 'Lara Croft'""",
         llm=llm,
+        allow_code_execution=True,
+        code_execution_mode="safe",
         tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=True,

@@ -38,7 +38,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "tone": "cooperative",
                 "technical_level": "expert"
             },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],

@@ -91,7 +91,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],

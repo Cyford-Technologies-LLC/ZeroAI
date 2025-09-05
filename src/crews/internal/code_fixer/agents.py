@@ -65,7 +65,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
                 "tone": "cooperative",
                 "technical_level": "intermediate"
             },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
@@ -109,7 +109,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
                 "tone": "confident",
                 "technical_level": "expert"
             },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
@@ -152,7 +152,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "tone": "objective",
                 "technical_level": "expert"
             },
-        resources=[
+        knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
