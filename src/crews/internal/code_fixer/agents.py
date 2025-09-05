@@ -1,8 +1,7 @@
 # src/crews/internal/code_fixer/agents.py
 import os
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge_strings_strings
-from typing import Dict, Any, Optional, List
+from src.utils.knowledge_utils import get_common_knowledge_stringsfrom typing import Dict, Any, Optional, List
 from src.distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.tools.git_tool import GitTool, FileTool # Corrected import

@@ -1,7 +1,6 @@
 # src/crews/internal/documentation/agents.py
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge_strings_strings
-from typing import Dict, Any, List, Optional
+from src.utils.knowledge_utils import get_common_knowledge_stringsfrom typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.tools.file_tool import FileTool

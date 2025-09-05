@@ -1,8 +1,7 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
 from crewai.tools import BaseTool
-from src.utils.knowledge_utils import get_common_knowledge_strings_strings
-
+from src.utils.knowledge_utils import get_common_knowledge_strings
 
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from rich.console import Console
