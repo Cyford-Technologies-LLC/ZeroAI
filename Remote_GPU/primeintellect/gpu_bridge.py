@@ -38,7 +38,7 @@ async def process_task(request: ProcessRequest):
     try:
         # Call local Ollama on GPU instance
         ollama_response = requests.post(
-            "http://localhost:11434/api/generate",
+            "http://olloma:11434/api/generate",
             json={
                 "model": request.model,
                 "prompt": request.task,
@@ -70,7 +70,7 @@ async def health_check():
     """Check if GPU bridge is healthy."""
     try:
         import requests
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get("http://olloma:11434/api/tags", timeout=5)
         ollama_healthy = response.status_code == 200
         
         return {

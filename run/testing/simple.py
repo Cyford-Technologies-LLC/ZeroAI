@@ -17,7 +17,7 @@ console = Console()
 def get_available_models():
     """Get a list of available models from Ollama."""
     try:
-        response = requests.get("http://localhost:11434/api/tags")
+        response = requests.get("http://olloma:11434/api/tags")
         if response.status_code == 200:
             models = [model["name"] for model in response.json()["models"]]
             return models
@@ -34,7 +34,7 @@ def chat_with_model(model_name, message):
         console.print(f"🤖 Sending message to {model_name}...", style="blue")
 
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            "http://olloma:11434/api/generate",
             json={
                 "model": model_name,
                 "prompt": message,

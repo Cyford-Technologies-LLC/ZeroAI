@@ -37,7 +37,7 @@ def get_env_int(key: str, default: int = 0) -> int:
 # Load all environment variables
 ENV = {
     # Local AI
-    "OLLAMA_BASE_URL": get_env("OLLAMA_BASE_URL", "http://localhost:11434"),
+    "OLLAMA_BASE_URL": get_env("OLLAMA_BASE_URL", "http://olloma:11434"),
     "DEFAULT_MODEL": get_env("DEFAULT_MODEL", "llama3.2:1b"),
     
     # GPU Cloud Providers

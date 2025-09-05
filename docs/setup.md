@@ -61,7 +61,7 @@ ollama pull llama3.1:8b
 ollama serve
 ```
 
-This starts the server on `http://localhost:11434`. Keep this terminal open.
+This starts the server on `http://olloma:11434`. Keep this terminal open.
 
 ### Step 4: Clone and Setup Project
 
@@ -165,7 +165,7 @@ model:
   name: "llama3.1:8b"          # Model to use
   temperature: 0.7             # Creativity level (0.0-2.0)
   max_tokens: 4096            # Maximum response length
-  base_url: "http://localhost:11434"  # Ollama server URL
+  base_url: "http://olloma:11434"  # Ollama server URL
 
 agents:
   max_concurrent: 3           # Maximum agents running simultaneously

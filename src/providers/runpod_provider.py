@@ -169,7 +169,7 @@ class RunPodProvider:
         """Get the endpoint URL for the RunPod instance."""
         if not self.instance_endpoint and self.pod_id:
             self.instance_endpoint = f"https://{self.pod_id}-11434.proxy.runpod.net"
-        return self.instance_endpoint or "http://localhost:11434"
+        return self.instance_endpoint or "http://olloma:11434"
     
     def create_runpod_llm(
         self,

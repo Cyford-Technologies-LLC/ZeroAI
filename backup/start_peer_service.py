@@ -101,7 +101,7 @@ Code:"""
             }
             
             result = subprocess.run(
-                ['curl', '-s', '-X', 'POST', 'http://localhost:11434/api/generate',
+                ['curl', '-s', '-X', 'POST', 'http://olloma:11434/api/generate',
                  '-H', 'Content-Type: application/json',
                  '-d', json_lib.dumps(ollama_data)],
                 capture_output=True, text=True, timeout=60

@@ -78,7 +78,7 @@ MANUAL_GPU_NAME=Prime Intellect RTX 3070
 MANUAL_GPU_ENDPOINT=http://your-instance-ip:11434
 
 # Or if using port forwarding:
-MANUAL_GPU_ENDPOINT=http://localhost:11434
+MANUAL_GPU_ENDPOINT=http://olloma:11434
 
 # ZeroAI settings:
 GPU_ACCESS_ENABLED=true
@@ -114,8 +114,8 @@ result2 = zero.analyze("Comprehensive market analysis")
     console.print("• Adjust complexity threshold to control GPU usage")
     
     console.print("\n🔗 [bold]Useful Commands:[/bold]")
-    console.print("• SSH: ssh -L 11434:localhost:11434 root@your-instance")
-    console.print("• Test: curl http://localhost:11434/api/tags")
+    console.print("• SSH: ssh -L 11434:olloma:11434 root@your-instance")
+    console.print("• Test: curl http://olloma:11434/api/tags")
     console.print("• Monitor: python examples/zeroai_demo.py")
 
 
