@@ -128,8 +128,9 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     llm = get_code_fixer_llm(router, category="testing")
     agent_memory = Memory()
 
-    project_location = inputs.get("project_id")
-    repository = inputs.get("repository")
+    # The load_all_coworkers function already calls get_common_knowledge and passes it in
+    # project_location = inputs.get("project_id")
+    # repository = inputs.get("repository")
     # common_knowledge = get_common_knowledge(project_location, repository)
 
 
