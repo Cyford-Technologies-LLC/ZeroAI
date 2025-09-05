@@ -3,7 +3,8 @@
 import os
 import inspect
 from crewai import Agent
-from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource, SerperDevTool
+from crewai_tools import DirectorySearchTool
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource, SerperDevTool
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool

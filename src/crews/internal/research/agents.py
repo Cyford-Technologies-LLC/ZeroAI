@@ -3,7 +3,8 @@
 import inspect
 import importlib
 from crewai import Agent
-from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource , SerperDevTool, GithubSearchTool
+from crewai_tools import DirectorySearchTool
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource , SerperDevTool, GithubSearchTool
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
 

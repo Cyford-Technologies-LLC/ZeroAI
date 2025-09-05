@@ -1,7 +1,8 @@
 # src/crews/internal/code_fixer/agents.py
 
 from crewai import Agent
-from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource
+from crewai_tools import DirectorySearchTool
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from typing import Dict, Any, Optional, List
 from src.distributed_router import DistributedRouter
 from src.config import config
