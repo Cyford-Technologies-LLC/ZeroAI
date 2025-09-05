@@ -5,9 +5,11 @@ from crewai import Agent, Task, Crew, Process, LLM
 from crewai.knowledge.source.string_knowledge_source import     StringKnowledgeSource
 from crewai.knowledge.source.base_knowledge_source import BaseKnowledgeSource
 
-#from langchain_ollama import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import OllamaLLM
-from langchain_community.embeddings import OllamaEmbeddings
+#from langchain_community.embeddings import OllamaEmbeddings
+
+
 from ollama import Client as OllamaClient # Import the client directly
 
 

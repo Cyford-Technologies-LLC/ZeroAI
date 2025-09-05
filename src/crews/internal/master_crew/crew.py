@@ -16,6 +16,9 @@ from src.crews.internal.developer.agents import create_senior_developer_agent, c
     create_junior_developer_agent
 from src.crews.internal.developer.tasks import analyze_codebase_task as analyze_dev_task, fix_bug_task as fix_dev_task, \
     write_tests_task as write_dev_tests_task, run_tests_task as run_dev_tests_task
+
+from langchain_ollama import OllamaEmbeddings
+
 ollama_embedder_config = {
     "provider": "ollama",
     "config": {

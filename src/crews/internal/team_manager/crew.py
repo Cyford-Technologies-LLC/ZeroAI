@@ -9,8 +9,8 @@ from pathlib import Path
 from rich.console import Console
 from src.utils.knowledge_utils import get_common_knowledge # Removed get_ollama_client as it's not used directly here
 from crewai.knowledge.knowledge import Knowledge
-#from langchain_ollama import OllamaEmbeddings # Import OllamaEmbeddings for the Knowledge object
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings # Import OllamaEmbeddings for the Knowledge object
+#from langchain_community.embeddings import OllamaEmbeddings
 console = Console()
 
 
