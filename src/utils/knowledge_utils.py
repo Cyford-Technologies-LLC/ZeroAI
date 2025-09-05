@@ -1,42 +1,46 @@
 # src/utils/knowledge_utils.py
 import os
 import yaml
-# Check this import path after reinstalling
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
-from typing import List
+from typing import List, Dict, Any
 
-def get_common_knowledge(project_location: str, repository: str) -> List[StringKnowledgeSource]:
+
+def get_yaml_content(project_location: str, filename: str) -> str:
     """
-    Loads common knowledge sources for agents, including project config and repository info.
+    Reads a YAML file from the knowledge directory and returns its content as a string.
 
     Args:
         project_location: The sub-directory for the specific project.
-        repository: The Git repository URL.
+        filename: The name of the YAML file to read.
 
     Returns:
-        A list of StringKnowledgeSource objects.
+        The content of the YAML file, or an error message if not found/readable.
     """
-    knowledge_sources = []
-
-    # 1. Read the YAML file content and create a StringKnowledgeSource
-    yaml_file_path = os.path.join(
-        "knowledge", "internal_crew", project_location, "project_config.yaml"
+    file_path = os.path.join(
+        "knowledge", "internal_crew", project_location, filename
     )
-    if os.path.exists(yaml_file_path):
+
+    if os.path.exists(file_path):
         try:
-            with open(yaml_file_path, "r") as f:
-                yaml_content = f.read()
-            knowledge_sources.append(StringKnowledgeSource(content=yaml_content))
+            with open(file_path, "r") as f:
+                return f.read()
         except Exception as e:
-            print(f"Error reading YAML file at {yaml_file_path}: {e}")
+            return f"Error reading YAML file at {file_path}: {e}"
     else:
-        print(f"YAML file not found at {yaml_file_path}")
+        return f"YAML file not found at {file_path}"
 
-    # 2. Create a StringKnowledgeSource for the repository variable
-    repo_knowledge = StringKnowledgeSource(
-        content=f"The project's Git repository is located at: {repository}"
-    )
-    knowledge_sources.append(repo_knowledge)
 
-    return knowledge_sources
+def get_common_knowledge_strings(project_location: str, repository: str) -> List[str]:
+    """
+    Returns a list of content strings for the agent's knowledge.
+    """
+    knowledge_strings = []
 
+    # Get YAML content
+    yaml_content = get_yaml_content(project_location, "project_config.yaml")
+    knowledge_strings.append(yaml_content)
+
+    # Get repository info
+    repo_string = f"The project's Git repository is located at: {repository}"
+    knowledge_strings.append(repo_string)
+
+    return knowledge_strings
