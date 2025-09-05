@@ -51,7 +51,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     # Get the common knowledge sources
     common_knowledge = get_common_knowledge(
-        project_location=inputs.get(project_location),
+        project_location=inputs.get(project_id),
         repository=inputs.get(repository)
     )
 
