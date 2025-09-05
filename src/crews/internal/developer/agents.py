@@ -3,7 +3,7 @@
 import os
 import inspect
 from crewai import Agent
-from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
+from crewai_tools import DirectoryKnowledgeSource, StringKnowledgeSource
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool
