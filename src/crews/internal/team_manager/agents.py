@@ -14,7 +14,6 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from langchain_ollama import OllamaLLM
 from src.config import config
 from src.utils.knowledge_utils import get_common_knowledge
 from crewai import Agent
