@@ -7,6 +7,7 @@ from src.utils.knowledge_utils import get_common_knowledge
 from crewai_tools import SerperDevTool
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 from openai import resources
 
@@ -209,7 +210,7 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
 
 
 def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                 coworkers: Optional[List] = None, backstory_suffix=None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a project manager agent."""
     llm = get_research_llm(router, category="management")
 
@@ -275,7 +276,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
 
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                     coworkers: Optional[List] = None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a specialized internal researcher agent."""
     llm = get_research_llm(router, category="research")
     agent_memory = Memory()
@@ -335,7 +336,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
 
 
 def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                   coworkers: Optional[List] = None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create an online researcher agent."""
     llm = get_research_llm(router, category="online_research")
     agent_memory = Memory()
