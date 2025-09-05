@@ -20,7 +20,7 @@ ollama_embedder_config = {
     "provider": "ollama",
     "config": {
         "model": "nomic-embed-text",
-        "base_url": "http://149.36.1.65:11434"
+        "base_url": "http://149.36.1.65:11434/api/embeddings"
     }
 }
 

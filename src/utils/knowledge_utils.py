@@ -1,7 +1,8 @@
 import os
 import yaml
 from typing import List, Tuple
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from crewai import Agent, Task, Crew, Process, LLM
+from crewai.knowledge.source.string_knowledge_source import     StringKnowledgeSource
 #from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import OllamaLLM
 from langchain_community.embeddings import OllamaEmbeddings
@@ -20,7 +21,7 @@ os.environ['OLLAMA_HOST'] = "http://149.36.1.65:11434"
 # Define the Ollama embedder and point to your local endpoint.
 ollama_embedder = OllamaEmbeddings(
     model="nomic-embed-text",
-    base_url="http://149.36.1.65:11434",
+    base_url="http://149.36.1.65:11434/api/embeddings",
     client = "ollama_client"
 
 )
