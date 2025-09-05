@@ -2,7 +2,7 @@ import os
 import inspect
 from typing import Dict, Any, List, Optional
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge_stringsfrom src.distributed_router import DistributedRouter
+from src.utils.knowledge_utils import get_common_knowledgefrom src.distributed_router import DistributedRouter
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 
@@ -40,7 +40,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge_strings(project_location, repository)
+    common_knowledge = get_common_knowledge(project_location, repository)
 
 
 

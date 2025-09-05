@@ -1,7 +1,7 @@
 # src/crews/internal/scheduler/agents.py
 
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge_stringsfrom langchain_ollama import OllamaLLM
+from src.utils.knowledge_utils import get_common_knowledgefrom langchain_ollama import OllamaLLM
 from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
 from typing import Dict, Any, List, Optional
@@ -45,7 +45,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
     
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge_strings(project_location, repository)
+    common_knowledge = get_common_knowledge(project_location, repository)
 
 
 

@@ -1,7 +1,7 @@
 # src/crews/internal/code_fixer/agents.py
 import os
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge_stringsfrom typing import Dict, Any, Optional, List
+from src.utils.knowledge_utils import get_common_knowledgefrom typing import Dict, Any, Optional, List
 from src.distributed_router import DistributedRouter
 from src.config import config
 from src.crews.internal.tools.git_tool import GitTool, FileTool # Corrected import
@@ -42,7 +42,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge_strings(project_location, repository)
+    common_knowledge = get_common_knowledge(project_location, repository)
 
 
     return Agent(
@@ -85,7 +85,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge_strings(project_location, repository)
+    common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -131,7 +131,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge_strings(project_location, repository)
+    common_knowledge = get_common_knowledge(project_location, repository)
 
 
     return Agent(
