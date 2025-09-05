@@ -1,7 +1,6 @@
 # src/crews/internal/scheduler/agents.py
 
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledgefrom langchain_ollama import OllamaLLM
 from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
 from typing import Dict, Any, List, Optional
@@ -34,7 +33,8 @@ def get_scheduler_llm(router: DistributedRouter, category: str = "scheduling") -
 
 # --- End of Helper function ---
 
-def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None):
+def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """
     Creates a Scheduler agent.
     """
