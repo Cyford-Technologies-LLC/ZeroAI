@@ -19,7 +19,7 @@ from src.crews.internal.developer.tasks import analyze_codebase_task as analyze_
 ollama_embedder_config = {
     "provider": "ollama",
     "config": {
-        "model": "nomic-embed-text",
+        "model": "mxbai-embed-large",
         "base_url": "http://149.36.1.65:11434/api/embeddings"
     }
 }
