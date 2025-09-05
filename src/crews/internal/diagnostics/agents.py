@@ -1,7 +1,7 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
-from crewai_tools import DirectorySearchTool, BaseTool
 from crewai.knowledge import StringKnowledgeSource, DirectoryKnowledgeSource
+from crewai.tools import BaseTool
 from rich.console import Console
 from typing import Dict, Any, List, Optional
 from .tools import LogAnalysisTool, DiagnosticFileHandlerTool
