@@ -10,6 +10,8 @@ from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import GitTool, FileTool
 from langchain_ollama import OllamaLLM # Added for local LLM instantiation
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+
 
 from src.distributed_router import DistributedRouter
 from src.config import config  # Corrected import statement
@@ -195,7 +197,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
 
 def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                  coworkers: Optional[List] = None) -> Agent:
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a Senior Developer agent."""
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
