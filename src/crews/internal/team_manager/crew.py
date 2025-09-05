@@ -104,7 +104,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             "provider": "ollama",
             "config": {
                 "model": "nomic-embed-text",
-                "base_url": "http://149.36.1.65:11434"
+                "base_url": "http://149.36.1.65:11434/api/embeddings"
             }
         }
     )
