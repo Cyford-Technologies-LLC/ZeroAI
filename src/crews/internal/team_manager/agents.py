@@ -188,7 +188,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
     # Pre-load knowledge sources once for efficiency
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
     for creator_func in agent_creator_functions.values():
         sig = inspect.signature(creator_func)

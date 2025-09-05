@@ -63,7 +63,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 

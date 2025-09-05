@@ -71,7 +71,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -136,7 +136,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -201,7 +201,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 

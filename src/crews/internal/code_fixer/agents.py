@@ -44,7 +44,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
     return Agent(
@@ -86,7 +86,7 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -131,7 +131,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     # The load_all_coworkers function already calls get_common_knowledge and passes it in
     # project_location = inputs.get("project_id")
     # repository = inputs.get("repository")
-    # common_knowledge = get_common_knowledge(project_location, repository)
+    # #common_knowledge = get_common_knowledge(project_location, repository)
 
 
     return Agent(

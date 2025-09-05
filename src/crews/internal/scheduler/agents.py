@@ -45,7 +45,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
     
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 

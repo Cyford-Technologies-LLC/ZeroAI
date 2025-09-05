@@ -216,7 +216,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
     print(f"DEBUG: Type of common_knowledge: {type(common_knowledge)}")
     print(f"DEBUG: Content of common_knowledge: {common_knowledge}")
 
@@ -282,7 +282,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
@@ -341,7 +341,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 

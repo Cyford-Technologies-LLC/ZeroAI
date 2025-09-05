@@ -43,7 +43,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    common_knowledge = get_common_knowledge(project_location, repository)
+    #common_knowledge = get_common_knowledge(project_location, repository)
 
 
 
