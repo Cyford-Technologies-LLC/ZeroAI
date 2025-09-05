@@ -126,6 +126,13 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         verbose=True,
         full_output=full_output,
         knowledge_sources=[content_source],
+        embedder={
+            "provider": "ollama",  # Recommended for Claude users
+            "config": {
+                "model": "mxbai-embed-large"  # or "voyage-3-large" for best quality
+            }
+        }
+
         # embedder=crew_embedder_config,  # <-- Pass the dictionary here
     )
 
