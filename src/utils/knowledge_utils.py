@@ -34,7 +34,7 @@ def get_common_knowledge(project_location: str, repository: str) -> List[Dict[st
     # 1. Read the YAML file content and prepare for the Agent
     yaml_content = get_yaml_content(project_location, "project_config.yaml")
     if not yaml_content.startswith("Error"):
-        knowledge_sources.append({"content": yaml_content})
+        knowledge_sources.append({"BaseKnowledgeSource": yaml_content})
 
     # 2. Prepare the repository variable
     repo_content = f"The project's Git repository is located at: {repository}"
