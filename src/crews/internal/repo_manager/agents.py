@@ -73,6 +73,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
         role="Git Operator",
         name="Deon Sanders",
         memory=agent_memory,
+        resources=[],
         coworkers=coworkers if coworkers is not None else [],
         learning={
             "enabled": True,

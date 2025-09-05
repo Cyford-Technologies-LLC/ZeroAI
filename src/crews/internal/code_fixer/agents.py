@@ -134,6 +134,7 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
         role="QA Engineer",
         name="Emily",
         memory=agent_memory,
+        resources=[],
         coworkers=coworkers if coworkers is not None else [],
         learning={
                 "enabled": True,

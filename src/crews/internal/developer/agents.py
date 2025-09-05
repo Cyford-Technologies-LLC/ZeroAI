@@ -74,6 +74,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
         role="Code Researcher",
         name="Dr. Alan Parse",
         memory=agent_memory,
+        resources=[],
         learning={
             "enabled": True,
             "learning_rate": 0.05,
@@ -138,6 +139,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         role="Junior Developer",
         name="Tom Kyles",
         memory=agent_memory,
+        resources=[],
         learning={
             "enabled": True,
             "learning_rate": 0.05,
@@ -201,6 +203,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         role="Senior Developer",
         name="Tony Kyles",
         memory=agent_memory,
+        resources=[],
         learning={
             "enabled": True,
             "learning_rate": 0.05,
@@ -252,6 +255,8 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
     """Create a QA Engineer agent."""
     llm = get_developer_llm(router, category="qa")
     agent_memory = Memory()
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
 
     all_tools = get_universal_tools(inputs, initial_tools=tools)
 
@@ -259,6 +264,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
         role="QA Engineer",
         name="Lara Croft",
         memory=agent_memory,
+        resources=[],
         learning={
             "enabled": True,
             "learning_rate": 0.05,
@@ -276,7 +282,10 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
             "tone": "objective",
             "technical_level": "intermediate"
         },
-        knowledge_sources=[],
+        knowledge_sources=[
+            f"Project Directory:  knowledge/internal_crew/{project_location}"
+            f"GIT Repository: {repository} ."
+        ],
         expertise=[
             "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"
         ],

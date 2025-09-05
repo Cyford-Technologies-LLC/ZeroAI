@@ -51,6 +51,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
         goal="Schedule events and appointments based on requests from the team manager. or project manager",
         backstory=f"An expert in calendar management, proficient at scheduling, organizing, and managing events and appointments efficiently.\n\n{get_shared_context_for_agent('Scheduler')}\n\nAll responses are signed off with 'Scheduler'",
         tools=all_tools,
+        resources=[],
         llm=llm,
         allow_delegation=False,
         verbose=config.agents.verbose

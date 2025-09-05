@@ -42,6 +42,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
         ],
+        resources=[],
         goal="Create clear and concise documentation for software projects.",
         backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
         

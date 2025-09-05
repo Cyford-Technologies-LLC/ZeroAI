@@ -5,6 +5,9 @@ import importlib
 from crewai import Agent
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
+
+from openai import resources
+
 from src.distributed_router import DistributedRouter
 from src.config import config
 from src.utils.shared_knowledge import get_shared_context_for_agent
@@ -350,6 +353,7 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
         },
         inject_date=True,
         reasoning=True,
+        resources=[],
         knowledge_sources=[
             f"Project Directory:  knowledge/internal_crew/{project_location}"
             f"GIT Repository: {repository} ."
