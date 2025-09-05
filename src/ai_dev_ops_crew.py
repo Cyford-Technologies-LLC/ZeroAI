@@ -450,7 +450,9 @@ class AIOpsCrewManager:
                     "working_dir": self.working_dir,
                     "repo_token": repo_token,  # Pass the token here
                     "repo_token_key": repo_token_key,  # Pass the token key here
-                    "project_config": self.project_config,  # Pass project config to agents
+                    "project_config": self.project_config,
+
+                    # Pass project config to agents
                 }
 
                 crew = create_team_manager_crew(
