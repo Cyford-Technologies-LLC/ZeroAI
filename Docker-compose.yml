@@ -4,6 +4,7 @@ services:
   zeroai:
     build: .
     container_name: zeroai_api-prod
+    privileged: true  # Add this line
     ports:
       - "3939:3939"
     volumes:
@@ -11,6 +12,7 @@ services:
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
       - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
