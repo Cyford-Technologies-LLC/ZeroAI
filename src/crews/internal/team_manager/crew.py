@@ -45,7 +45,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Create the list of agents for the crew (manager is handled separately)
     crew_agents = all_coworkers
 
-    project_location = f"knowledge/internal_crew/{inputs.get("project_id")}/project_config.yaml"
+    project_location = f"knowledge/internal_crew/{inputs.get('project_id')}/project_config.yaml"
     repository = inputs.get("repository")
 
     # Get the common knowledge sources
