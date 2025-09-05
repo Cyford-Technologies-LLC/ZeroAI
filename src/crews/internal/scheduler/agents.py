@@ -57,7 +57,7 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
         tools=all_tools,
         resources=[],
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         llm=llm,
         allow_delegation=False,

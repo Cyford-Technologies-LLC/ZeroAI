@@ -100,7 +100,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "technical_level": "expert"
         },
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         expertise=[
             "Python", "JavaScript", "Database Design",
@@ -169,7 +169,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "technical_level": "expert"
         },
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         goal="Implement high-quality code solutions under guidance. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a junior software developer, eager to learn and implement code solutions
@@ -237,7 +237,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "technical_level": "expert"
         },
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         goal="Implement high-quality, robust code solutions to complex problems. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a skilled software developer with years of experience.
@@ -264,8 +264,8 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
         coworkers=coworkers if coworkers is not None else []
     )
 
-def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                             coworkers: Optional[List] = None) -> Agent:
+def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a QA Engineer agent."""
     llm = get_developer_llm(router, category="qa")
     agent_memory = Memory()
@@ -298,7 +298,7 @@ def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], 
             "technical_level": "intermediate"
         },
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         expertise=[
             "Test Automation", "Performance Testing", "Bug Tracking", "Continuous Integration"

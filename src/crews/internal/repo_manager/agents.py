@@ -99,7 +99,7 @@ def create_git_operator_agent(router: DistributedRouter, inputs: Dict[str, Any],
             "technical_level": "expert"
         },
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         expertise=[
             "GIT", "Bit Bucket"

@@ -85,7 +85,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         name="Agent-Dr. Watson",
         memory=agent_memory,
         knowledge_sources=[
-            common_knowledge  # Use the string knowledge source
+            knowledge_sources  # Use the string knowledge source
         ],
         goal="""Monitor the task queue for failed tasks, analyze the error details, and log them.
         When another crew accepts the task, archive it from the queue.
