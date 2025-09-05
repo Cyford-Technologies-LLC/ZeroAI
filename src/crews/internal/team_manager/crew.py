@@ -90,34 +90,34 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         repository=repository
     )
 
-    from crewai.knowledge.source.crew_docling_source import CrewDoclingSource
-    # Create a knowledge source from web content
-    content_source = CrewDoclingSource(
-        file_paths=[
-            "https://lilianweng.github.io/posts/2024-11-28-reward-hacking",
-            "https://lilianweng.github.io/posts/2024-07-07-hallucination",
-        ],
-    )
-    # Create an LLM with a temperature of 0 to ensure deterministic outputs
-    llm = LLM(model="gpt-4o-mini", temperature=0)
-
-    # Define the embedder as a dictionary for both Crew and Knowledge
-    # NOTE: The 'base_url' is removed here to rely on the OLLAMA_HOST environment variable.
-    crew_embedder_config = {
-        "provider": "ollama",
-        "config": {
-            "model": "mxbai-embed-large",
-            # "base_url": "http://149.36.1.65:11434/api/embeddings"
-        }
-    }
-
-    # Attach knowledge to agents using the embedder dictionary
-    for agent in all_coworkers:
-        agent.knowledge = Knowledge(
-            sources=common_knowledge,
-            embedder=crew_embedder_config,  # <-- Pass the dictionary here
-            collection_name=f"crew_knowledge_{project_id}"
-        )
+    # from crewai.knowledge.source.crew_docling_source import CrewDoclingSource
+    # # Create a knowledge source from web content
+    # content_source = CrewDoclingSource(
+    #     file_paths=[
+    #         "https://lilianweng.github.io/posts/2024-11-28-reward-hacking",
+    #         "https://lilianweng.github.io/posts/2024-07-07-hallucination",
+    #     ],
+    # )
+    # # Create an LLM with a temperature of 0 to ensure deterministic outputs
+    # llm = LLM(model="gpt-4o-mini", temperature=0)
+    #
+    # # Define the embedder as a dictionary for both Crew and Knowledge
+    # # NOTE: The 'base_url' is removed here to rely on the OLLAMA_HOST environment variable.
+    # crew_embedder_config = {
+    #     "provider": "ollama",
+    #     "config": {
+    #         "model": "mxbai-embed-large",
+    #         # "base_url": "http://149.36.1.65:11434/api/embeddings"
+    #     }
+    # }
+    #
+    # # Attach knowledge to agents using the embedder dictionary
+    # for agent in all_coworkers:
+    #     agent.knowledge = Knowledge(
+    #         sources=common_knowledge,
+    #         embedder=crew_embedder_config,  # <-- Pass the dictionary here
+    #         collection_name=f"crew_knowledge_{project_id}"
+    #     )
 
     crew1 = Crew(
         agents=crew_agents,
