@@ -22,9 +22,8 @@ def get_ollama_client(base_url: str) -> OllamaClient:
 os.environ['OLLAMA_HOST'] = "http://149.36.1.65:11434"
 # Define the Ollama embedder and point to your local endpoint.
 ollama_embedder = OllamaEmbeddings(
-    model="nomic-embed-text",
-    base_url="http://149.36.1.65:11434/api/embeddings"
-
+    model="mxbai-embed-large",
+    # base_url="http://149.36.1.65:11434/api/embeddings"
 )
 
 
