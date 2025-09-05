@@ -27,7 +27,7 @@ from src.utils.tool_initializer import get_universal_tools  # New universal tool
 os.environ["CREW_TYPE"] = "internal"
 console = Console()
 
-def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+def create_qa_engineer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
                                   coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Creates a QA engineer agent with dynamic LLM selection."""
     llm = None
