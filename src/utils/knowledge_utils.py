@@ -2,6 +2,7 @@
 import os
 import yaml
 from typing import List, Dict, Any
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 
 def get_yaml_content(project_location: str, filename: str) -> str:
@@ -29,18 +30,27 @@ def get_yaml_content(project_location: str, filename: str) -> str:
         return f"YAML file not found at {file_path}"
 
 
-def get_common_knowledge_strings(project_location: str, repository: str) -> List[str]:
-    """
-    Returns a list of content strings for the agent's knowledge.
-    """
-    knowledge_strings = []
+def get_common_knowledge(project_location: str, repository: str) -> List[StringKnowledgeSource]:
+    knowledge_sources = []
 
-    # Get YAML content
-    yaml_content = get_yaml_content(project_location, "project_config.yaml")
-    knowledge_strings.append(yaml_content)
+    # 1. Read the YAML file content and create a StringKnowledgeSource
+    yaml_file_path = os.path.join(
+        "knowledge", "internal_crew", project_location, "project_config.yaml"
+    )
+    if os.path.exists(yaml_file_path):
+        try:
+            with open(yaml_file_path, "r") as f:
+                yaml_content = f.read()
+            knowledge_sources.append(StringKnowledgeSource(content=yaml_content))
+        except Exception as e:
+            print(f"Error reading YAML file at {yaml_file_path}: {e}")
+    else:
+        print(f"YAML file not found at {yaml_file_path}")
 
-    # Get repository info
-    repo_string = f"The project's Git repository is located at: {repository}"
-    knowledge_strings.append(repo_string)
+    # 2. Create a StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+    knowledge_sources.append(repo_knowledge)
 
-    return knowledge_strings
+    return knowledge_sources
