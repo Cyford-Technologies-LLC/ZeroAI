@@ -250,10 +250,10 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "tone": "confident",
             "technical_level": "intermediate"
         },
-        knowledge_sources=[
-                   f"Project Directory:  knowledge/internal_crew/{project_location}"
-                   f"GIT Repository: {repository} ."
-                   ],
+        # knowledge_sources=[
+        #            f"Project Directory:  knowledge/internal_crew/{project_location}"
+        #            f"GIT Repository: {repository} ."
+        #            ],
         goal="Provide project details and coordinate team. For file creation tasks, provide clear requirements and delegate to Senior Developer. "
              f"PROJECT INFO: Use Project Tool with project_location='{project_location}'  to get project details when needed. "
              f"If you still have problems getting the project details  you can get them from this file. ( knowledge/internal_crew/{project_location}/project_config.yaml )"
