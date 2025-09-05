@@ -92,7 +92,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             callback=custom_logger.log_step_callback if custom_logger else None
         )]
     
-    crew = Crew(
+    crew1 = Crew(
         agents=crew_agents,
         tasks=sequential_tasks,
         process=Process.sequential,
@@ -101,5 +101,5 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     )
 
     
-    return crew
+    return crew1
 
