@@ -7,8 +7,9 @@ from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
-from src.utils.knowledge_utils import get_common_knowledge  # No longer need to import the instance
+from src.utils.knowledge_utils import get_common_knowledge # Removed get_ollama_client as it's not used directly here
 from crewai.knowledge.knowledge import Knowledge
+from langchain_ollama import OllamaEmbeddings # Import OllamaEmbeddings for the Knowledge object
 
 console = Console()
 
@@ -90,11 +91,11 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     )
 
     # Define the embedder as a dictionary for both Crew and Knowledge
+    # NOTE: The 'base_url' is removed here to rely on the OLLAMA_HOST environment variable.
     crew_embedder_config = {
         "provider": "ollama",
         "config": {
             "model": "nomic-embed-text",
-            # "base_url": "http://ollama:11434"
         }
     }
 
@@ -116,3 +117,4 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     )
 
     return crew1
+
