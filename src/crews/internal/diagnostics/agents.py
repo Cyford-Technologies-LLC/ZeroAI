@@ -1,5 +1,6 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
 from rich.console import Console
 from typing import Dict, Any, List, Optional
 from .tools import LogAnalysisTool, DiagnosticFileHandlerTool
@@ -50,6 +51,19 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
     agent_memory = Memory()
     task_manager_instance = TaskManager()  # FIX: Create a TaskManager instance
 
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
     if coworker_names is None:
         coworker_names = []
 
@@ -68,6 +82,10 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
         role="CrewAI Diagnostic Agent",
         name="Agent-Dr. Watson",
         memory=agent_memory,
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         goal="""Monitor the task queue for failed tasks, analyze the error details, and log them.
         When another crew accepts the task, archive it from the queue.
         If you find yourself in a repetitive loop, immediately deliver a 'Final Answer' acknowledging the loop and stating the inability to provide a conclusive diagnosis due to repetitive behavior.""",

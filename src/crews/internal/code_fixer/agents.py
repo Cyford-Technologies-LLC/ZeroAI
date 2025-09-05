@@ -79,7 +79,10 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
                 "tone": "cooperative",
                 "technical_level": "intermediate"
             },
-        knowledge_sources=[project_knowledge],
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         goal="Understand and analyze bug reports to find the root cause.",
         backstory=f"An expert in software analysis, specializing in finding code issues.\n\n{get_shared_context_for_agent('Code Researcher')}\n\nResponses are signed with the name Timothy.",
         llm=llm,
@@ -130,7 +133,10 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
                 "tone": "confident",
                 "technical_level": "expert"
             },
-        knowledge_sources=[project_knowledge],
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         goal="Implement bug fixes and write clean, maintainable code.",
         backstory=f"A seasoned developer with a knack for solving complex coding problems.\n\n{get_shared_context_for_agent('Senior Developer')}\n\nResponses are signed with the name Anthony Gates.",
         llm=llm,

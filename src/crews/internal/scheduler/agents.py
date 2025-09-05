@@ -1,6 +1,7 @@
 # src/crews/internal/scheduler/agents.py
 
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
 from langchain_ollama import OllamaLLM
 from src.crews.internal.tools.scheduling_tool import SchedulingTool
 from src.config import config
@@ -45,6 +46,16 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
 
     return Agent(
         role="Scheduler",
@@ -52,6 +63,10 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
         backstory=f"An expert in calendar management, proficient at scheduling, organizing, and managing events and appointments efficiently.\n\n{get_shared_context_for_agent('Scheduler')}\n\nAll responses are signed off with 'Scheduler'",
         tools=all_tools,
         resources=[],
+        knowledge_sources=[
+            project_knowledge,  # This points to the local directory
+            repo_knowledge  # This provides the agent with the repository URL
+        ],
         llm=llm,
         allow_delegation=False,
         verbose=config.agents.verbose

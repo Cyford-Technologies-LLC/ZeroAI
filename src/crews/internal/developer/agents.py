@@ -3,6 +3,7 @@
 import os
 import inspect
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
 from typing import Dict, Any, Optional, List
 from src.utils.memory import Memory
 from src.crews.internal.tools.docker_tool import DockerTool
@@ -67,6 +68,17 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
+
 
 
 
@@ -133,6 +145,18 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
 
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
+
+
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
     return Agent(
@@ -195,6 +219,18 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
+
 
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)

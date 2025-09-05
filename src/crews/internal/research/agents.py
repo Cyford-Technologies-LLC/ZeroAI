@@ -3,6 +3,8 @@
 import inspect
 import importlib
 from crewai import Agent
+from crewai.knowledge import DirectoryKnowledgeSource , StringKnowledgeSource
+from crewai_tools import SerperDevTool, GithubSearchTool
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
 
@@ -16,7 +18,7 @@ from src.utils.memory import Memory
 from pathlib import Path
 import os
 import yaml
-from crewai_tools import SerperDevTool, GithubSearchTool
+
 from langchain_ollama import OllamaLLM
 
 
@@ -221,7 +223,19 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     # Add project tool
     project_tool = ProjectTool()
     all_tools.append(project_tool)
-    
+
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
+
+
     # Add delegation tools if coworkers are provided
     if coworkers:
         delegation_tool = DelegationTool(coworkers=coworkers)
@@ -275,6 +289,18 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
+
     
     all_tools = _get_tools_with_github(inputs, tools)
 
@@ -328,6 +354,18 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
     all_tools = _get_tools_with_github(inputs, tools)
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
+
+    # 1. Instantiate DirectoryKnowledgeSource for the local directory
+    project_knowledge = DirectoryKnowledgeSource(
+        directory=f"knowledge/internal_crew/{project_location}"
+    )
+
+    # 2. Instantiate StringKnowledgeSource for the repository variable
+    repo_knowledge = StringKnowledgeSource(
+        content=f"The project's Git repository is located at: {repository}"
+    )
+
+
 
     return Agent(
         role="Online Researcher",
