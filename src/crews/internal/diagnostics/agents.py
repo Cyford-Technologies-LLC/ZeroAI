@@ -55,7 +55,7 @@ class TaskManagerLoggerTool(BaseTool):
 
 
 def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List] = None,
-                            coworker_names: Optional[List[str]] = None) -> Agent:
+                            coworker_names: Optional[List[str]] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
     """Create a Diagnostic Agent."""
     llm = router.get_llm_for_role("devops_diagnostician")
     agent_memory = Memory()
