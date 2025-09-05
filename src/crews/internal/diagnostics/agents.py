@@ -1,6 +1,9 @@
 # src/crews/internal/diagnostics/agents.py
 from crewai import Agent
-from crewai.knowledge import StringKnowledgeSource, DirectoryKnowledgeSource
+# For active tools that interact with local directories
+from crewai_tools import DirectorySearchTool
+# For passive knowledge sources like strings
+from crewai.knowledge.document_knowledge import StringKnowledgeSource
 from crewai.tools import BaseTool
 from rich.console import Console
 from typing import Dict, Any, List, Optional
