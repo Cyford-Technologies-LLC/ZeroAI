@@ -4,7 +4,6 @@ import yaml
 from typing import List, Dict, Any
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
-
 def get_yaml_content(project_location: str, filename: str) -> str:
     """
     Reads a YAML file from the knowledge directory and returns its content as a string.
@@ -31,6 +30,16 @@ def get_yaml_content(project_location: str, filename: str) -> str:
 
 
 def get_common_knowledge(project_location: str, repository: str) -> List[StringKnowledgeSource]:
+    """
+    Loads common knowledge sources for agents, including project config and repository info.
+
+    Args:
+        project_location: The sub-directory for the specific project.
+        repository: The Git repository URL.
+
+    Returns:
+        A list of StringKnowledgeSource objects.
+    """
     knowledge_sources = []
 
     # 1. Read the YAML file content and create a StringKnowledgeSource
@@ -54,3 +63,4 @@ def get_common_knowledge(project_location: str, repository: str) -> List[StringK
     knowledge_sources.append(repo_knowledge)
 
     return knowledge_sources
+
