@@ -14,7 +14,7 @@ def test_ollama_embedding():
     try:
         ollama_ef = OllamaEmbeddingFunction(
             model_name="nomic-embed-text",
-            url="http://149.36.1.65:11434"
+            url="http://149.36.1.65:11434/api/embeddings"
         )
         test_texts = ["test document one", "test document two"]
         print("Starting embedding test...")
