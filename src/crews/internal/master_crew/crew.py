@@ -20,7 +20,7 @@ ollama_embedder_config = {
     "provider": "ollama",
     "config": {
         "model": "mxbai-embed-large",
-        "base_url": "http://149.36.1.65:11434/api/embeddings"
+        # "base_url": "http://149.36.1.65:11434/api/embeddings"
     }
 }
 
