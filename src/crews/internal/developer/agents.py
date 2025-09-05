@@ -69,8 +69,9 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
     # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge = DirectoryKnowledgeSource(
-        directory=f"knowledge/internal_crew/{project_location}"
+    project_knowledge_tool = DirectorySearchTool(
+        directory=f"knowledge/internal_crew/{project_location}",
+        config=ollama_config
     )
 
     # 2. Instantiate StringKnowledgeSource for the repository variable
@@ -146,8 +147,9 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     repository = inputs.get("repository")
 
     # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge = DirectoryKnowledgeSource(
-        directory=f"knowledge/internal_crew/{project_location}"
+    project_knowledge_tool = DirectorySearchTool(
+        directory=f"knowledge/internal_crew/{project_location}",
+        config=ollama_config
     )
 
     # 2. Instantiate StringKnowledgeSource for the repository variable
@@ -221,8 +223,9 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     repository = inputs.get("repository")
 
     # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge = DirectoryKnowledgeSource(
-        directory=f"knowledge/internal_crew/{project_location}"
+    project_knowledge_tool = DirectorySearchTool(
+        directory=f"knowledge/internal_crew/{project_location}",
+        config=ollama_config
     )
 
     # 2. Instantiate StringKnowledgeSource for the repository variable

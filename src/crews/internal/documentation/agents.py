@@ -16,8 +16,9 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
     agent_memory = Memory()
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
-    project_knowledge = DirectoryKnowledgeSource(
-        directory=f"knowledge/internal_crew/{project_location}"
+    project_knowledge_tool = DirectorySearchTool(
+        directory=f"knowledge/internal_crew/{project_location}",
+        config=ollama_config
     ),
     repo_knowledge = StringKnowledgeSource(
         content=f"The project's Git repository is located at: {repository}"

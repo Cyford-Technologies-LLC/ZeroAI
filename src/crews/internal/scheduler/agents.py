@@ -48,8 +48,9 @@ def create_scheduler_agent(router: DistributedRouter, inputs: Dict[str, Any], to
     repository = inputs.get("repository")
 
     # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge = DirectoryKnowledgeSource(
-        directory=f"knowledge/internal_crew/{project_location}"
+    project_knowledge_tool = DirectorySearchTool(
+        directory=f"knowledge/internal_crew/{project_location}",
+        config=ollama_config
     )
 
     # 2. Instantiate StringKnowledgeSource for the repository variable
