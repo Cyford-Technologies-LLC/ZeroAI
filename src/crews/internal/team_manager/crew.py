@@ -9,6 +9,8 @@ from pathlib import Path
 from rich.console import Console
 from src.utils.knowledge_utils import get_common_knowledge # Removed get_ollama_client as it's not used directly here
 from crewai.knowledge.knowledge import Knowledge
+from crewai.knowledge.source.crew_docling_source import CrewDoclingSource
+
 from langchain_ollama import OllamaEmbeddings # Import OllamaEmbeddings for the Knowledge object
 #from langchain_community.embeddings import OllamaEmbeddings
 console = Console()
@@ -90,7 +92,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         repository=repository
     )
 
-    from crewai.knowledge.source.crew_docling_source import CrewDoclingSource
+
     # Create a knowledge source from web content
     content_source = CrewDoclingSource(
         file_paths=[
@@ -126,13 +128,13 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         verbose=True,
         full_output=full_output,
         knowledge_sources=[content_source],
-        # embedder={
-        #     "provider": "ollama",  # Recommended for Claude users
-        #     "config": {
-        #         "model": "mistral-nemo:latest",  # or "voyage-3-large" for best quality
-        #         "base_url": "http://149.36.1.65:11434/api/embeddings"
-        #     }
-        # }
+        embedder={
+            "provider": "ollama",  # Recommended for Claude users
+            "config": {
+                "model": "mistral-nemo:latest",  # or "voyage-3-large" for best quality
+                "base_url": "http://149.36.1.65:11434/api/embeddings"
+            }
+        }
 
         # embedder=crew_embedder_config,  # <-- Pass the dictionary here
     )
