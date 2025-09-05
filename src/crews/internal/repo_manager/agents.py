@@ -2,7 +2,8 @@ import os
 import inspect
 from typing import Dict, Any, List, Optional
 from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledgefrom src.distributed_router import DistributedRouter
+from src.utils.knowledge_utils import get_common_knowledge
+from src.distributed_router import DistributedRouter
 from src.utils.shared_knowledge import get_shared_context_for_agent
 from rich.console import Console
 
