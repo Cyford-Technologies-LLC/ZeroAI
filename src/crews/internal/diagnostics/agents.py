@@ -58,7 +58,7 @@ def create_diagnostic_agent(router, inputs: Dict[str, Any], tools: Optional[List
     repository = inputs.get("repository")
 
     # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge = DirectoryKnowledgeSource(
+    project_knowledge = DirectorySearchTool(
         directory=f"knowledge/internal_crew/{project_location}"
     )
 
