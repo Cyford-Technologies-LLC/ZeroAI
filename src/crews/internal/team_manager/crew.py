@@ -1,5 +1,5 @@
 # src/crews/internal/team_manager/crew.py
-from crewai import Crew, Process, Task
+from crewai import LLM, Crew, Process, Task
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
@@ -90,6 +90,17 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         repository=repository
     )
 
+    from crewai.knowledge.source.crew_docling_source import CrewDoclingSource
+    # Create a knowledge source from web content
+    content_source = CrewDoclingSource(
+        file_paths=[
+            "https://lilianweng.github.io/posts/2024-11-28-reward-hacking",
+            "https://lilianweng.github.io/posts/2024-07-07-hallucination",
+        ],
+    )
+    # Create an LLM with a temperature of 0 to ensure deterministic outputs
+    llm = LLM(model="gpt-4o-mini", temperature=0)
+
     # Define the embedder as a dictionary for both Crew and Knowledge
     # NOTE: The 'base_url' is removed here to rely on the OLLAMA_HOST environment variable.
     crew_embedder_config = {
@@ -114,7 +125,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         process=Process.sequential,
         verbose=True,
         full_output=full_output,
-        embedder=crew_embedder_config,  # <-- Pass the dictionary here
+        knowledge_sources=[content_source],
+        # embedder=crew_embedder_config,  # <-- Pass the dictionary here
     )
 
     return crew1
