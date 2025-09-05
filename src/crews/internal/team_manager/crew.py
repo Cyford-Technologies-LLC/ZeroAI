@@ -45,13 +45,14 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Create the list of agents for the crew (manager is handled separately)
     crew_agents = all_coworkers
 
-    project_location = f"knowledge/internal_crew/{inputs.get('project_id')}/project_config.yaml"
+    project_id = inputs.get("project_id")
+    project_location = f"knowledge/internal_crew/{project_id}/project_config.yaml"
     repository = inputs.get("repository")
 
     # Get the common knowledge sources
     common_knowledge = get_common_knowledge(
-        project_location=inputs.get("project_location"),
-        repository=inputs.get("repository")
+        project_location=inputs.get(project_location),
+        repository=inputs.get(repository)
     )
 
     # Attach knowledge to agents using the explicit embedder instance
