@@ -7,6 +7,8 @@ from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
+from src.utils.knowledge_utils import ollama_embedder # Import ollama_embedder
+
 
 console = Console()
 
@@ -98,6 +100,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         process=Process.sequential,
         verbose=True,  # Force verbose to see all conversations
         full_output=full_output,
+        embedder=ollama_embedder  # Pass the ollama_embedder
     )
 
     

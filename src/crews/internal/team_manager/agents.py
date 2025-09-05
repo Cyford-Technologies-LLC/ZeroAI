@@ -20,7 +20,6 @@ from src.utils.knowledge_utils import get_common_knowledge
 from crewai import Agent
 from rich.console import Console
 from src.utils.memory import Memory
-from src.utils.knowledge_utils import ollama_embedder # Import ollama_embedder
 
 
 
