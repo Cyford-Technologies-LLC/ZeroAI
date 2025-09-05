@@ -20,7 +20,7 @@ def check_ollama():
     """Check if Ollama is running."""
     try:
         import requests
-        response = requests.get("http://olloma:11434/api/tags", timeout=5)
+        response = requests.get("http://ollama:11434/api/tags", timeout=5)
         return response.status_code == 200
     except:
         return False
@@ -30,7 +30,7 @@ def check_model():
     """Check if the required model is available."""
     try:
         import requests
-        response = requests.get("http://olloma:11434/api/tags", timeout=5)
+        response = requests.get("http://ollama:11434/api/tags", timeout=5)
         if response.status_code == 200:
             models = response.json().get("models", [])
             return any("llama3.1" in model.get("name", "") for model in models)
