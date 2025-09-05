@@ -286,16 +286,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
 
 
 
-    # 1. Instantiate DirectoryKnowledgeSource for the local directory
-    project_knowledge_tool = DirectorySearchTool(
-        directory=f"knowledge/internal_crew/{project_location}",
-        config=ollama_config
-    )
 
-    # 2. Instantiate StringKnowledgeSource for the repository variable
-    repo_knowledge = StringKnowledgeSource(
-        content=f"The project's Git repository is located at: {repository}"
-    )
 
 
     
