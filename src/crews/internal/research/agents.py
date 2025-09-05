@@ -300,10 +300,10 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "tone": "objective",
             "technical_level": "expert"
         },
-        knowledge_sources=[
-            f"Project Directory:  knowledge/internal_crew/{project_location}"
-            f"GIT Repository: {repository} ."
-        ],
+        # knowledge_sources=[
+        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
+        #     f"GIT Repository: {repository} ."
+        # ],
         goal="Gather information on internal project details. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""An expert at internal research, finding and documenting all project-specific information.
         
@@ -354,10 +354,10 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
         inject_date=True,
         reasoning=True,
         resources=[],
-        knowledge_sources=[
-            f"Project Directory:  knowledge/internal_crew/{project_location}"
-            f"GIT Repository: {repository} ."
-        ],
+        # knowledge_sources=[
+        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
+        #     f"GIT Repository: {repository} ."
+        # ],
         goal="Perform comprehensive online searches to find information. IMPORTANT: Before starting any research, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional research needed.' and stop.",
         backstory=f"""A specialized agent for efficient online information retrieval.
         

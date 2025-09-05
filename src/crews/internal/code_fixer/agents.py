@@ -65,10 +65,10 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
                 "tone": "cooperative",
                 "technical_level": "intermediate"
             },
-        knowledge_sources=[
-            f"Project Directory:  knowledge/internal_crew/{project_location}"
-            f"GIT Repository: {repository} ."
-        ],
+        # knowledge_sources=[
+        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
+        #     f"GIT Repository: {repository} ."
+        # ],
         goal="Understand and analyze bug reports to find the root cause.",
         backstory=f"An expert in software analysis, specializing in finding code issues.\n\n{get_shared_context_for_agent('Code Researcher')}\n\nResponses are signed with the name Timothy.",
         llm=llm,
@@ -109,10 +109,10 @@ def create_coder_agent(router: DistributedRouter, inputs: Dict[str, Any], tools:
                 "tone": "confident",
                 "technical_level": "expert"
             },
-        knowledge_sources=[
-            f"Project Directory:  knowledge/internal_crew/{project_location}"
-            f"GIT Repository: {repository} ."
-        ],
+        # knowledge_sources=[
+        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
+        #     f"GIT Repository: {repository} ."
+        # ],
         goal="Implement bug fixes and write clean, maintainable code.",
         backstory=f"A seasoned developer with a knack for solving complex coding problems.\n\n{get_shared_context_for_agent('Senior Developer')}\n\nResponses are signed with the name Anthony Gates.",
         llm=llm,
@@ -153,10 +153,10 @@ def create_tester_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "tone": "objective",
                 "technical_level": "expert"
             },
-        knowledge_sources=[
-            f"Project Directory:  knowledge/internal_crew/{project_location}"
-            f"GIT Repository: {repository} ."
-        ],
+        # knowledge_sources=[
+        #     f"Project Directory:  knowledge/internal_crew/{project_location}"
+        #     f"GIT Repository: {repository} ."
+        # ],
         goal="Ensure all bug fixes are verified with comprehensive tests.",
         backstory=f"A meticulous QA engineer who ensures code quality and correctness.\n\n{get_shared_context_for_agent('QA Engineer')}\n\nResponses are signed with the name Emily.",
         llm=llm,
