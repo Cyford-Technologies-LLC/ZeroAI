@@ -216,7 +216,8 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     console.print(
         f"🔗  Project Manager got access to this file {project_config}  ", style="red")
 
-    all_tools = _get_tools_with_github(inputs, tools)
+    #all_tools = _get_tools_with_github(inputs, tools)
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
     project_tool = ProjectTool()
     all_tools.append(project_tool)
     learning_tool = LearningTool(agent_role="Code Researcher")
