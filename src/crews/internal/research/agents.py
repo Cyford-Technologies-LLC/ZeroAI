@@ -237,6 +237,9 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         }
     }
 
+    common_knowledge = get_common_knowledge(project_location, repository)
+
+
     # Create the knowledge object with the provided embedder config.
     agent_knowledge = Knowledge(
         sources=common_knowledge,
