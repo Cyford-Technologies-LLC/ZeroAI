@@ -85,6 +85,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if project_manager:
         sequential_tasks.append(Task(
             description=f"""Analyze and plan the task: {inputs.get('prompt')}.
+                        Read and extract Docker Compose details from the project config file: {project_config}
                         Coordinate research tasks and provide final answers to user questions.
                         The Project Configuration file = {project_config}
                         Supply Team with needed project Information.
@@ -114,6 +115,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if code_researcher:
         sequential_tasks.append(Task(
             description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
+            Bring up the project using Docker Compose based on the details extracted in the previous task
             Carefully read all project related details in {project_config}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             All Details {All_DETAILS}
@@ -146,6 +148,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             expected_output="Complete implementation with code and documentation.",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
+
     if junior_dev:
         sequential_tasks.append(Task(
             description=f"""Execute solution provided by the Senior Developer for: {inputs.get('prompt')}
