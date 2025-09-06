@@ -6,17 +6,23 @@ from typing import Dict, Any
 def internal_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
     topic = inputs.get('topic', 'general project research')
-    project_location = inputs.get('project_id', 'unknown')
+    project_id = inputs.get('project_id', 'unknown')
+    project_location = f"knowledge/internal_crew/{project_id}"
+    project_config = f"{project_location}/project_config.yaml"
+
     
     return Task(
         description=f"""
         Gather detailed information on internal project specifics.
         Working directory: {working_dir}
         Research topic: {topic}
+        Project ID:   {project_id}
         Project location: {project_location}
+        Project Config:  {project_config}
+
         
         INTERNAL RESEARCH TASKS:
-        1. Read project configuration files from knowledge/internal_crew/{project_location}/
+        1. Read project configuration files from {project_location}/
         2. Analyze project structure and components
         3. Review internal documentation and README files
         4. Extract key project details, dependencies, and settings
@@ -31,7 +37,10 @@ def internal_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
 
 def online_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     topic = inputs.get('topic', 'general online research')
-    
+    working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
+    project_id = inputs.get('project_id', 'unknown')
+    project_location = f"knowledge/internal_crew/{project_id}"
+    project_config = f"{project_location}/project_config.yaml"
     return Task(
         description=f"""
         Perform comprehensive online searches to find external information.
@@ -52,12 +61,24 @@ def online_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
 def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     user_question = inputs.get('topic', inputs.get('question', 'general project inquiry'))
     project_location = inputs.get('project_id', 'unknown')
+    working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
+    topic = inputs.get('topic', 'general project research')
+    project_id = inputs.get('project_id', 'unknown')
+    project_location = f"knowledge/internal_crew/{project_id}"
+    project_config = f"{project_location}/project_config.yaml"
     
     return Task(
         description=f"""
         Coordinate research tasks and provide final answers to user questions.
         User question: {user_question}
         Project location: {project_location}
+        
+        Working directory: {working_dir}
+        Research topic: {topic}
+        Project ID:   {project_id}
+        Project location: {project_location}
+        Project Config:  {project_config}
+
         
         COORDINATION PROCESS:
         1. For simple questions, provide direct answers from your existing knowledge
