@@ -15,6 +15,7 @@ def load_team_briefing() -> str:
     else:
         return "Team briefing not found. Operating without shared context."
 
+
 def get_agent_learning_path(agent_role: str) -> Path:
     """Get the learning directory path for a specific agent."""
     safe_role = agent_role.replace(" ", "_").replace("/", "_").lower()
@@ -34,6 +35,8 @@ def save_agent_learning(agent_role: str, filename: str, content: str) -> bool:
 
 def get_shared_context_for_agent(agent_role: str) -> str:
     """Get complete shared context including team briefing and agent-specific learning."""
+
+    tools_path = Path("knowledge/internal_crew/agent_learning/tool_usage_guide.md")
     context = f"# Shared Team Knowledge\n\n{load_team_briefing()}\n\n"
     
     # Add agent-specific learning path info
@@ -42,4 +45,17 @@ def get_shared_context_for_agent(agent_role: str) -> str:
     context += f"Store your discoveries in: `{learning_path}`\n"
     context += f"Use the format: `YYYY-MM-DD_discovery_name.md`\n\n"
     
+    return context
+
+
+def get_shared_tool_instructions_agent(agent_role: str) -> str:
+    """Get complete shared context including team briefing and agent-specific learning."""
+    context = f"# Shared Tool  Knowledge\n\n{load_team_briefing()}\n\n"
+
+    # Add agent-specific learning path info
+    learning_path = get_agent_learning_path(agent_role)
+    context += f"## Your Learning Directory\n"
+    context += f"Store your discoveries in: `{learning_path}`\n"
+    context += f"Use the format: `YYYY-MM-DD_discovery_name.md`\n\n"
+
     return context

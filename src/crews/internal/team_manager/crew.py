@@ -100,7 +100,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if code_researcher:
         sequential_tasks.append(Task(
             description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
-            {All_DETAILS}
+            Carefully read all project related details in {project_config}
+            All Details {All_DETAILS}
             """,
             agent=code_researcher,
             expected_output="Technical analysis and code recommendations.",
@@ -110,7 +111,11 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if senior_dev:
         sequential_tasks.append(Task(
             description=f"""Implement solution for: {inputs.get('prompt')}
-            {All_DETAILS}
+            Carefully read all project related details in {project_config}
+            Find all information you need regarding your task in {project_config}. 
+            All Details: {All_DETAILS}
+                        If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
+            
             """,
             agent=senior_dev,
             expected_output="Complete implementation with code and documentation.",
@@ -120,7 +125,10 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Fallback logic for tasks (your existing logic)
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
-            description=f"""{inputs.get('prompt')} {All_DETAILS}""",
+            description=f"""{inputs.get('prompt')} {All_DETAILS}
+            Carefully read all project related details in {project_config}.  Find all information you need regarding your task in {project_config}. 
+            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
+            """,
             agent=crew_agents,
             expected_output="Complete solution to the user's request.",
             callback=custom_logger.log_step_callback if custom_logger else None
