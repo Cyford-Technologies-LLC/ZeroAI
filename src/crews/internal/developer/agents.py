@@ -240,6 +240,10 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
     #common_knowledge = get_common_knowledge(project_location, repository)
 
 
+    all_tools = get_universal_tools(inputs, initial_tools=tools)
+
+
+
 
 
     return Agent(
