@@ -218,7 +218,9 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     """Create a project manager agent."""
     llm = get_research_llm(router, category="management")
 
-    project_location = inputs.get("project_id")
+
+    project_id = inputs.get("project_id")
+    project_location = f"knowledge/internal_crew/{project_id}"
     repository = inputs.get("repository")
     #common_knowledge = get_common_knowledge(project_location, repository)
 
