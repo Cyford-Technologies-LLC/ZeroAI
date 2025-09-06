@@ -45,6 +45,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
     #common_knowledge = get_common_knowledge(project_location, repository)
+    llm = get_code_fixer_llm(router, category="coding")
 
 
     return Agent(
