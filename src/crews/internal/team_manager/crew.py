@@ -71,6 +71,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
+    junior_dev = next((agent for agent in crew_agents if "Junior Developer" in agent.role), None)
 
     if project_manager:
         sequential_tasks.append(Task(
@@ -124,6 +125,22 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             
+            """,
+            agent=senior_dev,
+            expected_output="Complete implementation with code and documentation.",
+            callback=custom_logger.log_step_callback if custom_logger else None
+        ))
+    if junior_dev:
+        sequential_tasks.append(Task(
+            description=f"""Execute solution provided by the Senior Developer for: {inputs.get('prompt')}
+            Carefully read all project related details in {project_config}
+            Find all information you need regarding your task in {project_config}. 
+            Accurately find information in project files using ONLY relative paths with the FileReadTool. 
+            Never use absolute file paths in your actions. The path starts from the project's root directory,
+            e.g., `knowledge/internal_crew/tool_usage_guide.md`.
+            All Details: {All_DETAILS}
+            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
+
             """,
             agent=senior_dev,
             expected_output="Complete implementation with code and documentation.",
