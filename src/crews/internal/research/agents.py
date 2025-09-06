@@ -290,7 +290,19 @@ def create_online_researcher_agent(router: DistributedRouter, inputs: Dict[str, 
 
 
 def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                     ollama_embedder_config: Dict = ollama_embedder_config) -> Agent:
+                                     ollama_embedder_config=None) -> Agent:
+    if ollama_embedder_config is None:
+        ollama_embedder_config = {
+            "provider": "ollama",
+            "config": {
+                "model": "mxbai-embed-large",
+                "base_url": os.getenv("OLLAMA_HOST", "http://ollama:11434")
+            }
+        }
+
+
+
+
     llm = get_research_llm(router, category="internal_research")
     agent_memory = Memory()
 
