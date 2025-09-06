@@ -7,7 +7,7 @@ project:
   id: "zeroai"
   description: "A Python-based AI tool suite using CrewAI, LangChain, and Ollama for distributed, modular agent workflows."
 
-Working_directory:
+Docker_Details:
   # The working directory for the project
   project_work_type: "Docker Composer"
   Your_current_working_directory: "app/"
@@ -16,7 +16,7 @@ Working_directory:
   compose_file: "/app/docker-compose.testing.yml"
   safe_working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
 
-# Repository details for the Git tools
+# Repository details for the Git tools #  Not needed  when you have a docker file
 repository:
   url: "https://github.com/Cyford-Technologies-LLC/ZeroAI.git"
   # The branch to clone and pull the latest changes from
