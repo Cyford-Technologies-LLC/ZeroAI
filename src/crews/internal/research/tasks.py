@@ -3,6 +3,11 @@
 from crewai import Task, Agent
 from typing import Dict, Any
 
+from rich import Console
+
+console = Console()
+
+
 def internal_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
     topic = inputs.get('topic', 'general project research')
@@ -66,6 +71,7 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     project_id = inputs.get('project_id', 'unknown')
     project_location = f"knowledge/internal_crew/{project_id}"
     project_config = f"{project_location}/project_config.yaml"
+    console.print(f"⚠️ Project ManagerTask {project_config}  ", style="yellow")
     
     return Task(
         description=f"""
