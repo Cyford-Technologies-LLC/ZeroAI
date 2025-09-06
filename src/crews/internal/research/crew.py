@@ -23,6 +23,29 @@ ollama_embedder_config = {
 }
 
 
+def get_research_crew(router, tools, project_config, use_new_memory=False):
+    """
+    Wrapper function to create the research crew.
+
+    Args:
+        router: The DistributedRouter instance for model selection
+        tools: List of tools to use
+        project_config: Project configuration
+        use_new_memory: Whether to use new memory instances for agents
+
+    Returns:
+        A Crew instance for research tasks
+    """
+    # Prepare inputs based on the project_config
+    inputs = {
+        "working_dir": project_config.get("crewai_settings", {}).get("working_directory", "/tmp"),
+        "project_name": project_config.get("project", {}).get("name", "unknown"),
+        "tools": tools,
+    }
+    # Call the correct crew creation function
+    return create_research_crew(router, inputs, full_output=True)
+
+
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
     # Create agents with proper role assignments and pass the embedder config
     internal_researcher = create_internal_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
@@ -42,5 +65,5 @@ def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full
         process=Process.sequential,
         verbose=config.agents.verbose,
         full_output=full_output,
-        embedder=ollama_embedder_config # <-- Set the crew-level embedder
+        embedder=ollama_embedder_config
     )
