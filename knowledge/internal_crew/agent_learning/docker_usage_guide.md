@@ -1,6 +1,6 @@
 # 🐳 Enhanced Docker Tool Usage Guide
 
-## Available Actions (composer files here are an example ,   Look in the project Config File to find the correct composer location)
+## Available Actions (composer files here are only an example ,   Look in the project Configuration File to find the correct composer location)
 
 ### **1. Bring up services with Composer**
 ```json

@@ -58,11 +58,14 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         raise ValueError("The 'project_id' key is missing from the inputs.")
 
 
-    All_DETAILS = f"""Project location: {project_location}
+    All_DETAILS = f"""  Paths are not absolute.  
+                    Project location: {project_location}
                     Working directory:  {working_dir}
                     Project ID:         {project_id}
                     Project location:   {project_location}
-                    Project Config:     {project_config} """
+                    Project Config:     {project_config} 
+                    Project Config Absolute Location /app/{project_config} 
+                    """
 
    # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
