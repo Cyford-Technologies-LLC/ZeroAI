@@ -101,6 +101,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         sequential_tasks.append(Task(
             description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
             Carefully read all project related details in {project_config}
+            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             All Details {All_DETAILS}
             """,
             agent=code_researcher,
@@ -114,7 +115,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             Carefully read all project related details in {project_config}
             Find all information you need regarding your task in {project_config}. 
             All Details: {All_DETAILS}
-                        If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
+            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             
             """,
             agent=senior_dev,
