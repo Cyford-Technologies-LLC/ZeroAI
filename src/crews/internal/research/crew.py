@@ -1,4 +1,6 @@
 # src/crews/internal/research/crew.py
+import os
+
 from crewai import Crew, Process
 from typing import Dict, Any, List
 from src.distributed_router import DistributedRouter
@@ -18,7 +20,7 @@ ollama_embedder_config = {
     "provider": "ollama",
     "config": {
         "model": "mxbai-embed-large",
-        "base_url": "http://149.36.1.65:11434"
+        "base_url": os.getenv("OLLAMA_HOST", "http://ollama:11434")
     }
 }
 
