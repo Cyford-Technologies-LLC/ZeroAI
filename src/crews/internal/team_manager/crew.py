@@ -53,6 +53,13 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if not project_id:
         raise ValueError("The 'project_id' key is missing from the inputs.")
 
+
+    All_DETAILS = f"""Project location: {project_location}
+                    Working directory:  {working_dir}
+                    Project ID:         {project_id}
+                    Project location:   {project_location}
+                    Project Config:     {project_config} """
+
    # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
@@ -63,11 +70,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             description=f"""Analyze and plan the task: {inputs.get('prompt')}.
                         Coordinate research tasks and provide final answers to user questions.
                         Supply Team with needed project Information.
-                        Project location: {project_location}
-                        Working directory: {working_dir}
-                        Project ID:   {project_id}
-                        Project location: {project_location}
-                        Project Config:  {project_config}
+                        {All_DETAILS}
                         COORDINATION PROCESS:
                         1. For simple questions, provide direct answers from your existing knowledge
                         2. The git URL is: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
@@ -92,7 +95,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     if code_researcher:
         sequential_tasks.append(Task(
-            description=f"Research and analyze code requirements for: {inputs.get('prompt')}",
+            description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
+            {All_DETAILS}
+            """,
             agent=code_researcher,
             expected_output="Technical analysis and code recommendations.",
             callback=custom_logger.log_step_callback if custom_logger else None
@@ -100,7 +105,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     if senior_dev:
         sequential_tasks.append(Task(
-            description=f"Implement solution for: {inputs.get('prompt')}",
+            description=f"""Implement solution for: {inputs.get('prompt')}
+            {All_DETAILS}
+            """,
             agent=senior_dev,
             expected_output="Complete implementation with code and documentation.",
             callback=custom_logger.log_step_callback if custom_logger else None
@@ -109,7 +116,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     # Fallback logic for tasks (your existing logic)
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
-            description=inputs.get("prompt"),
+            description=f"""{inputs.get('prompt')} {All_DETAILS}""",
             agent=crew_agents,
             expected_output="Complete solution to the user's request.",
             callback=custom_logger.log_step_callback if custom_logger else None
