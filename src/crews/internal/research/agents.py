@@ -196,7 +196,7 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
 
 
 def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                     ollama_embedder_config=None) -> Agent:
+                                     coworkers: Optional[List] = None, ollama_embedder_config=None) -> Agent:
     if ollama_embedder_config is None:
         ollama_embedder_config = {
             "provider": "ollama",
