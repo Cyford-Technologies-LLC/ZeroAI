@@ -9,6 +9,7 @@ from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from crewai import Agent, Knowledge # Make sure to import Knowledge
+#from crewai.knowledge.knowledge import Knowledge # Import Knowledge
 
 from openai import resources
 
@@ -214,7 +215,7 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
 
 
 def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                  coworkers: Optional[List] = None, knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
+                                  coworkers: Optional[List] = None, ollama_embedder_config: Dict = None) -> Agent:
     """Create a project manager agent."""
     llm = get_research_llm(router, category="management")
 
@@ -230,14 +231,6 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     # Add project tool
     project_tool = ProjectTool()
     all_tools.append(project_tool)
-
-    ollama_embedder_config = {
-        "provider": "ollama",
-        "config": {
-            "model": "mxbai-embed-large",  # Or "nomic-embed-text"
-            "base_url": "http://149.36.1.65:11434"
-        }
-    }
 
     common_knowledge = get_common_knowledge(project_location, repository)
 
