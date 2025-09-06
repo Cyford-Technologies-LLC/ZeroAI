@@ -196,8 +196,16 @@ def _get_tools_with_github(inputs: Dict[str, Any], tools: Optional[List] = None)
 
 
 def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
-                                 coworkers: Optional[List] = None,
-                                 ollama_embedder_config: Dict = ollama_embedder_config) -> Agent:
+                                     ollama_embedder_config=None) -> Agent:
+    if ollama_embedder_config is None:
+        ollama_embedder_config = {
+            "provider": "ollama",
+            "config": {
+                "model": "mxbai-embed-large",
+                "base_url": os.getenv("OLLAMA_HOST", "http://ollama:11434")
+            }
+        }
+
     llm = get_research_llm(router, category="management")
 
     project_id = inputs.get("project_id")
