@@ -72,7 +72,7 @@ def project_management_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
     project_id = inputs.get('project_id', 'unknown')
     project_location = f"knowledge/internal_crew/{project_id}"
     project_config = f"{project_location}/project_config.yaml"
-    console.print(f"⚠️ Project ManagerTask {project_config}  ", style="yellow")
+    console.print(f"⚠️ Project Manager Task {project_config}  ", style="yellow")
     
     return Task(
         description=f"""
