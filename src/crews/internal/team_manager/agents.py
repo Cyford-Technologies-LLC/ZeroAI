@@ -279,8 +279,8 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], project_id: s
         verbose=config.agents.verbose,
         knowledge_sources=[agent_knowledge],
         embedder={  # Agent can have its own embedder
-            "provider": "openai",
-            "config": {"model": "text-embedding-3-small"}
+            "provider": "ollama",
+            "config": {"model": "nomic-embed-text"}
         },
         allow_delegation=True
     )
