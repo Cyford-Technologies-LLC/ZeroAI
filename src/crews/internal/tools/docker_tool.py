@@ -162,47 +162,51 @@ class DockerTool(BaseTool):
     def _compose_up(self, compose_file: Optional[str] = None, compose_services: Optional[str] = None) -> str:
         """
         Start services from a docker-compose.yml file.
-
-        Args:
-            compose_file: Path to the docker-compose.yml file.
-            compose_services: Comma-separated list of services to start.
         """
-        cmd = ["docker", "compose"]
-        if compose_file:
-            cmd.extend(["-f", compose_file])
-            working_dir = os.path.dirname(os.path.abspath(compose_file))
-        else:
-            working_dir = None
+        if not compose_file:
+            raise ValueError("A compose_file path is required for the compose_up action.")
 
-        cmd.extend(["up", "-d"])  # Always run in detached mode for a tool
+        working_dir = os.path.dirname(os.path.abspath(compose_file))
+        compose_filename = os.path.basename(compose_file)
+
+        # Determine which compose command to use (docker compose vs docker-compose)
+        compose_command = ["docker", "compose"]
+        try:
+            # Check if 'docker compose' is valid
+            subprocess.run(compose_command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            compose_command = ["docker-compose"]  # Fallback if not found
+
+        cmd = compose_command + ["-f", compose_filename, "up", "-d"]  # Run in detached mode
 
         if compose_services:
             cmd.extend(compose_services.split(','))
 
-        return self._execute_command(cmd, working_dir)
+        return self._execute_command(cmd, working_dir=working_dir)
 
     def _compose_down(self, compose_file: Optional[str] = None, compose_services: Optional[str] = None) -> str:
         """
         Stop and remove services from a docker-compose.yml file.
-
-        Args:
-            compose_file: Path to the docker-compose.yml file.
-            compose_services: Comma-separated list of services to stop.
         """
-        cmd = ["docker", "compose"]
-        if compose_file:
-            cmd.extend(["-f", compose_file])
-            working_dir = os.path.dirname(os.path.abspath(compose_file))
-        else:
-            working_dir = None
+        if not compose_file:
+            raise ValueError("A compose_file path is required for the compose_down action.")
 
-        cmd.append("down")
+        working_dir = os.path.dirname(os.path.abspath(compose_file))
+        compose_filename = os.path.basename(compose_file)
+
+        # Determine which compose command to use (docker compose vs docker-compose)
+        compose_command = ["docker", "compose"]
+        try:
+            subprocess.run(compose_command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            compose_command = ["docker-compose"]  # Fallback if not found
+
+        cmd = compose_command + ["-f", compose_filename, "down"]
 
         if compose_services:
             cmd.extend(compose_services.split(','))
 
-        return self._execute_command(cmd, working_dir)
-
+        return self._execute_command(cmd, working_dir=working_dir)
 
 # Instantiate the enhanced tool
 docker_tool = DockerTool()
