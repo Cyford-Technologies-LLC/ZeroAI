@@ -114,12 +114,12 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     }
 
     # Attach knowledge to agents using the embedder dictionary
-    for agent in all_coworkers:
-        agent.knowledge = Knowledge(
-            sources=common_knowledge,
-            embedder=crew_embedder_config,  # <-- Pass the dictionary here
-            collection_name=f"crew_knowledge_{project_id}"
-        )
+    # for agent in all_coworkers:
+    #     agent.knowledge = Knowledge(
+    #         sources=common_knowledge,
+    #         embedder=crew_embedder_config,  # <-- Pass the dictionary here
+    #         collection_name=f"crew_knowledge_{project_id}"
+    #     )
 
     crew1 = Crew(
         agents=crew_agents,
