@@ -15,6 +15,7 @@ from src.config import config
 from src.utils.shared_knowledge import get_shared_context_for_agent, get_agent_learning_path , save_agent_learning  ,get_agent_learning_path , load_team_briefing
 from src.utils.memory import Memory
 from src.crews.internal.tools.learning_tool import LearningTool
+from src.utils.tool_initializer import get_universal_tools  # New universal tool function
 
 
 console = Console()
