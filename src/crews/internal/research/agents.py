@@ -304,7 +304,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "provider": "ollama",
             "config": {
                 "model": "mxbai-embed-large",
-                "base_url": os.getenv("OLLAMA_HOST", "http://ollama:11434")
+                "base_url": "http://149.36.1.65:11434"
             }
         }
 
