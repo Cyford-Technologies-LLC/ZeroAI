@@ -1,10 +1,5 @@
 import inspect
 import importlib
-from rich.console import Console
-from src.utils.memory import Memory
-from pathlib import Path
-import os
-import yaml
 from crewai import Agent
 from src.utils.knowledge_utils import get_common_knowledge
 from crewai_tools import SerperDevTool
@@ -18,8 +13,14 @@ from openai import resources
 from src.distributed_router import DistributedRouter
 from src.config import config
 from src.utils.shared_knowledge import get_shared_context_for_agent, get_agent_learning_path , save_agent_learning  ,get_agent_learning_path , load_team_briefing
-from src.crews.internal.tools.learning_tool import LearningTool
-from src.utils.tool_initializer import get_universal_tools  # New universal tool function
+
+
+from rich.console import Console
+from src.utils.memory import Memory
+from pathlib import Path
+import os
+import yaml
+
 console = Console()
 
 # Placeholder for Ollama configuration
@@ -222,7 +223,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
     # Initialize the new learning tool for the agent
-    learning_tool = LearningTool(agent_role="Project Manager")
+    learning_tool = LearningTool(agent_role="Senior Developer")
     all_tools.append(learning_tool)
     project_tool = ProjectTool()
     all_tools.append(project_tool)
