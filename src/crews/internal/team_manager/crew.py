@@ -73,13 +73,14 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         sequential_tasks.append(Task(
             description=f"""Analyze and plan the task: {inputs.get('prompt')}.
                         Coordinate research tasks and provide final answers to user questions.
+                        The Project Configuration file = {project_config}
                         Supply Team with needed project Information.
                         {All_DETAILS}
                         COORDINATION PROCESS:
                         1. For simple questions, provide direct answers from your existing knowledge
                         2. The git URL is: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
                         3. Only use tools if you genuinely don't know the answer
-                        4. If you need project-specific details you don't know, then check knowledge/internal_crew/{project_location}/project_config.yaml
+                        4. If you need project-specific details you don't know, then check {project_config}                    
                         5. Provide a natural, conversational answer to the user's question
         
                         CRITICAL INSTRUCTIONS:
