@@ -144,7 +144,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
 
             """,
-            agent=senior_dev,
+            agent=junior_dev,
             expected_output="Complete implementation with code and documentation.",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
