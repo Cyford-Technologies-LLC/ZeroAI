@@ -19,6 +19,7 @@ from src.utils.knowledge_utils import get_common_knowledge
 from crewai import Agent
 from rich.console import Console
 from src.utils.memory import Memory
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 
 
@@ -99,7 +100,9 @@ AVAILABLE_AGENTS = {
         "capabilities": ["error analysis", "log parsing", "system diagnostics", "task queue monitoring", "issue resolution"]
     }
 }
-
+agent_knowledge = StringKnowledgeSource(
+    content="Agent-specific information that only this agent needs"
+)
 
 def format_agent_list() -> str:
     agent_list = "# Available Specialist Teams\n\n"
@@ -274,7 +277,11 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], project_id: s
         backstory=backstory,
         llm=manager_llm,
         verbose=config.agents.verbose,
-        base_url= "http://149.36.1.65:11434/api/embeddings",
+        knowledge_sources=[agent_knowledge],
+        embedder={  # Agent can have its own embedder
+            "provider": "openai",
+            "config": {"model": "text-embedding-3-small"}
+        },
         allow_delegation=True
     )
 
