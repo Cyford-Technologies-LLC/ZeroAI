@@ -43,14 +43,48 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     for agent in crew_agents:
         agent.verbose = True
 
-    # Find key agents and create tasks (your existing logic)
+
+    project_id = inputs.get("project_id")
+    repository = inputs.get("repository")
+    working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
+    project_location = f"knowledge/internal_crew/{project_id}"
+    project_config = f"{project_location}/project_config.yaml"
+
+    if not project_id:
+        raise ValueError("The 'project_id' key is missing from the inputs.")
+
+   # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
 
     if project_manager:
         sequential_tasks.append(Task(
-            description=f"Analyze and plan the task: {inputs.get('prompt')}",
+            description=f"""Analyze and plan the task: {inputs.get('prompt')}.
+                        Coordinate research tasks and provide final answers to user questions.
+                        Supply Team with needed project Information.
+                        Project location: {project_location}
+                        Working directory: {working_dir}
+                        Project ID:   {project_id}
+                        Project location: {project_location}
+                        Project Config:  {project_config}
+                        COORDINATION PROCESS:
+                        1. For simple questions, provide direct answers from your existing knowledge
+                        2. The git URL is: https://github.com/Cyford-Technologies-LLC/ZeroAI.git
+                        3. Only use tools if you genuinely don't know the answer
+                        4. If you need project-specific details you don't know, then check knowledge/internal_crew/{project_location}/project_config.yaml
+                        5. Provide a natural, conversational answer to the user's question
+        
+                        CRITICAL INSTRUCTIONS:
+                        - NEVER return raw file contents, YAML, JSON, or technical dumps
+                        - Interpret the information and explain it in human-friendly terms
+                        - Coordinate research efforts and synthesize findings
+                        - Be concise but informative
+                        - Prioritize local knowledge over external sources
+        
+                          Remember: You are managing the research process and providing final answers.
+            
+            """,
             agent=project_manager,
             expected_output="A detailed project plan and task breakdown.",
             callback=custom_logger.log_step_callback if custom_logger else None
@@ -81,11 +115,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             callback=custom_logger.log_step_callback if custom_logger else None
         )]
 
-    project_id = inputs.get("project_id")
-    repository = inputs.get("repository")
 
-    if not project_id:
-        raise ValueError("The 'project_id' key is missing from the inputs.")
 
     # common_knowledge = get_common_knowledge(
     #     project_location=project_id,
