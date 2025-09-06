@@ -19,13 +19,13 @@ from src.crews.internal.developer.tasks import analyze_codebase_task as analyze_
 
 from langchain_ollama import OllamaEmbeddings
 
-ollama_embedder_config = {
-    "provider": "ollama",
-    "config": {
-        "model": "mistral-nemo:latest",
-        "base_url": "http://149.36.1.65:11434/api/embeddings"
-    }
-}
+# ollama_embedder_config = {
+#     "provider": "ollama",
+#     "config": {
+#         "model": "mistral-nemo:latest",
+#         "base_url": "http://149.36.1.65:11434"
+#     }
+# }
 
 def get_master_crew(router, tools, project_config, use_new_memory=False) -> Crew:
     """
@@ -47,22 +47,22 @@ def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_o
 
     # --- Create all agents with unique variable names, passing the LLM ---
     # Research Team
-    internal_researcher = create_internal_researcher_agent(router, inputs, llm=crew_llm)
-    online_researcher = create_online_researcher_agent(router, inputs, llm=crew_llm)
-    project_manager = create_project_manager_agent(router, inputs, llm=crew_llm)
+    internal_researcher = create_internal_researcher_agent(router, inputs)
+    online_researcher = create_online_researcher_agent(router, inputs)
+    project_manager = create_project_manager_agent(router, inputs)
 
     # Code Fixer Team
-    fixer_researcher = create_fixer_researcher(router, inputs, llm=crew_llm)
-    coder = create_coder_agent(router, inputs, llm=crew_llm)
-    fixer_tester = create_tester_agent(router, inputs, llm=crew_llm)
+    fixer_researcher = create_fixer_researcher(router, inputs)
+    coder = create_coder_agent(router, inputs)
+    fixer_tester = create_tester_agent(router, inputs)
 
     # Development Team
-    senior_developer = create_senior_developer_agent(router, inputs, llm=crew_llm)
-    junior_developer = create_junior_developer_agent(router, inputs, llm=crew_llm)
-    qa_engineer = create_qa_engineer_agent(router, inputs, llm=crew_llm)
+    senior_developer = create_senior_developer_agent(router, inputs)
+    junior_developer = create_junior_developer_agent(router, inputs)
+    qa_engineer = create_qa_engineer_agent(router, inputs)
 
     # Diagnostic Team
-    diagnostic_agent = create_diagnostic_agent(router, inputs, tools, llm=crew_llm)
+    diagnostic_agent = create_diagnostic_agent(router, inputs, tools)
 
     all_agents = [
         internal_researcher, online_researcher, project_manager,
