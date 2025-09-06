@@ -204,7 +204,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "provider": "ollama",
             "config": {
                 "model": "mxbai-embed-large",
-                "base_url": os.getenv("OLLAMA_HOST", "http://149.36.1.65:11434")
+                "base_url": "http://149.36.1.65:11434"
             }
         }
 
@@ -220,11 +220,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     console.print(
         f"🔗  Project Manager got access to this file {project_config}  ", style="red")
 
-    # Pass the dynamic tool instead of a hardcoded instance
-    all_tools = get_universal_tools(inputs, initial_tools=tools)
-    # Initialize the new learning tool for the agent
-    learning_tool = LearningTool(agent_role="Senior Developer")
-    all_tools.append(learning_tool)
+    all_tools = _get_tools_with_github(inputs, tools)
     project_tool = ProjectTool()
     all_tools.append(project_tool)
 
