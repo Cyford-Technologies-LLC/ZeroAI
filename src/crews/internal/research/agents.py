@@ -1,25 +1,21 @@
-import inspect
-import importlib
-from crewai import Agent
-from src.utils.knowledge_utils import get_common_knowledge
-from crewai_tools import SerperDevTool
-from crewai.tools import BaseTool
-from typing import Dict, Any, List, Optional, Any as AnyType
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
-from crewai import Agent, Knowledge
-
-from openai import resources
-
-from src.distributed_router import DistributedRouter
-from src.config import config
-from src.utils.shared_knowledge import get_shared_context_for_agent, get_agent_learning_path , save_agent_learning  ,get_agent_learning_path , load_team_briefing
-
-
 from rich.console import Console
-from src.utils.memory import Memory
 from pathlib import Path
 import os
 import yaml
+from typing import Dict, Any, List, Optional, Any as AnyType
+from openai import resources
+from crewai_tools import SerperDevTool
+from crewai.tools import BaseTool
+from crewai import Agent, Knowledge
+
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from src.utils.knowledge_utils import get_common_knowledge
+from src.distributed_router import DistributedRouter
+from src.config import config
+from src.utils.shared_knowledge import get_shared_context_for_agent, get_agent_learning_path , save_agent_learning  ,get_agent_learning_path , load_team_briefing
+from src.utils.memory import Memory
+from src.crews.internal.tools.learning_tool import LearningTool
+
 
 console = Console()
 
@@ -223,6 +219,8 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     all_tools = _get_tools_with_github(inputs, tools)
     project_tool = ProjectTool()
     all_tools.append(project_tool)
+    learning_tool = LearningTool(agent_role="Code Researcher")
+    all_tools.append(learning_tool)
 
     common_knowledge = get_common_knowledge(project_location, repository)
 
