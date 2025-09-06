@@ -163,3 +163,10 @@ ZeroAI aims to become the leading self-hosted AI workforce platform, providing o
 - 🛠️ **Fully Customizable**: Adapt to any workflow or business requirement
 - 🌐 **Community Driven**: Evolve based on real user needs and feedback
 - 🚀 **Innovation Focused**: Push the boundaries of what's possible with AI automation
+
+
+
+
+
+notes:  
+crew's behavior dynamic by using a configuration file  (switching between hierarchical and sequential )
