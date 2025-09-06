@@ -20,6 +20,9 @@ from pathlib import Path
 import os
 import yaml
 
+agent_knowledge = StringKnowledgeSource(
+    content="Agent-specific information that only this agent needs"
+)
 
 class DelegationTool(BaseTool):
     name: str = "Ask question to coworker"
@@ -266,6 +269,11 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
              "CLEAR DELEGATION: When delegating file creation, provide specific requirements: filename, location, and basic content structure.",
         backstory=f"An experienced project manager who coordinates teams and provides project context. You analyze requirements, provide project details, and delegate implementation tasks to appropriate team members. You don't implement solutions yourself - that's what developers are for.\n\nROLE: Coordinate, analyze, and delegate - never implement.\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
+        knowledge_sources=[agent_knowledge],
+        embedder={  # Agent can have its own embedder
+            "provider": "ollama",
+            "config": {"model": "nomic-embed-text"}
+        },
         tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=True
