@@ -19,7 +19,7 @@ from src.utils.knowledge_utils import get_common_knowledge
 from crewai import Agent
 from rich.console import Console
 from src.utils.memory import Memory
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+# from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 
 
