@@ -205,7 +205,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_config = f"{project_location}/project_config.yaml"
     repository = inputs.get("repository")
     console.print(
-        f"🔗  Project Manager got access to this file {project_config} [/bold green]", style="red")
+        f"🔗  Project Manager got access to this file {project_config}  ", style="red")
 
     all_tools = _get_tools_with_github(inputs, tools)
     project_tool = ProjectTool()
