@@ -109,6 +109,6 @@ def create_master_crew(router: DistributedRouter, inputs: Dict[str, Any], full_o
         full_output=full_output,
         memory=True,
         llm=crew_llm,  # Pass the distributed LLM to the Crew object
-        embedder = ollama_embedder_config
+        # embedder = ollama_embedder_config
     )
 
