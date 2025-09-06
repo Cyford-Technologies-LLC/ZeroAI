@@ -1,4 +1,4 @@
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 from src.utils.shared_knowledge import save_agent_learning
 from typing import Optional, Any
 import datetime
