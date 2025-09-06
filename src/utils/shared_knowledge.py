@@ -18,7 +18,7 @@ def load_team_briefing() -> str:
 def get_agent_learning_path(agent_role: str) -> Path:
     """Get the learning directory path for a specific agent."""
     safe_role = agent_role.replace(" ", "_").replace("/", "_").lower()
-    learning_path = Path(f"knowledge/internal_crew/agent_learning/{safe_role}")
+    learning_path = Path(f"knowledge/internal_crew/agent_learning/self/{safe_role}")
     learning_path.mkdir(parents=True, exist_ok=True)
     return learning_path
 

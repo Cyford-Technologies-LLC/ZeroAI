@@ -12,7 +12,9 @@ from openai import resources
 
 from src.distributed_router import DistributedRouter
 from src.config import config
-from src.utils.shared_knowledge import get_shared_context_for_agent
+from src.utils.shared_knowledge import get_shared_context_for_agent, get_agent_learning_path , save_agent_learning  ,get_agent_learning_path , load_team_briefing
+
+
 from rich.console import Console
 from src.utils.memory import Memory
 from pathlib import Path
@@ -202,11 +204,14 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "provider": "ollama",
             "config": {
                 "model": "mxbai-embed-large",
-                "base_url": os.getenv("OLLAMA_HOST", "http://ollama:11434")
+                "base_url": os.getenv("OLLAMA_HOST", "http://149.36.1.65:11434")
             }
         }
 
     llm = get_research_llm(router, category="management")
+
+
+
 
     project_id = inputs.get("project_id")
     project_location = f"knowledge/internal_crew/{project_id}"

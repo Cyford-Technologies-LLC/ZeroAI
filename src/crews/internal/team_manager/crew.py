@@ -10,6 +10,10 @@ from rich.console import Console
 from src.utils.knowledge_utils import get_common_knowledge # Removed get_ollama_client as it's not used directly here
 from crewai.knowledge.knowledge import Knowledge
 from crewai.knowledge.source.crew_docling_source import CrewDoclingSource
+from src.utils.shared_knowledge import get_shared_context_for_agent, get_agent_learning_path , save_agent_learning  ,get_agent_learning_path , load_team_briefing
+
+
+
 
 from langchain_ollama import OllamaEmbeddings # Import OllamaEmbeddings for the Knowledge object
 #from langchain_community.embeddings import OllamaEmbeddings

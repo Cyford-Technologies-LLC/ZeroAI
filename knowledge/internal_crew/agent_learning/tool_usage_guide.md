@@ -76,11 +76,31 @@ In the project_config.yaml file it will state the location of the Docker compose
 - `kwargs`: Additional arguments
 
 **Examples**:
+
+
+**Bring_UP_Composer**:
+```json
+
+{
+  "action": "compose_up", 
+  "compose_file": "/path/to/your/docker-compose.yml"
+}
+```
+
+
+### **1. Bring down services with Composer**
+```json
+{
+  "action": "compose_down",
+  "compose_file": "/path/to/your/docker-compose.yml"
+}
+```
 ```json
 {
   "command": "docker ps"
 }
-
+```
+```json
 {
   "command": "docker run hello-world"
 }
