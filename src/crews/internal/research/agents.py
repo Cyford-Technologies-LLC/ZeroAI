@@ -8,6 +8,7 @@ from crewai_tools import SerperDevTool
 from crewai.tools import BaseTool
 from typing import Dict, Any, List, Optional, Any as AnyType
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from crewai import Agent, Knowledge # Make sure to import Knowledge
 
 from openai import resources
 
@@ -228,9 +229,20 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     project_tool = ProjectTool()
     all_tools.append(project_tool)
 
+    ollama_embedder_config = {
+        "provider": "ollama",
+        "config": {
+            "model": "mxbai-embed-large",  # Or "nomic-embed-text"
+            "base_url": "http://149.36.1.65:11434"
+        }
+    }
 
-
-
+    # Create the knowledge object with the provided embedder config.
+    agent_knowledge = Knowledge(
+        sources=common_knowledge,
+        embedder=ollama_embedder_config,
+        collection_name=f"project_manager_knowledge_{project_location}"
+    )
 
     # Add delegation tools if coworkers are provided
     if coworkers:
@@ -270,10 +282,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
         backstory=f"An experienced project manager who coordinates teams and provides project context. You analyze requirements, provide project details, and delegate implementation tasks to appropriate team members. You don't implement solutions yourself - that's what developers are for.\n\nROLE: Coordinate, analyze, and delegate - never implement.\n\n{get_shared_context_for_agent('Project Manager')}\n\nAll responses are signed off with 'Sarah Connor'",
         llm=llm,
         knowledge_sources=[agent_knowledge],
-        embedder={  # Agent can have its own embedder
-            "provider": "ollama",
-            "config": {"model": "nomic-embed-text"}
-        },
+        knowledge=agent_knowledge,  # Assign the knowledge object here.
         tools=all_tools,
         verbose=config.agents.verbose,
         allow_delegation=True
