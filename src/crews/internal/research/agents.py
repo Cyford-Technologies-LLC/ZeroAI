@@ -222,7 +222,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
     # Initialize the new learning tool for the agent
-    learning_tool = LearningTool(agent_role="Senior Developer")
+    learning_tool = LearningTool(agent_role="Project Manager")
     all_tools.append(learning_tool)
     project_tool = ProjectTool()
     all_tools.append(project_tool)
