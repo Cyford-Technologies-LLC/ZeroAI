@@ -87,21 +87,21 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if not project_id:
         raise ValueError("The 'project_id' key is missing from the inputs.")
 
-    common_knowledge = get_common_knowledge(
-        project_location=project_id,
-        repository=repository
-    )
+    # common_knowledge = get_common_knowledge(
+    #     project_location=project_id,
+    #     repository=repository
+    # )
 
 
     # Create a knowledge source from web content
-    content_source = CrewDoclingSource(
-        file_paths=[
-            "https://cyfordtechnologies.com/",
-            "https://github.com/Cyford-Technologies-LLC/ZeroAI/",
-        ],
-    )
-    # Create an LLM with a temperature of 0 to ensure deterministic outputs
-    llm = LLM(model="gpt-4o-mini", temperature=0)
+    # content_source = CrewDoclingSource(
+    #     file_paths=[
+    #         "https://cyfordtechnologies.com/",
+    #         "https://github.com/Cyford-Technologies-LLC/ZeroAI/",
+    #     ],
+    # )
+    # # Create an LLM with a temperature of 0 to ensure deterministic outputs
+    # llm = LLM(model="gpt-4o-mini", temperature=0)
 
     # Define the embedder as a dictionary for both Crew and Knowledge
     # NOTE: The 'base_url' is removed here to rely on the OLLAMA_HOST environment variable.
