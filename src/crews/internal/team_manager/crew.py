@@ -109,7 +109,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         "provider": "ollama",
         "config": {
             "model": "mxbai-embed-large",
-            # "base_url": "http://149.36.1.65:11434/api/embeddings"
+            "base_url": "http://149.36.1.65:11434/api/embeddings"
         }
     }
 
