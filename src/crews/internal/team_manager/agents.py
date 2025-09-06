@@ -100,9 +100,9 @@ AVAILABLE_AGENTS = {
         "capabilities": ["error analysis", "log parsing", "system diagnostics", "task queue monitoring", "issue resolution"]
     }
 }
-agent_knowledge = StringKnowledgeSource(
-    content="Agent-specific information that only this agent needs"
-)
+# agent_knowledge = StringKnowledgeSource(
+#     content="Agent-specific information that only this agent needs"
+# )
 
 def format_agent_list() -> str:
     agent_list = "# Available Specialist Teams\n\n"
