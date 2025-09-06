@@ -11,7 +11,8 @@ Working_directory:
   # The working directory for the project
   project_work_type: "Docker Composer"
   Your_current_working_directory: "app/"
-  Composer_File_location: "/app"
+  Composer_File_location: "/app/"
+  Docker_FILE: "/app/Dockerfile"
   compose_file: "/app/docker-compose.testing.yml"
   safe_working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
 
