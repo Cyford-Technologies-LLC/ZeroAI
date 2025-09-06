@@ -1,12 +1,15 @@
 import os
 from typing import Dict, Any, List, Optional
 from rich.console import Console
+from crewai_tools import SerperDevTool
+from tool_factory import dynamic_github_tool
+
 
 # Use dynamic imports for optional tools to avoid import errors if dependencies are missing
 from src.crews.internal.tools.docker_tool import DockerTool
 from src.crews.internal.tools.git_tool import FileTool
-from crewai_tools import SerperDevTool
-from tool_factory import dynamic_github_tool
+from src.crews.internal.tools.learning_tool import LearningTool
+
 
 # Assume config is correctly loaded from the root directory
 from src.config import config

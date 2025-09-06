@@ -241,11 +241,6 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
     # Initialize the new learning tool for the agent
     learning_tool = LearningTool(agent_role="Senior Developer")
-
-
-
-
-
     # Pass the dynamic tool instead of a hardcoded instance
     all_tools = get_universal_tools(inputs, initial_tools=tools)
     all_tools.append(learning_tool)

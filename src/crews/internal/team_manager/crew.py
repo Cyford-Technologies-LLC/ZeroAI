@@ -126,6 +126,12 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             
+            After successfully setting up the project with Docker Compose, performing a code review, and checking for errors, 
+            use the `Learning Tool` to save the successful configuration steps and findings. 
+            Use the filename `docker_setup_details.md`.
+        
+            **CRITICAL INSTRUCTION:** Read the project config file located at `knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
+            to get the specific Docker Compose instructions before taking any action.
             """,
             agent=senior_dev,
             expected_output="Complete implementation with code and documentation.",
@@ -142,7 +148,13 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             e.g., `knowledge/internal_crew/tool_usage_guide.md`.
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
-
+                        
+            After successfully setting up the project with Docker Compose, performing a code review, and checking for errors, 
+            use the `Learning Tool` to save the successful configuration steps and findings. 
+            Use the filename `docker_setup_details.md`.
+        
+            **CRITICAL INSTRUCTION:** Read the project config file located at `knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
+            to get the specific Docker Compose instructions before taking any action.
             """,
             agent=junior_dev,
             expected_output="Complete implementation with code and documentation.",
