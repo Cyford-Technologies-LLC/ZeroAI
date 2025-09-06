@@ -3,9 +3,10 @@
 from crewai import Task, Agent
 from typing import Dict, Any
 
-from rich import Console
 
-console = Console()
+from rich.console import Console # Import the Console class
+
+console = Console() # Instantiate the console object
 
 
 def internal_research_task(agent: Agent, inputs: Dict[str, Any]) -> Task:
