@@ -104,6 +104,8 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
     llm = get_developer_llm(router, category="coding")
     agent_memory = Memory()
     all_tools = get_universal_tools(inputs, initial_tools=tools)
+    learning_tool = LearningTool(agent_role="Code Researcher")
+    all_tools.append(learning_tool)
 
     project_location = inputs.get("project_id")
     repository = inputs.get("repository")
@@ -179,7 +181,12 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
 
     # Pass the dynamic tool instead of a hardcoded instance
+    agent_memory = Memory()
     all_tools = get_universal_tools(inputs, initial_tools=tools)
+    learning_tool = LearningTool(agent_role="Code Researcher")
+    all_tools.append(learning_tool)
+
+
     return Agent(
         role="Junior Developer",
         name="Tom Kyles",
@@ -241,6 +248,8 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
 
 
     all_tools = get_universal_tools(inputs, initial_tools=tools)
+    learning_tool = LearningTool(agent_role="Code Researcher")
+    all_tools.append(learning_tool)
 
 
 
