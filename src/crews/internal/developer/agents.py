@@ -133,7 +133,7 @@ def create_code_researcher_agent(router: DistributedRouter, inputs: Dict[str, An
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        knowledge_sources=knowledge_sources,
+        #knowledge_sources=knowledge_sources,
         expertise=[
             "Python", "JavaScript", "Database Design",
             "API Development", "Microservices Architecture", "PHP", "JavaScript"
@@ -200,7 +200,7 @@ def create_junior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        knowledge_sources=knowledge_sources,
+        #knowledge_sources=knowledge_sources,
         goal="Implement high-quality code solutions under guidance. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a junior software developer, eager to learn and implement code solutions
         under the guidance of senior team members.
@@ -266,7 +266,7 @@ def create_senior_developer_agent(router: DistributedRouter, inputs: Dict[str, A
             "tone": "authoritative",
             "technical_level": "expert"
         },
-        knowledge_sources=knowledge_sources,
+        #knowledge_sources=knowledge_sources,
         goal="Implement high-quality, robust code solutions to complex problems. When asked to create files, use the File System Tool to actually write the files to the working directory. IMPORTANT: Before starting any work, check if the Project Manager has already provided a complete final answer to the user's question. If so, respond with 'The Project Manager has already provided a complete answer to this question. No additional work needed.' and stop.",
         backstory=f"""You are a skilled software developer with years of experience.
         You create elegant, maintainable, and robust code solutions to complex problems.

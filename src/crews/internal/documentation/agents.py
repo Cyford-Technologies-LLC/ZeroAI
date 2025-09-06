@@ -46,7 +46,7 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
                 "technical_level": "expert"
             },
         resources=[],
-        knowledge_sources=knowledge_sources,
+        #knowledge_sources=knowledge_sources,
         goal="Create clear and concise documentation for software projects.",
         backstory=f"""A skilled technical writer who translates complex code into understandable documentation.
         
