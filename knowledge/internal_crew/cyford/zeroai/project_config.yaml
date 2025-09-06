@@ -1,4 +1,5 @@
 # knowledge/internal_crew/cyford/zeroai/project_config.yaml
+# This is the Project Configuration File
 
 # General project information
 project:
@@ -9,9 +10,10 @@ project:
 Working_directory:
   # The working directory for the project
   project_work_type: "Docker Composer"
-  Composer_File_location: "/app/"
+  Your_current_working_directory: "app/"
+  Composer_File_location: "/app"
   compose_file: "/app/docker-compose.testing.yml"
-  working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
+  safe_working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
 
 # Repository details for the Git tools
 repository:
