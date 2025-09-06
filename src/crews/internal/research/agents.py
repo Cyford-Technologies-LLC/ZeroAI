@@ -21,7 +21,7 @@ import os
 import yaml
 
 agent_knowledge = StringKnowledgeSource(
-    content="Agent-specific information that only this agent needs"
+    content="learn everything in this directory /knowledge"
 )
 
 class DelegationTool(BaseTool):

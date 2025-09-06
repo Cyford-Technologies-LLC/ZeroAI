@@ -100,6 +100,8 @@ AVAILABLE_AGENTS = {
         "capabilities": ["error analysis", "log parsing", "system diagnostics", "task queue monitoring", "issue resolution"]
     }
 }
+
+
 # agent_knowledge = StringKnowledgeSource(
 #     content="Agent-specific information that only this agent needs"
 # )
