@@ -89,7 +89,6 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             description=f"""Analyze and plan the task: {inputs.get('prompt')}.
                         Read and extract Docker Compose details from the project config file: {project_config}
                         Coordinate research tasks and provide final answers to user questions.
-                        Read and extract Docker_Details details from the project config file: {project_config}
                         Supply Team with needed project Information.
                         {All_DETAILS}
                         COORDINATION PROCESS:
