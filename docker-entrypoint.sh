@@ -9,9 +9,9 @@ chown -R "$LOCAL_UID":"$LOCAL_GID" /app
 
 # The DOCKER_HOST environment variable should be set to the path of the mounted socket.
 # Ensure that the appuser can access the Docker socket
-if [ -S "/var/run/docker.sock" ]; then
-    chmod 666 /var/run/docker.sock
-fi
+#if [ -S "/var/run/docker.sock" ]; then
+#    chmod 666 /var/run/docker.sock
+#fi
 
 echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
 
