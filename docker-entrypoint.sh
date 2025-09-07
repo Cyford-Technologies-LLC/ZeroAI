@@ -8,7 +8,23 @@ EXEC_GID=${LOCAL_GID:-999}
 # Log the UID and GID being used
 echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
 
+# Check if the group exists, and create it if it doesn't
+if ! getent group "$EXEC_GID" >/dev/null; then
+    groupadd -g "$EXEC_GID" appgroup
+fi
+
+# Check if the user exists, and create it if it doesn't
+if ! getent passwd "$EXEC_UID" >/dev/null; then
+    useradd --shell /bin/bash -u "$EXEC_UID" -g "$EXEC_GID" -o -c "" -m appuser
+fi
+
+# Fix permissions on bind-mounted volumes that need write access
+# No chown is performed on bind mounts, but gosu will use the correct UID/GID.
+
+# Ensure the appuser can access the Docker socket
+if [ -S "/var/run/docker.sock" ]; then
+    chmod 666 /var/run/docker.sock
+fi
+
 # The gosu command will execute the application with the specified user context.
-# The `exec` command ensures that the final command replaces the current shell process,
-# and we add the CMD arguments correctly.
 exec gosu "$EXEC_UID:$EXEC_GID" "$@"
