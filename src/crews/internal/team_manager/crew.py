@@ -64,7 +64,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                     Project ID:         {project_id}
                     Project location:   {project_location}
                     Project Config:     {project_config} 
-                    Project Config Absolute Location /app/{project_config} 
+                
                     
                     TRAINING / LEARNING AND TOOLS:
                     /app/knowledge/internal_crew/agent_learning/team_briefing.md
