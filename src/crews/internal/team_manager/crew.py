@@ -126,17 +126,24 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             Make sure any docker you bring up does not conflict with the current dockers running.  especially the ones configured in Docker-compose.yml/
             Do not make any changes too Docker-compose.yml.
             Make sure all test containers are running correctly using Docker_Details in {project_config}
+            You use the docker tools manage containers. Instructions on using it is located /app/knowledge/internal_crew/agent_learning/docker_usage_guide.md
         
             *** IMPORTANT *** DO NOT MESS WITH Docker-compose.yml  OR ANY CONTAINERS IN IT!
             
             All Details: {All_DETAILS}
-            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
+            If the content of  {project_config}  does not have what you need, Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
 
             After successfully setting up the project with Docker Composer, 
             Give the team instructions on how to connect to it.
             
             
-            **Important**  Save all knowledge you learned too /app/knowledge/internal_crew/agent_learning/self/docker_specialist
+            
+            After docker is up  and test containers are running do the following:
+            1) Output container information and instructions on how to connect to it
+            2) insure broken an un-used images  and containers are removed
+            3) save any un-saved knowledge you have learned too /app/knowledge/internal_crew/agent_learning/self/docker_specialist.
+            4) Deliver your final Answer as the docker details you provided
+            
 
         
             """,
