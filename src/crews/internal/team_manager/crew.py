@@ -109,7 +109,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                         - Prioritize local knowledge over external sources
                         
                         After you create and post the project task you can deliver your final 
-                        save your learned knowledge  {learning_doc}
+                        save your learned knowledge ,  and project details you made. Instructions here:    {learning_doc}
+                        Deliver final answer  with the project details you have created.
         
             
             """,
