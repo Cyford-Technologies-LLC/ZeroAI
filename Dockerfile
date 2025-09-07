@@ -43,40 +43,36 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 # --- Non-root User and Environment Setup ---
 # Add a non-root user and create their home directory
-# ... (rest of the Dockerfile) ...
-
-# Add a non-root user and create their home directory
 # Use a consistent UID, e.g., 999
 RUN groupadd -r appuser -g 999 && useradd --no-log-init -r -m -u 999 -g 999 appuser
-
-# ... (rest of the Dockerfile) ...
 
 # Set the working directory
 WORKDIR /app
 
-# Copy and setup entrypoint script
+# Copy and setup entrypoint script as root
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# --- Begin user-level operations ---
+# Switch to the non-root user
+USER appuser
 
 # Install dependencies, leveraging build cache
 COPY requirements.txt .
 
 # Use a virtual environment to isolate dependencies
 RUN python -m venv /opt/venv
-# Grant ownership of the virtual environment to the non-root user
-RUN chown -R appuser:appuser /opt/venv
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
-
-# Switch to the non-root user
-USER appuser
 
 # Install dependencies into the virtual environment
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY --chown=appuser:appuser . .
+COPY . .
+# --- End user-level operations ---
+
 # --- End Non-root User and Environment Setup ---
 
 # Use the entrypoint script
