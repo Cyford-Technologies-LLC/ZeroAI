@@ -60,11 +60,11 @@ USER appuser
 # Install dependencies, leveraging build cache
 COPY requirements.txt .
 
-# Use a virtual environment to isolate dependencies
-RUN python -m venv /opt/venv
+# Use a virtual environment to isolate dependencies inside the working directory
+RUN python -m venv /app/venv
 
 # Activate the virtual environment
-ENV PATH="/opt/venv/bin:$PATH"
+ENV PATH="/app/venv/bin:$PATH"
 
 # Install dependencies into the virtual environment
 RUN pip install --no-cache-dir -r requirements.txt
