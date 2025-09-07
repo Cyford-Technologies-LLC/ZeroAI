@@ -1,57 +1,49 @@
-version: '3.8'
+# Use a non-root user for security
+FROM python:3.11-slim
 
-services:
-  zeroai:
-    build: .
-    container_name: zeroai_api-prod
-    privileged: true  # Add this line
-    ports:
-      - "3939:3939"
-    volumes:
-      - .:/app
-      - /var/cyford/zeroai/learning:/knowledge/internal_crew/agent_learning/self
-      - ./knowledge:/app/knowledge
-      - ./logs:/app/logs
-      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - PYTHONPATH=/app
-      - OLLAMA_HOST=http://ollama:11434
-    env_file:
-      - .env
-      - /etc/cyford/zeroai/.env
-    depends_on:
-      - ollama
-    restart: unless-stopped
+# Install dependencies for downloading Docker Compose, build essentials, and your utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    nano \
+    git \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
 
-  peer:
-    build: .
-    container_name: zeroai_peer-prod
-    ports:
-      - "8080:8080"
-    volumes:
-      - .:/app
-      - ./knowledge:/app/knowledge
-      - ./logs:/app/logs
-      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
-    environment:
-      - PYTHONPATH=/app
-      - OLLAMA_HOST=http://ollama:11434
-    env_file:
-      - .env
-      - /etc/cyford/zeroai/.env
-    depends_on:
-      - ollama
-    restart: unless-stopped
+# --- Docker Compose Plugin Installation ---
+# Add Docker's official GPG key
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: zeroai_ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    restart: unless-stopped
+# Add the Docker repository to Apt sources
+RUN echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    trixie stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-volumes:
-  ollama_data:
+# Install Docker Compose plugin
+RUN apt-get update && apt-get install -y --no-install-recommends docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add this symbolic link for Docker compose to be discoverable
+RUN mkdir -p /usr/local/lib/docker/cli-plugins \
+    && ln -s /usr/bin/docker-compose-plugin /usr/local/lib/docker/cli-plugins/docker-compose
+# --- End Docker Compose Plugin Installation ---
+
+# Set the working directory
+WORKDIR /app
+
+# Install dependencies, leveraging build cache
+COPY requirements.txt .
+
+# Use a virtual environment to isolate dependencies
+RUN python -m venv /opt/venv
+# Activate the virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+# Install dependencies into the virtual environment
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code
+COPY . .
+
+# Use Gunicorn as a process manager for Uvicorn in production
+CMD ["gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
