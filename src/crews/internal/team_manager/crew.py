@@ -53,6 +53,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
     project_location = f"/app/knowledge/internal_crew/{project_id}"
     project_config = f"{project_location}/project_config.yaml"
+    learning_doc = "knowledge/internal_crew/agent_learning/learning_tool.md"
 
     if not project_id:
         raise ValueError("The 'project_id' key is missing from the inputs.")
@@ -67,9 +68,10 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                 
                     
                     TRAINING / LEARNING AND TOOLS:
-                    /app/knowledge/internal_crew/agent_learning/team_briefing.md
-                    /app/knowledge/internal_crew/agent_learning/docker_usage_guide.md
-                    /app/knowledge/internal_crew/agent_learning/tool_usage_guide.md
+                    Team Briefing:      /app/knowledge/internal_crew/agent_learning/team_briefing.md
+                    Docker User Guide:  /app/knowledge/internal_crew/agent_learning/docker_usage_guide.md
+                    Tool Usage:         /app/knowledge/internal_crew/agent_learning/tool_usage_guide.md
+                    learning_Tool:      {learning_doc}
                     
                     After successfully setting up the project with Docker Compose, performing a code review, and checking for errors, 
                     use the `Learning Tool` to save the successful configuration steps and findings. 
