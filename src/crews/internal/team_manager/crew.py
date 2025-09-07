@@ -141,7 +141,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         
             """,
             agent=docker_specialist,
-            expected_output="Complete implementation with code and documentation.",
+            expected_output="Output Docker Container details for testing",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
 

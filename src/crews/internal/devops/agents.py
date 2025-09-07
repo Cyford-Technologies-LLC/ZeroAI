@@ -138,13 +138,12 @@ def create_docker_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
         },
         #knowledge_sources=knowledge_sources,
         expertise=[
-            "Python", "JavaScript", "Database Design",
-            "API Development", "Microservices Architecture", "PHP", "JavaScript"
+            "Docker", "Composer",
         ],
         expertise_level=9.2,
         goal="Provide Docker composer up ,  make sure  test docker is up with no issues ,  keep docker code base clean",
         backstory=f"""You are an expert at Docker and composer, understanding
-        complex systems, and identifying potential issues.
+        complex systems. Insure docker is up for the crew.
                         
         {get_shared_context_for_agent("Docker Specialist")}
         
