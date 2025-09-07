@@ -1,23 +1,60 @@
-#!/bin/bash
+#!/bin/sh
 
-. setup/setup_docker.sh
-docker compose -f Docker-compose.yml -p zeroai-prod down
+# --- Variables ---
+# Get the directory where the script is located
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
+ENV_FILE="$SCRIPT_DIR/.env"
 
+# --- Functions ---
+# Log messages in a standard format
+log_info() {
+  printf "\033[0;32m[INFO]\033[0m %s\n" "$1"
+}
 
-if lspci | grep -i 'NVIDIA' > /dev/null; then
-    echo "NVIDIA GPU detected."
-    # Add the NVIDIA package repository
-    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-    curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-docker-keyring.gpg
-    curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+log_warn() {
+  printf "\033[0;33m[WARN]\033[0m %s\n" "$1"
+}
 
-    sudo apt-get update
-    sudo apt-get install -y nvidia-container-toolkit
-    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml -p zeroai-prod up --build -d
-    docker compose -f docker-compose.learning.yml  -f docker-compose.gpu.override.yml -p zeroai-learning up --build -d
-else
-    echo "No NVIDIA GPU found."
-    docker compose -f Docker-compose.yml -p zeroai-prod up --build -d
-    docker compose -f docker-compose.learning.yml -p zeroai-learning up --build -d
+log_error() {
+  printf "\033[0;31m[ERROR]\033[0m %s\n" "$1"
+  exit 1
+}
+
+# --- Main Script ---
+log_info "Starting ZeroAI setup..."
+
+# Check for .env file and copy from .env.example if it doesn't exist
+if [ ! -f "$ENV_FILE" ]; then
+  if [ -f "$ENV_EXAMPLE" ]; then
+    log_info "'.env' file not found. Copying from '.env.example'..."
+    cp "$ENV_EXAMPLE" "$ENV_FILE"
+  else
+    log_error "'.env.example' file not found. Cannot proceed."
+  fi
 fi
 
+# Get host user and group IDs and set environment variables
+# These will be passed to docker compose for substitution
+log_info "Retrieving host UID and GID..."
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+export LOCAL_UID=$HOST_UID
+export LOCAL_GID=$HOST_GID
+
+log_info "Host UID: $HOST_UID"
+log_info "Host GID: $HOST_GID"
+
+# Build and start the Docker containers with UID/GID passed as environment variables
+log_info "Building and starting Docker containers with host permissions..."
+# Use env to ensure the variables are set for the docker compose command
+env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose up --build -d
+
+# Check if docker compose succeeded
+if [ $? -eq 0 ]; then
+  log_info "ZeroAI setup complete. Containers are running."
+else
+  log_error "Docker Compose failed to start. Check the logs for details."
+fi
+
+exit 0
