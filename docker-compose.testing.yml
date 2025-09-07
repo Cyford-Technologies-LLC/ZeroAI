@@ -3,7 +3,7 @@ version: '3.8'
 services:
   zeroai:
     build: .
-    container_name: zeroai_api-prod
+    container_name: zeroai_api-prod-testing
     privileged: true  # Add this line
     ports:
       - "3940:3939"
@@ -25,7 +25,7 @@ services:
 
   peer:
     build: .
-    container_name: zeroai_peer-prod
+    container_name: zeroai_peer-prod-testing
     ports:
       - "8081:8080"
     volumes:
@@ -45,7 +45,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: zeroai_ollama
+    container_name: zeroai_ollama-testing
     ports:
       - "11435:11434"
     volumes:
