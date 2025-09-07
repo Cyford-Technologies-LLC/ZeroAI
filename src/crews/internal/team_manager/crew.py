@@ -94,7 +94,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                         COORDINATION PROCESS:
                         1. For simple questions, provide direct answers from your existing knowledge
                         2. You Do not use the following tools 'Git Tool, Docker Tool.' Create a project plan for the team to execute it. Use the delegate plan for the best Agent to execute the task.
-                        3. Only use tools if you genuinely don't know the answer
+                        3. You can only delegate too Code Researcher, Senior Developer , Junior Developer
+                        4. Only use tools if you genuinely don't know the answer
                         4. If you need project-specific details you don't know, then check {project_config}                    
                         5. Provide a natural, conversational answer to the user's question
         
