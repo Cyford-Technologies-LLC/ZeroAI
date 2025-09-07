@@ -79,6 +79,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
    # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
+    docker_specialist = next((agent for agent in crew_agents if agent.role == "Docker Specialist"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
     junior_dev = next((agent for agent in crew_agents if "Junior Developer" in agent.role), None)
@@ -111,6 +112,29 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             """,
             agent=project_manager,
             expected_output="A detailed project plan and task breakdown.",
+            callback=custom_logger.log_step_callback if custom_logger else None
+        ))
+
+    if docker_specialist:
+        sequential_tasks.append(Task(
+            description=f"""Make sure testing docker is  for the current team / crew
+            To get the project details, you MUST use the FileReadTool on the file: {project_config}
+            Read and extract Docker_Details details from the project config file:  {project_config}
+            Find all information you need regarding your task in project_config = {project_config}. 
+            Make sure any docker you bring up does not conflict with the current dockers running.  especially the ones configured in Docker-compose.yml/
+            Do not make any changes too Docker-compose.yml.
+        
+            All Details: {All_DETAILS}
+            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
+
+            After successfully setting up the project with Docker Composer, 
+            Give the team instructions on how to connect to it.
+            **Important**  Save all knowledge you learned too /app/knowledge/internal_crew/agent_learning/self/docker_specialist
+
+        
+            """,
+            agent=docker_specialist,
+            expected_output="Complete implementation with code and documentation.",
             callback=custom_logger.log_step_callback if custom_logger else None
         ))
 
