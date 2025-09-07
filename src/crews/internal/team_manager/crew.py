@@ -74,6 +74,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                     After successfully setting up the project with Docker Compose, performing a code review, and checking for errors, 
                     use the `Learning Tool` to save the successful configuration steps and findings. 
                     Use the filename `docker_setup_details.md`.
+                    save your learned knowledge
                     """
 
    # Find key agents and create tasks (your existing logic)
@@ -103,8 +104,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                         - Coordinate research efforts and synthesize findings
                         - Be concise but informative
                         - Prioritize local knowledge over external sources
+                        save your learned knowledge
         
-                          Remember: You are managing the research process and providing final answers.
             
             """,
             agent=project_manager,
@@ -119,6 +120,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             Carefully read all project related details in {project_config}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             All Details {All_DETAILS}
+            save your learned knowledge
             """,
             agent=code_researcher,
             expected_output="Technical analysis and code recommendations.",
@@ -143,6 +145,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         
             **CRITICAL INSTRUCTION:** Read the project config file located at `knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
             to get the specific Docker Compose instructions before taking any action.
+            save your learned knowledge
             """,
             agent=senior_dev,
             expected_output="Complete implementation with code and documentation.",
@@ -163,6 +166,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         
             **CRITICAL INSTRUCTION:** Read the project config file located at `knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
             to get the specific Docker Compose instructions before taking any action.
+            save your learned knowledge
             """,
             agent=junior_dev,
             expected_output="Complete implementation with code and documentation.",
