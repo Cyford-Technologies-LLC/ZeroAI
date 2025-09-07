@@ -30,7 +30,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker-ce-cli \
     docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic link for docker binary to ensure it's in the PATH
+RUN ln -s /usr/bin/docker /usr/local/bin/docker
 # --- End Docker CLI and Compose Plugin Installation ---
+
 
 # --- PHP Composer Installation ---
 # Install PHP Composer globally
