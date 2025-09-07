@@ -35,7 +35,7 @@ services:
       - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
     environment:
       - PYTHONPATH=/app
-      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_HOST=http://ollama_testing:11434
     env_file:
       - .env
       - /etc/cyford/zeroai/.env
@@ -43,7 +43,7 @@ services:
       - ollama
     restart: unless-stopped
 
-  ollama:
+  ollama_testing:
     image: ollama/ollama:latest
     container_name: zeroai_ollama-testing
     ports:
