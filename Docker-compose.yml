@@ -16,8 +16,6 @@ services:
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
-      - LOCAL_UID=${LOCAL_UID}
-      - LOCAL_GID=${LOCAL_GID}
     env_file:
       - .env
       - /etc/cyford/zeroai/.env
