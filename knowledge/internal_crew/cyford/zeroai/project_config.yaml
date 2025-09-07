@@ -13,7 +13,7 @@ Docker_Details:
   Your_current_working_directory: "app/"
   Composer_File_location: "/app/"
   Docker_FILE: "/app/Dockerfile"
-  compose_file: "/app/docker-compose.testing.yml"
+  compose_file
   safe_working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
   notes: "**Current State:**
           - The primary application, defined in `docker-compose.yml`, is running.
