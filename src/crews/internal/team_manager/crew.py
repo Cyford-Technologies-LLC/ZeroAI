@@ -118,7 +118,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         sequential_tasks.append(Task(
             description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
             Bring up the project using Docker Compose based on the details extracted in the previous task
-            Read and extract Docker Compose details from the project config file: {project_config}
+            Read and extract Docker_Details details from the project config file: {project_config}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             All Details {All_DETAILS}
             save your learned knowledge
