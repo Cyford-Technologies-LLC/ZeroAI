@@ -117,18 +117,21 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
 
     if docker_specialist:
         sequential_tasks.append(Task(
-            description=f"""Make sure testing docker is  for the current team / crew
+            description=f"""Make sure testing docker is  for the current team / crew  so they can  start working on there task:  {inputs.get('prompt')} .
             To get the project details, you MUST use the FileReadTool on the file: {project_config}
             Read and extract Docker_Details details from the project config file:  {project_config}
             Find all information you need regarding your task in project_config = {project_config}. 
             Make sure any docker you bring up does not conflict with the current dockers running.  especially the ones configured in Docker-compose.yml/
             Do not make any changes too Docker-compose.yml.
+            Make sure all test containers are running correctly using Docker_Details in {project_config}
         
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
 
             After successfully setting up the project with Docker Composer, 
             Give the team instructions on how to connect to it.
+            
+            
             **Important**  Save all knowledge you learned too /app/knowledge/internal_crew/agent_learning/self/docker_specialist
 
         
