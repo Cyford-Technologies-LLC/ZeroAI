@@ -125,6 +125,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             Do not make any changes too Docker-compose.yml.
             Make sure all test containers are running correctly using Docker_Details in {project_config}
         
+            *** IMPORTANT *** DO NOT MESS WITH Docker-compose.yml  OR ANY CONTAINERS IN IT!
+            
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
 
