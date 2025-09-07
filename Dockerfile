@@ -33,9 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Add a non-root user and create their home directory
 RUN groupadd -r appuser && useradd --no-log-init -r -m -g appuser appuser
 
-# Add /usr/bin to the appuser's PATH
-ENV PATH="/usr/bin:$PATH"
-
 # Set the working directory
 WORKDIR /app
 
