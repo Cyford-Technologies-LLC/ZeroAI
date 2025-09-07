@@ -1,13 +1,17 @@
 # Use a non-root user for security
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install system dependencies, including gosu for user switching
+# and tools for installing Docker and Composer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     nano \
     git \
     gnupg \
     gosu \
+    php-cli \
+    php-zip \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # --- Docker CLI and Compose Plugin Installation ---
@@ -28,6 +32,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # --- End Docker CLI and Compose Plugin Installation ---
 
+# --- PHP Composer Installation ---
+# Install PHP Composer globally
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# --- End PHP Composer Installation ---
 
 # --- Non-root User and Environment Setup ---
 # Add a non-root user and create their home directory
