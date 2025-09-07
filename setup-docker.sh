@@ -1,7 +1,11 @@
 #!/bin/sh
 
 # --- Variables ---
+
+
 # Get the directory where the script is located
+cp .env.example .env
+
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
 ENV_FILE="$SCRIPT_DIR/.env"
