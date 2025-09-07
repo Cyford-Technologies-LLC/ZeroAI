@@ -58,3 +58,40 @@ def create_writer_agent(router: DistributedRouter, inputs: Dict[str, Any], tools
         verbose=config.agents.verbose,
         allow_delegation=False
     )
+
+
+def create_prompt_refinement_agent(router: DistributedRouter, inputs: Dict[str, Any], tools: Optional[List] = None,
+                        coworkers: Optional[List] = None,
+                        knowledge_sources: List[StringKnowledgeSource] = None) -> Agent:
+    """Create a Documentation Writer agent."""
+    task_description = "Generate or update documentation based on project changes."
+    llm = router.get_llm_for_task(task_description)
+    agent_memory = Memory()
+    project_location = inputs.get("project_id")
+    repository = inputs.get("repository")
+    # #common_knowledge = get_common_knowledge(project_location, repository)
+
+    return Agent(
+        role="Prompt Refinement Specialist",
+        goal="Transform vague or grammatically incorrect instructions into clear, structured, and effective prompts for other AI agents.",
+        backstory="An expert in AI-to-AI communication, you specialize in optimizing instructions. You have a deep understanding of what makes a prompt clear and actionable for an AI model. Your work ensures every agent starts with the best possible guidance.",
+        verbose=True,
+        llm=llm, # Ensure this agent uses your desired LLM
+        # Add any relevant tools for text manipulation if necessary
+        # For example, a tool to summarize or rewrite text, but the LLM is often enough.
+        tools=[],
+    )
+
+
+def create_prompt_refinement_agent(router, inputs) -> Agent:
+    return Agent(
+        role="Prompt Refinement Specialist",
+        goal="Transform vague or grammatically incorrect instructions into clear, structured, and effective prompts for other AI agents.",
+        backstory="An expert in AI-to-AI communication, you specialize in optimizing instructions. You have a deep understanding of what makes a prompt clear and actionable for an AI model. Your work ensures every agent starts with the best possible guidance.",
+        verbose=True,
+        llm=your_llm, # Ensure this agent uses your desired LLM
+        # Add any relevant tools for text manipulation if necessary
+        # For example, a tool to summarize or rewrite text, but the LLM is often enough.
+        tools=[],
+        allow_code_execution=False # This agent does not need to execute code
+    )

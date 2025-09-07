@@ -3,7 +3,7 @@ from crewai import LLM, Crew, Process, Task
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
-from .agents import create_team_manager_agent, load_all_coworkers
+from .agents import create_team_manager_agent, load_all_coworkers, create_prompt_refinement_agent
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
@@ -47,6 +47,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     for agent in crew_agents:
         agent.verbose = True
 
+    prompt_refiner = create_prompt_refinement_agent(router=router, inputs=inputs)
+
+
 
     project_id = inputs.get("project_id")
     repository = inputs.get("repository")
@@ -78,9 +81,23 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                     Use the filename `docker_setup_details.md`.
                     save your learned knowledge
                     """
+    refine_prompt_task = Task(
+        description=f"""
+         Analyze and correct the user's initial prompt for grammar, spelling, and clarity.
+         The prompt is: '{inputs.get('prompt')}'
+
+         Rewrite the prompt to be highly specific and actionable for a senior developer AI agent.
+         Return ONLY the rewritten, refined prompt as your final answer.
+         """,
+        agent=prompt_refiner,
+        expected_output="A perfectly formatted, grammatically correct, and highly specific prompt for a development task.",
+        callback=custom_logger.log_step_callback if custom_logger else None
+    )
+    sequential_tasks.append(refine_prompt_task)
 
    # Find key agents and create tasks (your existing logic)
     project_manager = next((agent for agent in crew_agents if agent.role == "Project Manager"), None)
+
     docker_specialist = next((agent for agent in crew_agents if agent.role == "Docker Specialist"), None)
     code_researcher = next((agent for agent in crew_agents if "Code Researcher" in agent.role), None)
     senior_dev = next((agent for agent in crew_agents if "Senior Developer" in agent.role), None)
