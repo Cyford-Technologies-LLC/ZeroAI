@@ -34,6 +34,14 @@ RUN groupadd -r appuser && useradd --no-log-init -r -m -g appuser appuser
 # Set the working directory
 WORKDIR /app
 
+
+# Copy the entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+# Make the script executable
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+
+
 # Temporarily switch to root to create the virtual environment
 USER root
 RUN python -m venv /opt/venv
@@ -55,6 +63,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 COPY . .
+
+
+# Use the entrypoint script
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 
 # Use Gunicorn as a process manager for Uvicorn in production
 CMD ["gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
