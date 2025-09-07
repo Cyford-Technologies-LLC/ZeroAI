@@ -4,13 +4,6 @@
 export EXEC_UID=${LOCAL_UID:-999}
 export EXEC_GID=${LOCAL_GID:-999}
 
-# Check if the user needs to be created or modified
-if [ "$LOCAL_UID" != "$(id -u appuser)" ] || [ "$LOCAL_GID" != "$(id -g appuser)" ]; then
-  echo "Adjusting user UID/GID to match host user..."
-  usermod --uid "$LOCAL_UID" appuser
-  groupmod --gid "$LOCAL_GID" appuser
-fi
-
 # **FIX:** Ensure the entire /app directory is owned by the appuser
 chown -R "$LOCAL_UID":"$LOCAL_GID" /app
 
