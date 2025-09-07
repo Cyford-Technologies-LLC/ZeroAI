@@ -118,9 +118,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if docker_specialist:
         sequential_tasks.append(Task(
             description=f"""Make sure testing docker is  for the current team / crew  so they can  start working on there task:  {inputs.get('prompt')} .
-            To get the project details, you MUST use the FileReadTool on the file: {project_config}
-            Read and extract Docker_Details details from the project config file:  {project_config}
-            Find all information you need regarding your task in project_config = {project_config}. 
+            Read and extract Docker_Details details from the project config file:  {project_config}          
+            ** Task  **  Bring up Containers specified in Docker_Details.compose_file  supplied in {project_config}.
             Make sure any docker you bring up does not conflict with the current dockers running.  especially the ones configured in Docker-compose.yml/
             Do not make any changes too Docker-compose.yml.
             Make sure all test containers are running correctly using Docker_Details in {project_config}
