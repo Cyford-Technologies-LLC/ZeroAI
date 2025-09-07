@@ -1,5 +1,4 @@
 # Use a non-root user for security
-# python:3.11-slim is based on debian:trixie
 FROM python:3.11-slim
 
 # Install dependencies for downloading and verifying Docker Compose
@@ -32,8 +31,17 @@ USER appuser
 # Install dependencies, leveraging build cache
 COPY requirements.txt .
 
-# Use a virtual environment to isolate dependencies
+# --- FIX: Move virtual environment creation here, before switching users ---
+# You need to be root to create the virtual environment in /opt
+# Reverting to root temporarily for venv creation
+USER root
 RUN python -m venv /opt/venv
+# Grant ownership of the virtual environment to the non-root user
+RUN chown -R appuser:appuser /opt/venv
+# Switch back to the non-root user
+USER appuser
+# --- END FIX ---
+
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 # Install dependencies into the virtual environment
@@ -45,6 +53,3 @@ COPY . .
 # Use Gunicorn as a process manager for Uvicorn in production
 # This is a robust way to run a production-ready application
 CMD ["gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
-
-# Note: The `cat /app/src/ai_crew.py` command is a debug command and has been removed.
-# If you need to debug, it's better to do it during development rather than baking it into the final image.
