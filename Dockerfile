@@ -53,15 +53,19 @@ WORKDIR /app
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# --- Begin user-level operations ---
-# Switch to the non-root user
-USER appuser
-
+# --- FIX: Create venv as root and fix ownership ---
 # Install dependencies, leveraging build cache
 COPY requirements.txt .
 
 # Use a virtual environment to isolate dependencies inside the working directory
+# Perform this as root, then change ownership to appuser.
 RUN python -m venv /app/venv
+RUN chown -R appuser:appuser /app/venv
+# --- END FIX ---
+
+# --- Begin user-level operations ---
+# Switch to the non-root user
+USER appuser
 
 # Activate the virtual environment
 ENV PATH="/app/venv/bin:$PATH"
