@@ -6,7 +6,7 @@ services:
     container_name: zeroai_api-prod
     privileged: true  # Add this line
     ports:
-      - "3939:3939"
+      - "3940:3939"
     volumes:
       - .:/app
       - ./knowledge:/app/knowledge
@@ -27,7 +27,7 @@ services:
     build: .
     container_name: zeroai_peer-prod
     ports:
-      - "8080:8080"
+      - "8081:8080"
     volumes:
       - .:/app
       - ./knowledge:/app/knowledge
@@ -47,7 +47,7 @@ services:
     image: ollama/ollama:latest
     container_name: zeroai_ollama
     ports:
-      - "11434:11434"
+      - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
