@@ -6,7 +6,7 @@
 ```json
 {
   "action": "compose_up",
-  "compose_file": "/path/to/your/docker-compose.yml"
+  "compose_file": "/path/to/your/Docker-compose.yml"
 }
 ```
 
@@ -15,7 +15,7 @@
 ```json
 {
   "action": "compose_down",
-  "compose_file": "/path/to/your/docker-compose.yml"
+  "compose_file": "/path/to/your/Docker-compose.yml"
 }
 ```
 

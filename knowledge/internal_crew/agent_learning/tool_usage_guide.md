@@ -21,7 +21,7 @@ In the project_config.yaml file it will state the location of the Docker compose
 ```json
 {
   "action": "compose_up",
-  "compose_file": "/path/to/your/docker-compose.yml"
+  "compose_file": "/path/to/your/Docker-compose.yml"
 }
 ```
 
@@ -30,7 +30,7 @@ In the project_config.yaml file it will state the location of the Docker compose
 ```json
 {
   "action": "compose_down",
-  "compose_file": "/path/to/your/docker-compose.yml"
+  "compose_file": "/path/to/your/Docker-compose.yml"
 }
 ```
 
@@ -83,7 +83,7 @@ In the project_config.yaml file it will state the location of the Docker compose
 
 {
   "action": "compose_up", 
-  "compose_file": "/path/to/your/docker-compose.yml"
+  "compose_file": "/path/to/your/Docker-compose.yml"
 }
 ```
 
@@ -92,7 +92,7 @@ In the project_config.yaml file it will state the location of the Docker compose
 ```json
 {
   "action": "compose_down",
-  "compose_file": "/path/to/your/docker-compose.yml"
+  "compose_file": "/path/to/your/Docker-compose.yml"
 }
 ```
 ```json

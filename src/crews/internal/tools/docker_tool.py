@@ -20,7 +20,7 @@ class DockerToolSchema(BaseModel):
     environment: Optional[str] = Field(None, description="Environment variables (e.g., 'KEY=value')")
     network: Optional[str] = Field(None, description="Docker network name")
     detach: bool = Field(True, description="Run in detached mode")
-    compose_file: Optional[str] = Field(None, description="Path to the docker-compose.yml file")
+    compose_file: Optional[str] = Field(None, description="Path to the Docker-compose.yml file")
     compose_services: Optional[str] = Field(None,
                                             description="Comma-separated list of services to target in docker-compose command")
 
@@ -161,7 +161,7 @@ class DockerTool(BaseTool):
 
     def _compose_up(self, compose_file: Optional[str] = None, compose_services: Optional[str] = None) -> str:
         """
-        Start services from a docker-compose.yml file.
+        Start services from a Docker-compose.yml file.
         """
         if not compose_file:
             raise ValueError("A compose_file path is required for the compose_up action.")
@@ -186,7 +186,7 @@ class DockerTool(BaseTool):
 
     def _compose_down(self, compose_file: Optional[str] = None, compose_services: Optional[str] = None) -> str:
         """
-        Stop and remove services from a docker-compose.yml file.
+        Stop and remove services from a Docker-compose.yml file.
         """
         if not compose_file:
             raise ValueError("A compose_file path is required for the compose_down action.")

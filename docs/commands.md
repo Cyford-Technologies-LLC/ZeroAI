@@ -114,7 +114,7 @@ python -m run.internal.analyze_learning --action=models
 docker compose up -d
 
 # Start with GPU support
-docker compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
 
 # Restart services
 docker compose restart
@@ -192,7 +192,7 @@ export ENABLE_ROUTER_LOGGING=true
 
 ### Docker Environment Variables
 ```bash
-# Set in docker-compose.yml or .env file
+# Set in Docker-compose.yml or .env file
 PYTHONPATH=/app
 OLLAMA_HOST=http://ollama:11434
 GH_TOKEN_CYFORD=your_github_token_here
@@ -244,6 +244,6 @@ ZeroAI/
 ├── run/
 │   └── internal/          # Internal crew runners
 ├── config/                # Configuration files
-├── docker-compose.yml     # Main Docker configuration
+├── Docker-compose.yml     # Main Docker configuration
 └── docker-compose.gpu.override.yml # GPU support
 ```

@@ -28,7 +28,7 @@ def create_docker_task(agent: Agent, project_id: str, prompt: str, working_dir: 
 
         1. Analyze the requirements for containerizing the project
         2. Create a Dockerfile that builds the appropriate environment
-        3. Create a docker-compose.yml file if multiple services are needed
+        3. Create a Docker-compose.yml file if multiple services are needed
         4. Add any necessary scripts for setup, testing, and execution
         5. Document the Docker setup with clear usage instructions
         6. Verify all required files are created in the working directory
@@ -40,7 +40,7 @@ def create_docker_task(agent: Agent, project_id: str, prompt: str, working_dir: 
         expected_output="""
         Complete Docker setup for the project, including:
         1. Dockerfile
-        2. docker-compose.yml (if needed)
+        2. Docker-compose.yml (if needed)
         3. Any necessary scripts
         4. Setup and usage instructions
         """

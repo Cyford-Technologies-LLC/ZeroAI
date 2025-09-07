@@ -73,7 +73,7 @@ cd ZeroAI
 docker-compose up -d
 
 # For GPU-enabled systems (NVIDIA)
-docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+docker-compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
 
 # Access ZeroAI API at http://localhost:3939
 # Access ZeroAI Peer Service at http://localhost:8080
@@ -90,7 +90,7 @@ cd ZeroAI
 docker-compose up -d
 
 # For GPU-enabled systems (NVIDIA with WSL2)
-docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+docker-compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
 ```
 
 ### Manual Setup (Alternative)
@@ -188,7 +188,7 @@ ZeroAI/
 │   └── internal/          # Internal crew runners
 ├── examples/              # Ready-to-run examples
 ├── config/                # Configuration files
-├── docker-compose.yml     # Main Docker configuration
+├── Docker-compose.yml     # Main Docker configuration
 ├── docker-compose.gpu.override.yml # GPU support
 ├── docs/                  # Comprehensive documentation
 └── tests/                 # Test suite

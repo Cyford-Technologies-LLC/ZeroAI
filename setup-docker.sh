@@ -1,7 +1,7 @@
 #!/bin/bash
 
 . setup/setup_docker.sh
-docker compose -f docker-compose.yml -p zeroai-prod down
+docker compose -f Docker-compose.yml -p zeroai-prod down
 
 
 if lspci | grep -i 'NVIDIA' > /dev/null; then

@@ -106,7 +106,7 @@ git clone https://github.com/yourusername/ZeroAI.git
 cd ZeroAI
 
 # Start with GPU support
-docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+docker-compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
 
 # Access ZeroAI API at http://localhost:3939
 # Access ZeroAI Peer Service at http://localhost:8080
@@ -119,7 +119,7 @@ docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
 docker-compose up -d
 
 # GPU-enabled:
-docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+docker-compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
 ```
 
 **Docker Compose V2 (Modern):**
@@ -129,7 +129,7 @@ docker-compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
 docker compose up -d
 
 # GPU-enabled:
-docker compose -f docker-compose.yml -f docker-compose.gpu.override.yml up -d
+docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
 ```
 
 ### Step 5: Test Installation
@@ -268,7 +268,7 @@ docker-compose exec zeroai bash
 - **Cause**: Ports 3939 or 8080 already occupied
 - **Solution**: 
   - Stop conflicting services: `docker ps` and `docker stop <container>`
-  - Or change ports in `docker-compose.yml`
+  - Or change ports in `Docker-compose.yml`
 
 #### "No such image" error
 - **Cause**: Docker images not built
