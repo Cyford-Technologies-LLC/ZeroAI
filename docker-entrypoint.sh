@@ -1,4 +1,9 @@
 #!/bin/sh
+export LOCAL_UID=${LOCAL_UID:-1000}
+export LOCAL_GID=${LOCAL_GID:-1000}
+
+useradd --create-home --shell /bin/bash -u $LOCAL_UID -g $LOCAL_GID appuser
+
 
 # Source the user's profile to ensure PATH is correctly set
 . "$HOME/.profile"
