@@ -211,7 +211,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
 
 
     project_id = inputs.get("project_id")
-    project_location = f"knowledge/internal_crew/{project_id}"
+    project_location = f"/app/knowledge/internal_crew/{project_id}"
     project_config = f"{project_location}/project_config.yaml"
     repository = inputs.get("repository")
     console.print(
