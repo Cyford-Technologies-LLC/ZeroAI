@@ -88,7 +88,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             description=f"""Analyze and plan the task: {inputs.get('prompt')}.
                         Read and extract Docker Compose details from the project config file: {project_config}
                         Coordinate research tasks and provide final answers to user questions.
-                        The Project Configuration file = {project_config}
+                        Read and extract Docker Compose details from the project config file: {project_config}
                         Supply Team with needed project Information.
                         {All_DETAILS}
                         COORDINATION PROCESS:
@@ -118,7 +118,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
         sequential_tasks.append(Task(
             description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
             Bring up the project using Docker Compose based on the details extracted in the previous task
-            Carefully read all project related details in {project_config}
+            Read and extract Docker Compose details from the project config file: {project_config}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             All Details {All_DETAILS}
             save your learned knowledge
@@ -131,7 +131,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if senior_dev:
         sequential_tasks.append(Task(
             description=f"""Implement solution for: {inputs.get('prompt')}
-            Carefully read all project related details in {project_config}
+            Read and extract Docker Compose details from the project config file: {project_config}
             Find all information you need regarding your task in project_config = {project_config}. 
             Order of project Execution  1) Docker Composer 2) docker file  3) Git clone.  Check Project config for directions
             Accurately find information in project files using ONLY relative paths with the FileReadTool. 
@@ -156,7 +156,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if junior_dev:
         sequential_tasks.append(Task(
             description=f"""Execute solution provided by the Senior Developer for: {inputs.get('prompt')}
-            Carefully read all project related details in {project_config}
+            Read and extract Docker Compose details from the project config file: {project_config}
             Find all information you need regarding your task in {project_config}. 
             
             Accurately find information in project files using ONLY relative paths with the FileReadTool. 
@@ -178,7 +178,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if not sequential_tasks and crew_agents:
         sequential_tasks = [Task(
             description=f"""{inputs.get('prompt')} {All_DETAILS}
-            Carefully read all project related details in {project_config}.  Find all information you need regarding your task in {project_config}. 
+            Read and extract Docker Compose details from the project config file: {project_config}.  Find all information you need regarding your task in {project_config}. 
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             """,
             agent=crew_agents,
