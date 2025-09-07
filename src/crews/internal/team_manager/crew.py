@@ -51,7 +51,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     project_id = inputs.get("project_id")
     repository = inputs.get("repository")
     working_dir = inputs.get('working_directory', inputs.get('working_dir', 'unknown'))
-    project_location = f"knowledge/internal_crew/{project_id}"
+    project_location = f"/app/knowledge/internal_crew/{project_id}"
     project_config = f"{project_location}/project_config.yaml"
 
     if not project_id:
@@ -67,9 +67,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                     Project Config Absolute Location /app/{project_config} 
                     
                     TRAINING / LEARNING AND TOOLS:
-                    knowledge/internal_crew/agent_learning/team_briefing.md
-                    knowledge/internal_crew/agent_learning/docker_usage_guide.md
-                    knowledge/internal_crew/agent_learning/tool_usage_guide.md
+                    /app/knowledge/internal_crew/agent_learning/team_briefing.md
+                    /app/knowledge/internal_crew/agent_learning/docker_usage_guide.md
+                    /app/knowledge/internal_crew/agent_learning/tool_usage_guide.md
                     
                     After successfully setting up the project with Docker Compose, performing a code review, and checking for errors, 
                     use the `Learning Tool` to save the successful configuration steps and findings. 
@@ -137,7 +137,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             Order of project Execution  1) Docker Composer 2) docker file  3) Git clone.  Check Project config for directions
             Accurately find information in project files using ONLY relative paths with the FileReadTool. 
             Never use absolute file paths in your actions. The path starts from the project's root directory,
-            e.g., `knowledge/internal_crew/tool_usage_guide.md`.
+            e.g., `/app/knowledge/internal_crew/tool_usage_guide.md`.
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             
@@ -145,7 +145,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             use the `Learning Tool` to save the successful configuration steps and findings. 
             Use the filename `docker_setup_details.md`.
         
-            **CRITICAL INSTRUCTION:** Read the project config file located at `knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
+            **CRITICAL INSTRUCTION:** Read the project config file located at `/app/knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
             to get the specific Docker Compose instructions before taking any action.
             save your learned knowledge
             """,
@@ -162,11 +162,11 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             
             Accurately find information in project files using ONLY relative paths with the FileReadTool. 
             Never use absolute file paths in your actions. The path starts from the project's root directory,
-            e.g., `knowledge/internal_crew/tool_usage_guide.md`.
+            e.g., `/app/knowledge/internal_crew/tool_usage_guide.md`.
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
         
-            **CRITICAL INSTRUCTION:** Read the project config file located at `knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
+            **CRITICAL INSTRUCTION:** Read the project config file located at `/app/knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
             to get the specific Docker Compose instructions before taking any action.
             save your learned knowledge
             """,
