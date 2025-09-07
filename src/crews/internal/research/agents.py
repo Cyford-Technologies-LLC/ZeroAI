@@ -80,13 +80,13 @@ class ProjectTool(BaseTool):
     name: str = "Project Tool"
     description: str = "Get project information. Use 'all' to get full config, 'file' to get file path, or specify a key like 'repository.url' or 'project.name'."
 
-    def _run(self, project_location: str, mode: str) -> str:
-        config_path = Path("knowledge") / "internal_crew" / project_location / "project_config.yaml"
+    def _run(self, project_id: str, mode: str) -> str:
+        config_path = Path("knowledge") / "internal_crew" / project_id / "project_config.yaml"
 
         if not config_path.is_file():
             base_path = Path("knowledge") / "internal_crew"
             for item in base_path.rglob("project_config.yaml"):
-                if project_location.lower() in str(item).lower():
+                if project_id.lower() in str(item).lower():
                     config_path = item
                     break
 
@@ -94,7 +94,7 @@ class ProjectTool(BaseTool):
             return str(config_path)
 
         if not config_path.is_file():
-            return f"Error: No project configuration found for '{project_location}'. Searched in knowledge/internal_crew/"
+            return f"Error: No project configuration found for '{project_id}'. Searched in knowledge/internal_crew/"
 
         with open(config_path, 'r') as f:
             project_config = yaml.safe_load(f) or {}
