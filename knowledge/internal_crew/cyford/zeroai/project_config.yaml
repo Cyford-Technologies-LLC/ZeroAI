@@ -16,15 +16,15 @@ Docker_Details:
   compose_file: "/app/docker-compose.testing.yml"
   safe_working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
   notes: "**Current State:**
-- The primary application, defined in `docker-compose.yml`, is running.
-- A testing suite, defined in `docker-compose.testing.yml`, is also trying to run.
+          - The primary application, defined in `docker-compose.yml`, is running.
+          - A testing suite, defined in `docker-compose.testing.yml`, is also trying to run.
 
-**Problem:**
-- A port conflict exists because both Docker Compose files attempt to use the same host port.
+          **Problem:**
+          - A port conflict exists because both Docker Compose files attempt to use the same host port.
 
-**Action Required:**
-- Modify `docker-compose.testing.yml` to use a different, non-conflicting host port for the service.
-- Update the testing application's configuration to use the newly assigned port."
+          **Action Required:**
+          - Modify `docker-compose.testing.yml` to use a different, non-conflicting host port for the service.
+          - Update the testing application's configuration to use the newly assigned port."
 
 # Repository details for the Git tools #  Not needed  when you have a docker file
 repository:
