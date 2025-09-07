@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 # Install dependencies for downloading and verifying Docker Compose
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    curl nano  git\
     gnupg \
     && rm -rf /var/lib/apt/lists/*
 
