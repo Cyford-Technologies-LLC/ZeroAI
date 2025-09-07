@@ -8,6 +8,7 @@ EXEC_GID=${LOCAL_GID:-999}
 # Log the UID and GID being used
 echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
 
-# Execute the main application command as the specified user.
-# The user's UID and GID are set to match the host's via the entrypoint.
+# The gosu command will execute the application with the specified user context.
+# The `exec` command ensures that the final command replaces the current shell process,
+# and we add the CMD arguments correctly.
 exec gosu "$EXEC_UID:$EXEC_GID" "$@"
