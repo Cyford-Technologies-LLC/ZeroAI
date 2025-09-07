@@ -107,7 +107,9 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
                         - Coordinate research efforts and synthesize findings
                         - Be concise but informative
                         - Prioritize local knowledge over external sources
-                        save your learned knowledge
+                        
+                        After you create and post the project task you can deliver your final 
+                        save your learned knowledge  {learning_doc}
         
             
             """,
