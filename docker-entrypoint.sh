@@ -1,6 +1,6 @@
 #!/bin/sh
-export LOCAL_UID=${LOCAL_UID:-1000}
-export LOCAL_GID=${LOCAL_GID:-1000}
+export LOCAL_UID=${LOCAL_UID:-$(id -u appuser)}
+export LOCAL_GID=${LOCAL_GID:-$(id -g appuser)}
 
 useradd --create-home --shell /bin/bash -u $LOCAL_UID -g $LOCAL_GID appuser
 
