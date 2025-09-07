@@ -43,7 +43,13 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 # --- Non-root User and Environment Setup ---
 # Add a non-root user and create their home directory
-RUN groupadd -r appuser && useradd --no-log-init -r -m -g appuser appuser
+# ... (rest of the Dockerfile) ...
+
+# Add a non-root user and create their home directory
+# Use a consistent UID, e.g., 999
+RUN groupadd -r appuser -g 999 && useradd --no-log-init -r -m -u 999 -g 999 appuser
+
+# ... (rest of the Dockerfile) ...
 
 # Set the working directory
 WORKDIR /app

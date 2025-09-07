@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Set defaults for UID and GID for portability.
-export LOCAL_UID=${LOCAL_UID:-$(id -u appuser)}
-export LOCAL_GID=${LOCAL_GID:-$(id -g appuser)}
+export EXEC_UID=${LOCAL_UID:-999}
+export EXEC_GID=${LOCAL_GID:-999}
 
 # Check if the user needs to be created or modified
 if [ "$LOCAL_UID" != "$(id -u appuser)" ] || [ "$LOCAL_GID" != "$(id -g appuser)" ]; then
@@ -20,5 +20,7 @@ if [ -S "/var/run/docker.sock" ]; then
     chmod 666 /var/run/docker.sock
 fi
 
+echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
+
 # Execute the main application command as the appuser
-exec gosu "$LOCAL_UID" "$@"
+exec gosu "$EXEC_UID:$EXEC_GID" "$@"
