@@ -44,7 +44,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # --- Non-root User and Environment Setup ---
 # Add a non-root user and create their home directory
 # Use a consistent UID, e.g., 999
-RUN groupadd -r appuser -g 999 && useradd --no-log-init -r -m -u 999 -g 999 appuser
+RUN groupadd -r appuser -g 1000 && useradd --no-log-init -r -m -u 1000 -g 1000 appuser
 
 # Set the working directory
 WORKDIR /app
