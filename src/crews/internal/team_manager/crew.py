@@ -131,6 +131,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             You use the docker tools manage containers. Instructions on using it is located /app/knowledge/internal_crew/agent_learning/docker_usage_guide.md
         
             *** IMPORTANT *** DO NOT MESS WITH Docker-compose.yml  OR ANY CONTAINERS IN IT!
+            Make sure you use the compose file instructed in the Config: {project_config}
             
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need, Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
@@ -141,7 +142,7 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
             
             
             After docker is up  and test containers are running do the following:
-            1) Output container information and instructions on how to connect to it
+            1) Output container information and instructions on how to connect containers you made
             2) insure broken an un-used images  and containers are removed
             3) save any un-saved knowledge you have learned too /app/knowledge/internal_crew/agent_learning/self/docker_specialist.
             4) Deliver your final Answer as the docker details you provided
@@ -157,10 +158,11 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if code_researcher:
         sequential_tasks.append(Task(
             description=f"""Research and analyze code requirements for: {inputs.get('prompt')}
-            Bring up the project using Docker Compose based on the details extracted in the previous task
-            Read and extract Docker_Details details from the project config file: {project_config}
-            If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
-            All Details {All_DETAILS}
+           
+            Wait till docker Specialist has completed setting up the containers.
+            Connect to containers  and verify what is needed to handle the task.
+            
+        
             save your learned knowledge
             """,
             agent=code_researcher,
@@ -171,22 +173,22 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if senior_dev:
         sequential_tasks.append(Task(
             description=f"""Implement solution for: {inputs.get('prompt')}
+            Wait for the Docker specialist to bring up the containers.  ask him to let you know how to connect to it if you have any issues.   
             To get the project details, you MUST use the FileReadTool on the file: {project_config}
-            Read and extract Docker_Details details from the project config file: {project_config}
+            
             Find all information you need regarding your task in project_config = {project_config}. 
-            Order of project Execution  1) Docker Composer 2) docker file  3) Git clone.  Check Project config for directions
-            Accurately find information in project files using ONLY relative paths with the FileReadTool. 
-            Never use absolute file paths in your actions. The path starts from the project's root directory,
+           
             e.g., `/app/knowledge/internal_crew/tool_usage_guide.md`.
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
             
-            After successfully setting up the project with Docker Compose, performing a code review, and checking for errors, 
+            Create a plan for this task , based on the code researchers Response.
+            Deliver it to the jr Developer for execution
+            
             use the `Learning Tool` to save the successful configuration steps and findings. 
-            Use the filename `docker_setup_details.md`.
+            
         
-            **CRITICAL INSTRUCTION:** Read the project config file located at `/app/knowledge/internal_crew/cyford/zeroai/project_config.yaml` 
-            to get the specific Docker Compose instructions before taking any action.
+            **CRITICAL INSTRUCTION:** Read the project config file located at `/app/knowledge/internal_crew/cyford/zeroai/project_config.yaml`.
             save your learned knowledge
             """,
             agent=senior_dev,
@@ -197,12 +199,11 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     if junior_dev:
         sequential_tasks.append(Task(
             description=f"""Execute solution provided by the Senior Developer for: {inputs.get('prompt')}
-            Read and extract Docker_Details details from the project config file: {project_config}
-            Find all information you need regarding your task in {project_config}. 
+            Read and extract details you need from the project config file: {project_config}
+            Execute the plan made from the Sr. developer.
             
             Accurately find information in project files using ONLY relative paths with the FileReadTool. 
-            Never use absolute file paths in your actions. The path starts from the project's root directory,
-            e.g., `/app/knowledge/internal_crew/tool_usage_guide.md`.
+
             All Details: {All_DETAILS}
             If the content of  {project_config}  does not have what you need Deliver your final answer as the Project config does not have the details your looking for and explain what you are looking for.
         
