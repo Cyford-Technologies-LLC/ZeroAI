@@ -17,9 +17,17 @@ def get_db_connection():
 async def root():
     return HTMLResponse(open("www/web/login.html").read())
 
+@app.get("/frontend")
+async def frontend():
+    return HTMLResponse(open("www/web/frontend.html").read())
+
 @app.get("/admin")
 async def admin_dashboard():
     return HTMLResponse(open("www/admin/dashboard.html").read())
+
+@app.get("/agents-manager")
+async def agents_manager():
+    return HTMLResponse(open("www/admin/agents-manager.html").read())
 
 @app.get("/agents")
 async def get_agents():
@@ -29,6 +37,41 @@ async def get_agents():
     agents = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
     conn.close()
     return {"agents": agents}
+
+@app.get("/all-agents")
+async def get_all_agents():
+    """Get all agents including internal crew agents."""
+    conn = get_db_connection()
+    cursor = conn.execute("SELECT * FROM agents ORDER BY is_core DESC, name")
+    agents = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+    conn.close()
+    return {"agents": agents}
+
+@app.post("/agents")
+async def create_agent(request: Request):
+    """Create new agent."""
+    data = await request.json()
+    conn = get_db_connection()
+    conn.execute("""
+        INSERT INTO agents (name, role, goal, backstory, config, is_core)
+        VALUES (?, ?, ?, ?, ?, 0)
+    """, (data["name"], data["role"], data["goal"], data["backstory"], data.get("config", "{}")))
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+@app.delete("/agents/{agent_id}")
+async def delete_agent(agent_id: int):
+    """Delete agent (non-core only)."""
+    conn = get_db_connection()
+    cursor = conn.execute("SELECT is_core FROM agents WHERE id = ?", (agent_id,))
+    agent = cursor.fetchone()
+    if not agent or agent[0]:  # Core agent
+        raise HTTPException(status_code=400, detail="Cannot delete core agent")
+    conn.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
+    conn.commit()
+    conn.close()
+    return {"success": True}
 
 @app.get("/crews")
 async def get_crews():

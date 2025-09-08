@@ -52,4 +52,4 @@ USER root
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # The CMD is the command that gets executed by 'gosu' inside the entrypoint
-CMD ["/app/venv/bin/python", "/app/start_portal_docker.py"]
+CMD ["/app/venv/bin/python", "/app/container_startup.py"]

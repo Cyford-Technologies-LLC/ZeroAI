@@ -17,6 +17,12 @@
     <div class="header">
         <h1>ZeroAI Admin Dashboard</h1>
         <p>Database-Driven AI Management Portal</p>
+        <nav style="margin-top: 10px;">
+            <a href="/admin" style="color: white; margin-right: 15px;">Dashboard</a>
+            <a href="/agents-manager" style="color: white; margin-right: 15px;">Manage Agents</a>
+            <a href="/frontend" style="color: white; margin-right: 15px;">Frontend</a>
+            <a href="/chat" style="color: white; margin-right: 15px;">AI Chat</a>
+        </nav>
     </div>
     
     <div class="grid">
@@ -39,6 +45,8 @@
             <button onclick="switchToHierarchical()">Hierarchical Mode</button>
             <button onclick="manageKnowledge()">Manage Knowledge</button>
             <button onclick="openChat()">AI Chat</button>
+            <button onclick="manageAgents()">Manage Agents</button>
+            <button onclick="openFrontend()">Frontend Portal</button>
         </div>
     </div>
 
@@ -67,6 +75,8 @@
         function switchToHierarchical() { alert('Switching to Hierarchical Mode'); }
         function manageKnowledge() { alert('Knowledge Management - Coming Soon'); }
         function openChat() { window.open('/chat', '_blank'); }
+        function manageAgents() { window.location.href = '/agents-manager'; }
+        function openFrontend() { window.open('/frontend', '_blank'); }
         
         // Load agents on page load
         loadAgents();
