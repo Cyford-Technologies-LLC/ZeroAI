@@ -1,5 +1,5 @@
-# Use a non-root user for security
-FROM python:3.11-slim
+# Stage 1: Build dependencies as root
+FROM python:3.11-slim as builder
 
 # Install system dependencies, including gosu
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,27 +31,35 @@ RUN ln -s /usr/bin/docker /usr/local/bin/docker
 # Install PHP Composer globally
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set the working directory
-WORKDIR /app
-
-# Copy the entrypoint script and make it executable
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Use a virtual environment to isolate dependencies
+WORKDIR /app
 COPY requirements.txt .
 RUN python -m venv /app/venv && \
     /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
-COPY . .
 
-# All setup done. The container must start as root for the entrypoint script
-# to be able to create the user and group based on host UID/GID.
-USER root
+# --- Stage 2: Final image with correct user and permissions ---
+FROM python:3.11-slim
 
-# Use the entrypoint script to run the final command
+# Copy the gosu binary from the builder stage
+COPY --from=builder /usr/local/bin/gosu /usr/local/bin/gosu
+
+# Copy necessary files from the builder stage
+COPY --from=builder /usr/local/bin/docker* /usr/local/bin/
+COPY --from=builder /app /app
+
+# Create a non-root user with UID 1000 and GID 1000
+RUN groupadd -r appuser -g 1000 && useradd --no-log-init -r -m -u 1000 -g 1000 appuser
+
+# Set the PATH to include the virtual environment's bin directory
+ENV PATH="/app/venv/bin:$PATH"
+
+# Switch to the non-root user
+USER appuser
+
+# Set entrypoint and command
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["docker-entrypoint.sh"]
-
-# The CMD is the command that gets executed by 'gosu' inside the entrypoint
 CMD ["gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
+
