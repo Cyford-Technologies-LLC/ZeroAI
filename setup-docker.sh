@@ -4,7 +4,7 @@
 
 
 # Get the directory where the script is located
-cp .env.example .env
+#cp .env.example .env
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
