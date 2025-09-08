@@ -42,7 +42,7 @@ RUN python -m venv /app/venv && \
 FROM python:3.11-slim
 
 # Copy gosu and virtual environment from the builder stage
-COPY --from=builder /usr/local/bin/gosu /usr/local/bin/gosu
+COPY --from=builder /usr/bin/gosu /usr/local/bin/gosu  # Correct path for gosu
 COPY --from=builder /app /app
 
 # Add virtual environment's bin to PATH
