@@ -1,81 +1,25 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-peers.json
-config/peers.json
-knowledge/internal_crew/cyford/
-knowledge/internal_crew/agent_learning/self/
+# ZeroAI Git Ignore
 
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-run/cyford/
-
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Project specific
+# Web portal files
+app/
+data/
 logs/
-output/
-*.log
-config/local_settings.yaml
-.secrets/
+
+# Environment files
+.env
+.env.local
+
+# Database files
+*.db
+*.sqlite
 
 # Temporary files
 *.tmp
-*.temp
-.cache/
+*.log
+*.pid
 
-# Jupyter Notebooks
-.ipynb_checkpoints
+# Docker generated files
+docker-volumes/
 
-# pytest
-.pytest_cache/
-.coverage
-htmlcov/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-# Local environment configuration
-.env
+# User data
+config/local/

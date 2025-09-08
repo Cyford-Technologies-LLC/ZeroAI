@@ -1,0 +1,14 @@
+goal:
+  id: "v0.0.0.0.1.0.0"
+  name: "Dynamic Config Transformation with portal"
+  description: "Transform out application from static configs to dynamic web based "
+  priority: "High"
+  owner: "Project Manager"
+  status: "In Progress"
+
+  success_criteria:
+    - "Everything regarding data and configs  are stored in sqlite or simular db"
+    - "www directory  which contains frontend and backend web portals running on port 333"
+    - "Web portal will be able to switch from  sequential too higharki  back an fourth"
+    - "Crewai Knowledge setup,   for links,  urls,  docks  and can be specified  for a team or an individual "
+    - "Core Functions and setup  should remain the same unless there is a better way ,   then i should approve it before it is executed"

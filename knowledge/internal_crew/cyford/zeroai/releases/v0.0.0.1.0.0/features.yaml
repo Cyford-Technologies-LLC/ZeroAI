@@ -1,0 +1,106 @@
+features:
+  - id: "FEAT-301"
+    name: "Team Collaboration Dashboard"
+    description: "Web interface for monitoring AI activities and team tasks."
+    priority: "High"
+    assigned_to: "Developer 2"
+    status: "In Progress"
+  
+  - id: "FEAT-302"
+    name: "DB Driven"
+    description: "All settings and config files should be stored in and retrieved from databases."
+    priority: "High"
+    assigned_to: "Developer 1"
+    status: "In Progress"
+
+  - id: "FEAT-303"
+    name: "Admin Portal"
+    description: |
+      - The `/app/www` directory must contain `/admin`, `/api`, and `/web` directories.
+      - The `/web` directory must contain a login page.
+      - The admin portal requires user login.
+      - The admin dashboard tracks agent learning, errors, tokens, server resources, and other monitoring metrics.
+      - Core agents (`create_prompt_refinement_agent`, `Team Manager`, `Project Manager`) are pre-created in the database and cannot be removed via the web interface.
+      - Initial agent data should be added to the databases and pre-created to run the system.
+    priority: "Medium"
+    assigned_to: "Developer 1"
+    status: "Planned"
+
+  - id: "FEAT-304"
+    name: "Crewai Knowledge Controls"
+    description: "A portal for creating and maintaining all knowledge. It should allow configuring which crews or agents have access to specific knowledge."
+    priority: "High"
+    assigned_to: "ai Learning"
+    status: "Planned"
+
+  - id: "FEAT-305"
+    name: "Portals to manage servers"
+    description: "The portal should be able to sync databases across a peer-to-peer system for LLM routers and optionally manage resources on all servers via a configuration setting."
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-306"
+    name: "AI Learning Monitoring"
+    description: "Set up the system with optimal learning concepts for AI routing. The portal must track and display AI learning progress, performance, and weaknesses."
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-307"
+    name: "Agent-Tool Access Management"
+    description: "Enable the ability to select which agent has access to which tools, with access controls configurable by all, crew, or group."
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+
+  - id: "FEAT-308"
+    name: "Backup System"
+    description: "Backup to a directory with admin  backup / restore features."
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-309"
+    name: "sequential  and hierarchical"
+    description: "From admin portal feature that allows you to set  based on crew,  which are sequential / hierarchical ."
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-310"
+    name: "Training Page"
+    description: "The admin should have a page designed fr training in the most efficient manner"
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-311"
+    name: "CREWAI Agent Options"
+    description: "
+    memory
+    planning
+    knowledge
+    Reasoning
+    testing
+    "
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-312"
+    name: "Debugging options. "
+    description: "options to save task history and debug logs accessable in the admin
+    "
+    priority: "Medium"
+    assigned_to: "Developer 3"
+    status: "In Progress"
+
+  - id: "FEAT-312"
+    name: "Project Management "
+    description: "Frontend site should have a login  ,  and after you login has a project management  interface  tat allows u to manage multiple projects  for multiple companies.  that agents can work from
+    "
+    priority: "Urgent"
+    assigned_to: "Developer 3"
+    status: "In Progress"

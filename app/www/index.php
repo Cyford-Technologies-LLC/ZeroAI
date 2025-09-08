@@ -1,43 +1,37 @@
 <?php
-session_start();
-
-// Simple PHP router
 $request = $_SERVER['REQUEST_URI'];
 $path = parse_url($request, PHP_URL_PATH);
-
-// Remove base path if needed
-$path = str_replace('/app/www', '', $path);
 
 switch ($path) {
     case '/':
     case '/admin':
-        include 'admin/login.php';
+        include __DIR__ . '/admin/login.php';
         break;
     case '/admin/dashboard':
-        include 'admin/dashboard.php';
+        include __DIR__ . '/admin/dashboard.php';
         break;
     case '/admin/users':
-        include 'admin/users.php';
+        include __DIR__ . '/admin/users.php';
         break;
     case '/admin/agents':
-        include 'admin/agents.php';
+        include __DIR__ . '/admin/agents.php';
+        break;
+    case '/admin/logout.php':
+        include __DIR__ . '/admin/logout.php';
         break;
     case '/web':
     case '/web/login':
-        include 'web/login.php';
+        include __DIR__ . '/web/login.php';
         break;
     case '/web/frontend':
-        include 'web/frontend.php';
+        include __DIR__ . '/web/frontend.php';
         break;
-    case '/api/login':
-        include 'api/auth.php';
-        break;
-    case '/api/users':
-        include 'api/users.php';
+    case '/web/logout.php':
+        include __DIR__ . '/web/logout.php';
         break;
     default:
         http_response_code(404);
-        echo "Page not found";
+        echo "<h1>404 Not Found</h1><p>Path: $path</p>";
         break;
 }
 ?>
