@@ -8,7 +8,11 @@ services:
       ports:
         - "3939:3939"
       volumes:
-        - .:/app
+        - ./src:/app/src
+        - ./API:/app/API
+        - ./run:/app/run
+        - ./config:/app/config
+        - ./examples:/app/examples
         - ./knowledge:/app/knowledge
         - ./logs:/app/logs
         - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
@@ -32,7 +36,11 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - .:/app
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
       - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
@@ -44,6 +52,7 @@ services:
     env_file:
       - .env
       - /etc/cyford/zeroai/.env
+    command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
     depends_on:
       - ollama
     restart: unless-stopped
