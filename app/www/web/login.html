@@ -13,10 +13,13 @@
     <div class="login-form">
         <h2>ZeroAI Admin Portal</h2>
         <form onsubmit="handleLogin(event)">
-            <input type="text" id="username" placeholder="Username" required>
-            <input type="password" id="password" placeholder="Password" required>
+            <input type="text" id="username" placeholder="Username (admin)" required>
+            <input type="password" id="password" placeholder="Password (zeroai2024)" required>
             <button type="submit">Login</button>
         </form>
+        <p style="text-align: center; margin-top: 15px; color: #666; font-size: 12px;">
+            Default: admin / zeroai2024
+        </p>
     </div>
     <script>
         async function handleLogin(event) {
@@ -31,13 +34,17 @@
                     body: JSON.stringify({ username, password })
                 });
                 
-                if (response.ok) {
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Store token in localStorage
+                    localStorage.setItem('zeroai_token', data.token);
                     window.location.href = '/admin';
                 } else {
-                    alert('Invalid credentials');
+                    alert('Invalid credentials. Use: admin / zeroai2024');
                 }
             } catch (error) {
-                alert('Login failed');
+                alert('Login failed: ' + error.message);
             }
         }
     </script>
