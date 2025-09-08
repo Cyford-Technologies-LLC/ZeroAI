@@ -47,6 +47,40 @@ async def login(username: str, password: str):
         return {"success": True, "token": "temp_token"}
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
+def get_all_ips():
+    import socket
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    return ["127.0.0.1", local_ip, "0.0.0.0"]
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=333)
+    import threading
+    
+    ips = get_all_ips()
+    print("\n" + "="*50)
+    print("ZeroAI Portal Server Started")
+    print("="*50)
+    print("Access URLs:")
+    for ip in ips:
+        if ip != "0.0.0.0":
+            print(f"  http://{ip}:333")
+    print("\nAdmin Login:")
+    print("  Username: admin")
+    print("  Password: admin")
+    print("\nEndpoints:")
+    print("  Login:     /")
+    print("  Dashboard: /admin")
+    print("  API:       /agents, /crews")
+    print("="*50)
+    
+    def run_server():
+        uvicorn.run(app, host="0.0.0.0", port=333, log_level="error")
+    
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+    
+    try:
+        server_thread.join()
+    except KeyboardInterrupt:
+        print("\nServer stopped.")
