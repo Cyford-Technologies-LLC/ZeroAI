@@ -7,7 +7,7 @@
 docker compose -f Docker-compose.yml down
 docker system prune --all --volumes --force
 
-
+cp .env.example  .env
 
 # --- Log messages in a standard format ---
 log_info() {
