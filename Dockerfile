@@ -58,7 +58,7 @@ RUN apt-get update && apt-get install -y php php-sqlite3 \
 # Create startup script
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
-    && echo 'cd /app/www && php -S 0.0.0.0:333' >> /app/start_portal.sh \
+    && echo 'cd /app/www && php -S 0.0.0.0:333 index.php' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
 # The CMD is the command that gets executed by 'gosu' inside the entrypoint

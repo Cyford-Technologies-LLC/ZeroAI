@@ -14,6 +14,7 @@ services:
         - ./examples:/app/examples
         - ./knowledge:/app/knowledge
         - ./logs:/app/logs
+        - ./app/www:/app/www
         - zeroai_data:/app/data
         - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
