@@ -1,7 +1,7 @@
 # Stage 1: Build dependencies as root
 FROM python:3.11-slim as builder
 
-# Install system dependencies, including gosu and tools for Docker and Composer
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl gnupg gosu \
     && rm -rf /var/lib/apt/lists/*

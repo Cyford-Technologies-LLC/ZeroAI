@@ -4,7 +4,7 @@
 # It's assumed your original setup script contains logic to set up Docker.
 # If it just contains utility functions, you can include them here.
 # For simplicity, this example assumes a minimal setup.
-docker compose -f Docker-compose.yml down
+docker compose down --rmi all --remove-orphans
 docker system prune --all --volumes --force
 
 cp .env.example  .env
