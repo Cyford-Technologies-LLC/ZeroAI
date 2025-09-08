@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   zeroai:
       build: .
@@ -54,7 +52,7 @@ services:
     env_file:
       - .env
       - /etc/cyford/zeroai/.env
-command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
+    command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
     depends_on:
       - ollama
     restart: unless-stopped

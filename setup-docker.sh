@@ -4,7 +4,10 @@
 # It's assumed your original setup script contains logic to set up Docker.
 # If it just contains utility functions, you can include them here.
 # For simplicity, this example assumes a minimal setup.
-docker compose down --rmi all --remove-orphans
+# Force stop and remove all containers
+docker stop $(docker ps -aq) 2>/dev/null || true
+docker rm $(docker ps -aq) 2>/dev/null || true
+docker compose down --rmi all --remove-orphans --volumes
 docker system prune --all --volumes --force
 
 cp .env.example  .env
