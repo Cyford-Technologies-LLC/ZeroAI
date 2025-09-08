@@ -33,6 +33,22 @@ async def admin_chat():
 async def frontend():
     return HTMLResponse(open("/app/www/web/frontend.html").read())
 
+@app.get("/admin/knowledge")
+async def admin_knowledge():
+    return HTMLResponse(open("/app/www/admin/knowledge.html").read())
+
+@app.get("/admin/crews")
+async def admin_crews():
+    return HTMLResponse(open("/app/www/admin/crews.html").read())
+
+@app.get("/admin/training")
+async def admin_training():
+    return HTMLResponse(open("/app/www/admin/training.html").read())
+
+@app.get("/admin/backup")
+async def admin_backup():
+    return HTMLResponse(open("/app/www/admin/backup.html").read())
+
 @app.get("/agents")
 async def get_agents():
     """Get all agents from database."""
@@ -110,6 +126,50 @@ async def chat_with_ai(request: Request):
     }
     
     return {"response": responses.get(agent, "AI Agent: I received your message and will process it.")}
+
+@app.get("/knowledge")
+async def get_knowledge():
+    """Get all knowledge items."""
+    conn = get_db_connection()
+    cursor = conn.execute("SELECT * FROM knowledge ORDER BY name")
+    knowledge = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+    conn.close()
+    return {"knowledge": knowledge}
+
+@app.post("/knowledge")
+async def create_knowledge(request: Request):
+    """Create new knowledge item."""
+    data = await request.json()
+    conn = get_db_connection()
+    conn.execute("""
+        INSERT INTO knowledge (name, content, type, access_level)
+        VALUES (?, ?, ?, ?)
+    """, (data["name"], data["content"], data["type"], "all"))
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+@app.delete("/knowledge/{knowledge_id}")
+async def delete_knowledge(knowledge_id: int):
+    """Delete knowledge item."""
+    conn = get_db_connection()
+    conn.execute("DELETE FROM knowledge WHERE id = ?", (knowledge_id,))
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+@app.post("/crews/process-type")
+async def update_crew_process_type(request: Request):
+    """Update crew process type."""
+    data = await request.json()
+    conn = get_db_connection()
+    conn.execute("""
+        INSERT OR REPLACE INTO crews (name, process_type, config)
+        VALUES (?, ?, ?)
+    """, (data["crew"], data["processType"], "{}"))
+    conn.commit()
+    conn.close()
+    return {"success": True}
 
 if __name__ == "__main__":
     import uvicorn

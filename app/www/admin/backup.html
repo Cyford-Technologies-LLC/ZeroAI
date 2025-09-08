@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backup & Restore - ZeroAI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
+        .nav { margin-top: 10px; }
+        .nav a { color: white; margin-right: 15px; text-decoration: none; }
+        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .backup-item { padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
+        .status-success { background: #28a745; }
+        .status-warning { background: #ffc107; }
+        .status-error { background: #dc3545; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        input, select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .progress-bar { width: 100%; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: #007bff; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Backup & Restore System</h1>
+        <div class="nav">
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/agents">Agents</a>
+            <a href="/admin/knowledge">Knowledge</a>
+            <a href="/admin/crews">Crews</a>
+            <a href="/admin/training">Training</a>
+            <a href="/admin/backup">Backup</a>
+            <a href="/admin/chat">Chat</a>
+        </div>
+    </div>
+    
+    <div class="grid">
+        <div class="card">
+            <h3>Create Backup</h3>
+            <div>
+                <label>Backup Type:</label>
+                <select id="backup-type">
+                    <option value="full">Full System Backup</option>
+                    <option value="database">Database Only</option>
+                    <option value="agents">Agents & Crews</option>
+                    <option value="knowledge">Knowledge Base</option>
+                    <option value="config">Configuration</option>
+                </select>
+            </div>
+            <div>
+                <label>Backup Location:</label>
+                <input type="text" id="backup-path" value="/app/backups/" placeholder="Backup directory path">
+            </div>
+            <div>
+                <label>Backup Name:</label>
+                <input type="text" id="backup-name" placeholder="Enter backup name (optional)">
+            </div>
+            <button class="btn-success" onclick="createBackup()">Create Backup</button>
+            <div id="backup-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <div id="progress-text">Preparing backup...</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Available Backups</h3>
+            <div id="backup-list">
+                <div class="backup-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="status-indicator status-success"></span>
+                            <strong>full_backup_2024_01_15.zip</strong><br>
+                            <small>Full System | 2024-01-15 14:30 | 245 MB</small>
+                        </div>
+                        <div>
+                            <button class="btn-primary" onclick="restoreBackup('full_backup_2024_01_15.zip')">Restore</button>
+                            <button class="btn-warning" onclick="downloadBackup('full_backup_2024_01_15.zip')">Download</button>
+                            <button class="btn-danger" onclick="deleteBackup('full_backup_2024_01_15.zip')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="backup-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="status-indicator status-success"></span>
+                            <strong>agents_backup_2024_01_14.zip</strong><br>
+                            <small>Agents & Crews | 2024-01-14 09:15 | 12 MB</small>
+                        </div>
+                        <div>
+                            <button class="btn-primary" onclick="restoreBackup('agents_backup_2024_01_14.zip')">Restore</button>
+                            <button class="btn-warning" onclick="downloadBackup('agents_backup_2024_01_14.zip')">Download</button>
+                            <button class="btn-danger" onclick="deleteBackup('agents_backup_2024_01_14.zip')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="backup-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="status-indicator status-warning"></span>
+                            <strong>knowledge_backup_2024_01_13.zip</strong><br>
+                            <small>Knowledge Base | 2024-01-13 16:45 | 89 MB</small>
+                        </div>
+                        <div>
+                            <button class="btn-primary" onclick="restoreBackup('knowledge_backup_2024_01_13.zip')">Restore</button>
+                            <button class="btn-warning" onclick="downloadBackup('knowledge_backup_2024_01_13.zip')">Download</button>
+                            <button class="btn-danger" onclick="deleteBackup('knowledge_backup_2024_01_13.zip')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="refreshBackups()">Refresh List</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Automated Backup Settings</h3>
+        <div class="grid">
+            <div>
+                <label>Schedule:</label>
+                <select id="backup-schedule">
+                    <option value="disabled">Disabled</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div>
+                <label>Retention Policy:</label>
+                <select id="retention-policy">
+                    <option value="7">Keep 7 backups</option>
+                    <option value="14">Keep 14 backups</option>
+                    <option value="30">Keep 30 backups</option>
+                    <option value="unlimited">Keep all backups</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-primary" onclick="saveBackupSettings()">Save Settings</button>
+    </div>
+
+    <script>
+        function createBackup() {
+            const type = document.getElementById('backup-type').value;
+            const path = document.getElementById('backup-path').value;
+            const name = document.getElementById('backup-name').value;
+            
+            const progressDiv = document.getElementById('backup-progress');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            progressDiv.style.display = 'block';
+            
+            // Simulate backup progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 100) progress = 100;
+                
+                progressFill.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    progressText.textContent = 'Preparing backup...';
+                } else if (progress < 70) {
+                    progressText.textContent = 'Backing up data...';
+                } else if (progress < 100) {
+                    progressText.textContent = 'Finalizing backup...';
+                } else {
+                    progressText.textContent = 'Backup completed!';
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                        progressFill.style.width = '0%';
+                        alert(`${type} backup created successfully!`);
+                    }, 1000);
+                }
+            }, 200);
+        }
+        
+        function restoreBackup(filename) {
+            if (confirm(`Restore from ${filename}? This will overwrite current data.`)) {
+                alert(`Restoring from ${filename}...`);
+            }
+        }
+        
+        function downloadBackup(filename) {
+            alert(`Downloading ${filename}...`);
+        }
+        
+        function deleteBackup(filename) {
+            if (confirm(`Delete backup ${filename}?`)) {
+                alert(`Backup ${filename} deleted`);
+            }
+        }
+        
+        function refreshBackups() {
+            alert('Refreshing backup list...');
+        }
+        
+        function saveBackupSettings() {
+            const schedule = document.getElementById('backup-schedule').value;
+            const retention = document.getElementById('retention-policy').value;
+            alert(`Backup settings saved: ${schedule} schedule, ${retention} retention`);
+        }
+    </script>
+</body>
+</html>

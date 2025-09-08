@@ -19,9 +19,13 @@
         <p>Database-Driven AI Management Portal</p>
         <nav style="margin-top: 10px;">
             <a href="/admin" style="color: white; margin-right: 15px;">Dashboard</a>
-            <a href="/admin/agents" style="color: white; margin-right: 15px;">Manage Agents</a>
+            <a href="/admin/agents" style="color: white; margin-right: 15px;">Agents</a>
+            <a href="/admin/knowledge" style="color: white; margin-right: 15px;">Knowledge</a>
+            <a href="/admin/crews" style="color: white; margin-right: 15px;">Crews</a>
+            <a href="/admin/training" style="color: white; margin-right: 15px;">Training</a>
+            <a href="/admin/backup" style="color: white; margin-right: 15px;">Backup</a>
+            <a href="/admin/chat" style="color: white; margin-right: 15px;">Chat</a>
             <a href="/frontend" style="color: white; margin-right: 15px;">Frontend</a>
-            <a href="/admin/chat" style="color: white; margin-right: 15px;">AI Chat</a>
         </nav>
     </div>
     
@@ -46,6 +50,10 @@
             <button onclick="manageKnowledge()">Manage Knowledge</button>
             <button onclick="openChat()">AI Chat</button>
             <button onclick="manageAgents()">Manage Agents</button>
+            <button onclick="manageKnowledge()">Knowledge Base</button>
+            <button onclick="manageCrews()">Crew Config</button>
+            <button onclick="openTraining()">AI Training</button>
+            <button onclick="openBackup()">Backup System</button>
             <button onclick="openFrontend()">Frontend Portal</button>
         </div>
     </div>
@@ -76,6 +84,10 @@
         function manageKnowledge() { alert('Knowledge Management - Coming Soon'); }
         function openChat() { window.open('/admin/chat', '_blank'); }
         function manageAgents() { window.location.href = '/admin/agents'; }
+        function manageKnowledge() { window.location.href = '/admin/knowledge'; }
+        function manageCrews() { window.location.href = '/admin/crews'; }
+        function openTraining() { window.location.href = '/admin/training'; }
+        function openBackup() { window.location.href = '/admin/backup'; }
         function openFrontend() { window.open('/frontend', '_blank'); }
         
         // Load agents on page load

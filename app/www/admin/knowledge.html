@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knowledge Management - ZeroAI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
+        .nav { margin-top: 10px; }
+        .nav a { color: white; margin-right: 15px; text-decoration: none; }
+        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .knowledge-item { padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
+        .access-controls { display: flex; gap: 10px; margin-top: 10px; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        input, textarea, select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 50px auto; padding: 20px; width: 80%; max-width: 600px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Knowledge Management</h1>
+        <div class="nav">
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/agents">Agents</a>
+            <a href="/admin/knowledge">Knowledge</a>
+            <a href="/admin/crews">Crews</a>
+            <a href="/admin/training">Training</a>
+            <a href="/admin/backup">Backup</a>
+            <a href="/admin/chat">Chat</a>
+        </div>
+    </div>
+    
+    <div class="grid">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Knowledge Base</h3>
+                <button class="btn-success" onclick="showCreateKnowledge()">Add Knowledge</button>
+            </div>
+            <div id="knowledge-list">Loading...</div>
+        </div>
+        
+        <div class="card">
+            <h3>Access Control</h3>
+            <div>
+                <label>Knowledge Item:</label>
+                <select id="knowledge-select">
+                    <option value="">Select knowledge...</option>
+                </select>
+            </div>
+            <div>
+                <label>Access Level:</label>
+                <select id="access-level">
+                    <option value="all">All Agents</option>
+                    <option value="crew">Specific Crew</option>
+                    <option value="agent">Specific Agent</option>
+                </select>
+            </div>
+            <div id="entity-select" style="display: none;">
+                <label>Select Entity:</label>
+                <select id="entity-list"></select>
+            </div>
+            <button class="btn-primary" onclick="updateAccess()">Update Access</button>
+        </div>
+    </div>
+
+    <!-- Create Knowledge Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Knowledge</h3>
+            <form onsubmit="createKnowledge(event)">
+                <input type="text" id="knowledgeName" placeholder="Knowledge Name" required>
+                <select id="knowledgeType">
+                    <option value="text">Text</option>
+                    <option value="url">URL</option>
+                    <option value="document">Document</option>
+                </select>
+                <textarea id="knowledgeContent" placeholder="Content or URL" rows="5" required></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-primary">Add Knowledge</button>
+                    <button type="button" class="btn-danger" onclick="hideCreateModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function loadKnowledge() {
+            try {
+                const response = await fetch('/knowledge');
+                const data = await response.json();
+                const list = document.getElementById('knowledge-list');
+                const select = document.getElementById('knowledge-select');
+                
+                list.innerHTML = data.knowledge.map(k => 
+                    `<div class="knowledge-item">
+                        <strong>${k.name}</strong> (${k.type})<br>
+                        <small>Access: ${k.access_level}</small>
+                        <div class="access-controls">
+                            <button class="btn-danger" onclick="deleteKnowledge(${k.id})">Delete</button>
+                        </div>
+                    </div>`
+                ).join('');
+                
+                select.innerHTML = '<option value="">Select knowledge...</option>' + 
+                    data.knowledge.map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+            } catch (error) {
+                document.getElementById('knowledge-list').innerHTML = 'Error loading knowledge';
+            }
+        }
+        
+        function showCreateKnowledge() {
+            document.getElementById('createModal').style.display = 'block';
+        }
+        
+        function hideCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+        
+        async function createKnowledge(event) {
+            event.preventDefault();
+            const data = {
+                name: document.getElementById('knowledgeName').value,
+                type: document.getElementById('knowledgeType').value,
+                content: document.getElementById('knowledgeContent').value
+            };
+            
+            try {
+                const response = await fetch('/knowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    hideCreateModal();
+                    loadKnowledge();
+                    alert('Knowledge added successfully!');
+                }
+            } catch (error) {
+                alert('Error adding knowledge');
+            }
+        }
+        
+        async function deleteKnowledge(id) {
+            if (confirm('Delete this knowledge item?')) {
+                try {
+                    await fetch(`/knowledge/${id}`, { method: 'DELETE' });
+                    loadKnowledge();
+                } catch (error) {
+                    alert('Error deleting knowledge');
+                }
+            }
+        }
+        
+        async function updateAccess() {
+            alert('Access control updated - Feature in development');
+        }
+        
+        document.getElementById('access-level').onchange = function() {
+            const entityDiv = document.getElementById('entity-select');
+            entityDiv.style.display = this.value === 'all' ? 'none' : 'block';
+        };
+        
+        loadKnowledge();
+    </script>
+</body>
+</html>
