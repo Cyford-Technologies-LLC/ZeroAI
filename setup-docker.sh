@@ -68,7 +68,7 @@ if lspci | grep -i 'NVIDIA' > /dev/null; then
     sudo apt-get install -y nvidia-container-toolkit
 
     # Use env to ensure the variables are set for the docker compose command
-    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml -p zeroai-prod up --build -d
+    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml -p zeroai-prod up --build --no-cache -d
 #    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml  -f docker-compose.gpu.override.yml -p zeroai-learning up --build -d
 else
     log_info "No NVIDIA GPU found. Using standard configuration."
