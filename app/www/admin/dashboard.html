@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZeroAI Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
+        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .agent-list { max-height: 300px; overflow-y: auto; }
+        .agent-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .core-agent { background: #e3f2fd; }
+        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ZeroAI Admin Dashboard</h1>
+        <p>Database-Driven AI Management Portal</p>
+        <nav style="margin-top: 10px;">
+            <a href="/admin" style="color: white; margin-right: 15px;">Dashboard</a>
+            <a href="/admin/agents" style="color: white; margin-right: 15px;">Manage Agents</a>
+            <a href="/frontend" style="color: white; margin-right: 15px;">Frontend</a>
+            <a href="/admin/chat" style="color: white; margin-right: 15px;">AI Chat</a>
+        </nav>
+    </div>
+    
+    <div class="grid">
+        <div class="card">
+            <h3>Core Agents</h3>
+            <div id="agents-list" class="agent-list">Loading...</div>
+            <button onclick="loadAgents()">Refresh Agents</button>
+        </div>
+        
+        <div class="card">
+            <h3>System Status</h3>
+            <p>Database: <span id="db-status">Connected</span></p>
+            <p>Active Crews: <span id="crew-count">0</span></p>
+            <p>Total Projects: <span id="project-count">1</span></p>
+        </div>
+        
+        <div class="card">
+            <h3>Quick Actions</h3>
+            <button onclick="switchToSequential()">Sequential Mode</button>
+            <button onclick="switchToHierarchical()">Hierarchical Mode</button>
+            <button onclick="manageKnowledge()">Manage Knowledge</button>
+            <button onclick="openChat()">AI Chat</button>
+            <button onclick="manageAgents()">Manage Agents</button>
+            <button onclick="openFrontend()">Frontend Portal</button>
+        </div>
+    </div>
+
+    <script>
+        async function loadAgents() {
+            try {
+                const response = await fetch('/agents');
+                const data = await response.json();
+                const agentsList = document.getElementById('agents-list');
+                
+                agentsList.innerHTML = data.agents.map(agent => 
+                    `<div class="agent-item ${agent.is_core ? 'core-agent' : ''}">
+                        <strong>${agent.name}</strong><br>
+                        <small>${agent.role}</small>
+                        ${agent.is_core ? '<span style="color: #007bff;"> (Core)</span>' : ''}
+                    </div>`
+                ).join('');
+                
+                document.getElementById('crew-count').textContent = data.agents.length;
+            } catch (error) {
+                document.getElementById('agents-list').innerHTML = 'Error loading agents';
+            }
+        }
+        
+        function switchToSequential() { alert('Switching to Sequential Mode'); }
+        function switchToHierarchical() { alert('Switching to Hierarchical Mode'); }
+        function manageKnowledge() { alert('Knowledge Management - Coming Soon'); }
+        function openChat() { window.open('/admin/chat', '_blank'); }
+        function manageAgents() { window.location.href = '/admin/agents'; }
+        function openFrontend() { window.open('/frontend', '_blank'); }
+        
+        // Load agents on page load
+        loadAgents();
+    </script>
+</body>
+</html>
