@@ -7,6 +7,9 @@ EXEC_GID=${LOCAL_GID:-1005}
 # Log the UID and GID being used
 echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
 
+# Add the virtual environment's bin directory to the PATH
+export PATH="/app/venv/bin:$PATH"
+
 # Check if the group exists, and create it if it doesn't
 if ! getent group "$EXEC_GID" >/dev/null; then
     groupadd -g "$EXEC_GID" appgroup
