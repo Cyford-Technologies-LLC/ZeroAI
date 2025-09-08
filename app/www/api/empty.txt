@@ -1,0 +1,2 @@
+API directory is now empty as requested.
+All functionality moved to HTML-based interfaces.

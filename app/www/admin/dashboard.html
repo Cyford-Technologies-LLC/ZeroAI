@@ -19,14 +19,15 @@
         <h1>ZeroAI Admin Dashboard</h1>
         <p>Database-Driven AI Management Portal</p>
         <nav style="margin-top: 10px;">
-            <a href="/admin" style="color: white; margin-right: 15px;">Dashboard</a>
-            <a href="/admin/agents" style="color: white; margin-right: 15px;">Agents</a>
-            <a href="/admin/knowledge" style="color: white; margin-right: 15px;">Knowledge</a>
-            <a href="/admin/crews" style="color: white; margin-right: 15px;">Crews</a>
-            <a href="/admin/training" style="color: white; margin-right: 15px;">Training</a>
-            <a href="/admin/backup" style="color: white; margin-right: 15px;">Backup</a>
-            <a href="/admin/chat" style="color: white; margin-right: 15px;">Chat</a>
-            <a href="/frontend" style="color: white; margin-right: 15px;">Frontend</a>
+            <a href="dashboard.html" style="color: white; margin-right: 15px;">Dashboard</a>
+            <a href="agents-manager.html" style="color: white; margin-right: 15px;">Agents</a>
+            <a href="users.html" style="color: white; margin-right: 15px;">Users</a>
+            <a href="knowledge.html" style="color: white; margin-right: 15px;">Knowledge</a>
+            <a href="crews.html" style="color: white; margin-right: 15px;">Crews</a>
+            <a href="training.html" style="color: white; margin-right: 15px;">Training</a>
+            <a href="backup.html" style="color: white; margin-right: 15px;">Backup</a>
+            <a href="chat.html" style="color: white; margin-right: 15px;">Chat</a>
+            <a href="../web/frontend.html" style="color: white; margin-right: 15px;">Frontend</a>
             <button onclick="logout()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 10px;">Logout</button>
         </nav>
     </div>
@@ -56,6 +57,7 @@
             <button onclick="manageCrews()">Crew Config</button>
             <button onclick="openTraining()">AI Training</button>
             <button onclick="openBackup()">Backup System</button>
+            <button onclick="manageUsers()">User Management</button>
             <button onclick="openFrontend()">Frontend Portal</button>
         </div>
     </div>
@@ -85,12 +87,23 @@
         function switchToHierarchical() { alert('Switching to Hierarchical Mode'); }
         function manageKnowledge() { alert('Knowledge Management - Coming Soon'); }
         function openChat() { window.open('/admin/chat', '_blank'); }
-        function manageAgents() { window.location.href = '/admin/agents'; }
-        function manageKnowledge() { window.location.href = '/admin/knowledge'; }
-        function manageCrews() { window.location.href = '/admin/crews'; }
-        function openTraining() { window.location.href = '/admin/training'; }
-        function openBackup() { window.location.href = '/admin/backup'; }
-        function openFrontend() { window.open('/frontend', '_blank'); }
+        // Check admin authentication
+        if (!localStorage.getItem('zeroai_admin_login')) {
+            window.location.href = 'login.html';
+        }
+        
+        function manageAgents() { window.location.href = 'agents-manager.html'; }
+        function manageKnowledge() { window.location.href = 'knowledge.html'; }
+        function manageCrews() { window.location.href = 'crews.html'; }
+        function openTraining() { window.location.href = 'training.html'; }
+        function openBackup() { window.location.href = 'backup.html'; }
+        function manageUsers() { window.location.href = 'users.html'; }
+        function openFrontend() { window.open('../web/frontend.html', '_blank'); }
+        function logout() {
+            localStorage.removeItem('zeroai_admin_login');
+            localStorage.removeItem('zeroai_admin_user');
+            window.location.href = 'login.html';
+        }
         
         // Load agents on page load
         loadAgents();
