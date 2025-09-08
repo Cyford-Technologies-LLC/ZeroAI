@@ -1,29 +1,30 @@
 version: '3.8'
 
 services:
-  zeroai:
-    build: .
-    container_name: zeroai_api-prod
-    privileged: true  # Add this line
-    ports:
-      - "3939:3939"
-    volumes:
-      - .:/app
-      - ./knowledge:/app/knowledge
-      - ./logs:/app/logs
-      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - PYTHONPATH=/app
-      - OLLAMA_HOST=http://ollama:11434
-      - LOCAL_UID=${LOCAL_UID}
-      - LOCAL_GID=${LOCAL_GID}
-    env_file:
-      - .env
-      - /etc/cyford/zeroai/.env
-    depends_on:
-      - ollama
-    restart: unless-stopped
+    zeroai:
+      build: .
+      container_name: zeroai_api-prod
+      privileged: true
+      ports:
+        - "3939:3939"
+      volumes:
+        - .:/app
+        - ./knowledge:/app/knowledge
+        - ./logs:/app/logs
+        - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
+        - /var/run/docker.sock:/var/run/docker.sock
+      environment:
+        - PYTHONPATH=/app
+        - OLLAMA_HOST=http://ollama:11434
+        - LOCAL_UID=${LOCAL_UID}
+        - LOCAL_GID=${LOCAL_GID}
+      env_file:
+        - .env
+        - /etc/cyford/zeroai/.env
+      user: "root"  # Add or ensure this line is present
+      depends_on:
+        - ollama
+      restart: unless-stopped
 
   peer:
     build: .
