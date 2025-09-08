@@ -38,28 +38,26 @@ RUN python -m venv /app/venv && \
     /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 
-# --- Stage 2: Final image with correct user and permissions ---
+# --- Stage 2: Final image ---
 FROM python:3.11-slim
 
-# Copy the gosu binary from the builder stage
+# Copy gosu and virtual environment from the builder stage
 COPY --from=builder /usr/local/bin/gosu /usr/local/bin/gosu
-
-# Copy necessary files from the builder stage
-COPY --from=builder /usr/local/bin/docker* /usr/local/bin/
 COPY --from=builder /app /app
 
-# Create a non-root user with UID 1000 and GID 1000
-RUN groupadd -r appuser -g 1000 && useradd --no-log-init -r -m -u 1000 -g 1000 appuser
-
-# Set the PATH to include the virtual environment's bin directory
+# Add virtual environment's bin to PATH
 ENV PATH="/app/venv/bin:$PATH"
 
-# Switch to the non-root user
-USER appuser
-
-# Set entrypoint and command
+# Copy entrypoint script and make it executable
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
 
+# All setup done. The container MUST start as root for the entrypoint script
+# to be able to create the user and group based on host UID/GID.
+USER root
+
+# Use the entrypoint script to run the final command
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# The CMD is the command that gets executed by 'gosu' inside the entrypoint
+CMD ["gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
