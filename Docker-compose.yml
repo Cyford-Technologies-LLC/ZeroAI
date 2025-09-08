@@ -34,7 +34,6 @@ services:
     container_name: zeroai_peer-prod
     ports:
       - "8080:8080"
-      - "333:333"
     volumes:
       - ./src:/app/src
       - ./API:/app/API

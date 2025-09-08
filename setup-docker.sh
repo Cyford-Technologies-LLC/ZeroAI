@@ -4,6 +4,8 @@
 # It's assumed your original setup script contains logic to set up Docker.
 # If it just contains utility functions, you can include them here.
 # For simplicity, this example assumes a minimal setup.
+# Kill any process using port 333
+sudo fuser -k 333/tcp 2>/dev/null || true
 # Force stop and remove all containers
 docker stop $(docker ps -aq) 2>/dev/null || true
 docker rm $(docker ps -aq) 2>/dev/null || true
