@@ -4,6 +4,9 @@
 EXEC_UID=${LOCAL_UID:-1005}
 EXEC_GID=${LOCAL_GID:-1005}
 
+# Add the virtual environment's bin directory to the PATH immediately
+export PATH="/app/venv/bin:$PATH"
+
 # Log the UID and GID being used
 echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
 
