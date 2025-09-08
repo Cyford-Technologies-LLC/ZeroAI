@@ -78,7 +78,8 @@ COPY . .
 # --- End user-level operations ---
 
 # --- End Non-root User and Environment Setup ---
-
+# Set the USER to root to ensure the entrypoint script runs with correct permissions
+USER root
 # Use the entrypoint script
 ENTRYPOINT ["docker-entrypoint.sh"]
 
