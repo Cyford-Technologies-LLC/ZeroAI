@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-    zeroai:
+  zeroai:
       build: .
       container_name: zeroai_api-prod
       privileged: true
