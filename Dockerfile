@@ -41,6 +41,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Add virtual environment's bin to PATH
 ENV PATH="/app/venv/bin:$PATH"
 
+# Set working directory
+WORKDIR /app
 
 # All setup done. The container MUST start as root for the entrypoint script
 # to be able to create the user and group based on host UID/GID.
@@ -50,4 +52,4 @@ USER root
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # The CMD is the command that gets executed by 'gosu' inside the entrypoint
-CMD ["/app/venv/bin/gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
+CMD ["/app/venv/bin/python", "/app/start_portal_docker.py"]

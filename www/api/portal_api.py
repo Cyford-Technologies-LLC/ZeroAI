@@ -1,6 +1,6 @@
 """Portal API for ZeroAI web interface."""
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import sqlite3
@@ -42,10 +42,30 @@ async def get_crews():
 @app.post("/login")
 async def login(username: str, password: str):
     """Basic login endpoint."""
-    # TODO: Implement proper authentication
     if username == "admin" and password == "admin":
         return {"success": True, "token": "temp_token"}
     raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@app.get("/chat")
+async def chat_page():
+    """Serve chat interface."""
+    return HTMLResponse(open("www/admin/chat.html").read())
+
+@app.post("/chat")
+async def chat_with_ai(request: Request):
+    """Chat with AI agents."""
+    data = await request.json()
+    message = data.get("message", "")
+    agent = data.get("agent", "team_manager")
+    
+    # Simple AI response simulation
+    responses = {
+        "team_manager": f"Team Manager: I understand you want to '{message}'. I'll coordinate the team to handle this task.",
+        "project_manager": f"Project Manager: Regarding '{message}', I'll create a project plan and track progress.",
+        "prompt_refinement": f"Prompt Refinement Agent: I can help optimize '{message}' for better AI responses."
+    }
+    
+    return {"response": responses.get(agent, "AI Agent: I received your message and will process it.")}
 
 def get_all_ips():
     import socket

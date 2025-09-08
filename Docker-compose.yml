@@ -7,6 +7,7 @@ services:
 #      privileged: true
       ports:
         - "3939:3939"
+        - "333:333"
       volumes:
         - ./src:/app/src
         - ./API:/app/API
@@ -35,6 +36,7 @@ services:
     container_name: zeroai_peer-prod
     ports:
       - "8080:8080"
+      - "333:333"
     volumes:
       - ./src:/app/src
       - ./API:/app/API
@@ -52,7 +54,7 @@ services:
     env_file:
       - .env
       - /etc/cyford/zeroai/.env
-    command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
+command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
     depends_on:
       - ollama
     restart: unless-stopped

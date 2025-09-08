@@ -38,6 +38,7 @@
             <button onclick="switchToSequential()">Sequential Mode</button>
             <button onclick="switchToHierarchical()">Hierarchical Mode</button>
             <button onclick="manageKnowledge()">Manage Knowledge</button>
+            <button onclick="openChat()">AI Chat</button>
         </div>
     </div>
 
@@ -65,6 +66,7 @@
         function switchToSequential() { alert('Switching to Sequential Mode'); }
         function switchToHierarchical() { alert('Switching to Hierarchical Mode'); }
         function manageKnowledge() { alert('Knowledge Management - Coming Soon'); }
+        function openChat() { window.open('/chat', '_blank'); }
         
         // Load agents on page load
         loadAgents();
