@@ -27,7 +27,12 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Use a virtual environment for Python dependencies
 WORKDIR /app
 COPY requirements.txt .
-RUN python -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+RUN python -m venv /app/venv
+RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+# --- DEBUG ---
+# Verify gunicorn is installed
+RUN ls -l /app/venv/bin/gunicorn || true
+# --- DEBUG END ---
 COPY . .
 
 # Copy entrypoint script and set permissions
@@ -39,6 +44,4 @@ USER root
 
 # Use the entrypoint script
 ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Use the absolute path for gunicorn
 CMD ["/app/venv/bin/gunicorn", "API.api:app", "--bind", "0.0.0.0:3939", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
