@@ -69,12 +69,12 @@ if lspci | grep -i 'NVIDIA' > /dev/null; then
 
     # Use env to ensure the variables are set for the docker compose command
     env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml -p zeroai-prod up --build -d
-    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml  -f docker-compose.gpu.override.yml -p zeroai-learning up --build -d
+#    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml  -f docker-compose.gpu.override.yml -p zeroai-learning up --build -d
 else
     log_info "No NVIDIA GPU found. Using standard configuration."
     # Use env to ensure the variables are set for the docker compose command
     env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -p zeroai-prod up --build -d
-    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml -p zeroai-learning up --build -d
+#    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml -p zeroai-learning up --build -d
 fi
 
 # Check if docker compose succeeded
