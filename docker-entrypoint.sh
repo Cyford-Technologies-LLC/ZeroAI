@@ -2,8 +2,8 @@
 
 # Set the UID and GID for the application process.
 # These values are passed from docker-compose.yml and default to 999.
-EXEC_UID=${LOCAL_UID:-999}
-EXEC_GID=${LOCAL_GID:-999}
+EXEC_UID=${LOCAL_UID:-1005}
+EXEC_GID=${LOCAL_GID:-1005}
 
 # Log the UID and GID being used
 echo "Running as UID: ${EXEC_UID}, GID: ${EXEC_GID}"
