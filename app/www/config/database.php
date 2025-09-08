@@ -37,6 +37,11 @@ class Database {
         INSERT OR IGNORE INTO users (username, password, role) VALUES 
         ('admin', '" . password_hash('admin123', PASSWORD_DEFAULT) . "', 'admin'),
         ('user', '" . password_hash('user123', PASSWORD_DEFAULT) . "', 'user');
+        
+        INSERT OR IGNORE INTO agents (name, role, goal, backstory, config, is_core) VALUES 
+        ('Team Manager', 'Team Coordination Specialist', 'Coordinate team activities', 'Expert in team management', '{"tools": ["delegate_tool"], "memory": true}', 1),
+        ('Project Manager', 'Project Management Expert', 'Oversee project execution', 'Experienced project manager', '{"tools": ["file_tool"], "memory": true}', 1),
+        ('Prompt Refinement Agent', 'Prompt Optimization Specialist', 'Refine prompts for better responses', 'Expert in prompt engineering', '{"tools": ["learning_tool"], "memory": true}', 1);
         ";
         
         $this->pdo->exec($sql);
