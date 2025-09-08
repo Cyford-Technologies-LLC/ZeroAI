@@ -4,7 +4,7 @@ services:
   zeroai:
       build: .
       container_name: zeroai_api-prod
-      privileged: true
+#      privileged: true
       ports:
         - "3939:3939"
       volumes:
