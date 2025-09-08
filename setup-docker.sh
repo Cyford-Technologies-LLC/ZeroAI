@@ -52,7 +52,7 @@ log_info "Host GID: $HOST_GID"
 # Build and start the Docker containers with UID/GID passed as environment variables
 log_info "Building and starting Docker containers with host permissions..."
 # Use env to ensure the variables are set for the docker compose command
-env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose up --build -d
+env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml up --build -d
 
 # Check if docker compose succeeded
 if [ $? -eq 0 ]; then
