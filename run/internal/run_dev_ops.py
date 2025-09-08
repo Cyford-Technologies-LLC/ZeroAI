@@ -261,6 +261,11 @@ def run_ai_dev_ops_crew_securely(router, project_id, inputs) -> dict[str, Any]:
     return manager.execute()
 
 
+def main_legacy():
+    """Legacy main function - kept for backward compatibility."""
+    console.print("⚠️ [yellow]Using legacy configuration system[/yellow]")
+    console.print("💡 [blue]Consider using run_dev_ops_db.py for database-driven operations[/blue]")
+    
 # Main entry point for the script
 if __name__ == "__main__":
     try:
