@@ -1,18 +1,17 @@
 # Stage 1: Build dependencies as root
 FROM python:3.11-slim as builder
 
-# Install system dependencies
+# Install system dependencies, including gosu
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     nano \
     git \
     gnupg \
+    gosu \
     php-cli \
     php-zip \
     unzip \
     && rm -rf /var/lib/apt/lists/*
-
-# ... (Install Docker CLI and Compose plugin, PHP Composer) ...
 
 # Use a virtual environment to isolate dependencies
 WORKDIR /app
@@ -24,7 +23,7 @@ RUN python -m venv /app/venv && \
 # --- Stage 2: Final image ---
 FROM python:3.11-slim
 
-# Install gosu in the final stage
+# Install system dependencies (gosu needed in final image)
 RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment and application code from the builder stage
