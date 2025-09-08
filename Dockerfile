@@ -51,5 +51,14 @@ USER root
 # Use the entrypoint script to run the final command
 ENTRYPOINT ["docker-entrypoint.sh"]
 
+# Install PHP and Apache
+RUN apt-get update && apt-get install -y apache2 php libapache2-mod-php php-sqlite3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && a2enmod rewrite
+
+# Configure Apache
+RUN echo 'ServerName localhost' >> /etc/apache2/apache2.conf
+COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
+
 # The CMD is the command that gets executed by 'gosu' inside the entrypoint
-CMD ["/app/venv/bin/python", "/app/www/api/portal_api.py"]
+CMD ["apache2ctl", "-D", "FOREGROUND"]
