@@ -53,7 +53,7 @@ log_info "Host GID: $HOST_GID"
 log_info "Removing old ZeroAI containers..."
 docker compose -f Docker-compose.yml -p zeroai-prod down
 # Remove old learning containers
-docker compose -f docker-compose.learning.yml -p zeroai-learning down
+#docker compose -f docker-compose.learning.yml -p zeroai-learning down
 
 
 # GPU detection and startup logic
