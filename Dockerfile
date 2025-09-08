@@ -1,9 +1,9 @@
 # Stage 1: Build dependencies as root
 FROM python:3.11-slim as builder
 
-# Install system dependencies
+# Install system dependencies, including gosu and tools for Docker and Composer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg \
+    curl gnupg gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Use a virtual environment to isolate dependencies
@@ -34,12 +34,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends docker-compose-
 # Copy virtual environment and application code from the builder stage
 COPY --from=builder /app /app
 
-# Add virtual environment's bin to PATH
-ENV PATH="/app/venv/bin:$PATH"
-
 # Copy entrypoint script and make it executable
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Add virtual environment's bin to PATH
+ENV PATH="/app/venv/bin:$PATH"
+
 
 # All setup done. The container MUST start as root for the entrypoint script
 # to be able to create the user and group based on host UID/GID.
