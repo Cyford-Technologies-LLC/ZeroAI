@@ -11,14 +11,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN python -m venv /app/venv && \
     /app/venv/bin/pip install --no-cache-dir -r requirements.txt
-# Copy only necessary files for build
-COPY requirements.txt .
-COPY src ./src
-COPY API ./API
-COPY run ./run
-COPY config ./config
-COPY examples ./examples
-COPY knowledge ./knowledge
+COPY . .
 
 
 # --- Stage 2: Final image ---
@@ -38,15 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends docker-ce-cli d
     && rm -rf /var/lib/apt/lists/*
 
 
-# Copy virtual environment and application code from the builder stage
-COPY --from=builder /app/venv /app/venv
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/API /app/API
-COPY --from=builder /app/run /app/run
-COPY --from=builder /app/config /app/config
-COPY --from=builder /app/examples /app/examples
-COPY --from=builder /app/knowledge /app/knowledge
-COPY --from=builder /app/requirements.txt /app/requirements.txt
+# Copy everything from builder stage
+COPY --from=builder /app /app
 
 # Copy entrypoint script and make it executable
 COPY docker-entrypoint.sh /usr/local/bin/
