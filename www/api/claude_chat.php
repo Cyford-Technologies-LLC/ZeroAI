@@ -156,9 +156,17 @@ if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
         mkdir($dir, 0755, true);
     }
     
+    // Debug info
+    $message .= "\n\n[DEBUG] Original path: " . $filePath;
+    $message .= "\n[DEBUG] Clean path: " . $cleanPath;
+    $message .= "\n[DEBUG] Full path: " . $fullPath;
+    $message .= "\n[DEBUG] Directory exists: " . (is_dir($dir) ? 'YES' : 'NO');
+    $message .= "\n[DEBUG] Directory writable: " . (is_writable($dir) ? 'YES' : 'NO');
+    
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
         $message .= "\n\nFile created successfully: " . $filePath . " (" . $result . " bytes written to " . $fullPath . ")";
+        $message .= "\n[DEBUG] File exists after creation: " . (file_exists($fullPath) ? 'YES' : 'NO');
     } else {
         $error = error_get_last();
         $message .= "\n\nFailed to create file: " . $filePath . " at " . $fullPath . " - Error: " . ($error['message'] ?? 'Unknown error');
