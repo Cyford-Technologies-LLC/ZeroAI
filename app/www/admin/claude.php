@@ -1,48 +1,84 @@
 <?php 
-$pageTitle = 'Claude Assistant - ZeroAI';
+$pageTitle = 'Cloud AI Assistant - ZeroAI';
 $currentPage = 'claude';
 include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/claude_integration.php';
+require_once __DIR__ . '/../api/python_cloud_bridge.php';
 
-$claude = new ClaudeIntegration();
+$cloudBridge = new PythonCloudBridge();
+$currentConfig = $cloudBridge->getCurrentCloudConfig();
 
-// Handle chat with Claude
-if ($_POST['action'] ?? '' === 'chat_claude') {
-    try {
-        $response = $claude->helpWithZeroAI($_POST['message'], [
-            'user' => $_SESSION['admin_user'],
-            'system_status' => 'online',
-            'active_agents' => 3
-        ]);
-        $claudeResponse = $response['message'];
-        $tokensUsed = $response['usage']['input_tokens'] ?? 0 + $response['usage']['output_tokens'] ?? 0;
-    } catch (Exception $e) {
-        $error = $e->getMessage();
+// Handle provider setup
+if ($_POST['action'] ?? '' === 'setup_provider') {
+    $provider = $_POST['provider'];
+    $config = ['api_key' => $_POST['api_key']];
+    $setupResult = $cloudBridge->updateCloudProvider($provider, $config);
+    $currentConfig = $cloudBridge->getCurrentCloudConfig(); // Refresh config
+}
+
+// Handle chat with cloud AI
+if ($_POST['action'] ?? '' === 'chat_cloud') {
+    $provider = $_POST['provider'] ?? $currentConfig['provider'] ?? 'anthropic';
+    $response = $cloudBridge->chatWithCloudAgent($provider, $_POST['message'], [
+        'user' => $_SESSION['admin_user'],
+        'system_status' => 'online',
+        'active_agents' => 3,
+        'current_provider' => $provider
+    ]);
+    
+    if ($response['success']) {
+        $cloudResponse = $response['response'];
+        $usedModel = $response['model'];
+    } else {
+        $error = $response['error'];
     }
 }
 
 // Test connection
 if ($_POST['action'] ?? '' === 'test_connection') {
-    $testResult = $claude->testConnection();
+    $provider = $_POST['provider'] ?? $currentConfig['provider'] ?? 'anthropic';
+    $testResult = $cloudBridge->testCloudProvider($provider);
 }
 ?>
 
-<h1>Claude AI Assistant</h1>
+<h1>Cloud AI Assistant</h1>
 
 <div class="card">
-    <h3>Claude Integration Status</h3>
+    <h3>Current Cloud Provider: <?= ucfirst($currentConfig['provider'] ?? 'local') ?></h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+        <div>OpenAI: <?= $currentConfig['has_openai_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>Anthropic: <?= $currentConfig['has_anthropic_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>Azure: <?= $currentConfig['has_azure_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>Google: <?= $currentConfig['has_google_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+    </div>
     
     <form method="POST" style="display: inline;">
         <input type="hidden" name="action" value="test_connection">
-        <button type="submit" class="btn-primary">Test Claude Connection</button>
+        <select name="provider">
+            <option value="anthropic">Claude (Anthropic)</option>
+            <option value="openai">GPT-4 (OpenAI)</option>
+        </select>
+        <button type="submit" class="btn-primary">Test Connection</button>
     </form>
     
     <?php if (isset($testResult)): ?>
         <div class="message <?= $testResult['success'] ? '' : 'error' ?>">
             <?php if ($testResult['success']): ?>
-                ✅ Claude connected successfully! Model: <?= $testResult['model'] ?>
+                ✅ <?= ucfirst($testResult['provider']) ?> connected successfully! 
+                <br>Model: <?= $testResult['model'] ?>
+                <br>Response: <?= htmlspecialchars(substr($testResult['response'], 0, 100)) ?>...
             <?php else: ?>
                 ❌ Connection failed: <?= htmlspecialchars($testResult['error']) ?>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+    
+    <?php if (isset($setupResult)): ?>
+        <div class="message <?= $setupResult['success'] ? '' : 'error' ?>">
+            <?php if ($setupResult['success']): ?>
+                ✅ <?= ucfirst($setupResult['provider']) ?> configured successfully!
+            <?php else: ?>
+                ❌ Setup failed: <?= htmlspecialchars($setupResult['error']) ?>
             <?php endif; ?>
         </div>
     <?php endif; ?>
