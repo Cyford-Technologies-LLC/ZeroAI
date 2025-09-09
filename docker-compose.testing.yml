@@ -1,57 +1,77 @@
-version: '3.8'
-
 services:
-  zeroai:
+  zeroai-test:
+      build: .
+      container_name: zeroai_api-test
+      ports:
+        - "0.0.0.0:4949:3939"  # Different port to avoid conflict
+        - "0.0.0.0:444:333"    # Different port to avoid conflict
+      volumes:
+        - ./src:/app/src
+        - ./API:/app/API
+        - ./run:/app/run
+        - ./config:/app/config
+        - ./examples:/app/examples
+        - ./knowledge:/app/knowledge
+        - ./logs:/app/logs
+        - zeroai_test_data:/app/data
+        - /etc/cyford/zeroai/.env:/app/.env:ro
+        - /var/run/docker.sock:/var/run/docker.sock
+      environment:
+        - PYTHONPATH=/app
+        - OLLAMA_HOST=http://ollama-test:11434
+        - LOCAL_UID=${LOCAL_UID}
+        - LOCAL_GID=${LOCAL_GID}
+      env_file:
+        - .env
+      depends_on:
+        - ollama-test
+      restart: unless-stopped
+      networks:
+        - zeroai-test-network
+
+  peer-test:
     build: .
-    container_name: zeroai_api-prod-testing
-    privileged: true  # Add this line
+    container_name: zeroai_peer-test
     ports:
-      - "3940:3939"
+      - "0.0.0.0:9090:8080"  # Different port to avoid conflict
     volumes:
-      - .:/app
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
-      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/cyford/zeroai/.env:/app/.env:ro
     environment:
       - PYTHONPATH=/app
-      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_HOST=http://ollama-test:11434
+      - LOCAL_UID=${LOCAL_UID}
+      - LOCAL_GID=${LOCAL_GID}
     env_file:
       - .env
-      - /etc/cyford/zeroai/.env
+    command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
     depends_on:
-      - ollama
+      - ollama-test
     restart: unless-stopped
+    networks:
+      - zeroai-test-network
 
-  peer:
-    build: .
-    container_name: zeroai_peer-prod-testing
-    ports:
-      - "8081:8080"
-    volumes:
-      - .:/app
-      - /var/cyford/zeroai/learning:/knowledge/internal_crew/agent_learning/self
-      - ./knowledge:/app/knowledge
-      - ./logs:/app/logs
-      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
-    environment:
-      - PYTHONPATH=/app
-      - OLLAMA_HOST=http://ollama_testing:11434
-    env_file:
-      - .env
-      - /etc/cyford/zeroai/.env
-    depends_on:
-      - ollama
-    restart: unless-stopped
-
-  ollama_testing:
+  ollama-test:
     image: ollama/ollama:latest
-    container_name: zeroai_ollama-testing
+    container_name: zeroai_ollama-test
     ports:
-      - "11435:11434"
+      - "0.0.0.0:12434:11434"  # Different port to avoid conflict
     volumes:
-      - ollama_data:/root/.ollama
+      - ollama_test_data:/root/.ollama
     restart: unless-stopped
+    networks:
+      - zeroai-test-network
 
 volumes:
-  ollama_data:
+  ollama_test_data:
+  zeroai_test_data:
+
+networks:
+  zeroai-test-network:
+    driver: bridge

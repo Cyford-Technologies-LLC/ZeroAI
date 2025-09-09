@@ -15,7 +15,11 @@ Docker_Details:
   Docker_FILE: "/app/Dockerfile"
   compose_file: "/app/docker-compose.testing.yml"
   safe_working_directory: "/tmp/internal_crew/zeroai/" #  Temporary local space for you to test commands locally if needed
-  notes: "Ports in testing Environment are 808, 11435, 3940 "
+  notes: "Ports in testing Environment are # Access test environment
+          # API: http://localhost:4949
+          # Web: http://localhost:444
+          # Peer: http://localhost:9090"
+
 
 # Repository details for the Git tools #  Not needed  when you have a docker file
 repository:
