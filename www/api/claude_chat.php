@@ -1,0 +1,212 @@
+<?php
+header('Content-Type: application/json');
+
+// Load environment variables
+if (file_exists('/app/.env')) {
+    $lines = file('/app/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos($line, '=') !== false && !str_starts_with($line, '#')) {
+            list($key, $value) = explode('=', $line, 2);
+            $_ENV[trim($key)] = trim($value);
+            putenv(trim($key) . '=' . trim($value));
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
+}
+
+$input = json_decode(file_get_contents('php://input'), true);
+$message = $input['message'] ?? '';
+$selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
+
+if (!$message) {
+    echo json_encode(['success' => false, 'error' => 'Message required']);
+    exit;
+}
+
+// Process file commands
+if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
+    $filePath = trim($matches[1]);
+    if (file_exists('/app/' . $filePath)) {
+        $fileContent = file_get_contents('/app/' . $filePath);
+        $message .= "\n\nFile content of " . $filePath . ":\n" . $fileContent;
+    } else {
+        $message .= "\n\nFile not found: " . $filePath;
+    }
+}
+
+if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
+    $dirPath = trim($matches[1]);
+    if (is_dir('/app/' . $dirPath)) {
+        $files = scandir('/app/' . $dirPath);
+        $listing = "Directory listing for " . $dirPath . ":\n" . implode("\n", array_filter($files, function($f) { return $f !== '.' && $f !== '..'; }));
+        $message .= "\n\n" . $listing;
+    } else {
+        $message .= "\n\nDirectory not found: " . $dirPath;
+    }
+}
+
+if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
+    $pattern = trim($matches[1]);
+    $output = shell_exec("find /app -name '*" . escapeshellarg($pattern) . "*' 2>/dev/null | head -20");
+    $message .= "\n\nSearch results for '" . $pattern . "':\n" . ($output ?: "No files found");
+}
+
+// Handle agent management commands
+if (preg_match('/\@agents/', $message)) {
+    require_once __DIR__ . '/agent_db.php';
+    $agentDB = new AgentDB();
+    $agents = $agentDB->getAllAgents();
+    $agentList = "Current Agents:\n";
+    foreach ($agents as $agent) {
+        $agentList .= "- ID: {$agent['id']}, Name: {$agent['name']}, Role: {$agent['role']}, Status: {$agent['status']}\n";
+    }
+    $message .= "\n\n" . $agentList;
+}
+
+// Handle crew status commands
+if (preg_match('/\@crews/', $message)) {
+    require_once __DIR__ . '/crew_context.php';
+    $crewContext = new CrewContextManager();
+    $runningCrews = $crewContext->getRunningCrews();
+    $recentCrews = $crewContext->getRecentCrewExecutions(5);
+    
+    $crewInfo = "Crew Status:\n\n";
+    
+    if (!empty($runningCrews)) {
+        $crewInfo .= "Currently Running Crews:\n";
+        foreach ($runningCrews as $crew) {
+            $crewInfo .= "- Task ID: {$crew['task_id']}, Project: {$crew['project_id']}, Prompt: {$crew['prompt']}\n";
+        }
+        $crewInfo .= "\n";
+    }
+    
+    if (!empty($recentCrews)) {
+        $crewInfo .= "Recent Crew Executions:\n";
+        foreach ($recentCrews as $crew) {
+            $crewInfo .= "- Task ID: {$crew['task_id']}, Status: {$crew['status']}, Project: {$crew['project_id']}\n";
+        }
+    }
+    
+    if (empty($runningCrews) && empty($recentCrews)) {
+        $crewInfo .= "No crew executions found.\n";
+    }
+    
+    $message .= "\n\n" . $crewInfo;
+}
+
+// Handle crew analysis command
+if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
+    $taskId = trim($matches[1]);
+    require_once __DIR__ . '/crew_context.php';
+    $crewContext = new CrewContextManager();
+    $execution = $crewContext->getCrewExecution($taskId);
+    
+    if ($execution) {
+        $message .= "\n\nCrew Execution Details for Task {$taskId}:\n" . json_encode($execution, JSON_PRETTY_PRINT);
+    } else {
+        $message .= "\n\nCrew execution not found for Task ID: {$taskId}";
+    }
+}
+
+if (preg_match('/\@update_agent\s+(\d+)\s+(.+)/', $message, $matches)) {
+    $agentId = trim($matches[1]);
+    $updates = trim($matches[2]);
+    
+    require_once __DIR__ . '/agent_db.php';
+    $agentDB = new AgentDB();
+    
+    // Parse update parameters (role="new role" goal="new goal" etc.)
+    $updateData = [];
+    if (preg_match('/role="([^"]+)"/', $updates, $roleMatch)) {
+        $updateData['role'] = $roleMatch[1];
+    }
+    if (preg_match('/goal="([^"]+)"/', $updates, $goalMatch)) {
+        $updateData['goal'] = $goalMatch[1];
+    }
+    if (preg_match('/backstory="([^"]+)"/', $updates, $backstoryMatch)) {
+        $updateData['backstory'] = $backstoryMatch[1];
+    }
+    if (preg_match('/status="([^"]+)"/', $updates, $statusMatch)) {
+        $updateData['status'] = $statusMatch[1];
+    }
+    
+    if (!empty($updateData)) {
+        $agentDB->updateAgent($agentId, $updateData);
+        $message .= "\n\nAgent {$agentId} updated successfully with: " . json_encode($updateData);
+    } else {
+        $message .= "\n\nNo valid update parameters found. Use format: role=\"new role\" goal=\"new goal\"";
+    }
+}
+
+// Read API key from .env file
+$envContent = file_get_contents('/app/.env');
+preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
+$apiKey = isset($matches[1]) ? trim($matches[1]) : '';
+
+if (!$apiKey) {
+    echo json_encode(['success' => false, 'error' => 'Anthropic API key not configured. Please set it up in Cloud Settings.']);
+    exit;
+}
+
+require_once __DIR__ . '/claude_integration.php';
+
+try {
+    $claude = new ClaudeIntegration($apiKey);
+    
+    // Load Claude config for system prompt
+    $claudeConfig = [];
+    if (file_exists('/app/config/claude_config.yaml')) {
+        $lines = file('/app/config/claude_config.yaml', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos($line, ': ') !== false && !str_starts_with($line, '#')) {
+                list($key, $value) = explode(': ', $line, 2);
+                $claudeConfig[trim($key)] = trim($value, '"');
+            }
+        }
+    }
+    
+    $systemPrompt = "You are Claude, integrated into the ZeroAI system.\n\n";
+    $systemPrompt .= "Your Role: " . ($claudeConfig['role'] ?? 'Senior AI Architect & Code Review Specialist') . "\n";
+    $systemPrompt .= "Your Goal: " . ($claudeConfig['goal'] ?? 'Provide expert code review, architectural guidance, and strategic optimization recommendations to enhance ZeroAI system performance and development quality.') . "\n";
+    $systemPrompt .= "Your Background: " . ($claudeConfig['backstory'] ?? 'I am Claude, an advanced AI assistant created by Anthropic. I specialize in software architecture, code optimization, and strategic technical guidance.') . "\n\n";
+    $systemPrompt .= "ZeroAI Context:\n";
+    $systemPrompt .= "- ZeroAI is a zero-cost AI workforce platform that runs entirely on user's hardware\n";
+    $systemPrompt .= "- It uses local Ollama models and CrewAI for agent orchestration\n";
+    $systemPrompt .= "- You can access project files using @file, @list, @search commands\n";
+    $systemPrompt .= "- You can monitor crew executions using @crews and @analyze_crew commands\n";
+    $systemPrompt .= "- You help with code review, system optimization, and development guidance\n";
+    $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n";
+    $systemPrompt .= "- You have access to crew execution history and can analyze running tasks\n\n";
+    
+    // Add crew context automatically
+    require_once __DIR__ . '/crew_context.php';
+    $crewContext = new CrewContextManager();
+    $runningCrews = $crewContext->getRunningCrews();
+    $recentCrews = $crewContext->getRecentCrewExecutions(3);
+    
+    if (!empty($runningCrews)) {
+        $systemPrompt .= "Currently Running Crews:\n" . json_encode($runningCrews, JSON_PRETTY_PRINT) . "\n\n";
+    }
+    
+    if (!empty($recentCrews)) {
+        $systemPrompt .= "Recent Crew Executions:\n" . json_encode($recentCrews, JSON_PRETTY_PRINT) . "\n\n";
+    }
+    $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
+    
+    $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel);
+    
+    echo json_encode([
+        'success' => true,
+        'response' => $response['message'],
+        'tokens' => ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0),
+        'model' => $response['model'] ?? $selectedModel
+    ]);
+    
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => 'Claude error: ' . $e->getMessage()]);
+}
+?>

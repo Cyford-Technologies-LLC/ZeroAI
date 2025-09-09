@@ -1,209 +1,7 @@
 <?php 
-// Load environment variables
-if (file_exists('/app/.env')) {
-    $lines = file('/app/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && !str_starts_with($line, '#')) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
-            putenv(trim($key) . '=' . trim($value));
-        }
-    }
-}
-
 $pageTitle = 'Claude AI Chat - ZeroAI';
 $currentPage = 'claude_chat';
 include __DIR__ . '/includes/header.php';
-
-// Handle chat with Claude
-if ($_POST['action'] ?? '' === 'chat_claude') {
-    $message = $_POST['message'] ?? '';
-    
-    if ($message) {
-        // Check for file commands
-        if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
-            $filePath = trim($matches[1]);
-            if (file_exists('/app/' . $filePath)) {
-                $fileContent = file_get_contents('/app/' . $filePath);
-                $message .= "\n\nFile content of " . $filePath . ":\n" . $fileContent;
-            } else {
-                $message .= "\n\nFile not found: " . $filePath;
-            }
-        }
-        
-        if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
-            $dirPath = trim($matches[1]);
-            if (is_dir('/app/' . $dirPath)) {
-                $files = scandir('/app/' . $dirPath);
-                $listing = "Directory listing for " . $dirPath . ":\n" . implode("\n", array_filter($files, function($f) { return $f !== '.' && $f !== '..'; }));
-                $message .= "\n\n" . $listing;
-            } else {
-                $message .= "\n\nDirectory not found: " . $dirPath;
-            }
-        }
-        
-        if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
-            $pattern = trim($matches[1]);
-            $output = shell_exec("find /app -name '*" . escapeshellarg($pattern) . "*' 2>/dev/null | head -20");
-            $message .= "\n\nSearch results for '" . $pattern . "':\n" . ($output ?: "No files found");
-        }
-        
-        // Handle agent management commands
-        if (preg_match('/\@agents/', $message)) {
-            require_once __DIR__ . '/../api/agent_db.php';
-            $agentDB = new AgentDB();
-            $agents = $agentDB->getAllAgents();
-            $agentList = "Current Agents:\n";
-            foreach ($agents as $agent) {
-                $agentList .= "- ID: {$agent['id']}, Name: {$agent['name']}, Role: {$agent['role']}, Status: {$agent['status']}\n";
-            }
-            $message .= "\n\n" . $agentList;
-        }
-        
-        // Handle crew status commands
-        if (preg_match('/\@crews/', $message)) {
-            require_once __DIR__ . '/../api/crew_context.php';
-            $crewContext = new CrewContextManager();
-            $runningCrews = $crewContext->getRunningCrews();
-            $recentCrews = $crewContext->getRecentCrewExecutions(5);
-            
-            $crewInfo = "Crew Status:\n\n";
-            
-            if (!empty($runningCrews)) {
-                $crewInfo .= "Currently Running Crews:\n";
-                foreach ($runningCrews as $crew) {
-                    $crewInfo .= "- Task ID: {$crew['task_id']}, Project: {$crew['project_id']}, Prompt: {$crew['prompt']}\n";
-                }
-                $crewInfo .= "\n";
-            }
-            
-            if (!empty($recentCrews)) {
-                $crewInfo .= "Recent Crew Executions:\n";
-                foreach ($recentCrews as $crew) {
-                    $crewInfo .= "- Task ID: {$crew['task_id']}, Status: {$crew['status']}, Project: {$crew['project_id']}\n";
-                }
-            }
-            
-            if (empty($runningCrews) && empty($recentCrews)) {
-                $crewInfo .= "No crew executions found.\n";
-            }
-            
-            $message .= "\n\n" . $crewInfo;
-        }
-        
-        // Handle crew analysis command
-        if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
-            $taskId = trim($matches[1]);
-            require_once __DIR__ . '/../api/crew_context.php';
-            $crewContext = new CrewContextManager();
-            $execution = $crewContext->getCrewExecution($taskId);
-            
-            if ($execution) {
-                $message .= "\n\nCrew Execution Details for Task {$taskId}:\n" . json_encode($execution, JSON_PRETTY_PRINT);
-            } else {
-                $message .= "\n\nCrew execution not found for Task ID: {$taskId}";
-            }
-        }
-        
-        if (preg_match('/\@update_agent\s+(\d+)\s+(.+)/', $message, $matches)) {
-            $agentId = trim($matches[1]);
-            $updates = trim($matches[2]);
-            
-            require_once __DIR__ . '/../api/agent_db.php';
-            $agentDB = new AgentDB();
-            
-            // Parse update parameters (role="new role" goal="new goal" etc.)
-            $updateData = [];
-            if (preg_match('/role="([^"]+)"/', $updates, $roleMatch)) {
-                $updateData['role'] = $roleMatch[1];
-            }
-            if (preg_match('/goal="([^"]+)"/', $updates, $goalMatch)) {
-                $updateData['goal'] = $goalMatch[1];
-            }
-            if (preg_match('/backstory="([^"]+)"/', $updates, $backstoryMatch)) {
-                $updateData['backstory'] = $backstoryMatch[1];
-            }
-            if (preg_match('/status="([^"]+)"/', $updates, $statusMatch)) {
-                $updateData['status'] = $statusMatch[1];
-            }
-            
-            if (!empty($updateData)) {
-                $agentDB->updateAgent($agentId, $updateData);
-                $message .= "\n\nAgent {$agentId} updated successfully with: " . json_encode($updateData);
-            } else {
-                $message .= "\n\nNo valid update parameters found. Use format: role=\"new role\" goal=\"new goal\"";
-            }
-        }
-        
-        // Read API key from .env file
-        $envContent = file_get_contents('/app/.env');
-        preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
-        $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
-        
-        if ($apiKey) {
-            require_once __DIR__ . '/../api/claude_integration.php';
-            
-            try {
-                $claude = new ClaudeIntegration($apiKey);
-                
-                // Get selected model
-                $selectedModel = $_POST['claude_model'] ?? 'claude-sonnet-4-20250514';
-                
-                // Load Claude config for system prompt
-                $claudeConfig = [];
-                if (file_exists('/app/config/claude_config.yaml')) {
-                    $lines = file('/app/config/claude_config.yaml', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                    foreach ($lines as $line) {
-                        if (strpos($line, ': ') !== false && !str_starts_with($line, '#')) {
-                            list($key, $value) = explode(': ', $line, 2);
-                            $claudeConfig[trim($key)] = trim($value, '"');
-                        }
-                    }
-                }
-                
-                $systemPrompt = "You are Claude, integrated into the ZeroAI system.\n\n";
-                $systemPrompt .= "Your Role: " . ($claudeConfig['role'] ?? 'Senior AI Architect & Code Review Specialist') . "\n";
-                $systemPrompt .= "Your Goal: " . ($claudeConfig['goal'] ?? 'Provide expert code review, architectural guidance, and strategic optimization recommendations to enhance ZeroAI system performance and development quality.') . "\n";
-                $systemPrompt .= "Your Background: " . ($claudeConfig['backstory'] ?? 'I am Claude, an advanced AI assistant created by Anthropic. I specialize in software architecture, code optimization, and strategic technical guidance.') . "\n\n";
-                $systemPrompt .= "ZeroAI Context:\n";
-                $systemPrompt .= "- ZeroAI is a zero-cost AI workforce platform that runs entirely on user's hardware\n";
-                $systemPrompt .= "- It uses local Ollama models and CrewAI for agent orchestration\n";
-                $systemPrompt .= "- You can access project files using @file, @list, @search commands\n";
-                $systemPrompt .= "- You can monitor crew executions using @crews and @analyze_crew commands\n";
-                $systemPrompt .= "- You help with code review, system optimization, and development guidance\n";
-                $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n";
-                $systemPrompt .= "- You have access to crew execution history and can analyze running tasks\n\n";
-                
-                // Add crew context automatically
-                require_once __DIR__ . '/../api/crew_context.php';
-                $crewContext = new CrewContextManager();
-                $runningCrews = $crewContext->getRunningCrews();
-                $recentCrews = $crewContext->getRecentCrewExecutions(3);
-                
-                if (!empty($runningCrews)) {
-                    $systemPrompt .= "Currently Running Crews:\n" . json_encode($runningCrews, JSON_PRETTY_PRINT) . "\n\n";
-                }
-                
-                if (!empty($recentCrews)) {
-                    $systemPrompt .= "Recent Crew Executions:\n" . json_encode($recentCrews, JSON_PRETTY_PRINT) . "\n\n";
-                }
-                $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
-                
-                $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel);
-                $claudeResponse = $response['message'];
-                $tokensUsed = ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0);
-                $usedModel = $response['model'] ?? 'claude-3-5-haiku-20241022';
-                
-            } catch (Exception $e) {
-                $error = 'Claude error: ' . $e->getMessage();
-            }
-        } else {
-            $error = 'Anthropic API key not configured. Please set it up in Cloud Settings.';
-        }
-    } else {
-        $error = 'Message required';
-    }
-}
 ?>
 
 <h1>💬 Chat with Claude</h1>
@@ -212,50 +10,151 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
     <h3>Direct Claude AI Chat</h3>
     <p>Chat directly with Claude using your configured personality and ZeroAI context. Use @file, @list, @search commands to share project files.</p>
     
-    <?php if (isset($error)): ?>
-        <div class="message error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
+    <div style="margin-bottom: 10px;">
+        <label><strong>Claude Model:</strong></label>
+        <select id="claude-model" style="width: 300px;">
+            <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (Latest & Most Advanced)</option>
+            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
+            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+            <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+        </select>
+    </div>
     
-    <form method="POST">
-        <input type="hidden" name="action" value="chat_claude">
-        
-        <div style="margin-bottom: 10px;">
-            <label><strong>Claude Model:</strong></label>
-            <select name="claude_model" style="width: 300px;">
-                <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (Latest & Most Advanced)</option>
-                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
-                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-            </select>
-        </div>
-        
-        <textarea name="message" placeholder="Ask Claude about ZeroAI optimization, code review, or development help...
+    <div id="chat-container" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; margin: 15px 0; background: #f8f9fa; border-radius: 8px;">
+        <div id="chat-messages"></div>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <textarea id="message-input" placeholder="Ask Claude about ZeroAI optimization, code review, or development help...
 
 Examples:
 - @file src/main.py (to share a file)
 - @list www/admin/ (to list directory contents)  
 - @search config (to find files)
 - @agents (to see all agents)
-- @update_agent 5 role="Senior Developer" goal="Write better code"
+- @update_agent 5 role=&quot;Senior Developer&quot; goal=&quot;Write better code&quot;
 - Help me optimize my ZeroAI configuration
-- Review my agent performance and suggest improvements" rows="6" required></textarea>
-        <button type="submit" class="btn-success">Chat with Claude</button>
-    </form>
+- Review my agent performance and suggest improvements" rows="3" style="flex: 1;"></textarea>
+        <button id="send-button" class="btn-success" style="height: fit-content;">Send</button>
+    </div>
     
-    <?php if (isset($claudeResponse)): ?>
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #007bff;">
-            <h4>Claude's Response:</h4>
-            <div style="white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
-                <?= htmlspecialchars($claudeResponse) ?>
-            </div>
-            <small style="color: #666; margin-top: 15px; display: block;">
-                Tokens used: <?= $tokensUsed ?? 0 ?> | Model: <?= $usedModel ?? 'claude-3-5-haiku-20241022' ?>
-            </small>
-        </div>
-    <?php endif; ?>
+    <div id="status" style="margin-top: 10px; color: #666; font-size: 12px;"></div>
 </div>
+
+<script>
+let chatHistory = [];
+
+async function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    const selectedModel = document.getElementById('claude-model').value;
+    const sendButton = document.getElementById('send-button');
+    const status = document.getElementById('status');
+    
+    // Add user message to chat
+    addMessageToChat('You', message, 'user');
+    messageInput.value = '';
+    
+    // Disable send button and show loading
+    sendButton.disabled = true;
+    sendButton.textContent = 'Sending...';
+    status.textContent = 'Claude is thinking...';
+    
+    try {
+        const response = await fetch('/api/claude_chat.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                model: selectedModel
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            addMessageToChat('Claude', result.response, 'claude');
+            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model}`;
+        } else {
+            addMessageToChat('System', 'Error: ' + result.error, 'error');
+            status.textContent = 'Error occurred';
+        }
+    } catch (error) {
+        addMessageToChat('System', 'Connection error: ' + error.message, 'error');
+        status.textContent = 'Connection failed';
+    }
+    
+    // Re-enable send button
+    sendButton.disabled = false;
+    sendButton.textContent = 'Send';
+}
+
+function addMessageToChat(sender, message, type) {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    
+    let bgColor = '#ffffff';
+    let borderColor = '#007bff';
+    
+    if (type === 'user') {
+        bgColor = '#e3f2fd';
+        borderColor = '#2196f3';
+    } else if (type === 'claude') {
+        bgColor = '#f8f9fa';
+        borderColor = '#007bff';
+    } else if (type === 'error') {
+        bgColor = '#ffebee';
+        borderColor = '#f44336';
+    }
+    
+    messageDiv.innerHTML = `
+        <div style="background: ${bgColor}; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid ${borderColor};">
+            <div style="font-weight: bold; margin-bottom: 8px; color: ${borderColor};">${sender}:</div>
+            <div style="white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">${escapeHtml(message)}</div>
+            <div style="font-size: 11px; color: #666; margin-top: 8px;">${new Date().toLocaleTimeString()}</div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // Store in history
+    chatHistory.push({sender, message, type, timestamp: new Date()});
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function sendQuickMessage(message) {
+    document.getElementById('message-input').value = message;
+    sendMessage();
+}
+
+// Event listeners
+document.getElementById('send-button').addEventListener('click', sendMessage);
+document.getElementById('message-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+// Load initial message
+addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI system. I can help you with code review, system optimization, and development guidance. Use @file, @list, @search commands to share project files with me, or @agents, @crews commands to check your AI workforce status.', 'claude');
+</script>
 
 <div class="card">
     <h3>🛠️ File Access Commands</h3>
@@ -302,35 +201,13 @@ Examples:
     <h3>🎯 Quick Actions</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
         
-        <form method="POST">
-            <input type="hidden" name="action" value="chat_claude">
-            <input type="hidden" name="message" value="@list src/ 
-
-Analyze my ZeroAI source code structure and suggest optimizations for better performance and maintainability.">
-            <button type="submit" class="btn-primary" style="width: 100%;">Analyze Code Structure</button>
-        </form>
+        <button onclick="sendQuickMessage('@list src/\n\nAnalyze my ZeroAI source code structure and suggest optimizations for better performance and maintainability.')" class="btn-primary" style="width: 100%;">Analyze Code Structure</button>
         
-        <form method="POST">
-            <input type="hidden" name="action" value="chat_claude">
-            <input type="hidden" name="message" value="@file config/settings.yaml
-
-Review my ZeroAI configuration and suggest improvements for better agent performance and resource utilization.">
-            <button type="submit" class="btn-primary" style="width: 100%;">Review Configuration</button>
-        </form>
+        <button onclick="sendQuickMessage('@file config/settings.yaml\n\nReview my ZeroAI configuration and suggest improvements for better agent performance and resource utilization.')" class="btn-primary" style="width: 100%;">Review Configuration</button>
         
-        <form method="POST">
-            <input type="hidden" name="action" value="chat_claude">
-            <input type="hidden" name="message" value="What are the best practices for scaling my ZeroAI workforce and managing multiple crews efficiently? How can I optimize agent task distribution?">
-            <button type="submit" class="btn-primary" style="width: 100%;">Scaling Advice</button>
-        </form>
+        <button onclick="sendQuickMessage('What are the best practices for scaling my ZeroAI workforce and managing multiple crews efficiently? How can I optimize agent task distribution?')" class="btn-primary" style="width: 100%;">Scaling Advice</button>
         
-        <form method="POST">
-            <input type="hidden" name="action" value="chat_claude">
-            <input type="hidden" name="message" value="@agents
-
-Analyze my current agents and suggest improvements to their roles, goals, and configurations for better performance.">
-            <button type="submit" class="btn-primary" style="width: 100%;">Analyze & Improve Agents</button>
-        </form>
+        <button onclick="sendQuickMessage('@agents\n\nAnalyze my current agents and suggest improvements to their roles, goals, and configurations for better performance.')" class="btn-primary" style="width: 100%;">Analyze & Improve Agents</button>
         
     </div>
 </div>
