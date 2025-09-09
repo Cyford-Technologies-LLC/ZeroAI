@@ -90,6 +90,12 @@ class AgentChat {
     }
     
     private function executeAgentChat($session, $message, $history) {
+        // Check if this is Claude AI Assistant
+        if ($session['name'] === 'Claude AI Assistant') {
+            return $this->executeClaude($session, $message, $history);
+        }
+        
+        // Regular CrewAI agent execution
         $config = json_decode($session['config'], true);
         $historyStr = $this->formatHistoryForAgent($history);
         
@@ -179,6 +185,46 @@ except Exception as e:
         ];
     }
     
+    private function executeClaude($session, $message, $history) {
+        require_once __DIR__ . '/claude_integration.php';
+        
+        try {
+            $claude = new ClaudeIntegration();
+            
+            // Build system prompt with agent configuration
+            $systemPrompt = "You are {$session['name']}, integrated into ZeroAI.
+
+Role: {$session['role']}
+Goal: {$session['goal']}
+Backstory: {$session['backstory']}
+
+You are part of the ZeroAI system - a zero-cost AI workforce platform that runs entirely on user's hardware with local Ollama models. You have access to file tools (@file, @list, @search) and can help with ZeroAI management, development, and optimization.
+
+Be helpful, knowledgeable about ZeroAI, and maintain your configured personality.";
+            
+            // Add conversation history to message
+            $historyStr = $this->formatHistoryForAgent($history);
+            if ($historyStr) {
+                $message = "Previous conversation:\n{$historyStr}\n\nCurrent message: {$message}";
+            }
+            
+            $response = $claude->chatWithClaude($message, $systemPrompt);
+            
+            return [
+                'message' => $response['message'],
+                'tokens' => $response['usage']['input_tokens'] ?? 0 + $response['usage']['output_tokens'] ?? 0,
+                'success' => true
+            ];
+            
+        } catch (Exception $e) {
+            return [
+                'message' => "Sorry, I encountered an error: " . $e->getMessage(),
+                'tokens' => 0,
+                'success' => false
+            ];
+        }
+    }
+    
     private function formatHistoryForAgent($history) {
         $formatted = [];
         foreach ($history as $msg) {
@@ -227,6 +273,17 @@ except Exception as e:
             ORDER BY is_core DESC, name
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function getSession($sessionId) {
+        $stmt = $this->db->prepare("
+            SELECT cs.*, a.name as agent_name, a.role as agent_role
+            FROM chat_sessions cs
+            JOIN agents a ON cs.agent_id = a.id
+            WHERE cs.id = ?
+        ");
+        $stmt->execute([$sessionId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
 ?>
