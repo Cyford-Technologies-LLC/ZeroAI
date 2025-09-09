@@ -172,6 +172,39 @@ def discover_available_crews() -> dict[str, list[str]] | dict[str, dict[str, str
 
 def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
     """
+    Loads and configures all available coworker agents from database (dynamic) or discovered crews (fallback).
+    """
+    console.print("🔍 Loading coworkers dynamically...", style="blue")
+    
+    # Try dynamic loading from database first
+    try:
+        from src.utils.dynamic_agent_loader import dynamic_loader
+        agents_config = dynamic_loader.get_all_active_agents()
+        
+        if agents_config:
+            console.print(f"📊 Found {len(agents_config)} agents in database", style="green")
+            all_coworkers = []
+            
+            for config in agents_config:
+                try:
+                    agent = dynamic_loader.create_agent_from_config(config, router, tools=tools)
+                    all_coworkers.append(agent)
+                    console.print(f"✅ Loaded dynamic agent: {agent.role}", style="green")
+                except Exception as e:
+                    console.print(f"❌ Failed to create agent {config['role']}: {e}", style="red")
+            
+            if all_coworkers:
+                console.print(f"🎯 Successfully loaded {len(all_coworkers)} dynamic agents", style="cyan")
+                return all_coworkers
+    
+    except Exception as e:
+        console.print(f"⚠️ Dynamic loading failed, falling back to static: {e}", style="yellow")
+    
+    # Fallback to original static loading
+    return load_all_coworkers_static(router, inputs, tools)
+
+def load_all_coworkers_static(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
+    """
     Loads and configures all available coworker agents from discovered crews.
     """
     console.print("🔍 Loading coworkers...", style="blue")

@@ -2,25 +2,28 @@
 $pageTitle = 'Agent Management - ZeroAI';
 $currentPage = 'agents';
 include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/agent_importer.php';
+require_once __DIR__ . '/../api/agent_db.php';
 
-$importer = new AgentImporter();
+$agentDB = new AgentDB();
 
 // Handle actions
 if ($_POST['action'] ?? '' === 'import_agents') {
-    $imported = $importer->importExistingAgents();
+    $imported = $agentDB->importExistingAgents();
     $message = count($imported) . ' agents imported successfully';
 } elseif ($_POST['action'] ?? '' === 'update_agent') {
     $updates = [
+        'name' => $_POST['name'],
         'role' => $_POST['role'],
         'goal' => $_POST['goal'],
-        'backstory' => $_POST['backstory']
+        'backstory' => $_POST['backstory'],
+        'status' => $_POST['status'] ?? 'active',
+        'llm_model' => $_POST['llm_model'] ?? 'local'
     ];
-    $importer->updateAgentRealtime($_POST['agent_id'], $updates);
+    $agentDB->updateAgent($_POST['agent_id'], $updates);
     $message = 'Agent updated successfully';
 }
 
-$agents = $importer->getActiveAgents();
+$agents = $agentDB->getActiveAgents();
 ?>
 
 <h1>Agent Management</h1>
