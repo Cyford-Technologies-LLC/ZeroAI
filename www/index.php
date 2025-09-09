@@ -159,6 +159,36 @@ switch ($path) {
         include __DIR__ . '/admin/crew_stream.php';
         break;
         
+    case '/admin/error_logs':
+        requireAdminAuth();
+        include __DIR__ . '/admin/error_logs.php';
+        break;
+        
+    case '/admin/backup':
+        requireAdminAuth();
+        include __DIR__ . '/admin/backup.php';
+        break;
+        
+    case '/admin/restore':
+        requireAdminAuth();
+        include __DIR__ . '/admin/restore.php';
+        break;
+        
+    case '/admin/diagnostics':
+        requireAdminAuth();
+        include __DIR__ . '/admin/diagnostics.php';
+        break;
+        
+    case '/admin/logs':
+        requireAdminAuth();
+        include __DIR__ . '/admin/logs.php';
+        break;
+        
+    case '/admin/performance':
+        requireAdminAuth();
+        include __DIR__ . '/admin/performance.php';
+        break;
+        
     case '/web':
     case '/web/login':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
