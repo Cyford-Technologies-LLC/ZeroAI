@@ -193,7 +193,7 @@ if ($_POST['action'] ?? '' === 'test_connection') {
     <?php endif; ?>
     
     <form method="POST">
-        <input type="hidden" name="action" value="chat_claude">
+        <input type="hidden" name="action" value="chat_cloud">
         <textarea name="message" placeholder="Ask Claude about ZeroAI optimization, agent improvements, or development help..." rows="4" required></textarea>
         <button type="submit" class="btn-success">Ask Claude</button>
     </form>
