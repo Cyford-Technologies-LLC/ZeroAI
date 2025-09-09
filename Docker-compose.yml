@@ -16,7 +16,7 @@ services:
         - ./logs:/app/logs
         - ./app/www:/app/www
         - zeroai_data:/app/data
-        - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
+        # - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
       environment:
         - PYTHONPATH=/app
@@ -25,7 +25,6 @@ services:
         - LOCAL_GID=${LOCAL_GID}
       env_file:
         - .env
-        - /etc/cyford/zeroai/.env
       user: "root"  # Add or ensure this line is present
       depends_on:
         - ollama
@@ -44,7 +43,7 @@ services:
       - ./examples:/app/examples
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
-      - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
+      # - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
@@ -52,7 +51,6 @@ services:
       - LOCAL_GID=${LOCAL_GID}
     env_file:
       - .env
-      - /etc/cyford/zeroai/.env
     command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
     depends_on:
       - ollama
