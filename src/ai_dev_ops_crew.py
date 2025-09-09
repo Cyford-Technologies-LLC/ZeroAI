@@ -255,13 +255,13 @@ class AIOpsCrewManager:
         # Override repository URL if provided in inputs
         if self.repository:
             # Handle repository config - ensure it's a dict
-        if isinstance(self.project_config.get('repository'), str):
-            repo_url = self.project_config['repository']
-            self.project_config['repository'] = {'url': repo_url}
-        elif 'repository' not in self.project_config:
-            self.project_config['repository'] = {'url': self.repository}
-        else:
-            self.project_config['repository']['url'] = self.repository
+            if isinstance(self.project_config.get('repository'), str):
+                repo_url = self.project_config['repository']
+                self.project_config['repository'] = {'url': repo_url}
+            elif 'repository' not in self.project_config:
+                self.project_config['repository'] = {'url': self.repository}
+            else:
+                self.project_config['repository']['url'] = self.repository
 
         self.working_dir = self._setup_working_dir()
         self.tools = self._initialize_tools()
