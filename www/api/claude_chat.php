@@ -169,9 +169,10 @@ if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
     
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
-        $message .= "\n\nFile created: " . $filePath . " (" . $result . " bytes)";
+        $exists = file_exists($fullPath) ? 'EXISTS' : 'MISSING';
+        $message .= "\n\nFile created: " . $filePath . " (" . $result . " bytes) - Status: " . $exists;
     } else {
-        $message .= "\n\nFailed to create: " . $filePath;
+        $message .= "\n\nFailed to create: " . $filePath . " at " . $fullPath;
     }
 }
 
