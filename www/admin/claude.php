@@ -9,9 +9,37 @@ $currentConfig = $cloudBridge->getCurrentCloudConfig();
 
 // Handle provider setup
 if ($_POST['action'] ?? '' === 'setup_provider') {
-    $provider = $_POST['provider'];
-    $config = ['api_key' => $_POST['api_key']];
-    $setupResult = $cloudBridge->updateCloudProvider($provider, $config);
+    $provider = $_POST['provider'] ?? 'anthropic';
+    $apiKey = $_POST['api_key'] ?? '';
+    
+    if ($apiKey) {
+        // Direct .env update
+        $envFile = '/app/.env';
+        $envContent = file_get_contents($envFile);
+        
+        $keyName = strtoupper($provider) . '_API_KEY';
+        
+        if (strpos($envContent, $keyName) !== false) {
+            // Update existing
+            $envContent = preg_replace('/^' . $keyName . '=.*/m', $keyName . '=' . $apiKey, $envContent);
+        } else {
+            // Add new
+            $envContent .= "\n# Cloud AI Configuration\n" . $keyName . '=' . $apiKey . "\n";
+        }
+        
+        file_put_contents($envFile, $envContent);
+        
+        // Update settings.yaml
+        $yamlFile = '/app/config/settings.yaml';
+        $yamlContent = file_get_contents($yamlFile);
+        $yamlContent = preg_replace('/provider:\s*"?local"?/', 'provider: "' . $provider . '"', $yamlContent);
+        file_put_contents($yamlFile, $yamlContent);
+        
+        $setupResult = ['success' => true, 'provider' => $provider];
+    } else {
+        $setupResult = ['success' => false, 'error' => 'API key required'];
+    }
+    
     $currentConfig = $cloudBridge->getCurrentCloudConfig(); // Refresh config
 }
 
@@ -85,8 +113,21 @@ if ($_POST['action'] ?? '' === 'test_connection') {
 </div>
 
 <div class="card">
-    <h3>Chat with Claude</h3>
-    <p>Ask Claude to help optimize your ZeroAI system, analyze agent performance, or assist with development.</p>
+    <h3>Setup Cloud Provider</h3>
+    <form method="POST">
+        <input type="hidden" name="action" value="setup_provider">
+        <select name="provider">
+            <option value="anthropic">Claude (Anthropic)</option>
+            <option value="openai">GPT-4 (OpenAI)</option>
+        </select>
+        <input type="password" name="api_key" placeholder="Enter API Key" required style="margin: 0 10px; width: 300px;">
+        <button type="submit" class="btn-success">Setup Provider</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Chat with Cloud AI</h3>
+    <p>Ask your cloud AI to help optimize your ZeroAI system, analyze agent performance, or assist with development.</p>
     
     <?php if (isset($error)): ?>
         <div class="message error"><?= htmlspecialchars($error) ?></div>
