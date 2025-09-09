@@ -59,24 +59,32 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
     $message = $_POST['message'] ?? '';
     
     if ($message) {
-        $escapedMessage = escapeshellarg($message);
-        $pythonCmd = '/app/venv/bin/python -c "'
-            . 'import sys; sys.path.append("/app"); sys.path.append("/app/src"); '
-            . 'from src.providers.cloud_providers import CloudProviderManager; '
-            . 'import os; '
-            . 'llm = CloudProviderManager.create_anthropic_llm(); '
-            . 'response = llm.invoke("You are Claude integrated into ZeroAI. Help with: " + ' . $escapedMessage . '); '
-            . 'print(response)'
-            . '"';
+        // Read API key from .env file
+        $envContent = file_get_contents('/app/.env');
+        preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
+        $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
         
-        $output = shell_exec($pythonCmd . ' 2>&1');
-        
-        if ($output && !strpos($output, 'Error') && !strpos($output, 'Traceback')) {
-            $cloudResponse = trim($output);
-            $usedModel = 'claude-3-5-sonnet-20241022';
-            $tokensUsed = 'N/A';
+        if ($apiKey) {
+            $escapedMessage = escapeshellarg($message);
+            $pythonCmd = 'export ANTHROPIC_API_KEY=' . escapeshellarg($apiKey) . ' && /app/venv/bin/python -c "'
+                . 'import sys; sys.path.append(\"/app\"); sys.path.append(\"/app/src\"); '
+                . 'from src.providers.cloud_providers import CloudProviderManager; '
+                . 'llm = CloudProviderManager.create_anthropic_llm(model=\"claude-sonnet-4-20250514\"); '
+                . 'response = llm.call(\"You are Claude integrated into ZeroAI. Help with: \" + ' . $escapedMessage . '); '
+                . 'print(response)'
+                . '"';
+            
+            $output = shell_exec($pythonCmd . ' 2>&1');
+            
+            if ($output && !strpos($output, 'Error') && !strpos($output, 'Traceback')) {
+                $cloudResponse = trim($output);
+                $usedModel = 'claude-sonnet-4-20250514';
+                $tokensUsed = 'N/A';
+            } else {
+                $error = 'Python error: ' . $output;
+            }
         } else {
-            $error = 'Python error: ' . $output;
+            $error = 'API key not found in .env file';
         }
     } else {
         $error = 'Message required';
