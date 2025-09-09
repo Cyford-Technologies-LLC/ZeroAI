@@ -57,6 +57,38 @@ switch ($path) {
         }
         break;
         
+    case '/admin/crews':
+        requireAdminAuth();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            handleCrewAction();
+        } else {
+            include __DIR__ . '/admin/crews.php';
+        }
+        break;
+        
+    case '/admin/tasks':
+        requireAdminAuth();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            handleTaskAction();
+        } else {
+            include __DIR__ . '/admin/tasks.php';
+        }
+        break;
+        
+    case '/admin/knowledge':
+        requireAdminAuth();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            handleKnowledgeAction();
+        } else {
+            include __DIR__ . '/admin/knowledge.php';
+        }
+        break;
+        
+    case '/admin/monitoring':
+        requireAdminAuth();
+        include __DIR__ . '/admin/monitoring.php';
+        break;
+        
     case '/web':
     case '/web/login':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -158,6 +190,33 @@ function handleSettingsAction() {
     }
     $_SESSION['settings_message'] = 'Settings saved successfully';
     header('Location: /admin/settings');
+    exit;
+}
+
+function handleCrewAction() {
+    if ($_POST['action'] === 'create_crew') {
+        // Create crew logic here
+        $_SESSION['crew_message'] = 'Crew created successfully';
+    }
+    header('Location: /admin/crews');
+    exit;
+}
+
+function handleTaskAction() {
+    if ($_POST['action'] === 'create_task') {
+        // Create task logic here
+        $_SESSION['task_message'] = 'Task created successfully';
+    }
+    header('Location: /admin/tasks');
+    exit;
+}
+
+function handleKnowledgeAction() {
+    if ($_POST['action'] === 'add_knowledge') {
+        // Add knowledge logic here
+        $_SESSION['knowledge_message'] = 'Knowledge added successfully';
+    }
+    header('Location: /admin/knowledge');
     exit;
 }
 ?>

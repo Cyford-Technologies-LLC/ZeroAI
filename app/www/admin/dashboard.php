@@ -16,8 +16,12 @@
         <p>Welcome, <?= $_SESSION['admin_user'] ?>!</p>
         <div class="nav">
             <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/users">Users</a>
             <a href="/admin/agents">Agents</a>
+            <a href="/admin/crews">Crews</a>
+            <a href="/admin/tasks">Tasks</a>
+            <a href="/admin/knowledge">Knowledge</a>
+            <a href="/admin/monitoring">Monitoring</a>
+            <a href="/admin/users">Users</a>
             <a href="/admin/settings">Settings</a>
             <a href="/admin/logout">Logout</a>
         </div>
