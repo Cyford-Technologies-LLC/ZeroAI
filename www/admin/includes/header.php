@@ -109,8 +109,8 @@
                 </div>
             <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
-                    <h3>Monitoring & Analytics</h3>
-                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>System Monitoring</a>
+                    <h3>System Tools</h3>
+                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Monitoring</a>
                     <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>Logs</a>
                     <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>Performance</a>
                 </div>
