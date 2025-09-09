@@ -1,100 +1,129 @@
-<?php 
-$pageTitle = 'System Monitoring - ZeroAI';
+<?php
+session_start();
+if (!isset($_SESSION['admin_user'])) {
+    header('Location: /admin/login');
+    exit;
+}
+
+$pageTitle = 'System Monitoring';
 $currentPage = 'monitoring';
-include __DIR__ . '/includes/header.php';
+require_once 'includes/header.php';
 ?>
 
-<h1>System Monitoring</h1>
+<div class="card">
+    <h2>📊 System Monitoring</h2>
+    <p>Real-time monitoring of ZeroAI system components</p>
+</div>
 
-<style>
-.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
-.metric { background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #007bff; }
-.metric.warning { border-left-color: #ffc107; }
-.metric.danger { border-left-color: #dc3545; }
-.metric.success { border-left-color: #28a745; }
-.log-item { padding: 10px; border-bottom: 1px solid #eee; font-family: monospace; font-size: 12px; }
-.error { color: #dc3545; }
-.warning { color: #ffc107; }
-.info { color: #17a2b8; }
-.success { color: #28a745; }
-.chart-placeholder { height: 200px; background: #f8f9fa; border: 1px dashed #dee2e6; display: flex; align-items: center; justify-content: center; color: #6c757d; }
-</style>
-    
-    <div class="metrics">
-        <div class="metric success">
-            <h3>98.5%</h3>
-            <p>System Uptime</p>
-        </div>
-        <div class="metric">
-            <h3>1,247</h3>
-            <p>Total Tokens Used</p>
-        </div>
-        <div class="metric warning">
-            <h3>2.3GB</h3>
-            <p>Memory Usage</p>
-        </div>
-        <div class="metric">
-            <h3>15.2s</h3>
-            <p>Avg Response Time</p>
-        </div>
-        <div class="metric success">
-            <h3>3</h3>
-            <p>Active Agents</p>
-        </div>
-        <div class="metric">
-            <h3>2</h3>
-            <p>Running Crews</p>
-        </div>
+<div class="card">
+    <h3>🤖 AI Services Status</h3>
+    <div id="ai-status">
+        <p>Loading AI service status...</p>
     </div>
-    
-    <div class="card">
-        <h3>Performance Charts</h3>
-        <div class="chart-placeholder">
-            Token Usage Over Time (Chart placeholder - integrate with Chart.js)
-        </div>
+</div>
+
+<div class="card">
+    <h3>🔄 Active Crews</h3>
+    <div id="active-crews">
+        <p>Loading active crews...</p>
     </div>
-    
-    <div class="card">
-        <h3>Agent Learning Progress</h3>
-        <div style="margin-bottom: 15px;">
-            <strong>Team Manager:</strong> 
-            <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden;">
-                <div style="background: #28a745; height: 100%; width: 75%; border-radius: 10px;"></div>
-            </div>
-            <small>Learning Progress: 75% | Strengths: Task coordination | Weaknesses: Resource estimation</small>
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-            <strong>Project Manager:</strong>
-            <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden;">
-                <div style="background: #007bff; height: 100%; width: 60%; border-radius: 10px;"></div>
-            </div>
-            <small>Learning Progress: 60% | Strengths: Planning | Weaknesses: Risk assessment</small>
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-            <strong>Prompt Refinement Agent:</strong>
-            <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden;">
-                <div style="background: #ffc107; height: 100%; width: 45%; border-radius: 10px;"></div>
-            </div>
-            <small>Learning Progress: 45% | Strengths: Prompt analysis | Weaknesses: Context understanding</small>
-        </div>
+</div>
+
+<div class="card">
+    <h3>💾 System Resources</h3>
+    <div id="system-resources">
+        <p>Loading system resources...</p>
     </div>
+</div>
+
+<script>
+async function loadMonitoringData() {
+    try {
+        // Load AI service status
+        const aiResponse = await fetch('/api/system_status.php?type=ai');
+        const aiData = await aiResponse.json();
+        document.getElementById('ai-status').innerHTML = formatAIStatus(aiData);
+
+        // Load active crews
+        const crewResponse = await fetch('/api/system_status.php?type=crews');
+        const crewData = await crewResponse.json();
+        document.getElementById('active-crews').innerHTML = formatActiveCrews(crewData);
+
+        // Load system resources
+        const resourceResponse = await fetch('/api/system_status.php?type=resources');
+        const resourceData = await resourceResponse.json();
+        document.getElementById('system-resources').innerHTML = formatSystemResources(resourceData);
+    } catch (error) {
+        console.error('Error loading monitoring data:', error);
+    }
+}
+
+function formatAIStatus(data) {
+    if (!data.success) return '<p class="error">Failed to load AI status</p>';
     
-    <div class="card">
-        <h3>System Logs</h3>
-        <button>Clear Logs</button>
-        <button>Export Logs</button>
-        <button>Refresh</button>
-        
-        <div style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
-            <div class="log-item success">[2025-09-09 02:58:48] INFO: PHP-FPM started successfully</div>
-            <div class="log-item info">[2025-09-09 02:58:47] INFO: Nginx configuration loaded</div>
-            <div class="log-item success">[2025-09-09 02:58:45] INFO: Database connection established</div>
-            <div class="log-item info">[2025-09-09 02:58:44] INFO: ZeroAI portal initialized</div>
-            <div class="log-item warning">[2025-09-09 02:55:30] WARN: High memory usage detected</div>
-            <div class="log-item error">[2025-09-09 02:53:50] ERROR: Task execution failed - Agent timeout</div>
-            <div class="log-item info">[2025-09-09 02:50:15] INFO: New task created: Analyze project requirements</div>
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">';
+    
+    if (data.ollama) {
+        html += `<div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <strong>Ollama</strong><br>
+            Status: <span style="color: ${data.ollama.status === 'running' ? 'green' : 'red'}">${data.ollama.status}</span><br>
+            Models: ${data.ollama.models || 0}
+        </div>`;
+    }
+    
+    if (data.claude) {
+        html += `<div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <strong>Claude</strong><br>
+            Status: <span style="color: ${data.claude.status === 'available' ? 'green' : 'red'}">${data.claude.status}</span>
+        </div>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function formatActiveCrews(data) {
+    if (!data.success || !data.crews || data.crews.length === 0) {
+        return '<p>No active crews running</p>';
+    }
+    
+    let html = '<table style="width: 100%; border-collapse: collapse;">';
+    html += '<tr><th style="border: 1px solid #ddd; padding: 8px;">Crew ID</th><th style="border: 1px solid #ddd; padding: 8px;">Status</th><th style="border: 1px solid #ddd; padding: 8px;">Started</th></tr>';
+    
+    data.crews.forEach(crew => {
+        html += `<tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${crew.id}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${crew.status}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${crew.started}</td>
+        </tr>`;
+    });
+    
+    html += '</table>';
+    return html;
+}
+
+function formatSystemResources(data) {
+    if (!data.success) return '<p class="error">Failed to load system resources</p>';
+    
+    return `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+        <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <strong>CPU Usage</strong><br>
+            ${data.cpu || 'N/A'}%
         </div>
-    </div>
-<?php include __DIR__ . '/includes/footer.php'; ?>
+        <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <strong>Memory Usage</strong><br>
+            ${data.memory || 'N/A'}%
+        </div>
+        <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <strong>Disk Usage</strong><br>
+            ${data.disk || 'N/A'}%
+        </div>
+    </div>`;
+}
+
+// Load data on page load and refresh every 30 seconds
+loadMonitoringData();
+setInterval(loadMonitoringData, 30000);
+</script>
+
+<?php require_once 'includes/footer.php'; ?>

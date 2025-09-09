@@ -44,7 +44,7 @@
                 <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
                 <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
                 <a href="/admin/chat" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
-                <a href="/admin/tools" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance']) ? 'class="active"' : '' ?>>Tools</a>
+                <a href="/admin/tools" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore']) ? 'class="active"' : '' ?>>Tools</a>
                 <a href="/admin/system" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
                 <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
@@ -62,7 +62,7 @@
                 $currentSection = 'crewai';
             } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
                 $currentSection = 'chat';
-            } elseif (in_array($currentPage ?? '', ['monitoring', 'logs', 'performance'])) {
+            } elseif (in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore'])) {
                 $currentSection = 'tools';
             } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
                 $currentSection = 'system';
@@ -110,9 +110,14 @@
             <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
                     <h3>System Tools</h3>
-                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Monitoring</a>
-                    <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>Logs</a>
-                    <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>Performance</a>
+                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>📊 Monitoring</a>
+                    <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>📋 Logs</a>
+                    <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>⚡ Performance</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>Data Management</h3>
+                    <a href="/admin/backup" <?= ($currentPage ?? '') === 'backup' ? 'class="active"' : '' ?>>💾 Backup</a>
+                    <a href="/admin/restore" <?= ($currentPage ?? '') === 'restore' ? 'class="active"' : '' ?>>🔄 Restore</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Development Tools</h3>
