@@ -86,7 +86,7 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
                 $response = $claude->chatWithClaude($message, $systemPrompt);
                 $claudeResponse = $response['message'];
                 $tokensUsed = ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0);
-                $usedModel = $response['model'] ?? 'claude-3-5-sonnet-20241022';
+                $usedModel = $response['model'] ?? 'claude-3-5-sonnet-20240620';
                 
             } catch (Exception $e) {
                 $error = 'Claude error: ' . $e->getMessage();
@@ -130,7 +130,7 @@ Examples:
                 <?= htmlspecialchars($claudeResponse) ?>
             </div>
             <small style="color: #666; margin-top: 15px; display: block;">
-                Tokens used: <?= $tokensUsed ?? 0 ?> | Model: <?= $usedModel ?? 'claude-3-5-sonnet-20241022' ?>
+                Tokens used: <?= $tokensUsed ?? 0 ?> | Model: <?= $usedModel ?? 'claude-3-5-sonnet-20240620' ?>
             </small>
         </div>
     <?php endif; ?>
