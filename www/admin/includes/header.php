@@ -3,7 +3,7 @@
 <head>
     <title><?= $pageTitle ?? 'ZeroAI Admin' ?></title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
         .header { background: #007bff; color: white; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 1.5rem; font-weight: bold; }
@@ -11,8 +11,21 @@
         .nav a { color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background 0.3s; }
         .nav a:hover { background: rgba(255,255,255,0.1); }
         .nav a.active { background: rgba(255,255,255,0.2); }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; background: #0056b3; min-width: 160px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1; border-radius: 4px; top: 100%; }
+        .dropdown-content a { display: block; padding: 8px 16px; border-radius: 0; }
+        .dropdown-content a:hover { background: rgba(255,255,255,0.1); }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown > a::after { content: ' ▼'; font-size: 10px; }
         .user-info { display: flex; align-items: center; gap: 15px; }
-        .main-content { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .content-wrapper { display: flex; flex: 1; }
+        .sidebar { width: 250px; background: #343a40; color: white; padding: 20px 0; overflow-y: auto; }
+        .sidebar-group { margin-bottom: 20px; }
+        .sidebar-group h3 { color: #adb5bd; font-size: 12px; text-transform: uppercase; margin: 0 20px 10px; font-weight: bold; }
+        .sidebar a { display: block; color: #dee2e6; text-decoration: none; padding: 10px 20px; transition: background 0.3s; }
+        .sidebar a:hover { background: #495057; }
+        .sidebar a.active { background: #007bff; color: white; }
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; }
         .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
         .btn-success { background: #28a745; }
@@ -29,15 +42,9 @@
             <div class="logo">ZeroAI Admin</div>
             <nav class="nav">
                 <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
-                <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
-                <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
-                <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
-                <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge</a>
+                <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'crew_chat', 'claude']) ? 'class="active"' : '' ?>>CrewAI</a>
                 <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Monitoring</a>
                 <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>Users</a>
-                <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>Config</a>
-                <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
-                <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
                 <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
             <div class="user-info">
@@ -46,4 +53,25 @@
             </div>
         </div>
     </div>
-    <div class="main-content">
+    <div class="content-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-group">
+                <h3>CrewAI</h3>
+                <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
+                <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
+                <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
+                <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
+                <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge</a>
+            </div>
+            <div class="sidebar-group">
+                <h3>AI Models</h3>
+                <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
+                <a href="/admin/ollama" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
+            </div>
+            <div class="sidebar-group">
+                <h3>System</h3>
+                <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>Configuration</a>
+                <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>Logs</a>
+            </div>
+        </div>
+        <div class="main-content">
