@@ -1,25 +1,49 @@
-# ZeroAI Git Ignore
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
 
-# Web portal files
-app/
-data/
-logs/
-
-# Environment files
-.env
-.env.local
+# Virtual environments
+venv/
+env/
+.venv/
 
 # Database files
 *.db
 *.sqlite
+db/
 
-# Temporary files
-*.tmp
+# Output and cache
+output/
+cache/
 *.log
+*.tmp
 *.pid
 
-# Docker generated files
+# Docker files
 docker-volumes/
+
+# Environment files
+.env
+.env.local
+config/peers.json
+
+# Generated files
+crewai-rag-tool.lock
+run_docker-compose.sh
+start_portal.sh
+
+# Knowledge learning data
+knowledge/learning/
+knowledge/tasks/
+knowledge/internal_crew/agent_learning/
+knowledge/internal_crew/default/
 
 # User data
 config/local/
+app/
+data/
+logs/
+www/
