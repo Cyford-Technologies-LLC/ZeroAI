@@ -59,6 +59,9 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
             try {
                 $claude = new ClaudeIntegration($apiKey);
                 
+                // Get selected model
+                $selectedModel = $_POST['claude_model'] ?? 'claude-3-5-sonnet-20241022';
+                
                 // Load Claude config for system prompt
                 $claudeConfig = [];
                 if (file_exists('/app/config/claude_config.yaml')) {
@@ -83,10 +86,10 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
                 $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n\n";
                 $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
                 
-                $response = $claude->chatWithClaude($message, $systemPrompt);
+                $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel);
                 $claudeResponse = $response['message'];
                 $tokensUsed = ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0);
-                $usedModel = $response['model'] ?? 'claude-3-5-sonnet-20241022';
+                $usedModel = $response['model'] ?? 'claude-3-5-haiku-20241022';
                 
             } catch (Exception $e) {
                 $error = 'Claude error: ' . $e->getMessage();
@@ -112,6 +115,18 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
     
     <form method="POST">
         <input type="hidden" name="action" value="chat_claude">
+        
+        <div style="margin-bottom: 10px;">
+            <label><strong>Claude Model:</strong></label>
+            <select name="claude_model" style="width: 300px;">
+                <option value="claude-3-opus-20240229">Claude 3 Opus (Most Capable)</option>
+                <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Balanced)</option>
+                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
+                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+            </select>
+        </div>
+        
         <textarea name="message" placeholder="Ask Claude about ZeroAI optimization, code review, or development help...
 
 Examples:
@@ -130,7 +145,7 @@ Examples:
                 <?= htmlspecialchars($claudeResponse) ?>
             </div>
             <small style="color: #666; margin-top: 15px; display: block;">
-                Tokens used: <?= $tokensUsed ?? 0 ?> | Model: <?= $usedModel ?? 'claude-3-5-sonnet-20241022' ?>
+                Tokens used: <?= $tokensUsed ?? 0 ?> | Model: <?= $usedModel ?? 'claude-3-5-haiku-20241022' ?>
             </small>
         </div>
     <?php endif; ?>

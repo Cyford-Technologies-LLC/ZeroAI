@@ -7,7 +7,7 @@ class ClaudeIntegration {
         $this->apiKey = $apiKey ?: getenv('ANTHROPIC_API_KEY');
     }
     
-    public function chatWithClaude($message, $systemPrompt = null) {
+    public function chatWithClaude($message, $systemPrompt = null, $model = null) {
         if (!$this->apiKey) {
             throw new Exception('Anthropic API key not configured');
         }
@@ -19,7 +19,7 @@ class ClaudeIntegration {
         ];
         
         $data = [
-            'model' => 'claude-3-5-sonnet-20241022',
+            'model' => $model ?: 'claude-3-5-sonnet-20241022',
             'max_tokens' => 4000,
             'messages' => [
                 [
@@ -58,7 +58,7 @@ class ClaudeIntegration {
         return [
             'message' => $result['content'][0]['text'],
             'usage' => $result['usage'] ?? [],
-            'model' => $result['model'] ?? 'claude-3-5-sonnet-20241022'
+            'model' => $result['model'] ?? ($model ?: 'claude-3-5-sonnet-20241022')
         ];
     }
     
