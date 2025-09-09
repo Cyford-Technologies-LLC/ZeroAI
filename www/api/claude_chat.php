@@ -150,15 +150,6 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
     }
 }
 
-// Test write permissions first
-$testWrite = file_put_contents('/app/test_write_permission.tmp', 'test');
-if ($testWrite === false) {
-    $message .= "\n\n[ERROR] PHP cannot write to /app directory - permission denied";
-} else {
-    unlink('/app/test_write_permission.tmp');
-    $message .= "\n\n[OK] PHP has write permissions to /app directory";
-}
-
 // Handle file creation command - support both formats
 if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
@@ -176,20 +167,11 @@ if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
         mkdir($dir, 0755, true);
     }
     
-    // Debug info
-    $message .= "\n\n[DEBUG] Original path: " . $filePath;
-    $message .= "\n[DEBUG] Clean path: " . $cleanPath;
-    $message .= "\n[DEBUG] Full path: " . $fullPath;
-    $message .= "\n[DEBUG] Directory exists: " . (is_dir($dir) ? 'YES' : 'NO');
-    $message .= "\n[DEBUG] Directory writable: " . (is_writable($dir) ? 'YES' : 'NO');
-    
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
-        $message .= "\n\nFile created successfully: " . $filePath . " (" . $result . " bytes written to " . $fullPath . ")";
-        $message .= "\n[DEBUG] File exists after creation: " . (file_exists($fullPath) ? 'YES' : 'NO');
+        $message .= "\n\nFile created: " . $filePath . " (" . $result . " bytes)";
     } else {
-        $error = error_get_last();
-        $message .= "\n\nFailed to create file: " . $filePath . " at " . $fullPath . " - Error: " . ($error['message'] ?? 'Unknown error');
+        $message .= "\n\nFailed to create: " . $filePath;
     }
 }
 
@@ -208,13 +190,12 @@ if (preg_match('/\@edit\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) 
     if (file_exists($fullPath)) {
         $result = file_put_contents($fullPath, $newContent);
         if ($result !== false) {
-            $message .= "\n\nFile updated successfully: " . $filePath . " (" . $result . " bytes written to " . $fullPath . ")";
+            $message .= "\n\nFile updated: " . $filePath . " (" . $result . " bytes)";
         } else {
-            $error = error_get_last();
-            $message .= "\n\nFailed to update file: " . $filePath . " - Error: " . ($error['message'] ?? 'Unknown error');
+            $message .= "\n\nFailed to update: " . $filePath;
         }
     } else {
-        $message .= "\n\nFile not found: " . $filePath . " (searched at " . $fullPath . ")";
+        $message .= "\n\nFile not found: " . $filePath;
     }
 }
 
