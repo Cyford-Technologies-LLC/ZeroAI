@@ -3,7 +3,7 @@ from crewai import LLM, Crew, Process, Task
 from typing import Dict, Any, List, Optional
 from src.distributed_router import DistributedRouter
 from src.config import config
-from .agents import create_team_manager_agent, load_all_coworkers, create_prompt_refinement_agent
+from .agents import create_team_manager_agent, load_all_coworkers
 from src.utils.custom_logger_callback import CustomLogger
 from pathlib import Path
 from rich.console import Console
@@ -47,7 +47,8 @@ def create_team_manager_crew(router: DistributedRouter, inputs: Dict[str, Any], 
     for agent in crew_agents:
         agent.verbose = True
 
-    prompt_refiner = create_prompt_refinement_agent(router=router, inputs=inputs)
+    # Use team manager as prompt refiner for now
+    prompt_refiner = manager_agent
 
 
 
