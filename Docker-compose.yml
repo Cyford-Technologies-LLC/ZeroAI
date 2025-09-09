@@ -25,7 +25,7 @@ services:
         - LOCAL_GID=${LOCAL_GID}
       env_file:
         - .env
-      user: "root"  # Add or ensure this line is present
+      # user: "www-data"  # Let entrypoint handle user creation
       depends_on:
         - ollama
       restart: unless-stopped
