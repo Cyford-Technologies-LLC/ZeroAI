@@ -139,10 +139,10 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
     }
 }
 
-// Handle file creation command
-if (preg_match('/\@create\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
+// Handle file creation command - support both formats
+if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $fileContent = trim($matches[2]);
+    $fileContent = isset($matches[2]) ? trim($matches[2]) : "# File created by Claude\nprint('Hello from Claude')\n";
     
     $fullPath = '/app/' . $filePath;
     $dir = dirname($fullPath);
@@ -160,10 +160,10 @@ if (preg_match('/\@create\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
     }
 }
 
-// Handle file editing command
-if (preg_match('/\@edit\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
+// Handle file editing command - support both formats
+if (preg_match('/\@edit\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $newContent = trim($matches[2]);
+    $newContent = isset($matches[2]) ? trim($matches[2]) : "# File edited by Claude\nprint('Updated by Claude')\n";
     
     $fullPath = '/app/' . $filePath;
     
@@ -180,10 +180,10 @@ if (preg_match('/\@edit\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
     }
 }
 
-// Handle file append command
-if (preg_match('/\@append\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
+// Handle file append command - support both formats
+if (preg_match('/\@append\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $appendContent = trim($matches[2]);
+    $appendContent = isset($matches[2]) ? trim($matches[2]) : "\n# Appended by Claude\nprint('Added by Claude')\n";
     
     $fullPath = '/app/' . $filePath;
     
