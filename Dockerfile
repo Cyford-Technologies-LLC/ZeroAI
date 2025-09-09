@@ -83,13 +83,18 @@ RUN mkdir -p /app/.git/hooks \
     && echo 'chown -R www-data:www-data /app' >> /app/.git/hooks/post-merge \
     && chmod +x /app/.git/hooks/post-merge
 
+# Configure nginx directories and permissions
+RUN mkdir -p /var/log/nginx /var/lib/nginx /run \
+    && chown -R www-data:www-data /var/log/nginx /var/lib/nginx /run
+
 # Create startup script for nginx + PHP-FPM
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'chown -R www-data:www-data /app' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
-    && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
+    && echo 'nginx -c /etc/nginx/sites-available/zeroai -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
-# Skip entrypoint for web services - run as root
+# Switch to www-data user for runtime
+USER www-data
 CMD ["/app/start_portal.sh"]
