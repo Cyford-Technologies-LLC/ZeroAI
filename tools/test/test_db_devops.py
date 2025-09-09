@@ -6,7 +6,7 @@ from pathlib import Path
 
 def test_db_operations():
     """Test basic database operations."""
-    db_path = Path("data/zeroai.db")
+    db_path = Path("../../data/zeroai.db")
     
     if not db_path.exists():
         print("Database not found. Run setup_db.py first.")
@@ -39,7 +39,7 @@ def simulate_devops_task():
     print("\nSimulating database-driven DevOps task...")
     
     # This simulates what run_dev_ops_db.py would do
-    db_path = Path("data/zeroai.db")
+    db_path = Path("../../data/zeroai.db")
     conn = sqlite3.connect(db_path)
     
     # Get available agents

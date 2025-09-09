@@ -139,6 +139,15 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
     }
 }
 
+// Test write permissions first
+$testWrite = file_put_contents('/app/test_write_permission.tmp', 'test');
+if ($testWrite === false) {
+    $message .= "\n\n[ERROR] PHP cannot write to /app directory - permission denied";
+} else {
+    unlink('/app/test_write_permission.tmp');
+    $message .= "\n\n[OK] PHP has write permissions to /app directory";
+}
+
 // Handle file creation command - support both formats
 if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
