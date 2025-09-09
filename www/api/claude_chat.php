@@ -151,10 +151,12 @@ if (preg_match('/\@create\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
         mkdir($dir, 0755, true);
     }
     
-    if (file_put_contents($fullPath, $fileContent) !== false) {
-        $message .= "\n\nFile created successfully: " . $filePath;
+    $result = file_put_contents($fullPath, $fileContent);
+    if ($result !== false) {
+        $message .= "\n\nFile created successfully: " . $filePath . " (" . $result . " bytes written to " . $fullPath . ")";
     } else {
-        $message .= "\n\nFailed to create file: " . $filePath;
+        $error = error_get_last();
+        $message .= "\n\nFailed to create file: " . $filePath . " at " . $fullPath . " - Error: " . ($error['message'] ?? 'Unknown error');
     }
 }
 
@@ -166,13 +168,15 @@ if (preg_match('/\@edit\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
     $fullPath = '/app/' . $filePath;
     
     if (file_exists($fullPath)) {
-        if (file_put_contents($fullPath, $newContent) !== false) {
-            $message .= "\n\nFile updated successfully: " . $filePath;
+        $result = file_put_contents($fullPath, $newContent);
+        if ($result !== false) {
+            $message .= "\n\nFile updated successfully: " . $filePath . " (" . $result . " bytes written to " . $fullPath . ")";
         } else {
-            $message .= "\n\nFailed to update file: " . $filePath;
+            $error = error_get_last();
+            $message .= "\n\nFailed to update file: " . $filePath . " - Error: " . ($error['message'] ?? 'Unknown error');
         }
     } else {
-        $message .= "\n\nFile not found: " . $filePath;
+        $message .= "\n\nFile not found: " . $filePath . " (searched at " . $fullPath . ")";
     }
 }
 
