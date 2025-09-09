@@ -1,5 +1,6 @@
+        </div>
     </div>
-    <footer style="background: #343a40; color: white; text-align: center; padding: 20px; margin-top: 40px;">
+    <footer style="background: #343a40; color: white; text-align: center; padding: 20px;">
         <div style="max-width: 1200px; margin: 0 auto;">
             <p>&copy; 2025 ZeroAI Admin Portal - Zero Cost AI Workforce Management</p>
             <p style="font-size: 0.9em; opacity: 0.8;">

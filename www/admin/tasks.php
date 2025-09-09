@@ -73,6 +73,4 @@ include __DIR__ . '/includes/header.php';
             <button>Debug Log</button>
         </div>
     </div>
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

@@ -42,6 +42,4 @@ include __DIR__ . '/includes/header.php';
             <button>Configure</button>
         </div>
     </div>
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

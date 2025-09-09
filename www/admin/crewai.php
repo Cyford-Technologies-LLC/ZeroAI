@@ -1,6 +1,6 @@
 <?php 
 $pageTitle = 'CrewAI Overview - ZeroAI';
-$currentPage = 'crewai';
+$currentPage = 'crews'; // Set to crews so sidebar shows CrewAI links
 include __DIR__ . '/includes/header.php';
 ?>
 

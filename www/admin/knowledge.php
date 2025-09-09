@@ -84,6 +84,4 @@ include __DIR__ . '/includes/header.php';
             <button class="btn-warning">Configure Access</button>
         </div>
     </div>
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

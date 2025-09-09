@@ -111,6 +111,4 @@ function viewTasks(agentId) {
 }
 </script>
 
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

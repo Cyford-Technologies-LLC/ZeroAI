@@ -29,6 +29,4 @@ include __DIR__ . '/includes/header.php';
         <p><strong>Document Root:</strong> <?= $_SERVER['DOCUMENT_ROOT'] ?></p>
         <p><strong>Error Display:</strong> <?= isset($_SESSION['display_errors']) && $_SESSION['display_errors'] ? 'Enabled' : 'Disabled' ?></p>
     </div>
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

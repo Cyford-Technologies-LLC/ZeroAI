@@ -97,6 +97,4 @@ include __DIR__ . '/includes/header.php';
             <div class="log-item info">[2025-09-09 02:50:15] INFO: New task created: Analyze project requirements</div>
         </div>
     </div>
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

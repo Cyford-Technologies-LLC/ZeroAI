@@ -23,6 +23,4 @@ include __DIR__ . '/includes/header.php';
         <h3>User List</h3>
         <p>User management functionality coming soon...</p>
     </div>
-        </div>
-    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>
