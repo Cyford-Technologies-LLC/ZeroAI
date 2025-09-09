@@ -104,6 +104,16 @@ switch ($path) {
         include __DIR__ . '/admin/claude.php';
         break;
         
+    case '/admin/cloud_settings':
+        requireAdminAuth();
+        include __DIR__ . '/admin/cloud_settings.php';
+        break;
+        
+    case '/admin/claude_settings':
+        requireAdminAuth();
+        include __DIR__ . '/admin/claude_settings.php';
+        break;
+        
     case '/admin/crew_chat':
         requireAdminAuth();
         include __DIR__ . '/admin/crew_chat.php';
