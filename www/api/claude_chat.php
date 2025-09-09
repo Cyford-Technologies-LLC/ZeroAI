@@ -151,7 +151,7 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
 }
 
 // Handle file creation command - support both formats
-if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "# File created by Claude\nprint('Hello from Claude')\n";
     
@@ -181,7 +181,7 @@ if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
 }
 
 // Handle file editing command - support both formats
-if (preg_match('/\@edit\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
     $newContent = isset($matches[2]) ? trim($matches[2]) : "# File edited by Claude\nprint('Updated by Claude')\n";
     
@@ -205,7 +205,7 @@ if (preg_match('/\@edit\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) 
 }
 
 // Handle file append command - support both formats
-if (preg_match('/\@append\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
     $appendContent = isset($matches[2]) ? trim($matches[2]) : "\n# Appended by Claude\nprint('Added by Claude')\n";
     
