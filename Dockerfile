@@ -51,14 +51,22 @@ USER root
 # Use the entrypoint script to run the final command
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Install PHP
-RUN apt-get update && apt-get install -y php php-sqlite3 \
+# Install Nginx and PHP-FPM
+RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create startup script
+# Copy nginx config
+COPY nginx.conf /etc/nginx/sites-available/zeroai
+RUN ln -sf /etc/nginx/sites-available/zeroai /etc/nginx/sites-enabled/default
+
+# Configure PHP-FPM
+RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/*/fpm/pool.d/www.conf
+
+# Create startup script for nginx + PHP-FPM
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
-    && echo 'cd /app/www && php -S 0.0.0.0:333 index.php' >> /app/start_portal.sh \
+    && echo 'service php*-fpm start' >> /app/start_portal.sh \
+    && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
 # The CMD is the command that gets executed by 'gosu' inside the entrypoint
