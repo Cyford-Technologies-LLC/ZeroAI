@@ -5,8 +5,14 @@ $chat = new AgentChat();
 $agentId = $_GET['agent'] ?? null;
 $sessionId = $_GET['session'] ?? null;
 
+// Debug output
+if ($agentId === 'claude') {
+    error_log("DEBUG: Claude agent requested");
+}
+
 // Handle new chat session
 if ($agentId && !$sessionId) {
+    error_log("DEBUG: New chat session for agent: " . $agentId);
     // Handle special case for Claude
     if ($agentId === 'claude') {
         $agents = $chat->getAvailableAgents();
@@ -21,6 +27,7 @@ if ($agentId && !$sessionId) {
         
         // If Claude not found, create it
         if (!$claudeFound) {
+            error_log("DEBUG: Creating Claude agent");
             require_once __DIR__ . '/../api/agent_db.php';
             $agentDB = new AgentDB();
             $agentId = $agentDB->createAgent([
@@ -32,10 +39,15 @@ if ($agentId && !$sessionId) {
                 'llm_model' => 'claude',
                 'is_core' => 1
             ]);
+            error_log("DEBUG: Claude agent created with ID: " . $agentId);
+        } else {
+            error_log("DEBUG: Claude agent found with ID: " . $agentId);
         }
     }
     
+    error_log("DEBUG: Starting chat session for agent ID: " . $agentId);
     $sessionId = $chat->startChatSession($agentId, $_SESSION['admin_user']);
+    error_log("DEBUG: Created session ID: " . $sessionId);
     header("Location: /admin/chat?session=$sessionId");
     exit;
 }
