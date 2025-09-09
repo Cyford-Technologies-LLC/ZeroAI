@@ -54,69 +54,32 @@ if ($_POST['action'] ?? '' === 'setup_provider') {
     $currentConfig = $cloudBridge->getCurrentCloudConfig(); // Refresh config
 }
 
-// Handle chat with cloud AI - Direct implementation
+// Handle chat with cloud AI - Use Python
 if ($_POST['action'] ?? '' === 'chat_cloud') {
     $message = $_POST['message'] ?? '';
-    // Try multiple ways to get the API key
-    $apiKey = getenv('ANTHROPIC_API_KEY') ?: $_ENV['ANTHROPIC_API_KEY'] ?? null;
     
-    // If not found, read directly from .env file
-    if (!$apiKey) {
-        $envContent = file_get_contents('/app/.env');
-        if (preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches)) {
-            $apiKey = trim($matches[1]);
-        }
-    }
-    
-    if ($apiKey && $message) {
-        $headers = [
-            'Content-Type: application/json',
-            'x-api-key: ' . $apiKey,
-            'anthropic-version: 2023-06-01'
-        ];
+    if ($message) {
+        $escapedMessage = escapeshellarg($message);
+        $pythonCmd = '/app/venv/bin/python -c "'
+            . 'import sys; sys.path.append("/app"); sys.path.append("/app/src"); '
+            . 'from src.providers.cloud_providers import CloudProviderManager; '
+            . 'import os; '
+            . 'llm = CloudProviderManager.create_anthropic_llm(); '
+            . 'response = llm.invoke("You are Claude integrated into ZeroAI. Help with: " + ' . $escapedMessage . '); '
+            . 'print(response)'
+            . '"';
         
-        $data = [
-            'model' => 'claude-3-5-sonnet-20241022',
-            'max_tokens' => 1000,
-            'messages' => [[
-                'role' => 'user',
-                'content' => 'You are Claude, integrated into ZeroAI - a zero-cost AI workforce platform. Help optimize ZeroAI configurations, analyze agent performance, and provide development assistance.\n\nUser: ' . $message
-            ]]
-        ];
+        $output = shell_exec($pythonCmd . ' 2>&1');
         
-        if (function_exists('curl_init')) {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://api.anthropic.com/v1/messages');
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+        if ($output && !strpos($output, 'Error') && !strpos($output, 'Traceback')) {
+            $cloudResponse = trim($output);
+            $usedModel = 'claude-3-5-sonnet-20241022';
+            $tokensUsed = 'N/A';
         } else {
-            $error = 'CURL extension not installed';
-            $httpCode = 0;
-        }
-        
-        if ($httpCode === 200 && isset($response)) {
-            $result = json_decode($response, true);
-            if ($result && isset($result['content'][0]['text'])) {
-                $cloudResponse = $result['content'][0]['text'];
-                $tokensUsed = ($result['usage']['input_tokens'] ?? 0) + ($result['usage']['output_tokens'] ?? 0);
-                $usedModel = 'claude-3-5-sonnet-20241022';
-            } else {
-                $error = 'Invalid response from Claude API';
-            }
-        } elseif (isset($httpCode) && $httpCode > 0) {
-            $error = 'Claude API error: HTTP ' . $httpCode;
-        } elseif (!isset($error)) {
-            $error = 'Failed to connect to Claude API';
+            $error = 'Python error: ' . $output;
         }
     } else {
-        $error = $apiKey ? 'Message required' : 'Claude API key not configured';
+        $error = 'Message required';
     }
 }
 
