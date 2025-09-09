@@ -77,11 +77,10 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
         
         $data = [
             'model' => 'claude-3-5-sonnet-20241022',
-            'max_tokens' => 4000,
-            'system' => 'You are Claude, integrated into ZeroAI - a zero-cost AI workforce platform. Help optimize ZeroAI configurations, analyze agent performance, and provide development assistance.',
+            'max_tokens' => 1000,
             'messages' => [[
                 'role' => 'user',
-                'content' => $message
+                'content' => 'You are Claude, integrated into ZeroAI - a zero-cost AI workforce platform. Help optimize ZeroAI configurations, analyze agent performance, and provide development assistance.\n\nUser: ' . $message
             ]]
         ];
         
