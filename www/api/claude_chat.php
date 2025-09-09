@@ -144,7 +144,12 @@ if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "# File created by Claude\nprint('Hello from Claude')\n";
     
-    $fullPath = '/app/' . $filePath;
+    // Clean up path - remove leading /app/ if present to avoid double path
+    $cleanPath = ltrim($filePath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullPath = '/app/' . $cleanPath;
     $dir = dirname($fullPath);
     
     if (!is_dir($dir)) {
@@ -165,7 +170,12 @@ if (preg_match('/\@edit\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) 
     $filePath = trim($matches[1]);
     $newContent = isset($matches[2]) ? trim($matches[2]) : "# File edited by Claude\nprint('Updated by Claude')\n";
     
-    $fullPath = '/app/' . $filePath;
+    // Clean up path - remove leading /app/ if present to avoid double path
+    $cleanPath = ltrim($filePath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullPath = '/app/' . $cleanPath;
     
     if (file_exists($fullPath)) {
         $result = file_put_contents($fullPath, $newContent);
@@ -185,7 +195,12 @@ if (preg_match('/\@append\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
     $filePath = trim($matches[1]);
     $appendContent = isset($matches[2]) ? trim($matches[2]) : "\n# Appended by Claude\nprint('Added by Claude')\n";
     
-    $fullPath = '/app/' . $filePath;
+    // Clean up path - remove leading /app/ if present to avoid double path
+    $cleanPath = ltrim($filePath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullPath = '/app/' . $cleanPath;
     
     if (file_exists($fullPath)) {
         if (file_put_contents($fullPath, "\n" . $appendContent, FILE_APPEND) !== false) {
@@ -201,7 +216,12 @@ if (preg_match('/\@append\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
 // Handle delete file command
 if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $fullPath = '/app/' . $filePath;
+    // Clean up path - remove leading /app/ if present to avoid double path
+    $cleanPath = ltrim($filePath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullPath = '/app/' . $cleanPath;
     
     if (file_exists($fullPath)) {
         if (unlink($fullPath)) {
