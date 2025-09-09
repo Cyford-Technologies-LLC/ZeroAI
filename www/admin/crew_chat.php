@@ -2,78 +2,109 @@
 $pageTitle = 'Crew Chat - ZeroAI';
 $currentPage = 'crew_chat';
 include __DIR__ . '/includes/header.php';
-
-// Handle crew chat
-if ($_POST['action'] ?? '' === 'chat_crew') {
-    $message = $_POST['message'] ?? '';
-    $project = $_POST['project'] ?? 'zeroai';
-    
-    if ($message) {
-        $escapedMessage = escapeshellarg($message);
-        $escapedProject = escapeshellarg($project);
-        
-        $pythonCmd = 'export HOME=/tmp && cd /app && /app/venv/bin/python -c "'
-            . 'import sys; sys.path.append("/app"); '
-            . 'from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely; '
-            . 'from src.distributed_router import DistributedRouter; '
-            . 'router = DistributedRouter(); '
-            . 'inputs = {\"prompt\": ' . $escapedMessage . ', \"project_id\": ' . $escapedProject . '}; '
-            . 'result = run_ai_dev_ops_crew_securely(router, ' . $escapedProject . ', inputs); '
-            . 'print(\"=== CREW RESULT ===\"); '
-            . 'print(result.get(\"result\", \"No result\")) if result.get(\"success\") else print(\"Error:\", result.get(\"error\", \"Unknown error\")); '
-            . 'print(\"=== MODEL USED ===\"); '
-            . 'print(\"Model:\", result.get(\"model_used\", \"unknown\")); '
-            . 'print(\"Peer:\", result.get(\"peer_used\", \"unknown\"))'
-            . '" 2>&1';
-        
-        $output = shell_exec($pythonCmd);
-        
-        if ($output) {
-            $crewResponse = trim($output);
-        } else {
-            $error = 'No response from crew';
-        }
-    } else {
-        $error = 'Message required';
-    }
-}
+?>
 ?>
 
-<h1>Crew Chat</h1>
+<h1>Real-time Crew Chat</h1>
 
 <div class="card">
     <h3>Chat with Your ZeroAI Crew</h3>
-    <p>Talk directly to your DevOps crew agents. They'll work together to help you with development tasks.</p>
+    <p>Talk directly to your DevOps crew agents. Watch them work in real-time!</p>
     
-    <?php if (isset($error)): ?>
-        <div class="message error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-    
-    <form method="POST">
-        <input type="hidden" name="action" value="chat_crew">
-        
+    <div id="chat-form">
         <label for="project">Project:</label>
-        <select name="project" id="project">
+        <select id="project">
             <option value="zeroai">ZeroAI</option>
             <option value="testcorp">TestCorp</option>
             <option value="custom">Custom</option>
         </select>
         
         <label for="message">Task/Question:</label>
-        <textarea name="message" id="message" placeholder="Ask your crew to help with development tasks, code reviews, or project management..." rows="4" required></textarea>
+        <textarea id="message" placeholder="Ask your crew to help with development tasks, code reviews, or project management..." rows="4"></textarea>
         
-        <button type="submit" class="btn-success">Send to Crew</button>
-    </form>
+        <button id="send-btn" class="btn-success">Send to Crew</button>
+        <button id="stop-btn" class="btn-danger" style="display: none;">Stop Task</button>
+    </div>
     
-    <?php if (isset($crewResponse)): ?>
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #28a745;">
-            <h4>Crew Response:</h4>
-            <div style="white-space: pre-wrap; font-family: monospace; font-size: 14px;">
-                <?= htmlspecialchars($crewResponse) ?>
-            </div>
-        </div>
-    <?php endif; ?>
+    <div id="chat-output" style="background: #000; color: #0f0; padding: 15px; border-radius: 8px; margin-top: 15px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; display: none;">
+        <div id="output-content"></div>
+    </div>
+    
+    <div id="status" style="margin-top: 10px; font-weight: bold;"></div>
 </div>
+
+<script>
+let eventSource = null;
+
+document.getElementById('send-btn').addEventListener('click', function() {
+    const message = document.getElementById('message').value.trim();
+    const project = document.getElementById('project').value;
+    
+    if (!message) {
+        alert('Please enter a message');
+        return;
+    }
+    
+    startStreaming(message, project);
+});
+
+document.getElementById('stop-btn').addEventListener('click', function() {
+    stopStreaming();
+});
+
+function startStreaming(message, project) {
+    const outputDiv = document.getElementById('chat-output');
+    const contentDiv = document.getElementById('output-content');
+    const statusDiv = document.getElementById('status');
+    const sendBtn = document.getElementById('send-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    
+    // Show output area and update UI
+    outputDiv.style.display = 'block';
+    contentDiv.innerHTML = '';
+    statusDiv.innerHTML = '🚀 Starting crew...';
+    sendBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-block';
+    
+    // Start EventSource for streaming
+    const url = `/admin/crew_stream.php?message=${encodeURIComponent(message)}&project=${encodeURIComponent(project)}`;
+    eventSource = new EventSource(url);
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.error) {
+            contentDiv.innerHTML += `<div style="color: #f00;">❌ Error: ${data.error}</div>`;
+            statusDiv.innerHTML = '❌ Error occurred';
+            stopStreaming();
+        } else if (data.status === 'started') {
+            statusDiv.innerHTML = '⚡ Crew is working...';
+        } else if (data.status === 'completed') {
+            statusDiv.innerHTML = '✅ Task completed!';
+            stopStreaming();
+        } else if (data.type === 'output') {
+            contentDiv.innerHTML += `<div>[${data.timestamp}] ${data.content}</div>`;
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+    };
+    
+    eventSource.onerror = function() {
+        statusDiv.innerHTML = '❌ Connection error';
+        stopStreaming();
+    };
+}
+
+function stopStreaming() {
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+    
+    document.getElementById('send-btn').style.display = 'inline-block';
+    document.getElementById('stop-btn').style.display = 'none';
+    document.getElementById('status').innerHTML = '⏹️ Stopped';
+}
+</script>
 
 <div class="card">
     <h3>Quick Tasks</h3>
