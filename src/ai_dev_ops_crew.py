@@ -362,8 +362,23 @@ class AIOpsCrewManager:
             supervisor = getattr(config.cloud, 'supervisor', None)
             if supervisor == "anthropic" and os.getenv('ANTHROPIC_API_KEY'):
                 from crewai import LLM
-                console.print("👥 Claude supervisor available for review", style="cyan")
-                return LLM(model='anthropic/claude-sonnet-4-20250514')
+                
+                # Load Claude config to get supervisor model preference
+                supervisor_model = 'claude-sonnet-4-20250514'  # default
+                try:
+                    claude_config_path = Path('/app/config/claude_config.yaml')
+                    if claude_config_path.exists():
+                        with open(claude_config_path, 'r') as f:
+                            lines = f.readlines()
+                            for line in lines:
+                                if line.strip().startswith('supervisor_model:'):
+                                    supervisor_model = line.split(':', 1)[1].strip().strip('"')
+                                    break
+                except Exception as e:
+                    console.print(f"⚠️ Could not load Claude config, using default model: {e}", style="yellow")
+                
+                console.print(f"👥 Claude supervisor available for review (model: {supervisor_model})", style="cyan")
+                return LLM(model=f'anthropic/{supervisor_model}')
             return None
         except Exception as e:
             console.print(f"⚠️ Supervisor not available: {e}", style="yellow")

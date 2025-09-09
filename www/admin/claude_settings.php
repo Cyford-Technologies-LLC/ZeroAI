@@ -22,7 +22,8 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
         'goal' => $_POST['claude_goal'] ?? '',
         'backstory' => $_POST['claude_backstory'] ?? '',
         'supervision_level' => $_POST['supervision_level'] ?? 'moderate',
-        'focus_areas' => $_POST['focus_areas'] ?? []
+        'focus_areas' => $_POST['focus_areas'] ?? [],
+        'supervisor_model' => $_POST['supervisor_model'] ?? 'claude-sonnet-4-20250514'
     ];
     
     // Save to database
@@ -70,6 +71,7 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     $yamlContent .= "goal: \"" . str_replace('"', '\\"', $claudeConfig['goal']) . "\"\n";
     $yamlContent .= "backstory: \"" . str_replace('"', '\\"', $claudeConfig['backstory']) . "\"\n";
     $yamlContent .= "supervision_level: \"" . $claudeConfig['supervision_level'] . "\"\n";
+    $yamlContent .= "supervisor_model: \"" . $claudeConfig['supervisor_model'] . "\"\n";
     $yamlContent .= "focus_areas:\n";
     foreach ($claudeConfig['focus_areas'] as $area) {
         $yamlContent .= "  - \"$area\"\n";
@@ -122,6 +124,17 @@ $hasAnthropicKey = !empty($_ENV['ANTHROPIC_API_KEY']);
         
         <label><strong>Backstory:</strong></label>
         <textarea name="claude_backstory" rows="4" placeholder="Claude's background and expertise" required><?= htmlspecialchars($claudeConfig['backstory'] ?? 'I am Claude, an advanced AI assistant created by Anthropic. I specialize in software architecture, code optimization, and strategic technical guidance. I work alongside your ZeroAI development team to ensure high-quality deliverables, identify potential issues early, and provide insights that enhance overall project success. My expertise spans multiple programming languages, system design patterns, and best practices for scalable AI systems.') ?></textarea>
+        
+        <div style="margin: 15px 0;">
+            <label><strong>Supervisor Model (for DevOps Crews):</strong></label>
+            <select name="supervisor_model" style="width: 100%;">
+                <option value="claude-sonnet-4-20250514" <?= ($claudeConfig['supervisor_model'] ?? 'claude-sonnet-4-20250514') === 'claude-sonnet-4-20250514' ? 'selected' : '' ?>>Claude Sonnet 4 (Most Advanced)</option>
+                <option value="claude-3-opus-20240229" <?= ($claudeConfig['supervisor_model'] ?? '') === 'claude-3-opus-20240229' ? 'selected' : '' ?>>Claude 3 Opus</option>
+                <option value="claude-3-5-sonnet-20241022" <?= ($claudeConfig['supervisor_model'] ?? '') === 'claude-3-5-sonnet-20241022' ? 'selected' : '' ?>>Claude 3.5 Sonnet</option>
+                <option value="claude-3-5-haiku-20241022" <?= ($claudeConfig['supervisor_model'] ?? '') === 'claude-3-5-haiku-20241022' ? 'selected' : '' ?>>Claude 3.5 Haiku (Fastest)</option>
+            </select>
+            <small style="color: #666; display: block; margin-top: 5px;">This model will supervise your Mistral-Nemo agents in DevOps tasks</small>
+        </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
             <div>

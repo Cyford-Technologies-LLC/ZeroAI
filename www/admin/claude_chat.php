@@ -48,6 +48,48 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
             $message .= "\n\nSearch results for '" . $pattern . "':\n" . ($output ?: "No files found");
         }
         
+        // Handle agent management commands
+        if (preg_match('/\@agents/', $message)) {
+            require_once __DIR__ . '/../api/agent_db.php';
+            $agentDB = new AgentDB();
+            $agents = $agentDB->getAllAgents();
+            $agentList = "Current Agents:\n";
+            foreach ($agents as $agent) {
+                $agentList .= "- ID: {$agent['id']}, Name: {$agent['name']}, Role: {$agent['role']}, Status: {$agent['status']}\n";
+            }
+            $message .= "\n\n" . $agentList;
+        }
+        
+        if (preg_match('/\@update_agent\s+(\d+)\s+(.+)/', $message, $matches)) {
+            $agentId = trim($matches[1]);
+            $updates = trim($matches[2]);
+            
+            require_once __DIR__ . '/../api/agent_db.php';
+            $agentDB = new AgentDB();
+            
+            // Parse update parameters (role="new role" goal="new goal" etc.)
+            $updateData = [];
+            if (preg_match('/role="([^"]+)"/', $updates, $roleMatch)) {
+                $updateData['role'] = $roleMatch[1];
+            }
+            if (preg_match('/goal="([^"]+)"/', $updates, $goalMatch)) {
+                $updateData['goal'] = $goalMatch[1];
+            }
+            if (preg_match('/backstory="([^"]+)"/', $updates, $backstoryMatch)) {
+                $updateData['backstory'] = $backstoryMatch[1];
+            }
+            if (preg_match('/status="([^"]+)"/', $updates, $statusMatch)) {
+                $updateData['status'] = $statusMatch[1];
+            }
+            
+            if (!empty($updateData)) {
+                $agentDB->updateAgent($agentId, $updateData);
+                $message .= "\n\nAgent {$agentId} updated successfully with: " . json_encode($updateData);
+            } else {
+                $message .= "\n\nNo valid update parameters found. Use format: role=\"new role\" goal=\"new goal\"";
+            }
+        }
+        
         // Read API key from .env file
         $envContent = file_get_contents('/app/.env');
         preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
@@ -134,6 +176,8 @@ Examples:
 - @file src/main.py (to share a file)
 - @list www/admin/ (to list directory contents)  
 - @search config (to find files)
+- @agents (to see all agents)
+- @update_agent 5 role="Senior Developer" goal="Write better code"
 - Help me optimize my ZeroAI configuration
 - Review my agent performance and suggest improvements" rows="6" required></textarea>
         <button type="submit" class="btn-success">Chat with Claude</button>
@@ -170,6 +214,16 @@ Examples:
             <p><code>@search pattern</code></p>
             <p>Finds files matching a pattern to locate specific files or configurations</p>
         </div>
+        <div>
+            <h4>@agents command</h4>
+            <p><code>@agents</code></p>
+            <p>Lists all agents with their IDs, names, roles, and status</p>
+        </div>
+        <div>
+            <h4>@update_agent command</h4>
+            <p><code>@update_agent 5 role="New Role" goal="New Goal"</code></p>
+            <p>Updates agent configuration (role, goal, backstory, status)</p>
+        </div>
     </div>
 </div>
 
@@ -201,8 +255,10 @@ Review my ZeroAI configuration and suggest improvements for better agent perform
         
         <form method="POST">
             <input type="hidden" name="action" value="chat_claude">
-            <input type="hidden" name="message" value="Help me create a new specialized agent for my ZeroAI system. What should I consider for role definition, goals, and tool integration?">
-            <button type="submit" class="btn-primary" style="width: 100%;">Create New Agent</button>
+            <input type="hidden" name="message" value="@agents
+
+Analyze my current agents and suggest improvements to their roles, goals, and configurations for better performance.">
+            <button type="submit" class="btn-primary" style="width: 100%;">Analyze & Improve Agents</button>
         </form>
         
     </div>
