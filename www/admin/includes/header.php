@@ -60,7 +60,7 @@
             $currentSection = 'dashboard';
             if (in_array($currentPage ?? '', ['crews', 'agents', 'tasks', 'knowledge'])) {
                 $currentSection = 'crewai';
-            } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat'])) {
+            } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
                 $currentSection = 'chat';
             } elseif (in_array($currentPage ?? '', ['users'])) {
                 $currentSection = 'users';
@@ -90,9 +90,9 @@
             <?php elseif ($currentSection === 'chat'): ?>
                 <div class="sidebar-group">
                     <h3>AI Assistants</h3>
-                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
-                    <a href="/admin/chat?agent=claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>💬 Chat with Claude</a>
-                    <a href="/admin/chat" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>General Chat</a>
+                    <a href="/admin/claude_chat" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>💬 Claude Direct Chat</a>
+                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>👥 Crew Chat</a>
+                    <a href="/admin/chat" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>🤖 Agent Chat</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Settings</h3>
