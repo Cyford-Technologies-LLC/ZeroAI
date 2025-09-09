@@ -1,5 +1,4 @@
 <?php 
-session_start();
 require_once __DIR__ . '/../api/agent_chat.php';
 
 $chat = new AgentChat();
