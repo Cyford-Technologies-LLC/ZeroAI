@@ -37,6 +37,7 @@
                 <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>Users</a>
                 <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>Config</a>
                 <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
+                <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
                 <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
             <div class="user-info">
