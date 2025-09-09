@@ -49,11 +49,14 @@ Examples:
         <button id="send-button" class="btn-success" style="height: fit-content;">Send</button>
     </div>
     
-    <div id="status" style="margin-top: 10px; color: #666; font-size: 12px;"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <div id="status" style="color: #666; font-size: 12px;"></div>
+        <button onclick="clearChatHistory()" class="btn-danger" style="padding: 4px 8px; font-size: 11px;">Clear History</button>
+    </div>
 </div>
 
 <script>
-let chatHistory = [];
+let chatHistory = JSON.parse(localStorage.getItem('claude_chat_history') || '[]');
 
 async function sendMessage() {
     const messageInput = document.getElementById('message-input');
@@ -141,6 +144,9 @@ function addMessageToChat(sender, message, type) {
     
     // Store in history
     chatHistory.push({sender, message, type, timestamp: new Date()});
+    
+    // Persist to localStorage
+    localStorage.setItem('claude_chat_history', JSON.stringify(chatHistory));
 }
 
 function escapeHtml(text) {
@@ -185,8 +191,61 @@ function toggleAutonomousMode() {
     }
 }
 
-// Load initial message
-addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI system. I can help you with code review, system optimization, and development guidance.\n\nFile Commands:\n- @file path/file.py (read file)\n- @create path/file.py ```code``` (create file)\n- @edit path/file.py ```code``` (edit file)\n- @append path/file.py ```code``` (append to file)\n- @delete path/file.py (delete file)\n\nSystem Commands:\n- @agents, @crews, @list, @search\n\n🤖 Toggle Autonomous Mode to let me proactively analyze and improve your codebase!', 'claude');
+// Load chat history from localStorage
+function loadChatHistory() {
+    if (chatHistory.length === 0) {
+        // Load initial message only if no history
+        addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI system. I can help you with code review, system optimization, and development guidance.\n\nFile Commands:\n- @file path/file.py (read file)\n- @create path/file.py ```code``` (create file)\n- @edit path/file.py ```code``` (edit file)\n- @append path/file.py ```code``` (append to file)\n- @delete path/file.py (delete file)\n\nSystem Commands:\n- @agents, @crews, @list, @search\n\n🤖 Toggle Autonomous Mode to let me proactively analyze and improve your codebase!', 'claude');
+    } else {
+        // Restore previous chat history
+        chatHistory.forEach(msg => {
+            addMessageToChatNoStore(msg.sender, msg.message, msg.type);
+        });
+    }
+}
+
+function addMessageToChatNoStore(sender, message, type) {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    
+    let bgColor = '#ffffff';
+    let borderColor = '#007bff';
+    
+    if (type === 'user') {
+        bgColor = '#e3f2fd';
+        borderColor = '#2196f3';
+    } else if (type === 'claude') {
+        bgColor = '#f8f9fa';
+        borderColor = '#007bff';
+    } else if (type === 'error') {
+        bgColor = '#ffebee';
+        borderColor = '#f44336';
+    }
+    
+    messageDiv.innerHTML = `
+        <div style="background: ${bgColor}; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid ${borderColor};">
+            <div style="font-weight: bold; margin-bottom: 8px; color: ${borderColor};">${sender}:</div>
+            <div style="white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">${escapeHtml(message)}</div>
+            <div style="font-size: 11px; color: #666; margin-top: 8px;">${new Date().toLocaleTimeString()}</div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function clearChatHistory() {
+    chatHistory = [];
+    localStorage.removeItem('claude_chat_history');
+    document.getElementById('chat-messages').innerHTML = '';
+    loadChatHistory();
+}
+
+// Load chat history on page load
+loadChatHistory();
 </script>
 
 <div class="card">
