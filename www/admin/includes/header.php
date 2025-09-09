@@ -76,6 +76,7 @@
                     <h3>Crew Management</h3>
                     <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
                     <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
+                    <a href="/admin/test_dynamic_agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>🧪 Test Dynamic Agents</a>
                     <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
                 </div>
                 <div class="sidebar-group">

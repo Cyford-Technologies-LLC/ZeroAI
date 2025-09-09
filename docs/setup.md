@@ -1,6 +1,26 @@
 # 🚀 Complete Setup Guide
 
-This guide will walk you through setting up your self-hosted agentic AI system from scratch.
+This guide will walk you through setting up your self-hosted agentic AI system with **dynamic agent management**, **comprehensive admin portal**, and **advanced AI chat capabilities**.
+
+## 🌟 New Features Highlights
+
+### 🤖 Dynamic Agent Management System
+- **Database-Driven Agents**: All agents now load from database instead of static files
+- **Real-Time Configuration**: Edit agent settings through admin interface with immediate effect
+- **Complete CrewAI Support**: Memory, learning, personality, communication style, tools, coworkers
+- **Import System**: Automatically import existing agents from Python files
+
+### 🎛️ Advanced Admin Portal
+- **Agent Management**: Full CRUD operations with comprehensive configuration forms
+- **Claude Integration**: Direct Claude chat with file access and crew supervision
+- **Cloud Provider Management**: Configure OpenAI, Anthropic, and other cloud APIs
+- **Real-Time Testing**: Built-in test pages to verify dynamic loading
+
+### 💬 Multi-Modal Chat System
+- **Claude Direct Chat**: File access with @file, @list, @search commands
+- **Crew Chat**: Multi-agent conversations with specialized teams
+- **Agent Chat**: Individual agent interactions with full context
+- **Model Selection**: Choose between local and cloud models per conversation
 
 ## 📚 Related Documentation
 
@@ -320,14 +340,67 @@ docker-compose exec zeroai bash
    - Adjust `max_tokens` based on your needs
    - Reduce `max_concurrent` if experiencing memory issues
 
+## 🎛️ Admin Portal Setup
+
+### Access the Admin Interface
+
+After installation, access the comprehensive admin portal:
+
+```bash
+# Docker installation
+http://localhost:8080/admin
+
+# Manual installation (if running web server)
+http://localhost:8080/admin
+```
+
+**Default Credentials:**
+- Username: `admin`
+- Password: `admin123`
+
+### Admin Portal Features
+
+#### 🤖 Dynamic Agent Management
+1. **Import Existing Agents**: Click "Import All Existing Agents" to populate database
+2. **Edit Agent Configuration**: Full CrewAI options including:
+   - Memory and learning capabilities
+   - Personality traits and communication style
+   - Tools, knowledge sources, and coworkers
+   - Delegation settings and execution limits
+3. **Test Dynamic Loading**: Use the test page to verify agents are using database settings
+
+#### 💬 Chat Interfaces
+1. **Claude Direct Chat**: 
+   - File access with `@file path/to/file.py`
+   - Directory listing with `@list path/`
+   - File search with `@search pattern`
+   - Agent management with `@agents` and `@update_agent`
+
+2. **Crew Chat**: Multi-agent team conversations
+3. **Agent Chat**: Individual specialized agent interactions
+
+#### ⚙️ Configuration Management
+1. **Cloud Providers**: Configure API keys for OpenAI, Anthropic, etc.
+2. **Claude Settings**: Customize role, goals, and supervisor model selection
+3. **System Settings**: Adjust logging, performance, and security settings
+
+### Quick Start with Admin Portal
+
+1. **Login to Admin**: Navigate to `/admin` and login
+2. **Import Agents**: Go to Agent Management → Import All Existing Agents
+3. **Test Dynamic Loading**: Visit Test Dynamic Agents page
+4. **Configure Claude**: Set up Claude API key in Cloud AI Settings
+5. **Start Chatting**: Use Claude Direct Chat or Crew Chat
+
 ## 🚀 Next Steps
 
 Once your setup is working:
 
-1. **Try the Examples**: Run different examples in the `examples/` folder
-2. **Create Custom Agents**: Build agents for your specific use cases
-3. **Integrate Tools**: Add external tools and APIs
-4. **Scale Up**: Deploy on more powerful hardware for production use
+1. **Explore Admin Portal**: Configure agents, test chat interfaces, manage settings
+2. **Import Your Agents**: Use the import feature to migrate existing agent configurations
+3. **Try Chat Interfaces**: Test Claude direct chat, crew conversations, and agent interactions
+4. **Customize Agents**: Edit agent personalities, tools, and capabilities through the admin interface
+5. **Scale Up**: Deploy on more powerful hardware for production use
 
 ## 📞 Getting Help
 
@@ -356,19 +429,68 @@ If you encounter issues:
 - [ ] Peer service accessible: `curl http://localhost:8080/peers`
 - [ ] Internal crew functional: `python run/internal/run_dev_ops.py "test"`
 
+### Admin Portal Verification
+- [ ] Admin portal accessible: `http://localhost:8080/admin`
+- [ ] Login successful with admin/admin123
+- [ ] Agent import completed successfully
+- [ ] Dynamic agent test shows "SUCCESS" status
+- [ ] Claude chat interface functional (if API key configured)
+- [ ] Crew chat responds to messages
+- [ ] Agent configuration forms show all CrewAI options
+
+### Dynamic Agent System
+- [ ] Database contains imported agents with full configurations
+- [ ] Agents show memory, learning, personality settings
+- [ ] Crew execution uses database agents (not static files)
+- [ ] Admin changes take effect immediately
+- [ ] Test page confirms dynamic loading is working
+
 ### Optional: Secure Keys Setup
 - [ ] System secure directory created: `/etc/cyford/zeroai/`
 - [ ] Secure `.env` file created with proper permissions
 - [ ] GitHub tokens configured and accessible
 - [ ] Docker containers can access secure environment variables
+- [ ] Claude API key configured for advanced chat features
+
+## 🎉 System Architecture Overview
+
+### Dynamic Agent Loading Flow
+1. **Database First**: Crews attempt to load agents from SQLite database
+2. **Full Configuration**: Agents include all CrewAI options (memory, learning, personality, etc.)
+3. **Static Fallback**: If database loading fails, system falls back to Python files
+4. **Real-Time Updates**: Admin changes take effect immediately without restart
+
+### Admin Portal Architecture
+- **Frontend**: PHP-based admin interface with dynamic navigation
+- **Backend**: SQLite database with comprehensive agent/crew/task schemas
+- **API Integration**: Direct Claude API integration with model selection
+- **File Access**: Claude can read project files using specialized commands
+
+### Chat System Architecture
+- **Multi-Modal**: Support for direct AI chat, crew conversations, and agent interactions
+- **Model Routing**: Intelligent routing between local Ollama and cloud APIs
+- **Context Management**: Persistent conversation history and file context
+- **Command System**: Special commands for file access and agent management
 
 ## 📖 Next Steps
 
 After successful installation:
 
-1. **Read Documentation**: Check out the [Internal AI System](internal-ai-system.md) to understand the growing agent ecosystem
-2. **Review Commands**: Use the [Commands Reference](commands.md) for available operations
-3. **Explore Structure**: Understand the [Project Structure](project-structure.md)
-4. **Check Updates**: Review the [Changelog](../CHANGELOG.md) for latest features
+1. **Explore Admin Portal**: Navigate through all sections to understand capabilities
+2. **Import and Configure**: Import your existing agents and customize through the interface
+3. **Test Chat Systems**: Try all three chat modes (Claude, Crew, Agent)
+4. **Read Documentation**: Check out the [Internal AI System](internal-ai-system.md) to understand the growing agent ecosystem
+5. **Review Commands**: Use the [Commands Reference](commands.md) for available operations
+6. **Explore Structure**: Understand the [Project Structure](project-structure.md)
+7. **Check Updates**: Review the [Changelog](../CHANGELOG.md) for latest features
 
-Congratulations! Your self-hosted agentic AI system is ready to use! 🎉
+## 🏆 Key Achievements
+
+✅ **Dynamic Agent Management**: Database-driven agent configuration with real-time updates  
+✅ **Comprehensive Admin Portal**: Full-featured web interface for system management  
+✅ **Advanced Chat Capabilities**: Multiple AI interaction modes with file access  
+✅ **Cloud Integration**: Seamless integration with Claude, OpenAI, and other providers  
+✅ **Complete CrewAI Support**: All agent options available through admin interface  
+✅ **Production Ready**: Secure, scalable architecture with proper error handling  
+
+Congratulations! Your advanced self-hosted agentic AI system with dynamic management is ready to use! 🎉

@@ -174,7 +174,7 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
     """
     Loads and configures all available coworker agents from database (dynamic) or discovered crews (fallback).
     """
-    console.print("🔍 Loading coworkers dynamically...", style="blue")
+    console.print("🔍 Loading coworkers dynamically from database...", style="blue")
     
     # Try dynamic loading from database first
     try:
@@ -187,20 +187,34 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
             
             for config in agents_config:
                 try:
-                    agent = dynamic_loader.create_agent_from_config(config, router, tools=tools)
+                    # Pass tools and other necessary parameters
+                    agent = dynamic_loader.create_agent_from_config(
+                        config, 
+                        router, 
+                        tools=tools,
+                        coworkers=all_coworkers  # Pass existing coworkers for delegation
+                    )
                     all_coworkers.append(agent)
-                    console.print(f"✅ Loaded dynamic agent: {agent.role}", style="green")
+                    console.print(f"✅ Loaded dynamic agent: {agent.role} (memory: {config.get('memory', 'N/A')}, delegation: {config.get('allow_delegation', 'N/A')})", style="green")
                 except Exception as e:
                     console.print(f"❌ Failed to create agent {config['role']}: {e}", style="red")
+                    import traceback
+                    console.print(f"   Traceback: {traceback.format_exc()}", style="dim red")
             
             if all_coworkers:
-                console.print(f"🎯 Successfully loaded {len(all_coworkers)} dynamic agents", style="cyan")
+                console.print(f"🎯 Successfully loaded {len(all_coworkers)} dynamic agents from database", style="cyan")
+                console.print(f"   Agent roles: {[agent.role for agent in all_coworkers]}", style="dim cyan")
                 return all_coworkers
+            else:
+                console.print("⚠️ No agents could be created from database, falling back to static", style="yellow")
     
     except Exception as e:
         console.print(f"⚠️ Dynamic loading failed, falling back to static: {e}", style="yellow")
+        import traceback
+        console.print(f"   Traceback: {traceback.format_exc()}", style="dim yellow")
     
     # Fallback to original static loading
+    console.print("📁 Falling back to static agent loading...", style="yellow")
     return load_all_coworkers_static(router, inputs, tools)
 
 def load_all_coworkers_static(router: Any, inputs: Dict[str, Any], tools: Optional[List] = None) -> List[Agent]:
