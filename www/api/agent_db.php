@@ -394,8 +394,11 @@ class AgentDB {
         $agentsDir = '/app/src/crews/internal';
         
         if (!is_dir($agentsDir)) {
+            error_log("DEBUG: Agents directory not found: $agentsDir");
             return $imported;
         }
+        
+        error_log("DEBUG: Scanning agents directory: $agentsDir");
         
         // Scan all crew directories
         $crewDirs = glob($agentsDir . '/*', GLOB_ONLYDIR);
@@ -404,10 +407,14 @@ class AgentDB {
             $agentsFile = $crewDir . '/agents.py';
             
             if (file_exists($agentsFile)) {
+                error_log("DEBUG: Processing agents file: $agentsFile");
                 $content = file_get_contents($agentsFile);
                 $agents = $this->parseAgentsFromPython($content, basename($crewDir));
                 
+                error_log("DEBUG: Found " . count($agents) . " agents in $agentsFile");
+                
                 foreach ($agents as $agent) {
+                    error_log("DEBUG: Processing agent: " . $agent['role']);
                     // Check if agent already exists
                     $existing = $this->db->query("SELECT id FROM agents WHERE role = '" . SQLite3::escapeString($agent['role']) . "'");
                     if (!$existing->fetchArray()) {
@@ -418,6 +425,49 @@ class AgentDB {
                             }
                         }
                         $imported[] = $agent;
+                        error_log("DEBUG: Imported agent: " . $agent['role']);
+                    } else {
+                        error_log("DEBUG: Agent already exists: " . $agent['role']);
+                    }
+                }
+            } else {
+                error_log("DEBUG: No agents.py file in $crewDir");
+            }
+        }
+        
+        // Also import crews
+        $this->importExistingCrews();
+        
+        return $imported;
+    }
+    
+    public function importExistingCrews() {
+        $imported = [];
+        $crewsDir = '/app/src/crews/internal';
+        
+        if (!is_dir($crewsDir)) {
+            return $imported;
+        }
+        
+        $crewDirs = glob($crewsDir . '/*', GLOB_ONLYDIR);
+        
+        foreach ($crewDirs as $crewDir) {
+            $crewName = basename($crewDir);
+            $crewFile = $crewDir . '/crew.py';
+            
+            if (file_exists($crewFile)) {
+                $content = file_get_contents($crewFile);
+                $crewConfig = $this->parseCrewFromPython($content, $crewName);
+                
+                if ($crewConfig) {
+                    // Check if crew already exists
+                    $existing = $this->db->query("SELECT id FROM crews WHERE name = '" . SQLite3::escapeString($crewConfig['name']) . "'");
+                    if (!$existing->fetchArray()) {
+                        $crewId = $this->createCrew($crewConfig);
+                        $imported[] = $crewConfig;
+                        
+                        // Import tasks for this crew
+                        $this->importCrewTasks($crewDir, $crewId);
                     }
                 }
             }
@@ -426,30 +476,91 @@ class AgentDB {
         return $imported;
     }
     
+    private function parseCrewFromPython($content, $crewName) {
+        // Extract crew creation function
+        if (preg_match('/def (?:get_|create_)' . $crewName . '_crew\([^)]*\):[\s\S]*?return Crew\([\s\S]*?\)/m', $content, $match)) {
+            $crewMatch = $match[0];
+            
+            return [
+                'name' => ucwords(str_replace('_', ' ', $crewName)) . ' Crew',
+                'description' => $this->extractParameter($crewMatch, 'description') ?? "Specialized $crewName crew for task execution",
+                'process' => $this->extractParameter($crewMatch, 'process') ?? 'sequential',
+                'verbose' => $this->extractBooleanParameter($crewMatch, 'verbose') ?? 1,
+                'memory' => $this->extractBooleanParameter($crewMatch, 'memory') ?? 0,
+                'cache' => $this->extractBooleanParameter($crewMatch, 'cache') ?? 1,
+                'max_rpm' => $this->extractIntParameter($crewMatch, 'max_rpm'),
+                'language' => $this->extractParameter($crewMatch, 'language') ?? 'en',
+                'full_output' => $this->extractBooleanParameter($crewMatch, 'full_output') ?? 0,
+                'share_crew' => $this->extractBooleanParameter($crewMatch, 'share_crew') ?? 0,
+                'max_execution_time' => $this->extractIntParameter($crewMatch, 'max_execution_time'),
+                'max_retry_limit' => $this->extractIntParameter($crewMatch, 'max_retry_limit') ?? 2,
+                'planning' => $this->extractBooleanParameter($crewMatch, 'planning') ?? 0
+            ];
+        }
+        
+        return null;
+    }
+    
+    private function importCrewTasks($crewDir, $crewId) {
+        $tasksFile = $crewDir . '/tasks.py';
+        
+        if (file_exists($tasksFile)) {
+            $content = file_get_contents($tasksFile);
+            
+            // Extract task creation functions
+            preg_match_all('/def create_(\w+)_task\([^)]*\):[\s\S]*?return Task\([\s\S]*?\)/m', $content, $matches);
+            
+            foreach ($matches[0] as $index => $match) {
+                $taskType = $matches[1][$index];
+                
+                $taskData = [
+                    'crew_id' => $crewId,
+                    'agent_id' => null, // Will be linked later
+                    'name' => ucwords(str_replace('_', ' ', $taskType)) . ' Task',
+                    'description' => $this->extractParameter($match, 'description') ?? "Specialized $taskType task",
+                    'expected_output' => $this->extractParameter($match, 'expected_output') ?? 'Task completion report',
+                    'context' => $this->extractParameter($match, 'context'),
+                    'human_input' => $this->extractBooleanParameter($match, 'human_input') ?? 0,
+                    'async_execution' => $this->extractBooleanParameter($match, 'async_execution') ?? 0,
+                    'task_order' => $index
+                ];
+                
+                $this->createTask($taskData);
+            }
+        }
+    }
+    
     private function parseAgentsFromPython($content, $crewName) {
         $agents = [];
         
-        // Extract agent creation functions with more comprehensive parsing
-        preg_match_all('/def create_(\w+)_agent\([^)]*\):[\s\S]*?return Agent\([\s\S]*?\)/m', $content, $matches);
+        // Extract ALL agent creation functions (more flexible pattern)
+        preg_match_all('/def\s+(create_\w*agent|get_\w*agent)\s*\([^)]*\):[\s\S]*?return\s+Agent\s*\([\s\S]*?\)/mi', $content, $matches);
         
         foreach ($matches[0] as $index => $match) {
-            $agentType = $matches[1][$index];
+            $functionName = $matches[1][$index];
+            
+            // Extract agent type from function name
+            if (preg_match('/(create|get)_(\w+)_?agent/i', $functionName, $typeMatch)) {
+                $agentType = $typeMatch[2];
+            } else {
+                $agentType = $crewName;
+            }
             
             // Extract all Agent parameters
             $agent = [
                 'name' => $this->extractParameter($match, 'role') ?? ucwords(str_replace('_', ' ', $agentType)),
                 'role' => $this->extractParameter($match, 'role') ?? ucwords(str_replace('_', ' ', $agentType)),
-                'goal' => $this->extractParameter($match, 'goal') ?? "Specialized agent for $crewName crew",
-                'backstory' => $this->extractParameter($match, 'backstory') ?? "You are a specialized agent working as part of the $crewName crew.",
+                'goal' => $this->extractParameter($match, 'goal') ?? "Specialized $agentType agent for $crewName crew",
+                'backstory' => $this->extractParameter($match, 'backstory') ?? "You are a $agentType agent working as part of the $crewName crew.",
                 'status' => 'active',
                 'is_core' => 1,
                 'llm_model' => 'local',
                 'verbose' => $this->extractBooleanParameter($match, 'verbose') ?? 1,
-                'allow_delegation' => $this->extractBooleanParameter($match, 'allow_delegation') ?? 0,
+                'allow_delegation' => $this->extractBooleanParameter($match, 'allow_delegation') ?? (strpos(strtolower($agentType), 'manager') !== false ? 1 : 0),
                 'max_iter' => $this->extractIntParameter($match, 'max_iter') ?? 25,
                 'max_rpm' => $this->extractIntParameter($match, 'max_rpm'),
                 'max_execution_time' => $this->extractIntParameter($match, 'max_execution_time'),
-                'allow_code_execution' => $this->extractBooleanParameter($match, 'allow_code_execution') ?? 0,
+                'allow_code_execution' => $this->extractBooleanParameter($match, 'allow_code_execution') ?? (strpos(strtolower($agentType), 'developer') !== false ? 1 : 0),
                 'max_retry_limit' => $this->extractIntParameter($match, 'max_retry_limit') ?? 2,
                 'capabilities' => $this->extractCapabilities($match, $crewName)
             ];
@@ -457,9 +568,10 @@ class AgentDB {
             $agents[] = $agent;
         }
         
-        // Also parse AVAILABLE_AGENTS dictionary if present
-        if (preg_match('/AVAILABLE_AGENTS\s*=\s*{([\s\S]*?)}/m', $content, $availableMatch)) {
-            $agents = array_merge($agents, $this->parseAvailableAgents($availableMatch[1]));
+        // Also parse AVAILABLE_AGENTS dictionary if present (this should get all 12)
+        if (preg_match('/AVAILABLE_AGENTS\s*=\s*\{([\s\S]*?)\}(?=\s*\n\s*\n|\s*def|\s*#|$)/m', $content, $availableMatch)) {
+            $availableAgents = $this->parseAvailableAgents($availableMatch[1]);
+            $agents = array_merge($agents, $availableAgents);
         }
         
         return $agents;
