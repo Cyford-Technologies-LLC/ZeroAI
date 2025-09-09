@@ -155,20 +155,17 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "# File created by Claude\nprint('Hello from Claude')\n";
     
-    // Debug: Log what we captured
-    error_log("DEBUG: Original filePath = '" . $filePath . "'");
-    
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
         $cleanPath = substr($cleanPath, 4);
     }
+    
     // Ensure we have a valid filename
     if (empty($cleanPath) || $cleanPath === '/') {
         $cleanPath = 'claude_file.txt';
     }
     
-    error_log("DEBUG: Final cleanPath = '" . $cleanPath . "'");
     $fullPath = '/app/' . $cleanPath;
     $dir = dirname($fullPath);
     
@@ -178,10 +175,9 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
-        $exists = file_exists($fullPath) ? 'EXISTS' : 'MISSING';
-        $message .= "\n\nFile created: " . $filePath . " (" . $result . " bytes) - Status: " . $exists;
+        $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
     } else {
-        $message .= "\n\nFailed to create: " . $filePath . " at " . $fullPath;
+        $message .= "\n\n❌ Failed to create: " . $cleanPath;
     }
 }
 

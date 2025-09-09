@@ -19,7 +19,7 @@ FROM python:3.11-slim
 
 # Install system dependencies (gosu and docker) needed in the final image
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg gosu git nano \
+    curl gnupg gosu git nano sudo \
     && rm -rf /var/lib/apt/lists/*
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
@@ -63,8 +63,29 @@ RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc
 RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi \
     && chown -R www-data:www-data /var/lib/nginx /var/log/nginx
 
+# Fix core permissions issue - set /app ownership to www-data
+RUN chown -R www-data:www-data /app
+
+# Configure git to maintain www-data ownership
+RUN git config --global --add safe.directory /app \
+    && git config --global user.name "www-data" \
+    && git config --global user.email "www-data@zeroai.local"
+
+# Install git wrapper and configure sudo
+COPY git-wrapper.sh /usr/local/bin/git-wrapper
+RUN chmod +x /usr/local/bin/git-wrapper \
+    && echo 'www-data ALL=(ALL) NOPASSWD: /usr/bin/git' >> /etc/sudoers \
+    && echo 'alias git="/usr/local/bin/git-wrapper"' >> /etc/bash.bashrc
+
+# Create git hook to fix ownership after pulls
+RUN mkdir -p /app/.git/hooks \
+    && echo '#!/bin/bash' > /app/.git/hooks/post-merge \
+    && echo 'chown -R www-data:www-data /app' >> /app/.git/hooks/post-merge \
+    && chmod +x /app/.git/hooks/post-merge
+
 # Create startup script for nginx + PHP-FPM
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
+    && echo 'chown -R www-data:www-data /app' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
