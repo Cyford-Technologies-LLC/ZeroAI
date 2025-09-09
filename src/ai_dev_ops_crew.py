@@ -346,36 +346,21 @@ class AIOpsCrewManager:
         return tools
     
     def _get_optimal_llm(self):
-        """Get the best available LLM - cloud AI if configured, otherwise local."""
+        """Get local LLM for primary work."""
+        return self.router.get_llm_for_role("general")
+    
+    def _get_supervisor_llm(self):
+        """Get Claude as supervisor for review and quality control."""
         try:
-            # Check if cloud AI is configured and available
-            if config.cloud.provider != "local":
-                from src.providers.cloud_providers import CloudProviderManager
-                
-                if config.cloud.provider == "anthropic" and os.getenv('ANTHROPIC_API_KEY'):
-                    console.print("🌩️ Using Claude (Anthropic) for enhanced capabilities", style="cyan")
-                    return CloudProviderManager.create_anthropic_llm(model='claude-3-5-sonnet-20241022')
-                elif config.cloud.provider == "openai" and os.getenv('OPENAI_API_KEY'):
-                    console.print("🌩️ Using GPT-4 (OpenAI) for enhanced capabilities", style="cyan")
-                    return CloudProviderManager.create_openai_llm(model='gpt-4')
-                elif config.cloud.provider == "azure" and os.getenv('AZURE_OPENAI_API_KEY'):
-                    console.print("🌩️ Using Azure OpenAI for enhanced capabilities", style="cyan")
-                    return CloudProviderManager.create_azure_llm()
-                elif config.cloud.provider == "google" and os.getenv('GOOGLE_API_KEY'):
-                    console.print("🌩️ Using Google Gemini for enhanced capabilities", style="cyan")
-                    return CloudProviderManager.create_google_llm()
-                else:
-                    console.print(f"⚠️ Cloud provider '{config.cloud.provider}' configured but API key not found, falling back to local", style="yellow")
-            
-            # Fallback to local/distributed routing
-            return self.router.get_llm_for_role("general")
-            
-        except ImportError:
-            console.print("⚠️ Cloud providers not available, using local LLM", style="yellow")
-            return self.router.get_llm_for_role("general")
+            supervisor = getattr(config.cloud, 'supervisor', None)
+            if supervisor == "anthropic" and os.getenv('ANTHROPIC_API_KEY'):
+                from crewai import LLM
+                console.print("👥 Claude supervisor available for review", style="cyan")
+                return LLM(model='anthropic/claude-sonnet-4-20250514')
+            return None
         except Exception as e:
-            console.print(f"⚠️ Error getting optimal LLM: {e}, using local", style="yellow")
-            return self.router.get_llm_for_role("general")
+            console.print(f"⚠️ Supervisor not available: {e}", style="yellow")
+            return None
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
@@ -494,6 +479,10 @@ class AIOpsCrewManager:
                     # Pass project config to agents
                 }
 
+                # Get supervisor LLM for quality control
+                supervisor_llm = self._get_supervisor_llm()
+                task_inputs['supervisor_llm'] = supervisor_llm
+                
                 crew = create_team_manager_crew(
                     router=self.router,
                     tools=self.tools,

@@ -93,8 +93,44 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
 
 // Test connection
 if ($_POST['action'] ?? '' === 'test_connection') {
-    $provider = $_POST['provider'] ?? $currentConfig['provider'] ?? 'anthropic';
-    $testResult = $cloudBridge->testCloudProvider($provider);
+    $provider = $_POST['provider'] ?? 'anthropic';
+    
+    // Read API key from .env file
+    $envContent = file_get_contents('/app/.env');
+    preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
+    $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
+    
+    if ($apiKey) {
+        $pythonCmd = 'export HOME=/tmp && export ANTHROPIC_API_KEY=' . escapeshellarg($apiKey) . ' && /app/venv/bin/python -c "'
+            . 'from crewai import LLM; '
+            . 'llm = LLM(model=\"anthropic/claude-sonnet-4-20250514\"); '
+            . 'response = llm.call(\"Test connection - respond with: Connection successful\"); '
+            . 'print(response)'
+            . '"';
+        
+        $output = shell_exec($pythonCmd . ' 2>&1');
+        
+        if ($output && !strpos($output, 'Error') && !strpos($output, 'Traceback')) {
+            $testResult = [
+                'success' => true,
+                'provider' => $provider,
+                'model' => 'claude-sonnet-4-20250514',
+                'response' => trim($output)
+            ];
+        } else {
+            $testResult = [
+                'success' => false,
+                'provider' => $provider,
+                'error' => 'Connection failed: ' . $output
+            ];
+        }
+    } else {
+        $testResult = [
+            'success' => false,
+            'provider' => $provider,
+            'error' => 'API key not found in .env file'
+        ];
+    }
 }
 ?>
 
