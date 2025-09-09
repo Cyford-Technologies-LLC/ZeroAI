@@ -160,6 +160,10 @@ if (preg_match('/\@create\s+(.+?)(?:\s+```([\s\S]*?)```)?/', $message, $matches)
     if (strpos($cleanPath, 'app/') === 0) {
         $cleanPath = substr($cleanPath, 4);
     }
+    // Ensure we have a valid filename
+    if (empty($cleanPath) || $cleanPath === '/') {
+        $cleanPath = 'claude_file.txt';
+    }
     $fullPath = '/app/' . $cleanPath;
     $dir = dirname($fullPath);
     
