@@ -1,7 +1,4 @@
 <?php 
-$pageTitle = 'Agent Chat - ZeroAI';
-$currentPage = 'chat';
-include __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/../api/agent_chat.php';
 
 $chat = new AgentChat();
@@ -10,10 +7,25 @@ $sessionId = $_GET['session'] ?? null;
 
 // Handle new chat session
 if ($agentId && !$sessionId) {
+    // Handle special case for Claude
+    if ($agentId === 'claude') {
+        $agents = $chat->getAvailableAgents();
+        foreach ($agents as $agent) {
+            if ($agent['name'] === 'Claude AI Assistant') {
+                $agentId = $agent['id'];
+                break;
+            }
+        }
+    }
+    
     $sessionId = $chat->startChatSession($agentId, $_SESSION['admin_user']);
     header("Location: /admin/chat?session=$sessionId");
     exit;
 }
+
+$pageTitle = 'Agent Chat - ZeroAI';
+$currentPage = 'chat';
+include __DIR__ . '/includes/header.php';
 
 // Handle message sending
 if ($_POST['action'] ?? '' === 'send_message' && $sessionId) {
