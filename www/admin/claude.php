@@ -12,30 +12,41 @@ if ($_POST['action'] ?? '' === 'setup_provider') {
     $provider = $_POST['provider'] ?? 'anthropic';
     $apiKey = $_POST['api_key'] ?? '';
     
+    error_log("DEBUG: Provider setup - Provider: $provider, API Key: " . ($apiKey ? 'PROVIDED' : 'EMPTY'));
+    
     if ($apiKey) {
-        // Direct .env update
-        $envFile = '/app/.env';
-        $envContent = file_get_contents($envFile);
-        
-        $keyName = strtoupper($provider) . '_API_KEY';
-        
-        if (strpos($envContent, $keyName) !== false) {
-            // Update existing
-            $envContent = preg_replace('/^' . $keyName . '=.*/m', $keyName . '=' . $apiKey, $envContent);
-        } else {
-            // Add new
-            $envContent .= "\n# Cloud AI Configuration\n" . $keyName . '=' . $apiKey . "\n";
+        try {
+            // Direct .env update
+            $envFile = '/app/.env';
+            $envContent = file_get_contents($envFile);
+            
+            $keyName = strtoupper($provider) . '_API_KEY';
+            error_log("DEBUG: Key name: $keyName");
+            
+            if (strpos($envContent, $keyName) !== false) {
+                // Update existing
+                $envContent = preg_replace('/^' . $keyName . '=.*/m', $keyName . '=' . $apiKey, $envContent);
+                error_log("DEBUG: Updated existing key");
+            } else {
+                // Add new
+                $envContent .= "\n# Cloud AI Configuration\n" . $keyName . '=' . $apiKey . "\n";
+                error_log("DEBUG: Added new key");
+            }
+            
+            $writeResult = file_put_contents($envFile, $envContent);
+            error_log("DEBUG: Write result: " . ($writeResult ? 'SUCCESS' : 'FAILED'));
+            
+            // Update settings.yaml
+            $yamlFile = '/app/config/settings.yaml';
+            $yamlContent = file_get_contents($yamlFile);
+            $yamlContent = preg_replace('/provider:\s*"?local"?/', 'provider: "' . $provider . '"', $yamlContent);
+            file_put_contents($yamlFile, $yamlContent);
+            
+            $setupResult = ['success' => true, 'provider' => $provider, 'debug' => 'Write result: ' . $writeResult];
+        } catch (Exception $e) {
+            error_log("DEBUG: Exception: " . $e->getMessage());
+            $setupResult = ['success' => false, 'error' => $e->getMessage()];
         }
-        
-        file_put_contents($envFile, $envContent);
-        
-        // Update settings.yaml
-        $yamlFile = '/app/config/settings.yaml';
-        $yamlContent = file_get_contents($yamlFile);
-        $yamlContent = preg_replace('/provider:\s*"?local"?/', 'provider: "' . $provider . '"', $yamlContent);
-        file_put_contents($yamlFile, $yamlContent);
-        
-        $setupResult = ['success' => true, 'provider' => $provider];
     } else {
         $setupResult = ['success' => false, 'error' => 'API key required'];
     }
@@ -43,21 +54,54 @@ if ($_POST['action'] ?? '' === 'setup_provider') {
     $currentConfig = $cloudBridge->getCurrentCloudConfig(); // Refresh config
 }
 
-// Handle chat with cloud AI
+// Handle chat with cloud AI - Direct implementation
 if ($_POST['action'] ?? '' === 'chat_cloud') {
-    $provider = $_POST['provider'] ?? $currentConfig['provider'] ?? 'anthropic';
-    $response = $cloudBridge->chatWithCloudAgent($provider, $_POST['message'], [
-        'user' => $_SESSION['admin_user'],
-        'system_status' => 'online',
-        'active_agents' => 3,
-        'current_provider' => $provider
-    ]);
+    $message = $_POST['message'] ?? '';
+    $apiKey = getenv('ANTHROPIC_API_KEY');
     
-    if ($response['success']) {
-        $cloudResponse = $response['response'];
-        $usedModel = $response['model'];
+    if ($apiKey && $message) {
+        $headers = [
+            'Content-Type: application/json',
+            'x-api-key: ' . $apiKey,
+            'anthropic-version: 2023-06-01'
+        ];
+        
+        $data = [
+            'model' => 'claude-3-5-sonnet-20241022',
+            'max_tokens' => 4000,
+            'system' => 'You are Claude, integrated into ZeroAI - a zero-cost AI workforce platform. Help optimize ZeroAI configurations, analyze agent performance, and provide development assistance.',
+            'messages' => [[
+                'role' => 'user',
+                'content' => $message
+            ]]
+        ];
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://api.anthropic.com/v1/messages');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200) {
+            $result = json_decode($response, true);
+            if ($result && isset($result['content'][0]['text'])) {
+                $cloudResponse = $result['content'][0]['text'];
+                $tokensUsed = ($result['usage']['input_tokens'] ?? 0) + ($result['usage']['output_tokens'] ?? 0);
+                $usedModel = 'claude-3-5-sonnet-20241022';
+            } else {
+                $error = 'Invalid response from Claude API';
+            }
+        } else {
+            $error = 'Claude API error: HTTP ' . $httpCode;
+        }
     } else {
-        $error = $response['error'];
+        $error = $apiKey ? 'Message required' : 'Claude API key not configured';
     }
 }
 
@@ -139,14 +183,14 @@ if ($_POST['action'] ?? '' === 'test_connection') {
         <button type="submit" class="btn-success">Ask Claude</button>
     </form>
     
-    <?php if (isset($claudeResponse)): ?>
+    <?php if (isset($cloudResponse)): ?>
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #007bff;">
             <h4>Claude's Response:</h4>
             <div style="white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                <?= htmlspecialchars($claudeResponse) ?>
+                <?= htmlspecialchars($cloudResponse) ?>
             </div>
             <small style="color: #666; margin-top: 10px; display: block;">
-                Tokens used: <?= $tokensUsed ?> | Model: claude-3-5-sonnet-20241022
+                Tokens used: <?= $tokensUsed ?? 0 ?> | Model: <?= $usedModel ?? 'claude-3-5-sonnet-20241022' ?>
             </small>
         </div>
     <?php endif; ?>
