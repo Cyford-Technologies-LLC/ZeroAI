@@ -57,7 +57,16 @@ if ($_POST['action'] ?? '' === 'setup_provider') {
 // Handle chat with cloud AI - Direct implementation
 if ($_POST['action'] ?? '' === 'chat_cloud') {
     $message = $_POST['message'] ?? '';
-    $apiKey = getenv('ANTHROPIC_API_KEY');
+    // Try multiple ways to get the API key
+    $apiKey = getenv('ANTHROPIC_API_KEY') ?: $_ENV['ANTHROPIC_API_KEY'] ?? null;
+    
+    // If not found, read directly from .env file
+    if (!$apiKey) {
+        $envContent = file_get_contents('/app/.env');
+        if (preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches)) {
+            $apiKey = trim($matches[1]);
+        }
+    }
     
     if ($apiKey && $message) {
         $headers = [
