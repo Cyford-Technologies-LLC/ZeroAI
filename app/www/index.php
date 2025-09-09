@@ -89,6 +89,11 @@ switch ($path) {
         include __DIR__ . '/admin/monitoring.php';
         break;
         
+    case '/admin/chat':
+        requireAdminAuth();
+        include __DIR__ . '/admin/chat.php';
+        break;
+        
     case '/web':
     case '/web/login':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

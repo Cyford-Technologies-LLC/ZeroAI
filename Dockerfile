@@ -65,7 +65,7 @@ RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc
 # Create startup script for nginx + PHP-FPM
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
-    && echo 'service php*-fpm start' >> /app/start_portal.sh \
+    && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
