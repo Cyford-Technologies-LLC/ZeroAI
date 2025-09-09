@@ -78,36 +78,106 @@ class DynamicAgentLoader:
             return []
     
     def create_agent_from_config(self, config: Dict[str, Any], router: Any = None, **kwargs) -> Agent:
-        """Create CrewAI Agent from database configuration"""
+        """Create CrewAI Agent from database configuration with ALL CrewAI options"""
         try:
+            import json
+            
             # Get LLM based on config
             llm = self._get_llm_for_agent(config, router)
             
-            # Create agent with all parameters from database
-            agent = Agent(
-                role=config['role'],
-                goal=config['goal'],
-                backstory=config['backstory'],
-                llm=llm,
-                verbose=bool(config.get('verbose', 1)),
-                allow_delegation=bool(config.get('allow_delegation', 0)),
-                max_iter=config.get('max_iter', 25),
-                max_rpm=config.get('max_rpm'),
-                max_execution_time=config.get('max_execution_time'),
-                allow_code_execution=bool(config.get('allow_code_execution', 0)),
-                max_retry_limit=config.get('max_retry_limit', 2),
-                system_template=config.get('system_template'),
-                prompt_template=config.get('prompt_template'),
-                response_template=config.get('response_template'),
-                **kwargs
-            )
+            # Parse JSON fields
+            personality_traits = self._parse_json_field(config.get('personality_traits'))
+            personality_quirks = self._parse_json_field(config.get('personality_quirks'))
+            communication_preferences = self._parse_json_field(config.get('communication_preferences'))
+            tools = self._parse_json_field(config.get('tools'))
+            coworkers = self._parse_json_field(config.get('coworkers'))
             
-            console.print(f"✅ Created dynamic agent: {config['role']}", style="green")
+            # Build personality dict if traits exist
+            personality = None
+            if personality_traits or personality_quirks or communication_preferences:
+                personality = {}
+                if personality_traits:
+                    personality['traits'] = personality_traits
+                if personality_quirks:
+                    personality['quirks'] = personality_quirks
+                if communication_preferences:
+                    personality['communication_preferences'] = communication_preferences
+            
+            # Build communication_style dict
+            communication_style = {
+                'formality': config.get('communication_formality', 'professional'),
+                'verbosity': config.get('communication_verbosity', 'concise'),
+                'tone': config.get('communication_tone', 'confident'),
+                'technical_level': config.get('communication_technical_level', 'intermediate')
+            }
+            
+            # Build learning dict if enabled
+            learning = None
+            if config.get('learning_enabled'):
+                learning = {
+                    'enabled': True,
+                    'learning_rate': config.get('learning_rate', 0.05),
+                    'feedback_incorporation': config.get('feedback_incorporation', 'immediate'),
+                    'adaptation_strategy': config.get('adaptation_strategy', 'progressive')
+                }
+            
+            # Create agent with ALL parameters from database
+            agent_params = {
+                'role': config['role'],
+                'goal': config['goal'],
+                'backstory': config['backstory'],
+                'llm': llm,
+                'verbose': bool(config.get('verbose', 1)),
+                'allow_delegation': bool(config.get('allow_delegation', 0)),
+                'max_iter': config.get('max_iter', 25),
+                'max_rpm': config.get('max_rpm'),
+                'max_execution_time': config.get('max_execution_time'),
+                'allow_code_execution': bool(config.get('allow_code_execution', 0)),
+                'max_retry_limit': config.get('max_retry_limit', 2),
+                'system_template': config.get('system_template'),
+                'prompt_template': config.get('prompt_template'),
+                'response_template': config.get('response_template'),
+                'memory': bool(config.get('memory', 0)),
+                'communication_style': communication_style
+            }
+            
+            # Add optional parameters if they exist
+            if personality:
+                agent_params['personality'] = personality
+            if learning:
+                agent_params['learning'] = learning
+            if tools:
+                agent_params['tools'] = tools
+            if coworkers:
+                agent_params['coworkers'] = coworkers
+            if config.get('knowledge'):
+                agent_params['knowledge'] = config['knowledge']
+            if config.get('step_callback'):
+                agent_params['step_callback'] = config['step_callback']
+            
+            # Merge with any additional kwargs
+            agent_params.update(kwargs)
+            
+            agent = Agent(**agent_params)
+            
+            console.print(f"✅ Created dynamic agent with full config: {config['role']}", style="green")
             return agent
             
         except Exception as e:
             console.print(f"❌ Error creating agent {config['role']}: {e}", style="red")
             raise
+    
+    def _parse_json_field(self, field_value):
+        """Parse JSON field from database"""
+        if not field_value:
+            return None
+        try:
+            import json
+            if isinstance(field_value, str):
+                return json.loads(field_value)
+            return field_value
+        except (json.JSONDecodeError, TypeError):
+            return None
     
     def _get_llm_for_agent(self, config: Dict[str, Any], router: Any = None) -> Any:
         """Get appropriate LLM for agent based on config"""

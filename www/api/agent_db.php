@@ -31,6 +31,22 @@ class AgentDB {
                 max_retry_limit INTEGER DEFAULT 2,
                 use_system_prompt BOOLEAN DEFAULT 1,
                 respect_context_window BOOLEAN DEFAULT 1,
+                memory BOOLEAN DEFAULT 0,
+                learning_enabled BOOLEAN DEFAULT 0,
+                learning_rate REAL DEFAULT 0.05,
+                feedback_incorporation TEXT DEFAULT "immediate",
+                adaptation_strategy TEXT DEFAULT "progressive",
+                personality_traits TEXT DEFAULT NULL,
+                personality_quirks TEXT DEFAULT NULL,
+                communication_preferences TEXT DEFAULT NULL,
+                communication_formality TEXT DEFAULT "professional",
+                communication_verbosity TEXT DEFAULT "concise",
+                communication_tone TEXT DEFAULT "confident",
+                communication_technical_level TEXT DEFAULT "intermediate",
+                tools TEXT DEFAULT NULL,
+                knowledge TEXT DEFAULT NULL,
+                coworkers TEXT DEFAULT NULL,
+                step_callback TEXT DEFAULT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -176,8 +192,8 @@ class AgentDB {
     
     public function createAgent($data) {
         $stmt = $this->db->prepare('
-            INSERT INTO agents (name, role, goal, backstory, status, is_core, llm_model, verbose, allow_delegation, max_iter, max_rpm, max_execution_time, allow_code_execution, max_retry_limit)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO agents (name, role, goal, backstory, status, is_core, llm_model, verbose, allow_delegation, max_iter, max_rpm, max_execution_time, allow_code_execution, max_retry_limit, memory, learning_enabled, learning_rate, feedback_incorporation, adaptation_strategy, personality_traits, personality_quirks, communication_preferences, communication_formality, communication_verbosity, communication_tone, communication_technical_level, tools, knowledge, coworkers)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
         $stmt->bindValue(1, $data['name']);
@@ -194,6 +210,21 @@ class AgentDB {
         $stmt->bindValue(12, $data['max_execution_time'] ?? null);
         $stmt->bindValue(13, $data['allow_code_execution'] ?? 0);
         $stmt->bindValue(14, $data['max_retry_limit'] ?? 2);
+        $stmt->bindValue(15, $data['memory'] ?? 0);
+        $stmt->bindValue(16, $data['learning_enabled'] ?? 0);
+        $stmt->bindValue(17, $data['learning_rate'] ?? 0.05);
+        $stmt->bindValue(18, $data['feedback_incorporation'] ?? 'immediate');
+        $stmt->bindValue(19, $data['adaptation_strategy'] ?? 'progressive');
+        $stmt->bindValue(20, is_array($data['personality_traits'] ?? null) ? json_encode($data['personality_traits']) : $data['personality_traits']);
+        $stmt->bindValue(21, is_array($data['personality_quirks'] ?? null) ? json_encode($data['personality_quirks']) : $data['personality_quirks']);
+        $stmt->bindValue(22, is_array($data['communication_preferences'] ?? null) ? json_encode($data['communication_preferences']) : $data['communication_preferences']);
+        $stmt->bindValue(23, $data['communication_formality'] ?? 'professional');
+        $stmt->bindValue(24, $data['communication_verbosity'] ?? 'concise');
+        $stmt->bindValue(25, $data['communication_tone'] ?? 'confident');
+        $stmt->bindValue(26, $data['communication_technical_level'] ?? 'intermediate');
+        $stmt->bindValue(27, is_array($data['tools'] ?? null) ? json_encode($data['tools']) : $data['tools']);
+        $stmt->bindValue(28, $data['knowledge'] ?? null);
+        $stmt->bindValue(29, is_array($data['coworkers'] ?? null) ? json_encode($data['coworkers']) : $data['coworkers']);
         
         $stmt->execute();
         return $this->db->lastInsertRowID();
@@ -202,7 +233,7 @@ class AgentDB {
     public function updateAgent($id, $data) {
         $stmt = $this->db->prepare('
             UPDATE agents 
-            SET name=?, role=?, goal=?, backstory=?, status=?, llm_model=?, updated_at=CURRENT_TIMESTAMP
+            SET name=?, role=?, goal=?, backstory=?, status=?, llm_model=?, verbose=?, allow_delegation=?, max_iter=?, max_rpm=?, max_execution_time=?, allow_code_execution=?, max_retry_limit=?, memory=?, learning_enabled=?, learning_rate=?, feedback_incorporation=?, adaptation_strategy=?, personality_traits=?, personality_quirks=?, communication_preferences=?, communication_formality=?, communication_verbosity=?, communication_tone=?, communication_technical_level=?, tools=?, knowledge=?, coworkers=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
         ');
         
@@ -212,7 +243,29 @@ class AgentDB {
         $stmt->bindValue(4, $data['backstory']);
         $stmt->bindValue(5, $data['status']);
         $stmt->bindValue(6, $data['llm_model']);
-        $stmt->bindValue(7, $id);
+        $stmt->bindValue(7, $data['verbose'] ?? 1);
+        $stmt->bindValue(8, $data['allow_delegation'] ?? 0);
+        $stmt->bindValue(9, $data['max_iter'] ?? 25);
+        $stmt->bindValue(10, $data['max_rpm'] ?? null);
+        $stmt->bindValue(11, $data['max_execution_time'] ?? null);
+        $stmt->bindValue(12, $data['allow_code_execution'] ?? 0);
+        $stmt->bindValue(13, $data['max_retry_limit'] ?? 2);
+        $stmt->bindValue(14, $data['memory'] ?? 0);
+        $stmt->bindValue(15, $data['learning_enabled'] ?? 0);
+        $stmt->bindValue(16, $data['learning_rate'] ?? 0.05);
+        $stmt->bindValue(17, $data['feedback_incorporation'] ?? 'immediate');
+        $stmt->bindValue(18, $data['adaptation_strategy'] ?? 'progressive');
+        $stmt->bindValue(19, is_array($data['personality_traits'] ?? null) ? json_encode($data['personality_traits']) : $data['personality_traits']);
+        $stmt->bindValue(20, is_array($data['personality_quirks'] ?? null) ? json_encode($data['personality_quirks']) : $data['personality_quirks']);
+        $stmt->bindValue(21, is_array($data['communication_preferences'] ?? null) ? json_encode($data['communication_preferences']) : $data['communication_preferences']);
+        $stmt->bindValue(22, $data['communication_formality'] ?? 'professional');
+        $stmt->bindValue(23, $data['communication_verbosity'] ?? 'concise');
+        $stmt->bindValue(24, $data['communication_tone'] ?? 'confident');
+        $stmt->bindValue(25, $data['communication_technical_level'] ?? 'intermediate');
+        $stmt->bindValue(26, is_array($data['tools'] ?? null) ? json_encode($data['tools']) : $data['tools']);
+        $stmt->bindValue(27, $data['knowledge'] ?? null);
+        $stmt->bindValue(28, is_array($data['coworkers'] ?? null) ? json_encode($data['coworkers']) : $data['coworkers']);
+        $stmt->bindValue(29, $id);
         
         return $stmt->execute();
     }
@@ -546,9 +599,9 @@ class AgentDB {
                 $agentType = $crewName;
             }
             
-            // Extract all Agent parameters
+            // Extract ALL Agent parameters from static files
             $agent = [
-                'name' => $this->extractParameter($match, 'role') ?? ucwords(str_replace('_', ' ', $agentType)),
+                'name' => $this->extractParameter($match, 'name') ?? $this->extractParameter($match, 'role') ?? ucwords(str_replace('_', ' ', $agentType)),
                 'role' => $this->extractParameter($match, 'role') ?? ucwords(str_replace('_', ' ', $agentType)),
                 'goal' => $this->extractParameter($match, 'goal') ?? "Specialized $agentType agent for $crewName crew",
                 'backstory' => $this->extractParameter($match, 'backstory') ?? "You are a $agentType agent working as part of the $crewName crew.",
@@ -562,6 +615,21 @@ class AgentDB {
                 'max_execution_time' => $this->extractIntParameter($match, 'max_execution_time'),
                 'allow_code_execution' => $this->extractBooleanParameter($match, 'allow_code_execution') ?? (strpos(strtolower($agentType), 'developer') !== false ? 1 : 0),
                 'max_retry_limit' => $this->extractIntParameter($match, 'max_retry_limit') ?? 2,
+                'memory' => $this->extractBooleanParameter($match, 'memory') ?? 0,
+                'learning_enabled' => $this->extractLearningEnabled($match),
+                'learning_rate' => $this->extractLearningRate($match),
+                'feedback_incorporation' => $this->extractLearningFeedback($match),
+                'adaptation_strategy' => $this->extractLearningStrategy($match),
+                'personality_traits' => $this->extractPersonalityTraits($match),
+                'personality_quirks' => $this->extractPersonalityQuirks($match),
+                'communication_preferences' => $this->extractCommunicationPreferences($match),
+                'communication_formality' => $this->extractCommunicationStyle($match, 'formality'),
+                'communication_verbosity' => $this->extractCommunicationStyle($match, 'verbosity'),
+                'communication_tone' => $this->extractCommunicationStyle($match, 'tone'),
+                'communication_technical_level' => $this->extractCommunicationStyle($match, 'technical_level'),
+                'tools' => $this->extractTools($match),
+                'knowledge' => $this->extractKnowledge($match),
+                'coworkers' => $this->extractCoworkers($match),
                 'capabilities' => $this->extractCapabilities($match, $crewName)
             ];
             
@@ -616,6 +684,89 @@ class AgentDB {
         }
         
         return array_unique($capabilities);
+    }
+    
+    private function extractLearningEnabled($content) {
+        if (preg_match('/learning\s*=\s*\{[^}]*"enabled"\s*:\s*(True|true)/i', $content)) {
+            return 1;
+        }
+        return 0;
+    }
+    
+    private function extractLearningRate($content) {
+        if (preg_match('/learning\s*=\s*\{[^}]*"learning_rate"\s*:\s*([0-9.]+)/i', $content, $match)) {
+            return (float)$match[1];
+        }
+        return 0.05;
+    }
+    
+    private function extractLearningFeedback($content) {
+        if (preg_match('/learning\s*=\s*\{[^}]*"feedback_incorporation"\s*:\s*"([^"]+)"/i', $content, $match)) {
+            return $match[1];
+        }
+        return 'immediate';
+    }
+    
+    private function extractLearningStrategy($content) {
+        if (preg_match('/learning\s*=\s*\{[^}]*"adaptation_strategy"\s*:\s*"([^"]+)"/i', $content, $match)) {
+            return $match[1];
+        }
+        return 'progressive';
+    }
+    
+    private function extractPersonalityTraits($content) {
+        if (preg_match('/personality\s*=\s*\{[^}]*"traits"\s*:\s*\[([^\]]+)\]/i', $content, $match)) {
+            return '[' . $match[1] . ']';
+        }
+        return null;
+    }
+    
+    private function extractPersonalityQuirks($content) {
+        if (preg_match('/personality\s*=\s*\{[^}]*"quirks"\s*:\s*\[([^\]]+)\]/i', $content, $match)) {
+            return '[' . $match[1] . ']';
+        }
+        return null;
+    }
+    
+    private function extractCommunicationPreferences($content) {
+        if (preg_match('/personality\s*=\s*\{[^}]*"communication_preferences"\s*:\s*\[([^\]]+)\]/i', $content, $match)) {
+            return '[' . $match[1] . ']';
+        }
+        return null;
+    }
+    
+    private function extractCommunicationStyle($content, $field) {
+        if (preg_match('/communication_style\s*=\s*\{[^}]*"' . $field . '"\s*:\s*"([^"]+)"/i', $content, $match)) {
+            return $match[1];
+        }
+        $defaults = [
+            'formality' => 'professional',
+            'verbosity' => 'concise', 
+            'tone' => 'confident',
+            'technical_level' => 'intermediate'
+        ];
+        return $defaults[$field] ?? null;
+    }
+    
+    private function extractTools($content) {
+        if (preg_match('/tools\s*=\s*([^,\n]+)/i', $content, $match)) {
+            return trim($match[1]);
+        }
+        return null;
+    }
+    
+    private function extractKnowledge($content) {
+        if (preg_match('/knowledge\s*=\s*([^,\n]+)/i', $content, $match)) {
+            return trim($match[1]);
+        }
+        return null;
+    }
+    
+    private function extractCoworkers($content) {
+        if (preg_match('/coworkers\s*=\s*([^,\n]+)/i', $content, $match)) {
+            return trim($match[1]);
+        }
+        return null;
     }
     
     private function parseAvailableAgents($availableAgentsContent) {
