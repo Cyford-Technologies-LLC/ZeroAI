@@ -60,7 +60,7 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
                 $claude = new ClaudeIntegration($apiKey);
                 
                 // Get selected model
-                $selectedModel = $_POST['claude_model'] ?? 'claude-3-5-sonnet-20241022';
+                $selectedModel = $_POST['claude_model'] ?? 'claude-sonnet-4-20250514';
                 
                 // Load Claude config for system prompt
                 $claudeConfig = [];
@@ -119,8 +119,9 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
         <div style="margin-bottom: 10px;">
             <label><strong>Claude Model:</strong></label>
             <select name="claude_model" style="width: 300px;">
-                <option value="claude-3-opus-20240229">Claude 3 Opus (Most Capable)</option>
-                <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Balanced)</option>
+                <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (Latest & Most Advanced)</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                 <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
                 <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
                 <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
