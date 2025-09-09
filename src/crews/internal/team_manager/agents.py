@@ -98,6 +98,10 @@ AVAILABLE_AGENTS = {
     "CrewAI Diagnostic Agent": {
         "description": "Monitors system health, analyzes errors, and provides diagnostic reports for internal issues",
         "capabilities": ["error analysis", "log parsing", "system diagnostics", "task queue monitoring", "issue resolution"]
+    },
+    "Claude AI Assistant": {
+        "description": "Advanced AI assistant specializing in code review, optimization, and strategic guidance",
+        "capabilities": ["code review", "architecture analysis", "optimization suggestions", "strategic planning", "quality assurance"]
     }
 }
 
@@ -210,11 +214,21 @@ def load_all_coworkers(router: Any, inputs: Dict[str, Any], tools: Optional[List
 
         try:
             new_agent = creator_func(**kwargs_to_pass)
-            all_coworkers.append(new_agent)
-            console.print(f"✅ Loaded agent: {new_agent.role}", style="green")
+            if new_agent:  # Only add if agent was created successfully
+                all_coworkers.append(new_agent)
+                console.print(f"✅ Loaded agent: {new_agent.role}", style="green")
         except Exception as e:
             console.print(f"❌ Failed to instantiate agent with creator {creator_func.__name__}: {e}", style="red")
             traceback.print_exc()
+    
+    # Add Claude agent if available
+    try:
+        claude_agent = create_claude_agent(router, inputs)
+        if claude_agent:
+            all_coworkers.append(claude_agent)
+            console.print(f"✅ Added Claude agent to team", style="green")
+    except Exception as e:
+        console.print(f"⚠️ Claude agent not available: {e}", style="yellow")
 
     return all_coworkers# --- End of Helper function ---
 
@@ -286,4 +300,42 @@ def create_team_manager_agent(router: Any, inputs: Dict[str, Any], project_id: s
         # },
         allow_delegation=True
     )
+
+def create_claude_agent(router: Any, inputs: Dict[str, Any], **kwargs) -> Agent:
+    """Creates Claude AI Assistant agent if API key is available."""
+    import os
+    
+    # Check if Claude is enabled and available
+    claude_enabled = getattr(config.cloud, 'claude_agent_enabled', True)
+    if not claude_enabled:
+        console.print("🚫 Claude agent disabled in config", style="yellow")
+        return None
+        
+    if not os.getenv('ANTHROPIC_API_KEY'):
+        console.print("⚠️ Claude agent not available - no API key", style="yellow")
+        return None
+        
+    try:
+        from crewai import LLM
+        claude_llm = LLM(model='anthropic/claude-sonnet-4-20250514')
+        
+        console.print("🤖 Claude agent initialized", style="cyan")
+        
+        return Agent(
+            role="Claude AI Assistant",
+            goal="Provide advanced code review, optimization suggestions, and strategic guidance to enhance team productivity and code quality.",
+            backstory="""I am Claude, an advanced AI assistant created by Anthropic. I specialize in:
+            - Comprehensive code review and analysis
+            - Architecture optimization and best practices
+            - Strategic technical guidance
+            - Quality assurance and error detection
+            
+            I work alongside the development team to ensure high-quality deliverables and provide insights that enhance overall project success.""",
+            llm=claude_llm,
+            verbose=True,
+            allow_delegation=False
+        )
+    except Exception as e:
+        console.print(f"❌ Failed to create Claude agent: {e}", style="red")
+        return None
 

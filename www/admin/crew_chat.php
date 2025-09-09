@@ -12,7 +12,19 @@ if ($_POST['action'] ?? '' === 'chat_crew') {
         $escapedMessage = escapeshellarg($message);
         $escapedProject = escapeshellarg($project);
         
-        $pythonCmd = 'export HOME=/tmp && cd /app && /app/venv/bin/python run/internal/run_dev_ops.py ' . $escapedMessage . ' --project=' . $escapedProject . ' 2>&1';
+        $pythonCmd = 'export HOME=/tmp && cd /app && /app/venv/bin/python -c "'
+            . 'import sys; sys.path.append("/app"); '
+            . 'from src.ai_dev_ops_crew import run_ai_dev_ops_crew_securely; '
+            . 'from src.distributed_router import DistributedRouter; '
+            . 'router = DistributedRouter(); '
+            . 'inputs = {\"prompt\": ' . $escapedMessage . ', \"project_id\": ' . $escapedProject . '}; '
+            . 'result = run_ai_dev_ops_crew_securely(router, ' . $escapedProject . ', inputs); '
+            . 'print(\"=== CREW RESULT ===\"); '
+            . 'print(result.get(\"result\", \"No result\")) if result.get(\"success\") else print(\"Error:\", result.get(\"error\", \"Unknown error\")); '
+            . 'print(\"=== MODEL USED ===\"); '
+            . 'print(\"Model:\", result.get(\"model_used\", \"unknown\")); '
+            . 'print(\"Peer:\", result.get(\"peer_used\", \"unknown\"))'
+            . '" 2>&1';
         
         $output = shell_exec($pythonCmd);
         
