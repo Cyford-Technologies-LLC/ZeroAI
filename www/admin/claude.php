@@ -84,7 +84,7 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     $agents = $agentDB->getAllAgents();
     $claudeAgent = null;
     foreach ($agents as $agent) {
-        if ($agent['role'] === 'Claude AI Assistant') {
+        if ($agent['name'] === 'Claude AI Assistant') {
             $claudeAgent = $agent;
             break;
         }

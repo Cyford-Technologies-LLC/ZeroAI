@@ -192,27 +192,38 @@ except Exception as e:
             $claude = new ClaudeIntegration();
             
             // Build system prompt with agent configuration
-            $systemPrompt = "You are {$session['name']}, integrated into ZeroAI.
+            $systemPrompt = "You are Claude, integrated into the ZeroAI system.
 
-Role: {$session['role']}
-Goal: {$session['goal']}
-Backstory: {$session['backstory']}
+Your Role: {$session['role']}
+Your Goal: {$session['goal']}
+Your Background: {$session['backstory']}
 
-You are part of the ZeroAI system - a zero-cost AI workforce platform that runs entirely on user's hardware with local Ollama models. You have access to file tools (@file, @list, @search) and can help with ZeroAI management, development, and optimization.
+ZeroAI Context:
+- ZeroAI is a zero-cost AI workforce platform that runs entirely on user's hardware
+- It uses local Ollama models and CrewAI for agent orchestration
+- You can access project files using @file, @list, @search commands
+- You help with code review, system optimization, and development guidance
+- The user is managing their AI workforce through the admin portal
 
-Be helpful, knowledgeable about ZeroAI, and maintain your configured personality.";
+Your capabilities in ZeroAI:
+- Code review and architectural guidance
+- Agent performance optimization
+- Development workflow improvements
+- Strategic technical recommendations
+
+Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
             
-            // Add conversation history to message
+            // Add conversation history to message if available
             $historyStr = $this->formatHistoryForAgent($history);
             if ($historyStr) {
-                $message = "Previous conversation:\n{$historyStr}\n\nCurrent message: {$message}";
+                $message = "Previous conversation context:\n{$historyStr}\n\nUser's current message: {$message}";
             }
             
             $response = $claude->chatWithClaude($message, $systemPrompt);
             
             return [
                 'message' => $response['message'],
-                'tokens' => $response['usage']['input_tokens'] ?? 0 + $response['usage']['output_tokens'] ?? 0,
+                'tokens' => ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0),
                 'success' => true
             ];
             
