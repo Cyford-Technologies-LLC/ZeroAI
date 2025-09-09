@@ -69,11 +69,17 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     $agentDB = new AgentDB();
     
     // Update Claude agent in database
-    $existingClaude = $agentDB->db->query("SELECT id FROM agents WHERE role = 'Claude AI Assistant'");
-    $claudeRow = $existingClaude->fetchArray();
+    $agents = $agentDB->getAllAgents();
+    $claudeAgent = null;
+    foreach ($agents as $agent) {
+        if ($agent['role'] === 'Claude AI Assistant') {
+            $claudeAgent = $agent;
+            break;
+        }
+    }
     
-    if ($claudeRow) {
-        $agentDB->updateAgent($claudeRow['id'], [
+    if ($claudeAgent) {
+        $agentDB->updateAgent($claudeAgent['id'], [
             'name' => 'Claude AI Assistant',
             'role' => $claudeConfig['role'],
             'goal' => $claudeConfig['goal'],
