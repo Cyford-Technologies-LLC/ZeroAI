@@ -155,6 +155,9 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "# File created by Claude\nprint('Hello from Claude')\n";
     
+    // Debug: Log what we captured
+    error_log("DEBUG: Original filePath = '" . $filePath . "'");
+    
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
@@ -164,6 +167,8 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     if (empty($cleanPath) || $cleanPath === '/') {
         $cleanPath = 'claude_file.txt';
     }
+    
+    error_log("DEBUG: Final cleanPath = '" . $cleanPath . "'");
     $fullPath = '/app/' . $cleanPath;
     $dir = dirname($fullPath);
     
