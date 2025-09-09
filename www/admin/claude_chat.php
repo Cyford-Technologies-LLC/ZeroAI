@@ -60,6 +60,51 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
             $message .= "\n\n" . $agentList;
         }
         
+        // Handle crew status commands
+        if (preg_match('/\@crews/', $message)) {
+            require_once __DIR__ . '/../api/crew_context.php';
+            $crewContext = new CrewContextManager();
+            $runningCrews = $crewContext->getRunningCrews();
+            $recentCrews = $crewContext->getRecentCrewExecutions(5);
+            
+            $crewInfo = "Crew Status:\n\n";
+            
+            if (!empty($runningCrews)) {
+                $crewInfo .= "Currently Running Crews:\n";
+                foreach ($runningCrews as $crew) {
+                    $crewInfo .= "- Task ID: {$crew['task_id']}, Project: {$crew['project_id']}, Prompt: {$crew['prompt']}\n";
+                }
+                $crewInfo .= "\n";
+            }
+            
+            if (!empty($recentCrews)) {
+                $crewInfo .= "Recent Crew Executions:\n";
+                foreach ($recentCrews as $crew) {
+                    $crewInfo .= "- Task ID: {$crew['task_id']}, Status: {$crew['status']}, Project: {$crew['project_id']}\n";
+                }
+            }
+            
+            if (empty($runningCrews) && empty($recentCrews)) {
+                $crewInfo .= "No crew executions found.\n";
+            }
+            
+            $message .= "\n\n" . $crewInfo;
+        }
+        
+        // Handle crew analysis command
+        if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
+            $taskId = trim($matches[1]);
+            require_once __DIR__ . '/../api/crew_context.php';
+            $crewContext = new CrewContextManager();
+            $execution = $crewContext->getCrewExecution($taskId);
+            
+            if ($execution) {
+                $message .= "\n\nCrew Execution Details for Task {$taskId}:\n" . json_encode($execution, JSON_PRETTY_PRINT);
+            } else {
+                $message .= "\n\nCrew execution not found for Task ID: {$taskId}";
+            }
+        }
+        
         if (preg_match('/\@update_agent\s+(\d+)\s+(.+)/', $message, $matches)) {
             $agentId = trim($matches[1]);
             $updates = trim($matches[2]);
@@ -124,8 +169,24 @@ if ($_POST['action'] ?? '' === 'chat_claude') {
                 $systemPrompt .= "- ZeroAI is a zero-cost AI workforce platform that runs entirely on user's hardware\n";
                 $systemPrompt .= "- It uses local Ollama models and CrewAI for agent orchestration\n";
                 $systemPrompt .= "- You can access project files using @file, @list, @search commands\n";
+                $systemPrompt .= "- You can monitor crew executions using @crews and @analyze_crew commands\n";
                 $systemPrompt .= "- You help with code review, system optimization, and development guidance\n";
-                $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n\n";
+                $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n";
+                $systemPrompt .= "- You have access to crew execution history and can analyze running tasks\n\n";
+                
+                // Add crew context automatically
+                require_once __DIR__ . '/../api/crew_context.php';
+                $crewContext = new CrewContextManager();
+                $runningCrews = $crewContext->getRunningCrews();
+                $recentCrews = $crewContext->getRecentCrewExecutions(3);
+                
+                if (!empty($runningCrews)) {
+                    $systemPrompt .= "Currently Running Crews:\n" . json_encode($runningCrews, JSON_PRETTY_PRINT) . "\n\n";
+                }
+                
+                if (!empty($recentCrews)) {
+                    $systemPrompt .= "Recent Crew Executions:\n" . json_encode($recentCrews, JSON_PRETTY_PRINT) . "\n\n";
+                }
                 $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
                 
                 $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel);
@@ -223,6 +284,16 @@ Examples:
             <h4>@update_agent command</h4>
             <p><code>@update_agent 5 role="New Role" goal="New Goal"</code></p>
             <p>Updates agent configuration (role, goal, backstory, status)</p>
+        </div>
+        <div>
+            <h4>@crews command</h4>
+            <p><code>@crews</code></p>
+            <p>Shows currently running crews and recent crew executions</p>
+        </div>
+        <div>
+            <h4>@analyze_crew command</h4>
+            <p><code>@analyze_crew task_id_123</code></p>
+            <p>Analyzes a specific crew execution with detailed information</p>
         </div>
     </div>
 </div>
