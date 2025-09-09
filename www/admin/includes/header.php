@@ -42,7 +42,8 @@
             <div class="logo">ZeroAI Admin</div>
             <nav class="nav">
                 <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
-                <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'crew_chat', 'claude']) ? 'class="active"' : '' ?>>CrewAI</a>
+                <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
+                <a href="/admin/chat" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
                 <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Monitoring</a>
                 <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>Users</a>
                 <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
@@ -57,8 +58,10 @@
         <div class="sidebar">
             <?php 
             $currentSection = 'dashboard';
-            if (in_array($currentPage ?? '', ['crews', 'agents', 'tasks', 'knowledge', 'crew_chat', 'claude'])) {
+            if (in_array($currentPage ?? '', ['crews', 'agents', 'tasks', 'knowledge'])) {
                 $currentSection = 'crewai';
+            } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat'])) {
+                $currentSection = 'chat';
             } elseif (in_array($currentPage ?? '', ['users'])) {
                 $currentSection = 'users';
             } elseif (in_array($currentPage ?? '', ['monitoring'])) {
@@ -71,20 +74,33 @@
             <?php if ($currentSection === 'crewai'): ?>
                 <div class="sidebar-group">
                     <h3>Crew Management</h3>
-                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
                     <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
                     <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
                     <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>AI Models</h3>
-                    <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
                     <a href="/admin/ollama" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Resources</h3>
                     <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge Base</a>
                     <a href="/admin/examples" <?= ($currentPage ?? '') === 'examples' ? 'class="active"' : '' ?>>Examples</a>
+                </div>
+            <?php elseif ($currentSection === 'chat'): ?>
+                <div class="sidebar-group">
+                    <h3>AI Assistants</h3>
+                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
+                    <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
+                    <a href="/admin/chat" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>General Chat</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>Individual Agents</h3>
+                    <a href="/admin/chat?agent=team_manager">Team Manager</a>
+                    <a href="/admin/chat?agent=project_manager">Project Manager</a>
+                    <a href="/admin/chat?agent=senior_dev">Senior Developer</a>
+                    <a href="/admin/chat?agent=junior_dev">Junior Developer</a>
+                    <a href="/admin/chat?agent=code_researcher">Code Researcher</a>
                 </div>
             <?php elseif ($currentSection === 'monitoring'): ?>
                 <div class="sidebar-group">
@@ -110,9 +126,9 @@
             <?php else: ?>
                 <div class="sidebar-group">
                     <h3>Quick Actions</h3>
-                    <a href="/admin/crew_chat">Start Crew Chat</a>
-                    <a href="/admin/agents">View Agents</a>
-                    <a href="/admin/monitoring">System Status</a>
+                    <a href="/admin/crew_chat">💬 Start Crew Chat</a>
+                    <a href="/admin/agents">🤖 View Agents</a>
+                    <a href="/admin/monitoring">📊 System Status</a>
                 </div>
             <?php endif; ?>
         </div>

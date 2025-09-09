@@ -1,7 +1,7 @@
 <?php 
 $pageTitle = 'Agent Chat - ZeroAI';
 $currentPage = 'chat';
-include __DIR__ . '/../includes/header.php';
+include __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/../api/agent_chat.php';
 
 $chat = new AgentChat();
@@ -119,4 +119,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>
