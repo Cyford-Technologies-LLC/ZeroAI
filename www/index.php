@@ -124,6 +124,16 @@ switch ($path) {
         include __DIR__ . '/admin/test_dynamic_agents.php';
         break;
         
+    case '/admin/localhost':
+        requireAdminAuth();
+        include __DIR__ . '/admin/localhost.php';
+        break;
+        
+    case '/admin/peers':
+        requireAdminAuth();
+        include __DIR__ . '/admin/peers.php';
+        break;
+        
     case '/admin/crew_chat':
         requireAdminAuth();
         include __DIR__ . '/admin/crew_chat.php';

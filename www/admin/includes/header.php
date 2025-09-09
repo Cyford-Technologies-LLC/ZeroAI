@@ -42,6 +42,13 @@
             <div class="logo">ZeroAI Admin</div>
             <nav class="nav">
                 <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
+                <div class="dropdown">
+                    <a href="#" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
+                    <div class="dropdown-content">
+                        <a href="/admin/localhost">🖥️ Local Host</a>
+                        <a href="/admin/peers">🌐 Peers</a>
+                    </div>
+                </div>
                 <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
                 <a href="/admin/chat" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
                 <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Monitoring</a>
@@ -68,6 +75,8 @@
                 $currentSection = 'monitoring';
             } elseif (in_array($currentPage ?? '', ['settings', 'config', 'cloud_settings', 'claude_settings'])) {
                 $currentSection = 'settings';
+            } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
+                $currentSection = 'system';
             }
             ?>
             
@@ -132,6 +141,17 @@
                     <h3>Cloud AI Settings</h3>
                     <a href="/admin/cloud_settings" <?= ($currentPage ?? '') === 'cloud_settings' ? 'class="active"' : '' ?>>Cloud Providers</a>
                     <a href="/admin/claude_settings" <?= ($currentPage ?? '') === 'claude_settings' ? 'class="active"' : '' ?>>Claude AI</a>
+                </div>
+            <?php elseif ($currentSection === 'system'): ?>
+                <div class="sidebar-group">
+                    <h3>System Resources</h3>
+                    <a href="/admin/localhost" <?= ($currentPage ?? '') === 'localhost' ? 'class="active"' : '' ?>>🖥️ Local Host</a>
+                    <a href="/admin/peers" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>🌐 Peers</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>System Info</h3>
+                    <a href="/admin/system_health">💚 Health Check</a>
+                    <a href="/admin/resource_usage">📊 Resource Usage</a>
                 </div>
             <?php else: ?>
                 <div class="sidebar-group">
