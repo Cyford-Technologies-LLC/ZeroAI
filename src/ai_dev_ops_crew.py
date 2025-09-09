@@ -342,6 +342,38 @@ class AIOpsCrewManager:
             console.print(f"⚠️ Warning: Could not initialize GitHub tool: {e}", style="yellow")
         
         return tools
+    
+    def _get_optimal_llm(self):
+        """Get the best available LLM - cloud AI if configured, otherwise local."""
+        try:
+            # Check if cloud AI is configured and available
+            if config.cloud.provider != "local":
+                from src.providers.cloud_providers import CloudProviderManager
+                
+                if config.cloud.provider == "anthropic" and os.getenv('ANTHROPIC_API_KEY'):
+                    console.print("🌩️ Using Claude (Anthropic) for enhanced capabilities", style="cyan")
+                    return CloudProviderManager.create_anthropic_llm(model='claude-3-5-sonnet-20241022')
+                elif config.cloud.provider == "openai" and os.getenv('OPENAI_API_KEY'):
+                    console.print("🌩️ Using GPT-4 (OpenAI) for enhanced capabilities", style="cyan")
+                    return CloudProviderManager.create_openai_llm(model='gpt-4')
+                elif config.cloud.provider == "azure" and os.getenv('AZURE_OPENAI_API_KEY'):
+                    console.print("🌩️ Using Azure OpenAI for enhanced capabilities", style="cyan")
+                    return CloudProviderManager.create_azure_llm()
+                elif config.cloud.provider == "google" and os.getenv('GOOGLE_API_KEY'):
+                    console.print("🌩️ Using Google Gemini for enhanced capabilities", style="cyan")
+                    return CloudProviderManager.create_google_llm()
+                else:
+                    console.print(f"⚠️ Cloud provider '{config.cloud.provider}' configured but API key not found, falling back to local", style="yellow")
+            
+            # Fallback to local/distributed routing
+            return self.router.get_llm_for_role("general")
+            
+        except ImportError:
+            console.print("⚠️ Cloud providers not available, using local LLM", style="yellow")
+            return self.router.get_llm_for_role("general")
+        except Exception as e:
+            console.print(f"⚠️ Error getting optimal LLM: {e}, using local", style="yellow")
+            return self.router.get_llm_for_role("general")
 
     def execute(self) -> Dict[str, Any]:
         """Execute the task specified in the prompt using the appropriate crew."""
@@ -360,10 +392,15 @@ class AIOpsCrewManager:
 
             self.model_used, self.peer_used = "unknown", "unknown"
             try:
-                llm = self.router.get_llm_for_role("general")
+                # Check for cloud AI availability first
+                llm = self._get_optimal_llm()
                 if llm:
-                    self.model_used = llm.model.replace("ollama/", "")
-                    if hasattr(llm, 'base_url') and llm.base_url:
+                    self.model_used = getattr(llm, 'model', 'unknown')
+                    if 'anthropic' in self.model_used or 'claude' in self.model_used:
+                        self.peer_used = "claude-api"
+                    elif 'openai' in self.model_used or 'gpt' in self.model_used:
+                        self.peer_used = "openai-api"
+                    elif hasattr(llm, 'base_url') and llm.base_url:
                         self.base_url = llm.base_url
                         try:
                             # Safely split and extract peer_ip
