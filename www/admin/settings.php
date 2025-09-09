@@ -1,29 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Settings - ZeroAI</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
-        .nav a { color: white; margin-right: 15px; text-decoration: none; }
-        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .message { padding: 10px; margin: 10px 0; border-radius: 4px; background: #d4edda; color: #155724; }
-        label { display: block; margin: 10px 0; }
-        input[type="checkbox"] { margin-right: 10px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Settings</h1>
-        <div class="nav">
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/agents">Agents</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/admin/logout">Logout</a>
-        </div>
-    </div>
+<?php 
+$pageTitle = 'Settings - ZeroAI';
+$currentPage = 'settings';
+include __DIR__ . '/includes/header.php';
+?>
+
+<h1>Settings</h1>
     
     <?php if (isset($_SESSION['settings_message'])): ?>
         <div class="message"><?= htmlspecialchars($_SESSION['settings_message']) ?></div>
@@ -48,5 +29,6 @@
         <p><strong>Document Root:</strong> <?= $_SERVER['DOCUMENT_ROOT'] ?></p>
         <p><strong>Error Display:</strong> <?= isset($_SESSION['display_errors']) && $_SESSION['display_errors'] ? 'Enabled' : 'Disabled' ?></p>
     </div>
-</body>
-</html>
+        </div>
+    </div>
+<?php include __DIR__ . '/includes/footer.php'; ?>

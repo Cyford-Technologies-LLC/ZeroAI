@@ -1,7 +1,7 @@
 <?php 
 $pageTitle = 'Agent Management - ZeroAI';
 $currentPage = 'agents';
-include __DIR__ . '/../includes/header.php';
+include __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/../api/agent_importer.php';
 
 $importer = new AgentImporter();
@@ -111,4 +111,6 @@ function viewTasks(agentId) {
 }
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+        </div>
+    </div>
+<?php include __DIR__ . '/includes/footer.php'; ?>
