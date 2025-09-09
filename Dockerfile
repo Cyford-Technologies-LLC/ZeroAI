@@ -54,10 +54,7 @@ WORKDIR /app
 # to be able to create the user and group based on host UID/GID.
 USER root
 
-# Use the entrypoint script to run the final command
-ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Install Nginx and PHP-FPM
+# Install Nginx and PHP-FPM before entrypoint
 RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -68,15 +65,16 @@ RUN ln -sf /etc/nginx/sites-available/zeroai /etc/nginx/sites-enabled/default
 # Configure PHP-FPM
 RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/*/fpm/pool.d/www.conf
 
+# Create nginx directories and set permissions
+RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi \
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx
+
 # Create startup script for nginx + PHP-FPM
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
-    && echo 'mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi' >> /app/start_portal.sh \
-    && echo 'chown -R www-data:www-data /var/lib/nginx /var/log/nginx' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
-# Run as root for nginx/php-fpm
-USER root
+# Skip entrypoint for web services - run as root
 CMD ["/app/start_portal.sh"]
