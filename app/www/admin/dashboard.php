@@ -1,7 +1,7 @@
 <?php 
 $pageTitle = 'Admin Dashboard - ZeroAI';
 $currentPage = 'dashboard';
-include __DIR__ . '/../includes/header.php'; 
+include __DIR__ . '/includes/header.php'; 
 ?>
 
 <h1>System Overview</h1>
@@ -13,4 +13,4 @@ include __DIR__ . '/../includes/header.php';
     <p>👤 User: <?= $_SESSION['admin_user'] ?></p>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

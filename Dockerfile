@@ -32,7 +32,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends docker-ce-cli d
 
 
 # Copy virtual environment and application code from the builder stage
-COPY --from=builder /app /app
+COPY --from=builder /app/venv /app/venv
+COPY --from=builder /app/src /app/src
+COPY --from=builder /app/API /app/API
+COPY --from=builder /app/run /app/run
+COPY --from=builder /app/config /app/config
+COPY --from=builder /app/examples /app/examples
+COPY --from=builder /app/knowledge /app/knowledge
 
 # Copy entrypoint script and make it executable
 COPY docker-entrypoint.sh /usr/local/bin/
@@ -65,9 +71,12 @@ RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc
 # Create startup script for nginx + PHP-FPM
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
+    && echo 'mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi' >> /app/start_portal.sh \
+    && echo 'chown -R www-data:www-data /var/lib/nginx /var/log/nginx' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
-# The CMD is the command that gets executed by 'gosu' inside the entrypoint
+# Run as root for nginx/php-fpm
+USER root
 CMD ["/app/start_portal.sh"]
