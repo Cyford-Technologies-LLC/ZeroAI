@@ -66,10 +66,10 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
         
         if ($apiKey) {
             $escapedMessage = escapeshellarg($message);
-            $pythonCmd = 'export ANTHROPIC_API_KEY=' . escapeshellarg($apiKey) . ' && /app/venv/bin/python -c "'
-                . 'import sys; sys.path.append(\"/app\"); sys.path.append(\"/app/src\"); '
-                . 'from src.providers.cloud_providers import CloudProviderManager; '
-                . 'llm = CloudProviderManager.create_anthropic_llm(model=\"claude-sonnet-4-20250514\"); '
+            $pythonCmd = 'export HOME=/tmp && export ANTHROPIC_API_KEY=' . escapeshellarg($apiKey) . ' && /app/venv/bin/python -c "'
+                . 'import sys; sys.path.append(\"/app\"); '
+                . 'from crewai import LLM; '
+                . 'llm = LLM(model=\"anthropic/claude-sonnet-4-20250514\"); '
                 . 'response = llm.call(\"You are Claude integrated into ZeroAI. Help with: \" + ' . $escapedMessage . '); '
                 . 'print(response)'
                 . '"';
