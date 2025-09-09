@@ -26,7 +26,7 @@ function getLocalSystemInfo() {
 function getOllamaModels() {
     try {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://localhost:11434/api/tags');
+        curl_setopt($ch, CURLOPT_URL, 'http://ollama:11434/api/tags');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         $response = curl_exec($ch);
@@ -46,7 +46,7 @@ function getOllamaModels() {
 function checkOllamaStatus() {
     try {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://localhost:11434/api/version');
+        curl_setopt($ch, CURLOPT_URL, 'http://ollama:11434/api/version');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 3);
         $response = curl_exec($ch);
@@ -95,7 +95,7 @@ $systemInfo = getLocalSystemInfo();
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
         <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $systemInfo['ollama_status'] ? '#28a745' : '#dc3545' ?>;"></span>
         <strong><?= $systemInfo['ollama_status'] ? 'Online' : 'Offline' ?></strong>
-        <span style="color: #666;">(http://localhost:11434)</span>
+        <span style="color: #666;">(http://ollama:11434)</span>
     </div>
     
     <?php if ($systemInfo['ollama_status']): ?>
@@ -143,7 +143,7 @@ function refreshPage() {
 }
 
 function testOllama() {
-    fetch('http://localhost:11434/api/version')
+    fetch('http://ollama:11434/api/version')
         .then(response => response.json())
         .then(data => {
             alert('✅ Ollama is working! Version: ' + data.version);

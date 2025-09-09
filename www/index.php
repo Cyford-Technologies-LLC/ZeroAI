@@ -134,6 +134,16 @@ switch ($path) {
         include __DIR__ . '/admin/peers.php';
         break;
         
+    case '/admin/system':
+        requireAdminAuth();
+        include __DIR__ . '/admin/system.php';
+        break;
+        
+    case '/admin/tools':
+        requireAdminAuth();
+        include __DIR__ . '/admin/tools.php';
+        break;
+        
     case '/admin/crew_chat':
         requireAdminAuth();
         include __DIR__ . '/admin/crew_chat.php';

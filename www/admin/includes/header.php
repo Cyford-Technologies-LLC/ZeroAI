@@ -42,17 +42,10 @@
             <div class="logo">ZeroAI Admin</div>
             <nav class="nav">
                 <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
-                <div class="dropdown">
-                    <a href="#" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
-                    <div class="dropdown-content">
-                        <a href="/admin/localhost">🖥️ Local Host</a>
-                        <a href="/admin/peers">🌐 Peers</a>
-                    </div>
-                </div>
                 <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
                 <a href="/admin/chat" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
-                <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Monitoring</a>
-                <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>Users</a>
+                <a href="/admin/tools" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance']) ? 'class="active"' : '' ?>>Tools</a>
+                <a href="/admin/system" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
                 <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
             <div class="user-info">
@@ -69,14 +62,12 @@
                 $currentSection = 'crewai';
             } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
                 $currentSection = 'chat';
-            } elseif (in_array($currentPage ?? '', ['users'])) {
-                $currentSection = 'users';
-            } elseif (in_array($currentPage ?? '', ['monitoring'])) {
-                $currentSection = 'monitoring';
-            } elseif (in_array($currentPage ?? '', ['settings', 'config', 'cloud_settings', 'claude_settings'])) {
-                $currentSection = 'settings';
+            } elseif (in_array($currentPage ?? '', ['monitoring', 'logs', 'performance'])) {
+                $currentSection = 'tools';
             } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
                 $currentSection = 'system';
+            } elseif (in_array($currentPage ?? '', ['settings', 'config', 'cloud_settings', 'claude_settings', 'users'])) {
+                $currentSection = 'settings';
             }
             ?>
             
@@ -116,20 +107,20 @@
                     <a href="/admin/chat?agent=junior_dev">Junior Developer</a>
                     <a href="/admin/chat?agent=code_researcher">Code Researcher</a>
                 </div>
-            <?php elseif ($currentSection === 'monitoring'): ?>
+            <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
-                    <h3>System Health</h3>
-                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Overview</a>
+                    <h3>Monitoring & Analytics</h3>
+                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>System Monitoring</a>
                     <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>Logs</a>
                     <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>Performance</a>
                 </div>
-            <?php elseif ($currentSection === 'users'): ?>
                 <div class="sidebar-group">
-                    <h3>User Management</h3>
-                    <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
-                    <a href="/admin/roles" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
-                    <a href="/admin/sessions" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
+                    <h3>Development Tools</h3>
+                    <a href="/admin/api_tester">🧪 API Tester</a>
+                    <a href="/admin/database_viewer">🗄️ Database Viewer</a>
+                    <a href="/admin/file_manager">📁 File Manager</a>
                 </div>
+
             <?php elseif ($currentSection === 'settings'): ?>
                 <div class="sidebar-group">
                     <h3>Configuration</h3>
@@ -141,6 +132,12 @@
                     <h3>Cloud AI Settings</h3>
                     <a href="/admin/cloud_settings" <?= ($currentPage ?? '') === 'cloud_settings' ? 'class="active"' : '' ?>>Cloud Providers</a>
                     <a href="/admin/claude_settings" <?= ($currentPage ?? '') === 'claude_settings' ? 'class="active"' : '' ?>>Claude AI</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>User Management</h3>
+                    <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
+                    <a href="/admin/roles" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
+                    <a href="/admin/sessions" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
                 </div>
             <?php elseif ($currentSection === 'system'): ?>
                 <div class="sidebar-group">
