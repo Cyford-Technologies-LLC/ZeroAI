@@ -57,8 +57,13 @@ if ($autonomousMode) {
 // Process file commands
 if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    if (file_exists('/app/' . $filePath)) {
-        $fileContent = file_get_contents('/app/' . $filePath);
+    $cleanPath = ltrim($filePath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullPath = '/app/' . $cleanPath;
+    if (file_exists($fullPath)) {
+        $fileContent = file_get_contents($fullPath);
         $message .= "\n\nFile content of " . $filePath . ":\n" . $fileContent;
     } else {
         $message .= "\n\nFile not found: " . $filePath;
@@ -67,12 +72,18 @@ if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
 
 if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
     $dirPath = trim($matches[1]);
-    if (is_dir('/app/' . $dirPath)) {
-        $files = scandir('/app/' . $dirPath);
+    // Clean up path - remove leading /app/ if present to avoid double path
+    $cleanPath = ltrim($dirPath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullDirPath = '/app/' . $cleanPath;
+    if (is_dir($fullDirPath)) {
+        $files = scandir($fullDirPath);
         $listing = "Directory listing for " . $dirPath . ":\n" . implode("\n", array_filter($files, function($f) { return $f !== '.' && $f !== '..'; }));
         $message .= "\n\n" . $listing;
     } else {
-        $message .= "\n\nDirectory not found: " . $dirPath;
+        $message .= "\n\nDirectory not found: " . $dirPath . " (searched at: " . $fullDirPath . ")";
     }
 }
 
