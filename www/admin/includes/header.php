@@ -66,7 +66,7 @@
                 $currentSection = 'users';
             } elseif (in_array($currentPage ?? '', ['monitoring'])) {
                 $currentSection = 'monitoring';
-            } elseif (in_array($currentPage ?? '', ['settings', 'config'])) {
+            } elseif (in_array($currentPage ?? '', ['settings', 'config', 'cloud_settings', 'claude_settings'])) {
                 $currentSection = 'settings';
             }
             ?>
@@ -91,8 +91,12 @@
                 <div class="sidebar-group">
                     <h3>AI Assistants</h3>
                     <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
-                    <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
+                    <a href="/admin/chat?agent=claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>💬 Chat with Claude</a>
                     <a href="/admin/chat" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>General Chat</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>Settings</h3>
+                    <a href="/admin/claude_settings">⚙️ Configure Claude</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Individual Agents</h3>
@@ -122,6 +126,11 @@
                     <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>General Settings</a>
                     <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
                     <a href="/admin/api" <?= ($currentPage ?? '') === 'api' ? 'class="active"' : '' ?>>API Settings</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>Cloud AI Settings</h3>
+                    <a href="/admin/cloud_settings" <?= ($currentPage ?? '') === 'cloud_settings' ? 'class="active"' : '' ?>>Cloud Providers</a>
+                    <a href="/admin/claude_settings" <?= ($currentPage ?? '') === 'claude_settings' ? 'class="active"' : '' ?>>Claude AI</a>
                 </div>
             <?php else: ?>
                 <div class="sidebar-group">
