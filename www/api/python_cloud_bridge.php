@@ -159,15 +159,24 @@ try:
     else:
         raise Exception(f'Provider {$provider} not supported for chat')
     
-    # Create specialized ZeroAI assistant agent
+    # Import ZeroAI tools
+    from src.tools.file_tool import FileTool
+    from src.tools.git_tool import GitTool
+    
+    # Create tools list
+    tools = [FileTool(), GitTool()]
+    
+    # Create specialized ZeroAI assistant agent with tools
     agent = Agent(
         role='ZeroAI Cloud Assistant',
-        goal='Help optimize and manage ZeroAI system using cloud AI capabilities',
+        goal='Help optimize and manage ZeroAI system using cloud AI capabilities and tools',
         backstory='''You are a cloud-powered AI assistant integrated into the ZeroAI system. 
         You help users optimize their AI workforce, analyze agent performance, and provide 
-        advanced insights using cloud AI capabilities. You understand ZeroAI architecture,
+        advanced insights using cloud AI capabilities. You have access to file operations 
+        and git tools to help manage the ZeroAI codebase. You understand ZeroAI architecture,
         CrewAI framework, and can provide code suggestions and system optimizations.''',
         llm=llm,
+        tools=tools,
         verbose=False,
         allow_delegation=False
     )
