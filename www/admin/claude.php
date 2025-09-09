@@ -1,4 +1,16 @@
 <?php 
+// Load environment variables
+if (file_exists('/app/.env')) {
+    $lines = file('/app/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos($line, '=') !== false && !str_starts_with($line, '#')) {
+            list($key, $value) = explode('=', $line, 2);
+            $_ENV[trim($key)] = trim($value);
+            putenv(trim($key) . '=' . trim($value));
+        }
+    }
+}
+
 $pageTitle = 'Cloud AI Assistant - ZeroAI';
 $currentPage = 'claude';
 include __DIR__ . '/includes/header.php';
@@ -94,14 +106,29 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     
     // Also save to config file for Python access
     $configFile = '/app/config/claude_config.yaml';
-    $yamlContent = yaml_emit($claudeConfig);
+    $yamlContent = "# Claude Configuration\n";
+    $yamlContent .= "role: \"" . str_replace('"', '\\"', $claudeConfig['role']) . "\"\n";
+    $yamlContent .= "goal: \"" . str_replace('"', '\\"', $claudeConfig['goal']) . "\"\n";
+    $yamlContent .= "backstory: \"" . str_replace('"', '\\"', $claudeConfig['backstory']) . "\"\n";
+    $yamlContent .= "supervision_level: \"" . $claudeConfig['supervision_level'] . "\"\n";
+    $yamlContent .= "focus_areas:\n";
+    foreach ($claudeConfig['focus_areas'] as $area) {
+        $yamlContent .= "  - \"$area\"\n";
+    }
     file_put_contents($configFile, $yamlContent);
 }
 
 // Load current Claude config
 $claudeConfig = [];
 if (file_exists('/app/config/claude_config.yaml')) {
-    $claudeConfig = yaml_parse_file('/app/config/claude_config.yaml') ?: [];
+    // Simple YAML parsing for our config
+    $lines = file('/app/config/claude_config.yaml', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos($line, ': ') !== false && !str_starts_with($line, '#')) {
+            list($key, $value) = explode(': ', $line, 2);
+            $claudeConfig[trim($key)] = trim($value, '"');
+        }
+    }
 }
 
 // Handle chat with cloud AI - Use Python
