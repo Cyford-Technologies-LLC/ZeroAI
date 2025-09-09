@@ -16,7 +16,7 @@ services:
         - ./logs:/app/logs
         # ./www mounted via main app mount
         - zeroai_data:/app/data
-        # - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
+        - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
       environment:
         - PYTHONPATH=/app
@@ -43,7 +43,7 @@ services:
       - ./examples:/app/examples
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
-      # - /etc/cyford/zeroai/.env:/etc/cyford/zeroai/.env:ro
+      - /etc/cyford/zeroai/.env:/app/.env:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434

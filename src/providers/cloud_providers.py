@@ -4,8 +4,12 @@ from typing import Optional, Dict, Any
 from crewai import LLM
 import sys
 import os
+from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from env_loader import ENV
+
+# Load .env file
+load_dotenv('/app/.env')
 
 
 class CloudProviderManager:

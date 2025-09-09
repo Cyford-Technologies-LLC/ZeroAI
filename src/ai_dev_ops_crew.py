@@ -12,8 +12,10 @@ from rich.console import Console
 from rich.table import Table
 from pathvalidate import sanitize_filepath
 from src.utils.env_loader import load_secure_env, get_secure_token
+from dotenv import load_dotenv
 
-# Load secure environment variables at startup
+# Load .env file and secure environment variables at startup
+load_dotenv('/app/.env')
 load_secure_env()
 
 
