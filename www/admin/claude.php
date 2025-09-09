@@ -85,19 +85,24 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
             ]]
         ];
         
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://api.anthropic.com/v1/messages');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        if (function_exists('curl_init')) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, 'https://api.anthropic.com/v1/messages');
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+        } else {
+            $error = 'CURL extension not installed';
+            $httpCode = 0;
+        }
         
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        if ($httpCode === 200) {
+        if ($httpCode === 200 && isset($response)) {
             $result = json_decode($response, true);
             if ($result && isset($result['content'][0]['text'])) {
                 $cloudResponse = $result['content'][0]['text'];
@@ -106,8 +111,10 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
             } else {
                 $error = 'Invalid response from Claude API';
             }
-        } else {
+        } elseif (isset($httpCode) && $httpCode > 0) {
             $error = 'Claude API error: HTTP ' . $httpCode;
+        } elseif (!isset($error)) {
+            $error = 'Failed to connect to Claude API';
         }
     } else {
         $error = $apiKey ? 'Message required' : 'Claude API key not configured';
