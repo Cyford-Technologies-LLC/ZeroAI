@@ -10,11 +10,28 @@ if ($agentId && !$sessionId) {
     // Handle special case for Claude
     if ($agentId === 'claude') {
         $agents = $chat->getAvailableAgents();
+        $claudeFound = false;
         foreach ($agents as $agent) {
             if ($agent['name'] === 'Claude AI Assistant') {
                 $agentId = $agent['id'];
+                $claudeFound = true;
                 break;
             }
+        }
+        
+        // If Claude not found, create it
+        if (!$claudeFound) {
+            require_once __DIR__ . '/../api/agent_db.php';
+            $agentDB = new AgentDB();
+            $agentId = $agentDB->createAgent([
+                'name' => 'Claude AI Assistant',
+                'role' => 'Senior AI Architect & Code Review Specialist',
+                'goal' => 'Provide expert code review, architectural guidance, and strategic optimization recommendations to enhance ZeroAI system performance and development quality.',
+                'backstory' => 'I am Claude, an advanced AI assistant created by Anthropic. I specialize in software architecture, code optimization, and strategic technical guidance. I work alongside your ZeroAI development team to ensure high-quality deliverables, identify potential issues early, and provide insights that enhance overall project success.',
+                'status' => 'active',
+                'llm_model' => 'claude',
+                'is_core' => 1
+            ]);
         }
     }
     
