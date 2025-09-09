@@ -1,4 +1,10 @@
 <?php
+// Enable error reporting if setting is on
+if (isset($_SESSION['display_errors']) && $_SESSION['display_errors']) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+}
+
 session_start();
 
 $request = $_SERVER['REQUEST_URI'];
@@ -39,6 +45,15 @@ switch ($path) {
             handleAgentAction();
         } else {
             include __DIR__ . '/admin/agents.php';
+        }
+        break;
+        
+    case '/admin/settings':
+        requireAdminAuth();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            handleSettingsAction();
+        } else {
+            include __DIR__ . '/admin/settings.php';
         }
         break;
         
@@ -134,6 +149,15 @@ function handleUserAction() {
 function handleAgentAction() {
     // Agent management logic here
     header('Location: /admin/agents');
+    exit;
+}
+
+function handleSettingsAction() {
+    if (isset($_POST['display_errors'])) {
+        $_SESSION['display_errors'] = $_POST['display_errors'] === '1';
+    }
+    $_SESSION['settings_message'] = 'Settings saved successfully';
+    header('Location: /admin/settings');
     exit;
 }
 ?>

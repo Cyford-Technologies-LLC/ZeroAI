@@ -43,7 +43,5 @@ knowledge/internal_crew/default/
 
 # User data
 config/local/
-app/
-data/
+
 logs/
-www/

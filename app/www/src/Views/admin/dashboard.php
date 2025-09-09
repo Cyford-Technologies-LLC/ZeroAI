@@ -18,8 +18,6 @@
             <a href="/admin/dashboard">Dashboard</a>
             <a href="/admin/users">Users</a>
             <a href="/admin/agents">Agents</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/admin/logout">Logout</a>
         </div>
     </div>
     
