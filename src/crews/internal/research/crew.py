@@ -5,6 +5,7 @@ from crewai import Crew, Process
 from typing import Dict, Any, List
 from src.distributed_router import DistributedRouter
 from src.config import config
+from src.utils.dynamic_agent_loader import dynamic_loader
 from src.crews.internal.research.agents  import (
     create_project_manager_agent,
     create_internal_researcher_agent,
@@ -49,10 +50,25 @@ def get_research_crew(router, tools, project_config, use_new_memory=False):
 
 
 def create_research_crew(router: DistributedRouter, inputs: Dict[str, Any], full_output: bool = False) -> Crew:
-    # Create agents with proper role assignments and pass the embedder config
-    internal_researcher = create_internal_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
-    online_researcher = create_online_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
-    project_manager = create_project_manager_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
+    # Try to create agents from database first, fallback to static
+    try:
+        internal_researcher = dynamic_loader.create_agent_by_role("Internal Researcher", router) or \
+                            dynamic_loader.create_agent_by_role("Code Researcher", router) or \
+                            create_internal_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
+        
+        online_researcher = dynamic_loader.create_agent_by_role("Online Researcher", router) or \
+                          dynamic_loader.create_agent_by_role("Research Agent", router) or \
+                          create_online_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
+        
+        project_manager = dynamic_loader.create_agent_by_role("Project Manager", router) or \
+                        create_project_manager_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
+        
+        print(f"✅ Research crew using dynamic agents from database")
+    except Exception as e:
+        print(f"⚠️ Falling back to static agents: {e}")
+        internal_researcher = create_internal_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
+        online_researcher = create_online_researcher_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
+        project_manager = create_project_manager_agent(router, inputs, ollama_embedder_config=ollama_embedder_config)
 
     # Create tasks specific to each agent's role
     tasks = [
