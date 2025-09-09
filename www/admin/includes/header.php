@@ -55,23 +55,65 @@
     </div>
     <div class="content-wrapper">
         <div class="sidebar">
-            <div class="sidebar-group">
-                <h3>CrewAI</h3>
-                <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
-                <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
-                <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
-                <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
-                <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge</a>
-            </div>
-            <div class="sidebar-group">
-                <h3>AI Models</h3>
-                <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
-                <a href="/admin/ollama" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
-            </div>
-            <div class="sidebar-group">
-                <h3>System</h3>
-                <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>Configuration</a>
-                <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>Logs</a>
-            </div>
+            <?php 
+            $currentSection = 'dashboard';
+            if (in_array($currentPage ?? '', ['crews', 'agents', 'tasks', 'knowledge', 'crew_chat', 'claude'])) {
+                $currentSection = 'crewai';
+            } elseif (in_array($currentPage ?? '', ['users'])) {
+                $currentSection = 'users';
+            } elseif (in_array($currentPage ?? '', ['monitoring'])) {
+                $currentSection = 'monitoring';
+            } elseif (in_array($currentPage ?? '', ['settings', 'config'])) {
+                $currentSection = 'settings';
+            }
+            ?>
+            
+            <?php if ($currentSection === 'crewai'): ?>
+                <div class="sidebar-group">
+                    <h3>Crew Management</h3>
+                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>Crew Chat</a>
+                    <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
+                    <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
+                    <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>AI Models</h3>
+                    <a href="/admin/claude" <?= ($currentPage ?? '') === 'claude' ? 'class="active"' : '' ?>>Claude AI</a>
+                    <a href="/admin/ollama" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>Resources</h3>
+                    <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge Base</a>
+                    <a href="/admin/examples" <?= ($currentPage ?? '') === 'examples' ? 'class="active"' : '' ?>>Examples</a>
+                </div>
+            <?php elseif ($currentSection === 'monitoring'): ?>
+                <div class="sidebar-group">
+                    <h3>System Health</h3>
+                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>Overview</a>
+                    <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>Logs</a>
+                    <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>Performance</a>
+                </div>
+            <?php elseif ($currentSection === 'users'): ?>
+                <div class="sidebar-group">
+                    <h3>User Management</h3>
+                    <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
+                    <a href="/admin/roles" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
+                    <a href="/admin/sessions" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
+                </div>
+            <?php elseif ($currentSection === 'settings'): ?>
+                <div class="sidebar-group">
+                    <h3>Configuration</h3>
+                    <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>General Settings</a>
+                    <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
+                    <a href="/admin/api" <?= ($currentPage ?? '') === 'api' ? 'class="active"' : '' ?>>API Settings</a>
+                </div>
+            <?php else: ?>
+                <div class="sidebar-group">
+                    <h3>Quick Actions</h3>
+                    <a href="/admin/crew_chat">Start Crew Chat</a>
+                    <a href="/admin/agents">View Agents</a>
+                    <a href="/admin/monitoring">System Status</a>
+                </div>
+            <?php endif; ?>
         </div>
         <div class="main-content">
