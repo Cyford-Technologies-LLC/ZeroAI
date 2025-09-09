@@ -1,39 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Task Management - ZeroAI</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
-        .nav a { color: white; margin-right: 15px; text-decoration: none; }
-        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .task-item { padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
-        .pending { border-left: 4px solid #ffc107; }
-        .running { border-left: 4px solid #007bff; }
-        .completed { border-left: 4px solid #28a745; }
-        .failed { border-left: 4px solid #dc3545; }
-        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
-        .btn-success { background: #28a745; }
-        .btn-danger { background: #dc3545; }
-        input, select, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
-        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .metric { background: white; padding: 15px; border-radius: 8px; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Task Management</h1>
-        <div class="nav">
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/agents">Agents</a>
-            <a href="/admin/crews">Crews</a>
-            <a href="/admin/tasks">Tasks</a>
-            <a href="/admin/knowledge">Knowledge</a>
-            <a href="/admin/monitoring">Monitoring</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/admin/logout">Logout</a>
-        </div>
-    </div>
+<?php 
+$pageTitle = 'Task Management - ZeroAI';
+$currentPage = 'tasks';
+include __DIR__ . '/includes/header.php';
+?>
+
+<h1>Task Management</h1>
+
+<style>
+.task-item { padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
+.pending { border-left: 4px solid #ffc107; }
+.running { border-left: 4px solid #007bff; }
+.completed { border-left: 4px solid #28a745; }
+.failed { border-left: 4px solid #dc3545; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.metric { background: white; padding: 15px; border-radius: 8px; text-align: center; }
+</style>
     
     <div class="metrics">
         <div class="metric">
@@ -92,5 +73,6 @@
             <button>Debug Log</button>
         </div>
     </div>
-</body>
-</html>
+        </div>
+    </div>
+<?php include __DIR__ . '/includes/footer.php'; ?>

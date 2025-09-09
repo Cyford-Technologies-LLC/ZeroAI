@@ -1,37 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Knowledge Management - ZeroAI</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
-        .nav a { color: white; margin-right: 15px; text-decoration: none; }
-        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .knowledge-item { padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
-        .document { border-left: 4px solid #17a2b8; }
-        .guide { border-left: 4px solid #28a745; }
-        .url { border-left: 4px solid #ffc107; }
-        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
-        .btn-success { background: #28a745; }
-        .btn-warning { background: #ffc107; color: #212529; }
-        input, select, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
-        .access-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Knowledge Management</h1>
-        <div class="nav">
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/agents">Agents</a>
-            <a href="/admin/crews">Crews</a>
-            <a href="/admin/tasks">Tasks</a>
-            <a href="/admin/knowledge">Knowledge</a>
-            <a href="/admin/monitoring">Monitoring</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/admin/logout">Logout</a>
-        </div>
-    </div>
+<?php 
+$pageTitle = 'Knowledge Management - ZeroAI';
+$currentPage = 'knowledge';
+include __DIR__ . '/includes/header.php';
+?>
+
+<h1>Knowledge Management</h1>
+
+<style>
+.knowledge-item { padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
+.document { border-left: 4px solid #17a2b8; }
+.guide { border-left: 4px solid #28a745; }
+.url { border-left: 4px solid #ffc107; }
+.access-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+</style>
     
     <div class="card">
         <h3>Add Knowledge</h3>
@@ -103,5 +84,6 @@
             <button class="btn-warning">Configure Access</button>
         </div>
     </div>
-</body>
-</html>
+        </div>
+    </div>
+<?php include __DIR__ . '/includes/footer.php'; ?>

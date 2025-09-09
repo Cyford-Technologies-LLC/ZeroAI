@@ -93,4 +93,6 @@ $envContent = file_get_contents('/app/.env');
     </div>
 </div>
 
+        </div>
+    </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

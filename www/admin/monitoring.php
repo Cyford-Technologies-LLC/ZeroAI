@@ -1,40 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>System Monitoring - ZeroAI</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .header { background: #007bff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
-        .nav a { color: white; margin-right: 15px; text-decoration: none; }
-        .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .metric { background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #007bff; }
-        .metric.warning { border-left-color: #ffc107; }
-        .metric.danger { border-left-color: #dc3545; }
-        .metric.success { border-left-color: #28a745; }
-        .log-item { padding: 10px; border-bottom: 1px solid #eee; font-family: monospace; font-size: 12px; }
-        .error { color: #dc3545; }
-        .warning { color: #ffc107; }
-        .info { color: #17a2b8; }
-        .success { color: #28a745; }
-        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
-        .chart-placeholder { height: 200px; background: #f8f9fa; border: 1px dashed #dee2e6; display: flex; align-items: center; justify-content: center; color: #6c757d; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>System Monitoring</h1>
-        <div class="nav">
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/agents">Agents</a>
-            <a href="/admin/crews">Crews</a>
-            <a href="/admin/tasks">Tasks</a>
-            <a href="/admin/knowledge">Knowledge</a>
-            <a href="/admin/monitoring">Monitoring</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/admin/logout">Logout</a>
-        </div>
-    </div>
+<?php 
+$pageTitle = 'System Monitoring - ZeroAI';
+$currentPage = 'monitoring';
+include __DIR__ . '/includes/header.php';
+?>
+
+<h1>System Monitoring</h1>
+
+<style>
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.metric { background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #007bff; }
+.metric.warning { border-left-color: #ffc107; }
+.metric.danger { border-left-color: #dc3545; }
+.metric.success { border-left-color: #28a745; }
+.log-item { padding: 10px; border-bottom: 1px solid #eee; font-family: monospace; font-size: 12px; }
+.error { color: #dc3545; }
+.warning { color: #ffc107; }
+.info { color: #17a2b8; }
+.success { color: #28a745; }
+.chart-placeholder { height: 200px; background: #f8f9fa; border: 1px dashed #dee2e6; display: flex; align-items: center; justify-content: center; color: #6c757d; }
+</style>
     
     <div class="metrics">
         <div class="metric success">
@@ -113,5 +97,6 @@
             <div class="log-item info">[2025-09-09 02:50:15] INFO: New task created: Analyze project requirements</div>
         </div>
     </div>
-</body>
-</html>
+        </div>
+    </div>
+<?php include __DIR__ . '/includes/footer.php'; ?>
