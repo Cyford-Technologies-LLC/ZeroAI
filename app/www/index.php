@@ -13,6 +13,8 @@ switch ($path) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             handleAdminLogin();
         } else {
+            $error = $_SESSION['login_error'] ?? null;
+            unset($_SESSION['login_error']);
             include __DIR__ . '/admin/login.php';
         }
         break;
@@ -45,6 +47,8 @@ switch ($path) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             handleWebLogin();
         } else {
+            $error = $_SESSION['web_login_error'] ?? null;
+            unset($_SESSION['web_login_error']);
             include __DIR__ . '/web/login.php';
         }
         break;
@@ -97,8 +101,10 @@ function handleAdminLogin() {
         header('Location: /admin/dashboard');
         exit;
     } else {
-        $error = 'Invalid credentials';
-        include __DIR__ . '/admin/login.php';
+        // Set error in session and redirect
+        $_SESSION['login_error'] = 'Invalid credentials';
+        header('Location: /admin');
+        exit;
     }
 }
 
@@ -113,8 +119,9 @@ function handleWebLogin() {
         header('Location: /web/frontend');
         exit;
     } else {
-        $error = 'Invalid credentials';
-        include __DIR__ . '/web/login.php';
+        $_SESSION['web_login_error'] = 'Invalid credentials';
+        header('Location: /web');
+        exit;
     }
 }
 
