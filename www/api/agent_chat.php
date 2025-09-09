@@ -4,7 +4,7 @@ class AgentChat {
     private $pythonPath = '/app/venv/bin/python';
     
     public function __construct() {
-        $this->db = new PDO("sqlite:/app/data/zeroai.db");
+        $this->db = new PDO("sqlite:/app/data/agents.db");
         $this->initChatTables();
     }
     

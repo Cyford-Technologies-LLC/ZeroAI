@@ -217,10 +217,10 @@ if ($_POST['action'] ?? '' === 'test_connection') {
     <h3>Current Cloud Provider: <?= ucfirst($currentConfig['provider'] ?? 'local') ?></h3>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
-        <div>OpenAI: <?= $currentConfig['has_openai_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
-        <div>Anthropic: <?= $currentConfig['has_anthropic_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
-        <div>Azure: <?= $currentConfig['has_azure_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
-        <div>Google: <?= $currentConfig['has_google_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>OpenAI: <?= isset($currentConfig['has_openai_key']) && $currentConfig['has_openai_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>Anthropic: <?= isset($currentConfig['has_anthropic_key']) && $currentConfig['has_anthropic_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>Azure: <?= isset($currentConfig['has_azure_key']) && $currentConfig['has_azure_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
+        <div>Google: <?= isset($currentConfig['has_google_key']) && $currentConfig['has_google_key'] ? '✅ Configured' : '❌ Not configured' ?></div>
     </div>
     
     <form method="POST" style="display: inline;">
