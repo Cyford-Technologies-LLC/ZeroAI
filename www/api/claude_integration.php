@@ -19,7 +19,7 @@ class ClaudeIntegration {
         ];
         
         $data = [
-            'model' => 'claude-3-5-sonnet-latest',
+            'model' => 'claude-3-5-sonnet-20241022',
             'max_tokens' => 4000,
             'messages' => [
                 [
@@ -58,7 +58,7 @@ class ClaudeIntegration {
         return [
             'message' => $result['content'][0]['text'],
             'usage' => $result['usage'] ?? [],
-            'model' => $result['model'] ?? 'claude-3-5-sonnet-latest'
+            'model' => $result['model'] ?? 'claude-3-5-sonnet-20241022'
         ];
     }
     
