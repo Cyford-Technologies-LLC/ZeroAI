@@ -52,6 +52,27 @@ include __DIR__ . '/includes/header.php';
                 <p style="margin: 0; color: #666;">Browse and manage system files and configurations</p>
             </div>
         </a>
+        
+        <a href="/admin/error_logs" style="text-decoration: none; color: inherit;">
+            <div style="border: 2px solid #dc3545; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
+                <h4 style="margin: 0 0 10px 0; color: #dc3545;">🚨 Error Logs</h4>
+                <p style="margin: 0; color: #666;">Real-time error monitoring and log analysis</p>
+            </div>
+        </a>
+        
+        <a href="/admin/backup" style="text-decoration: none; color: inherit;">
+            <div style="border: 2px solid #28a745; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
+                <h4 style="margin: 0 0 10px 0; color: #28a745;">💾 Backup</h4>
+                <p style="margin: 0; color: #666;">Create and manage system backups</p>
+            </div>
+        </a>
+        
+        <a href="/admin/restore" style="text-decoration: none; color: inherit;">
+            <div style="border: 2px solid #ffc107; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
+                <h4 style="margin: 0 0 10px 0; color: #f57c00;">🔄 Restore</h4>
+                <p style="margin: 0; color: #666;">Restore system from backups</p>
+            </div>
+        </a>
     </div>
 </div>
 

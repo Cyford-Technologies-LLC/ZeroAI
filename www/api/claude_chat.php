@@ -22,6 +22,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $message = $input['message'] ?? '';
 $selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
 $autonomousMode = $input['autonomous'] ?? false;
+$conversationHistory = $input['history'] ?? [];
 
 if (!$message) {
     echo json_encode(['success' => false, 'error' => 'Message required']);
@@ -388,7 +389,7 @@ try {
     
     $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
     
-    $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel);
+    $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
     echo json_encode([
         'success' => true,

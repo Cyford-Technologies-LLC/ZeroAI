@@ -7,7 +7,7 @@ class ClaudeIntegration {
         $this->apiKey = $apiKey ?: getenv('ANTHROPIC_API_KEY');
     }
     
-    public function chatWithClaude($message, $systemPrompt = null, $model = null) {
+    public function chatWithClaude($message, $systemPrompt = null, $model = null, $conversationHistory = []) {
         if (!$this->apiKey) {
             throw new Exception('Anthropic API key not configured');
         }
@@ -18,15 +18,33 @@ class ClaudeIntegration {
             'anthropic-version: 2023-06-01'
         ];
         
+        // Build messages array with conversation history
+        $messages = [];
+        
+        // Add conversation history (limit to last 10 messages to avoid token limits)
+        $recentHistory = array_slice($conversationHistory, -10);
+        foreach ($recentHistory as $historyItem) {
+            if (isset($historyItem['sender']) && isset($historyItem['message'])) {
+                $role = ($historyItem['sender'] === 'Claude') ? 'assistant' : 'user';
+                if ($historyItem['sender'] !== 'System') { // Skip system messages
+                    $messages[] = [
+                        'role' => $role,
+                        'content' => $historyItem['message']
+                    ];
+                }
+            }
+        }
+        
+        // Add current message
+        $messages[] = [
+            'role' => 'user',
+            'content' => $message
+        ];
+        
         $data = [
             'model' => $model ?: 'claude-3-5-sonnet-20241022',
             'max_tokens' => 4000,
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => $message
-                ]
-            ]
+            'messages' => $messages
         ];
         
         if ($systemPrompt) {
