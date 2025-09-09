@@ -490,6 +490,11 @@ class AIOpsCrewManager:
                 supervisor_llm = self._get_supervisor_llm()
                 task_inputs['supervisor_llm'] = supervisor_llm
                 
+                # Add Claude as supervisor if available
+                if supervisor_llm:
+                    task_inputs['claude_supervisor'] = True
+                    console.print("🧠 Claude supervisor enabled for quality control", style="cyan")
+                
                 crew = create_team_manager_crew(
                     router=self.router,
                     tools=self.tools,

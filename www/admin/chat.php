@@ -17,8 +17,34 @@ if ($agentId && !$sessionId) {
 
 // Handle message sending
 if ($_POST['action'] ?? '' === 'send_message' && $sessionId) {
-    $response = $chat->sendMessage($sessionId, $_POST['message']);
-    // Redirect to prevent form resubmission
+    $message = $_POST['message'];
+    
+    // Check if this is Claude and if message contains file commands
+    $session = $chat->getSession($sessionId);
+    if ($session && $session['agent_name'] === 'Claude AI Assistant') {
+        require_once __DIR__ . '/../api/claude_tools.php';
+        
+        // Process file commands
+        if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
+            $filePath = trim($matches[1]);
+            $fileContent = ClaudeFileTools::getFileContent('/app/' . $filePath);
+            $message .= "\n\n" . $fileContent;
+        }
+        
+        if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
+            $dirPath = trim($matches[1]);
+            $listing = ClaudeFileTools::listDirectory('/app/' . $dirPath);
+            $message .= "\n\n" . $listing;
+        }
+        
+        if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
+            $pattern = trim($matches[1]);
+            $results = ClaudeFileTools::searchFiles($pattern);
+            $message .= "\n\n" . $results;
+        }
+    }
+    
+    $response = $chat->sendMessage($sessionId, $message);
     header("Location: /admin/chat?session=$sessionId");
     exit;
 }
