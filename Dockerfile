@@ -84,17 +84,17 @@ RUN mkdir -p /app/.git/hooks \
     && chmod +x /app/.git/hooks/post-merge
 
 # Configure nginx directories and permissions
-RUN mkdir -p /var/log/nginx /var/lib/nginx /run \
-    && chown -R www-data:www-data /var/log/nginx /var/lib/nginx /run
+RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
+    && chown -R www-data:www-data /var/log/nginx /var/lib/nginx /run /tmp/nginx
 
-# Create startup script for nginx + PHP-FPM
+# Create startup script that runs as root for chown, then starts services
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
-    && echo 'chown -R www-data:www-data /app' >> /app/start_portal.sh \
+    && echo 'set -e' >> /app/start_portal.sh \
+    && echo 'chown -R www-data:www-data /app 2>/dev/null || true' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
-    && echo 'nginx -c /etc/nginx/sites-available/zeroai -g "daemon off;"' >> /app/start_portal.sh \
+    && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
-# Switch to www-data user for runtime
-USER www-data
+# Stay as root to run startup script
 CMD ["/app/start_portal.sh"]
