@@ -10,16 +10,25 @@ include __DIR__ . '/includes/header.php';
     <h3>Direct Claude AI Chat</h3>
     <p>Chat directly with Claude using your configured personality and ZeroAI context. Use @file, @list, @search commands to share project files.</p>
     
-    <div style="margin-bottom: 10px;">
-        <label><strong>Claude Model:</strong></label>
-        <select id="claude-model" style="width: 300px;">
-            <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (Latest & Most Advanced)</option>
-            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
-            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-            <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-        </select>
+    <div style="display: flex; gap: 20px; margin-bottom: 10px; align-items: center;">
+        <div>
+            <label><strong>Claude Model:</strong></label>
+            <select id="claude-model" style="width: 300px;">
+                <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (Latest & Most Advanced)</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
+                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+            </select>
+        </div>
+        <div>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="autonomous-mode" onchange="toggleAutonomousMode()">
+                <strong>🤖 Autonomous Mode</strong>
+            </label>
+            <small style="color: #666;">Claude can proactively analyze and modify files</small>
+        </div>
     </div>
     
     <div id="chat-container" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; margin: 15px 0; background: #f8f9fa; border-radius: 8px;">
@@ -53,6 +62,7 @@ async function sendMessage() {
     if (!message) return;
     
     const selectedModel = document.getElementById('claude-model').value;
+    const autonomousMode = document.getElementById('autonomous-mode').checked;
     const sendButton = document.getElementById('send-button');
     const status = document.getElementById('status');
     
@@ -73,7 +83,8 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 message: message,
-                model: selectedModel
+                model: selectedModel,
+                autonomous: autonomousMode
             })
         });
         
@@ -81,7 +92,7 @@ async function sendMessage() {
         
         if (result.success) {
             addMessageToChat('Claude', result.response, 'claude');
-            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model}`;
+            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${autonomousMode ? 'Autonomous' : 'Manual'}`;
         } else {
             addMessageToChat('System', 'Error: ' + result.error, 'error');
             status.textContent = 'Error occurred';
@@ -143,6 +154,15 @@ function sendQuickMessage(message) {
     sendMessage();
 }
 
+function enableAutonomousAndSend(message) {
+    document.getElementById('autonomous-mode').checked = true;
+    toggleAutonomousMode();
+    setTimeout(() => {
+        document.getElementById('message-input').value = message;
+        sendMessage();
+    }, 1000);
+}
+
 // Event listeners
 document.getElementById('send-button').addEventListener('click', sendMessage);
 document.getElementById('message-input').addEventListener('keypress', function(e) {
@@ -152,8 +172,21 @@ document.getElementById('message-input').addEventListener('keypress', function(e
     }
 });
 
+function toggleAutonomousMode() {
+    const autonomous = document.getElementById('autonomous-mode').checked;
+    const status = document.getElementById('status');
+    
+    if (autonomous) {
+        status.textContent = '🤖 Autonomous Mode: Claude can proactively analyze and modify files';
+        addMessageToChat('System', '🤖 Autonomous Mode ENABLED: Claude can now proactively analyze your codebase and make improvements without explicit commands. She will automatically scan files, identify issues, and apply fixes.', 'claude');
+    } else {
+        status.textContent = '👤 Manual Mode: Use @commands to interact with Claude';
+        addMessageToChat('System', '👤 Manual Mode ENABLED: Claude will only perform actions when you use specific @commands.', 'claude');
+    }
+}
+
 // Load initial message
-addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI system. I can help you with code review, system optimization, and development guidance. Use @file, @list, @search commands to share project files with me, or @agents, @crews commands to check your AI workforce status.', 'claude');
+addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI system. I can help you with code review, system optimization, and development guidance.\n\nFile Commands:\n- @file path/file.py (read file)\n- @create path/file.py ```code``` (create file)\n- @edit path/file.py ```code``` (edit file)\n- @append path/file.py ```code``` (append to file)\n- @delete path/file.py (delete file)\n\nSystem Commands:\n- @agents, @crews, @list, @search\n\n🤖 Toggle Autonomous Mode to let me proactively analyze and improve your codebase!', 'claude');
 </script>
 
 <div class="card">
@@ -194,6 +227,36 @@ addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI syst
             <p><code>@analyze_crew task_id_123</code></p>
             <p>Analyzes a specific crew execution with detailed information</p>
         </div>
+        <div>
+            <h4>@create command</h4>
+            <p><code>@create path/to/file.py ```code here```</code></p>
+            <p>Creates a new file with the specified content</p>
+        </div>
+        <div>
+            <h4>@edit command</h4>
+            <p><code>@edit path/to/file.py ```new content```</code></p>
+            <p>Replaces entire file content with new content</p>
+        </div>
+        <div>
+            <h4>@append command</h4>
+            <p><code>@append path/to/file.py ```additional code```</code></p>
+            <p>Adds content to the end of an existing file</p>
+        </div>
+        <div>
+            <h4>@delete command</h4>
+            <p><code>@delete path/to/file.py</code></p>
+            <p>Deletes the specified file</p>
+        </div>
+        <div>
+            <h4>@logs command</h4>
+            <p><code>@logs [days] [agent_role]</code></p>
+            <p>Shows recent crew conversation logs for analysis</p>
+        </div>
+        <div>
+            <h4>@optimize_agents command</h4>
+            <p><code>@optimize_agents</code></p>
+            <p>Analyzes crew logs and suggests agent improvements</p>
+        </div>
     </div>
 </div>
 
@@ -208,6 +271,16 @@ addMessageToChat('Claude', 'Hello! I\'m Claude, integrated into your ZeroAI syst
         <button onclick="sendQuickMessage('What are the best practices for scaling my ZeroAI workforce and managing multiple crews efficiently? How can I optimize agent task distribution?')" class="btn-primary" style="width: 100%;">Scaling Advice</button>
         
         <button onclick="sendQuickMessage('@agents\n\nAnalyze my current agents and suggest improvements to their roles, goals, and configurations for better performance.')" class="btn-primary" style="width: 100%;">Analyze & Improve Agents</button>
+        
+        <button onclick="sendQuickMessage('@file src/crews/internal/developer/crew.py\n\nReview this crew file and suggest optimizations. If you find issues, use @edit to fix them.')" class="btn-warning" style="width: 100%;">Review & Fix Crew Code</button>
+        
+        <button onclick="sendQuickMessage('@list src/agents/\n\nAnalyze my agent files and create improved versions using @create or @edit commands.')" class="btn-warning" style="width: 100%;">Optimize Agent Files</button>
+        
+        <button onclick="enableAutonomousAndSend('Perform a comprehensive analysis of my ZeroAI system. Scan all files, identify issues, and proactively fix them.')" class="btn-success" style="width: 100%;">🤖 Full System Optimization</button>
+        
+        <button onclick="sendQuickMessage('@logs 7\n\nAnalyze recent crew conversation logs and identify patterns in agent performance.')" class="btn-info" style="width: 100%;">📊 Analyze Crew Logs</button>
+        
+        <button onclick="sendQuickMessage('@optimize_agents\n\nReview agent performance data and update agent configurations for better results.')" class="btn-warning" style="width: 100%;">⚡ Optimize Agents from Logs</button>
         
     </div>
 </div>

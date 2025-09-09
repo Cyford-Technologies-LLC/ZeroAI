@@ -21,10 +21,36 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true);
 $message = $input['message'] ?? '';
 $selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
+$autonomousMode = $input['autonomous'] ?? false;
 
 if (!$message) {
     echo json_encode(['success' => false, 'error' => 'Message required']);
     exit;
+}
+
+// In autonomous mode, Claude can proactively analyze and modify files
+if ($autonomousMode) {
+    // Add autonomous context to message
+    $message = "[AUTONOMOUS MODE ENABLED] You have full access to analyze, create, edit, and optimize files proactively. " . $message;
+    
+    // Auto-scan common directories if no specific commands given
+    if (!preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
+        $autoScan = "\n\nAuto-scanning key directories:\n";
+        
+        // Scan src directory
+        if (is_dir('/app/src')) {
+            $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
+            $autoScan .= "\nSrc files:\n" . ($srcFiles ?: "No Python files found");
+        }
+        
+        // Scan config directory
+        if (is_dir('/app/config')) {
+            $configFiles = scandir('/app/config');
+            $autoScan .= "\nConfig files: " . implode(", ", array_filter($configFiles, function($f) { return $f !== '.' && $f !== '..'; }));
+        }
+        
+        $message .= $autoScan;
+    }
 }
 
 // Process file commands
@@ -112,6 +138,160 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
     }
 }
 
+// Handle file creation command
+if (preg_match('/\@create\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
+    $filePath = trim($matches[1]);
+    $fileContent = trim($matches[2]);
+    
+    $fullPath = '/app/' . $filePath;
+    $dir = dirname($fullPath);
+    
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    
+    if (file_put_contents($fullPath, $fileContent) !== false) {
+        $message .= "\n\nFile created successfully: " . $filePath;
+    } else {
+        $message .= "\n\nFailed to create file: " . $filePath;
+    }
+}
+
+// Handle file editing command
+if (preg_match('/\@edit\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
+    $filePath = trim($matches[1]);
+    $newContent = trim($matches[2]);
+    
+    $fullPath = '/app/' . $filePath;
+    
+    if (file_exists($fullPath)) {
+        if (file_put_contents($fullPath, $newContent) !== false) {
+            $message .= "\n\nFile updated successfully: " . $filePath;
+        } else {
+            $message .= "\n\nFailed to update file: " . $filePath;
+        }
+    } else {
+        $message .= "\n\nFile not found: " . $filePath;
+    }
+}
+
+// Handle file append command
+if (preg_match('/\@append\s+(.+?)\s+```([\s\S]*?)```/', $message, $matches)) {
+    $filePath = trim($matches[1]);
+    $appendContent = trim($matches[2]);
+    
+    $fullPath = '/app/' . $filePath;
+    
+    if (file_exists($fullPath)) {
+        if (file_put_contents($fullPath, "\n" . $appendContent, FILE_APPEND) !== false) {
+            $message .= "\n\nContent appended to file: " . $filePath;
+        } else {
+            $message .= "\n\nFailed to append to file: " . $filePath;
+        }
+    } else {
+        $message .= "\n\nFile not found: " . $filePath;
+    }
+}
+
+// Handle delete file command
+if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
+    $filePath = trim($matches[1]);
+    $fullPath = '/app/' . $filePath;
+    
+    if (file_exists($fullPath)) {
+        if (unlink($fullPath)) {
+            $message .= "\n\nFile deleted successfully: " . $filePath;
+        } else {
+            $message .= "\n\nFailed to delete file: " . $filePath;
+        }
+    } else {
+        $message .= "\n\nFile not found: " . $filePath;
+    }
+}
+
+// Handle crew logs command
+if (preg_match('/\@logs(?:\s+(\d+))?(?:\s+(\w+))?/', $message, $matches)) {
+    $days = isset($matches[1]) ? (int)$matches[1] : 7;
+    $agentRole = isset($matches[2]) ? $matches[2] : null;
+    
+    $logDir = '/app/logs/crews';
+    if (!is_dir($logDir)) {
+        $message .= "\n\nNo crew logs found. Logs directory does not exist.";
+    } else {
+        $logFiles = glob($logDir . '/crew_conversations_*.jsonl');
+        if (empty($logFiles)) {
+            $message .= "\n\nNo crew conversation logs found.";
+        } else {
+            $recentLogs = [];
+            $currentDate = new DateTime();
+            
+            for ($i = 0; $i < $days; $i++) {
+                $date = clone $currentDate;
+                $date->sub(new DateInterval('P' . $i . 'D'));
+                $dateStr = $date->format('Y-m-d');
+                $logFile = $logDir . '/crew_conversations_' . $dateStr . '.jsonl';
+                
+                if (file_exists($logFile)) {
+                    $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                    foreach ($lines as $line) {
+                        $entry = json_decode($line, true);
+                        if ($entry && (!$agentRole || $entry['agent_role'] === $agentRole)) {
+                            $recentLogs[] = $entry;
+                        }
+                    }
+                }
+            }
+            
+            if (empty($recentLogs)) {
+                $message .= "\n\nNo crew logs found for the specified criteria.";
+            } else {
+                usort($recentLogs, function($a, $b) {
+                    return strcmp($b['timestamp'], $a['timestamp']);
+                });
+                
+                $message .= "\n\nRecent Crew Conversation Logs (" . count($recentLogs) . " entries):\n";
+                foreach (array_slice($recentLogs, 0, 20) as $log) {
+                    $message .= "\n[{$log['timestamp']}] {$log['agent_role']}: {$log['prompt']}\n";
+                    $message .= "Response: " . substr($log['response'], 0, 200) . (strlen($log['response']) > 200 ? '...' : '') . "\n";
+                }
+            }
+        }
+    }
+}
+
+// Handle agent optimization based on logs
+if (preg_match('/\@optimize_agents/', $message)) {
+    $logDir = '/app/logs/crews';
+    if (is_dir($logDir)) {
+        $logFiles = glob($logDir . '/crew_conversations_*.jsonl');
+        $agentStats = [];
+        
+        foreach ($logFiles as $logFile) {
+            $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                $entry = json_decode($line, true);
+                if ($entry) {
+                    $role = $entry['agent_role'];
+                    if (!isset($agentStats[$role])) {
+                        $agentStats[$role] = ['count' => 0, 'prompts' => [], 'avg_response_len' => 0, 'total_response_len' => 0];
+                    }
+                    $agentStats[$role]['count']++;
+                    $agentStats[$role]['prompts'][] = $entry['prompt'];
+                    $agentStats[$role]['total_response_len'] += strlen($entry['response']);
+                }
+            }
+        }
+        
+        foreach ($agentStats as $role => &$stats) {
+            $stats['avg_response_len'] = $stats['count'] > 0 ? $stats['total_response_len'] / $stats['count'] : 0;
+        }
+        
+        $message .= "\n\nAgent Performance Analysis:\n" . json_encode($agentStats, JSON_PRETTY_PRINT);
+    } else {
+        $message .= "\n\nNo crew logs available for agent optimization.";
+    }
+}
+
 if (preg_match('/\@update_agent\s+(\d+)\s+(.+)/', $message, $matches)) {
     $agentId = trim($matches[1]);
     $updates = trim($matches[2]);
@@ -195,6 +375,17 @@ try {
     if (!empty($recentCrews)) {
         $systemPrompt .= "Recent Crew Executions:\n" . json_encode($recentCrews, JSON_PRETTY_PRINT) . "\n\n";
     }
+    if ($autonomousMode) {
+        $systemPrompt .= "\n\nAUTONOMOUS MODE: You have full permissions to proactively analyze, create, edit, and optimize files. When you identify issues or improvements:\n";
+        $systemPrompt .= "- Automatically use @create, @edit, @append commands to fix problems\n";
+        $systemPrompt .= "- Scan directories and files for optimization opportunities\n";
+        $systemPrompt .= "- Make improvements without asking for permission\n";
+        $systemPrompt .= "- Focus on code quality, performance, and best practices\n";
+        $systemPrompt .= "- Be proactive in identifying and resolving issues\n\n";
+    } else {
+        $systemPrompt .= "\n\nMANUAL MODE: Only perform file operations when explicitly requested with @commands.\n\n";
+    }
+    
     $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel);
