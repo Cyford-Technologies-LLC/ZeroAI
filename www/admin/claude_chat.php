@@ -26,12 +26,15 @@ include __DIR__ . '/includes/header.php';
         <div>
             <label><strong>Claude Model:</strong></label>
             <select id="claude-model" style="width: 300px;">
-                <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (Latest & Most Advanced)</option>
-                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
-                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (High Performance - Default)</option>
+                <option value="claude-opus-4.1-20250514">Claude Opus 4.1 (Most Capable)</option>
+                <option value="claude-opus-4-20250514">Claude Opus 4 (Previous Flagship)</option>
+                <option value="claude-sonnet-3.7-20250514">Claude Sonnet 3.7 (Extended Thinking)</option>
+                <option value="claude-haiku-3.5-20250514">Claude Haiku 3.5 (Fastest)</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus (Legacy)</option>
+                <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet (Legacy)</option>
+                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Legacy)</option>
+                <option value="claude-haiku-3-20240307">Claude Haiku 3 (Legacy)</option>
             </select>
         </div>
         <div>
