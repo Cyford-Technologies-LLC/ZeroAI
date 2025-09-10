@@ -683,7 +683,7 @@ try {
         'cost' => round($cost, 6),
         'model' => $response['model'] ?? $selectedModel
     ]);
-    
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => 'Claude error: ' . $e->getMessage()]);
 }
