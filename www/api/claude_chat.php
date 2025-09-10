@@ -184,7 +184,8 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
             $error = error_get_last();
             $message .= "\n\n❌ Failed to create directory: " . $dir;
             $message .= "\n   Error: " . ($error['message'] ?? 'Permission denied');
-            return;
+        } else {
+            $message .= "\n\n📁 Created directory: " . str_replace('/app/', '', $dir);
         }
     }
     
