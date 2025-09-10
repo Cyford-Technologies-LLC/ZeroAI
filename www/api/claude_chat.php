@@ -50,13 +50,21 @@ if (!$apiKey) {
 }
 
 require_once __DIR__ . '/claude_integration.php';
+require_once __DIR__ . '/sqlite_manager.php';
 
 try {
     $claude = new ClaudeIntegration($apiKey);
     
-    $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
-    $systemPrompt .= "Role: AI Architect & Code Review Specialist\n";
-    $systemPrompt .= "Goal: Provide code review and optimization for ZeroAI\n\n";
+    // Get system prompt from SQLite
+    $sql = "SELECT prompt FROM system_prompts WHERE id = 1 ORDER BY created_at DESC LIMIT 1";
+    $result = SQLiteManager::executeSQL($sql);
+    
+    if (!empty($result[0]['data'])) {
+        $systemPrompt = $result[0]['data'][0]['prompt'];
+    } else {
+        // Default prompt if none saved
+        $systemPrompt = "You are Claude, integrated into ZeroAI.\n\nRole: AI Architect & Code Review Specialist\nGoal: Provide code review and optimization for ZeroAI";
+    }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
