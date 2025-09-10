@@ -162,6 +162,12 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
 
 // Handle file creation command - support both formats
 if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+    // First ensure claude directory exists
+    $claudeDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+    if (!is_dir($claudeDir)) {
+        shell_exec('mkdir -p ' . escapeshellarg($claudeDir));
+        shell_exec('chmod 777 ' . escapeshellarg($claudeDir));
+    }
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
     
@@ -180,20 +186,13 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $dir = dirname($fullPath);
     
     if (!is_dir($dir)) {
-        if (!mkdir($dir, 0777, true)) {
-            $message .= "\n\n❌ Failed to create directory: " . $dir;
-            return;
-        }
+        mkdir($dir, 0755, true);
     }
     
     $result = file_put_contents($fullPath, $fileContent);
-    if ($result !== false && file_exists($fullPath)) {
+    if ($result !== false) {
         $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
     } else {
-        $message .= "\n\n❌ File creation failed: " . $cleanPath;
-        $message .= "\n   file_put_contents returned: " . ($result !== false ? 'SUCCESS' : 'FAILED');
-        $message .= "\n   file_exists check: " . (file_exists($fullPath) ? 'YES' : 'NO');
-        $message .= "\n   Full path: " . $fullPath;
         $error = error_get_last();
         $perms = is_dir($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
         $owner = is_dir($dir) ? posix_getpwuid(fileowner($dir))['name'] : 'N/A';
