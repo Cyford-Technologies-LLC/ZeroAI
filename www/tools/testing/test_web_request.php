@@ -8,7 +8,7 @@ $data = [
 ];
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'http://localhost/api/claude_chat.php');
+curl_setopt($ch, CURLOPT_URL, 'http://localhost:333/api/claude_chat.php');
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
