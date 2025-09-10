@@ -94,5 +94,6 @@ RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
 
-# Stay as root to run startup script
+# Use entrypoint instead of direct CMD
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["/app/start_portal.sh"]

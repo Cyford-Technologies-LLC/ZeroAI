@@ -20,8 +20,7 @@ if ! getent passwd "$EXEC_UID" >/dev/null; then
     useradd --shell /bin/bash -u "$EXEC_UID" -g "$EXEC_GID" -o -c "" -m appuser
 fi
 
-# Fix permissions on bind-mounted volumes
-chown -R "$EXEC_UID:$EXEC_GID" /app
+# Skip chown on mounted volumes - they keep host ownership
 
 # The gosu command will execute the application with the specified user context.
 exec gosu "$EXEC_UID:$EXEC_GID" "$@"
