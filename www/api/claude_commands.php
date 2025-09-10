@@ -153,6 +153,29 @@ function processClaudeCommands(&$message) {
             $message .= "\n\nAgent Performance Analysis:\n" . json_encode($agentStats, JSON_PRETTY_PRINT);
         }
     }
+
+    // @docker command
+    if (preg_match('/\@docker\s+(.+)/', $message, $matches)) {
+        $dockerCmd = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @docker: $dockerCmd\n", FILE_APPEND);
+        $output = shell_exec("docker $dockerCmd 2>&1");
+        $message .= "\n\n🐳 Docker: $dockerCmd\n" . ($output ?: "Command executed");
+    }
+
+    // @compose command
+    if (preg_match('/\@compose\s+(.+)/', $message, $matches)) {
+        $composeCmd = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @compose: $composeCmd\n", FILE_APPEND);
+        $output = shell_exec("cd /app && docker-compose $composeCmd 2>&1");
+        $message .= "\n\n🐙 Compose: $composeCmd\n" . ($output ?: "Command executed");
+    }
+
+    // @ps command
+    if (preg_match('/\@ps/', $message)) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @ps\n", FILE_APPEND);
+        $output = shell_exec("docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>&1");
+        $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
+    }
 }
 
 function processClaudeResponseCommands($claudeResponse, &$responseMessage) {
