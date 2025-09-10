@@ -106,28 +106,11 @@ try {
             $systemPrompt .= "- @optimize_agents - Analyze agent performance\n";
         }
     } else {
-        // Default prompt if none saved
-        $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
-        $systemPrompt .= "Role: AI Architect & Code Review Specialist\n";
-        $systemPrompt .= "Goal: Provide code review and optimization for ZeroAI\n\n";
-        $systemPrompt .= "IMPORTANT: You MUST use these exact commands in your responses to perform file operations:\n";
-        $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
-        $systemPrompt .= "- @list path/to/directory - List directory contents\n";
-        $systemPrompt .= "- @create path/to/file.py ```content here``` - Create file with content\n";
-        $systemPrompt .= "- @edit path/to/file.py ```new content``` - Replace file content\n";
-        $systemPrompt .= "- @read path/to/file.py - Read file contents (alias for @file)\n";
-        $systemPrompt .= "- @search pattern - Find files matching pattern\n";
-        $systemPrompt .= "- @agents - List all agents and their status\n";
-        $systemPrompt .= "- @update_agent 5 role=\"New Role\" goal=\"New Goal\" - Update agent config\n";
-        $systemPrompt .= "- @crews - Show running and recent crew executions\n";
-        $systemPrompt .= "- @analyze_crew task_id - Analyze specific crew execution\n";
-        $systemPrompt .= "- @append path/to/file.py ```content``` - Add content to file\n";
-        $systemPrompt .= "- @delete path/to/file.py - Delete file\n";
-        $systemPrompt .= "- @logs [days] [agent_role] - Show crew conversation logs\n";
-        $systemPrompt .= "- @optimize_agents - Analyze and suggest agent improvements\n";
-        if ($autonomousMode) {
-            $systemPrompt .= "\n\nAUTONOMOUS MODE: You have full permissions to proactively analyze, create, edit, and optimize files.\n";
-        }
+        // Initialize complete system prompt
+        require_once __DIR__ . '/init_claude_prompt.php';
+        // Re-fetch after initialization
+        $result = SQLiteManager::executeSQL($sql);
+        $systemPrompt = $result[0]['data'][0]['prompt'];
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);

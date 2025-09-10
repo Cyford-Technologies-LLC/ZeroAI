@@ -13,6 +13,7 @@ include __DIR__ . '/includes/header.php';
     <div style="margin-bottom: 15px;">
         <button onclick="togglePromptEditor()" class="btn-warning" style="margin-bottom: 10px;">✏️ Edit System Prompt</button>
         <div id="prompt-editor" style="display: none;">
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">📝 <strong>Note:</strong> Commands (@file, @create, @edit, etc.) are automatically added to Claude's prompt even if not included here.</p>
             <textarea id="system-prompt" rows="8" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder="Loading system prompt..."></textarea>
             <div style="margin-top: 10px;">
                 <button onclick="saveSystemPrompt()" class="btn-success">Save Prompt</button>
