@@ -180,7 +180,12 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $dir = dirname($fullPath);
     
     if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+        if (!mkdir($dir, 0755, true)) {
+            $error = error_get_last();
+            $message .= "\n\n❌ Failed to create directory: " . $dir;
+            $message .= "\n   Error: " . ($error['message'] ?? 'Permission denied');
+            return;
+        }
     }
     
     $result = file_put_contents($fullPath, $fileContent);
