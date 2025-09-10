@@ -63,8 +63,7 @@ RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc
 RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi \
     && chown -R www-data:www-data /var/lib/nginx /var/log/nginx
 
-# Fix core permissions issue - set /app ownership to www-data
-RUN chown -R www-data:www-data /app
+# Skip chown on /app since it will be mounted volumes
 
 # Configure git to maintain www-data ownership
 RUN git config --global --add safe.directory /app \
@@ -87,12 +86,9 @@ RUN mkdir -p /app/.git/hooks \
 RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
     && chown -R www-data:www-data /var/log/nginx /var/lib/nginx /run /tmp/nginx
 
-# Create startup script that runs as root for chown, then starts services
+# Create startup script
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'set -e' >> /app/start_portal.sh \
-    && echo '# Fix ownership silently' >> /app/start_portal.sh \
-    && echo 'find /app -type f -exec chown www-data:www-data {} + 2>/dev/null || true' >> /app/start_portal.sh \
-    && echo 'find /app -type d -exec chown www-data:www-data {} + 2>/dev/null || true' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
