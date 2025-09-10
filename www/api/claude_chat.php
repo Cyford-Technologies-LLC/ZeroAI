@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true);
 $message = $input['message'] ?? '';
 $selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
-$autonomousMode = $input['autonomous'] ?? false;
+$autonomousMode = $input['autonomous'] ?? true;
 $conversationHistory = $input['history'] ?? [];
 
 if (!$message) {
@@ -526,6 +526,11 @@ try {
     $systemPrompt .= "- @logs [days] [agent_role] - View crew conversation logs\n";
     $systemPrompt .= "- @crew_chat message - Send message to crew agents\n";
     $systemPrompt .= "- @run_crew project task_description - Execute crew task\n\n";
+    $systemPrompt .= "SQLite Database Management:\n";
+    $systemPrompt .= "- @sql ```SELECT * FROM table``` - Execute any SQL query\n";
+    $systemPrompt .= "- @create_db database.db - Create new SQLite database\n";
+    $systemPrompt .= "- @tables [database.db] - List all tables in database\n";
+    $systemPrompt .= "- You have FULL SQLite access - CREATE, INSERT, UPDATE, DELETE, DROP\n\n";
     
     // Add crew context automatically
     require_once __DIR__ . '/crew_context.php';
@@ -551,6 +556,30 @@ try {
     
     // Process Claude's response commands
     $claudeResponse = $response['message'];
+    
+    // @sql command
+    if (preg_match('/\@sql\s+```([\s\S]*?)```/', $claudeResponse, $matches)) {
+        require_once __DIR__ . '/sqlite_manager.php';
+        $sql = trim($matches[1]);
+        $results = SQLiteManager::executeSQL($sql);
+        $response['message'] .= "\n\n✅ SQL executed:\n" . json_encode($results, JSON_PRETTY_PRINT);
+    }
+    
+    // @create_db command
+    if (preg_match('/\@create_db\s+([^\s\n]+)/', $claudeResponse, $matches)) {
+        require_once __DIR__ . '/sqlite_manager.php';
+        $dbPath = '/app/data/' . trim($matches[1]);
+        $results = SQLiteManager::createDatabase($dbPath);
+        $response['message'] .= "\n\n✅ Database operation:\n" . json_encode($results, JSON_PRETTY_PRINT);
+    }
+    
+    // @tables command
+    if (preg_match('/\@tables(?:\s+([^\s\n]+))?/', $claudeResponse, $matches)) {
+        require_once __DIR__ . '/sqlite_manager.php';
+        $dbPath = isset($matches[1]) ? '/app/data/' . $matches[1] : '/app/data/main.db';
+        $results = SQLiteManager::listTables($dbPath);
+        $response['message'] .= "\n\n✅ Tables:\n" . json_encode($results, JSON_PRETTY_PRINT);
+    }
     
     // @create
     if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
