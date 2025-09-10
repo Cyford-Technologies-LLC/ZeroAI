@@ -253,6 +253,7 @@ if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 
 // Handle delete file command
 if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
+    error_log("DELETE COMMAND MATCHED: " . print_r($matches, true));
     $filePath = trim($matches[1]);
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
