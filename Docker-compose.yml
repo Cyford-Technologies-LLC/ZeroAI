@@ -2,7 +2,7 @@ services:
   zeroai:
       build: .
       container_name: zeroai_api-prod
-#      privileged: true
+      privileged: true
       ports:
         - "0.0.0.0:3939:3939"
         - "0.0.0.0:333:333"
@@ -14,7 +14,7 @@ services:
         - ./examples:/app/examples
         - ./knowledge:/app/knowledge
         - ./logs:/app/logs
-        # ./www mounted via main app mount
+        - ./www:/app/www
         - zeroai_data:/app/data
         - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
@@ -25,7 +25,6 @@ services:
         - LOCAL_GID=${LOCAL_GID}
       env_file:
         - .env
-      # user: "www-data"  # Let entrypoint handle user creation
       depends_on:
         - ollama
       restart: unless-stopped

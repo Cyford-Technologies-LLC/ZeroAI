@@ -90,7 +90,9 @@ RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
 # Create startup script that runs as root for chown, then starts services
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'set -e' >> /app/start_portal.sh \
-    && echo 'chown -R www-data:www-data /app 2>/dev/null || true' >> /app/start_portal.sh \
+    && echo '# Fix ownership silently' >> /app/start_portal.sh \
+    && echo 'find /app -type f -exec chown www-data:www-data {} + 2>/dev/null || true' >> /app/start_portal.sh \
+    && echo 'find /app -type d -exec chown www-data:www-data {} + 2>/dev/null || true' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
