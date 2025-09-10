@@ -12,7 +12,7 @@ services:
         - ./run:/app/run
         - ./config:/app/config
         - ./examples:/app/examples
-        - ./knowledge:/app/knowledge
+        - /etc/cyford/zeroai/knowledge:/app/knowledge
         - ./logs:/app/logs
         - ./www:/app/www
         - zeroai_data:/app/data
@@ -40,7 +40,7 @@ services:
       - ./run:/app/run
       - ./config:/app/config
       - ./examples:/app/examples
-      - ./knowledge:/app/knowledge
+      - /etc/cyford/zeroai/knowledge:/app/knowledge
       - ./logs:/app/logs
       - /etc/cyford/zeroai/.env:/app/.env:ro
     environment:
