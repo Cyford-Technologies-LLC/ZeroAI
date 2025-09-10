@@ -115,9 +115,17 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Process Claude's response commands
-    $claudeResponse = $response['message'];
-    processClaudeResponseCommands($claudeResponse, $response['message']);
+    // Process Claude's response commands in autonomous mode
+    if ($autonomousMode) {
+        $originalResponse = $response['message'];
+        processFileCommands($response['message']);
+        processClaudeCommands($response['message']);
+        
+        // If commands were processed, log it
+        if ($response['message'] !== $originalResponse) {
+            @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " AUTONOMOUS: Commands executed from Claude response\n", FILE_APPEND);
+        }
+    }
     
     echo json_encode([
         'success' => true,
