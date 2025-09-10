@@ -182,7 +182,13 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     if ($result !== false) {
         $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
     } else {
+        $error = error_get_last();
+        $perms = is_dir($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
+        $owner = is_dir($dir) ? posix_getpwuid(fileowner($dir))['name'] : 'N/A';
         $message .= "\n\n❌ Failed to create: " . $cleanPath;
+        $message .= "\n   Directory: " . $dir . " (owner: " . $owner . ", perms: " . $perms . ")";
+        $message .= "\n   PHP runs as: " . posix_getpwuid(posix_geteuid())['name'];
+        $message .= "\n   Error: " . ($error['message'] ?? 'Unknown error');
     }
 }
 
@@ -203,7 +209,13 @@ if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $match
         if ($result !== false) {
             $message .= "\n\nFile updated: " . $filePath . " (" . $result . " bytes)";
         } else {
+            $error = error_get_last();
+            $perms = file_exists($fullPath) ? substr(sprintf('%o', fileperms($fullPath)), -4) : 'N/A';
+            $owner = file_exists($fullPath) ? posix_getpwuid(fileowner($fullPath))['name'] : 'N/A';
             $message .= "\n\nFailed to update: " . $filePath;
+            $message .= "\n   File owner: " . $owner . ", perms: " . $perms;
+            $message .= "\n   PHP runs as: " . posix_getpwuid(posix_geteuid())['name'];
+            $message .= "\n   Error: " . ($error['message'] ?? 'Unknown error');
         }
     } else {
         $message .= "\n\nFile not found: " . $filePath;
@@ -226,7 +238,13 @@ if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
         if (file_put_contents($fullPath, "\n" . $appendContent, FILE_APPEND) !== false) {
             $message .= "\n\nContent appended to file: " . $filePath;
         } else {
+            $error = error_get_last();
+            $perms = file_exists($fullPath) ? substr(sprintf('%o', fileperms($fullPath)), -4) : 'N/A';
+            $owner = file_exists($fullPath) ? posix_getpwuid(fileowner($fullPath))['name'] : 'N/A';
             $message .= "\n\nFailed to append to file: " . $filePath;
+            $message .= "\n   File owner: " . $owner . ", perms: " . $perms;
+            $message .= "\n   PHP runs as: " . posix_getpwuid(posix_geteuid())['name'];
+            $message .= "\n   Error: " . ($error['message'] ?? 'Unknown error');
         }
     } else {
         $message .= "\n\nFile not found: " . $filePath;
