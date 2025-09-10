@@ -1,9 +1,14 @@
 <?php
+// Suppress all output until we're ready to send JSON
+ob_start();
+
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // Don't display errors in output
 ini_set('log_errors', 1);
 ini_set('error_log', '/var/log/nginx/error.log');
 
+// Clean any previous output and set JSON header
+ob_clean();
 header('Content-Type: application/json');
 
 // Load environment variables
@@ -284,17 +289,21 @@ if (preg_match('/\@run_crew\s+(\w+)\s+(.+)/', $message, $matches)) {
     $project = trim($matches[1]);
     $task = trim($matches[2]);
     
-    $escapedTask = escapeshellarg($task);
-    $escapedProject = escapeshellarg($project);
-    
-    $pythonCmd = 'export HOME=/tmp && cd /app && timeout 60 /app/venv/bin/python -u run/internal/run_dev_ops.py ' . $escapedTask . ' --project=' . $escapedProject . ' 2>&1';
-    
-    $output = shell_exec($pythonCmd);
-    
-    if ($output) {
-        $message .= "\n\n🤖 Crew Execution Result:\n" . $output;
-    } else {
-        $message .= "\n\n❌ Crew execution failed or timed out.";
+    try {
+        $escapedTask = escapeshellarg($task);
+        $escapedProject = escapeshellarg($project);
+        
+        $pythonCmd = 'export HOME=/tmp && cd /app && timeout 60 /app/venv/bin/python -u run/internal/run_dev_ops.py ' . $escapedTask . ' --project=' . $escapedProject . ' 2>&1';
+        
+        $output = shell_exec($pythonCmd);
+        
+        if ($output && !empty(trim($output))) {
+            $message .= "\n\n🤖 Crew Execution Result:\n" . trim($output);
+        } else {
+            $message .= "\n\n❌ Crew execution failed or timed out. No output received.";
+        }
+    } catch (Exception $e) {
+        $message .= "\n\n❌ Error executing crew: " . $e->getMessage();
     }
 }
 
@@ -303,17 +312,21 @@ if (preg_match('/\@crew_chat\s+(.+)/', $message, $matches)) {
     $crewMessage = trim($matches[1]);
     $project = 'zeroai';
     
-    $escapedMessage = escapeshellarg($crewMessage);
-    $escapedProject = escapeshellarg($project);
-    
-    $pythonCmd = 'export HOME=/tmp && cd /app && timeout 30 /app/venv/bin/python -u run/internal/run_dev_ops.py ' . $escapedMessage . ' --project=' . $escapedProject . ' 2>&1';
-    
-    $output = shell_exec($pythonCmd);
-    
-    if ($output) {
-        $message .= "\n\n💬 Crew Response:\n" . $output;
-    } else {
-        $message .= "\n\n❌ Crew did not respond or timed out.";
+    try {
+        $escapedMessage = escapeshellarg($crewMessage);
+        $escapedProject = escapeshellarg($project);
+        
+        $pythonCmd = 'export HOME=/tmp && cd /app && timeout 30 /app/venv/bin/python -u run/internal/run_dev_ops.py ' . $escapedMessage . ' --project=' . $escapedProject . ' 2>&1';
+        
+        $output = shell_exec($pythonCmd);
+        
+        if ($output && !empty(trim($output))) {
+            $message .= "\n\n💬 Crew Response:\n" . trim($output);
+        } else {
+            $message .= "\n\n❌ Crew did not respond or timed out.";
+        }
+    } catch (Exception $e) {
+        $message .= "\n\n❌ Error in crew chat: " . $e->getMessage();
     }
 }
 
@@ -457,10 +470,9 @@ try {
         }
     }
     
-    $systemPrompt = "You are Claude, integrated into the ZeroAI system.\n\n";
-    $systemPrompt .= "Your Role: " . ($claudeConfig['role'] ?? 'Senior AI Architect & Code Review Specialist') . "\n";
-    $systemPrompt .= "Your Goal: " . ($claudeConfig['goal'] ?? 'Provide expert code review, architectural guidance, and strategic optimization recommendations to enhance ZeroAI system performance and development quality.') . "\n";
-    $systemPrompt .= "Your Background: " . ($claudeConfig['backstory'] ?? 'I am Claude, an advanced AI assistant created by Anthropic. I specialize in software architecture, code optimization, and strategic technical guidance.') . "\n\n";
+    $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
+    $systemPrompt .= "Role: AI Architect & Code Review Specialist\n";
+    $systemPrompt .= "Goal: Provide code review and optimization for ZeroAI\n\n";
     $systemPrompt .= "ZeroAI Context:\n";
     $systemPrompt .= "- ZeroAI is a zero-cost AI workforce platform that runs entirely on user's hardware\n";
     $systemPrompt .= "- It uses local Ollama models and CrewAI for agent orchestration\n";
@@ -490,13 +502,7 @@ try {
     $runningCrews = $crewContext->getRunningCrews();
     $recentCrews = $crewContext->getRecentCrewExecutions(3);
     
-    if (!empty($runningCrews)) {
-        $systemPrompt .= "Currently Running Crews:\n" . json_encode($runningCrews, JSON_PRETTY_PRINT) . "\n\n";
-    }
-    
-    if (!empty($recentCrews)) {
-        $systemPrompt .= "Recent Crew Executions:\n" . json_encode($recentCrews, JSON_PRETTY_PRINT) . "\n\n";
-    }
+    // Skip crew context to reduce token usage
     if ($autonomousMode) {
         $systemPrompt .= "\n\nAUTONOMOUS MODE: You have full permissions to proactively analyze, create, edit, and optimize files. When you identify issues or improvements:\n";
         $systemPrompt .= "- Automatically use @create, @edit, @append commands to fix problems\n";
