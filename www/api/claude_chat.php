@@ -180,27 +180,17 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $dir = dirname($fullPath);
     
     if (!is_dir($dir)) {
-        $message .= "\n\n🔍 Attempting to create directory: " . str_replace('/app/', '', $dir);
-        if (mkdir($dir, 0777, true)) {
-            $message .= "\n✅ Directory created successfully";
-        } else {
-            $error = error_get_last();
-            $message .= "\n❌ Failed to create directory";
-            $message .= "\n   Error: " . ($error['message'] ?? 'Unknown error');
-            $message .= "\n   Parent exists: " . (is_dir(dirname($dir)) ? 'Yes' : 'No');
-            $message .= "\n   Parent writable: " . (is_writable(dirname($dir)) ? 'Yes' : 'No');
-        }
+        mkdir($dir, 0755, true);
     }
     
-    $message .= "\n\n🔍 Attempting to write file: " . $fullPath;
-    $message .= "\n   Directory writable: " . (is_writable($dir) ? 'Yes' : 'No');
-    $message .= "\n   PHP user: " . posix_getpwuid(posix_geteuid())['name'];
-    
     $result = file_put_contents($fullPath, $fileContent);
-    if ($result !== false) {
+    if ($result !== false && file_exists($fullPath)) {
         $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
-        $message .= "\n   File exists: " . (file_exists($fullPath) ? 'Yes' : 'No');
     } else {
+        $message .= "\n\n❌ File creation failed: " . $cleanPath;
+        $message .= "\n   file_put_contents returned: " . ($result !== false ? 'SUCCESS' : 'FAILED');
+        $message .= "\n   file_exists check: " . (file_exists($fullPath) ? 'YES' : 'NO');
+        $message .= "\n   Full path: " . $fullPath;
         $error = error_get_last();
         $perms = is_dir($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
         $owner = is_dir($dir) ? posix_getpwuid(fileowner($dir))['name'] : 'N/A';
