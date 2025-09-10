@@ -158,7 +158,7 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
 // Handle file creation command - support both formats
 if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $fileContent = isset($matches[2]) ? trim($matches[2]) : "# File created by Claude\nprint('Hello from Claude')\n";
+    $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
     
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
@@ -195,7 +195,7 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 // Handle file editing command - support both formats
 if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $newContent = isset($matches[2]) ? trim($matches[2]) : "# File edited by Claude\nprint('Updated by Claude')\n";
+    $newContent = isset($matches[2]) ? trim($matches[2]) : "";
     
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
@@ -225,7 +225,7 @@ if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $match
 // Handle file append command - support both formats
 if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
     $filePath = trim($matches[1]);
-    $appendContent = isset($matches[2]) ? trim($matches[2]) : "\n# Appended by Claude\nprint('Added by Claude')\n";
+    $appendContent = isset($matches[2]) ? trim($matches[2]) : "";
     
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
@@ -419,11 +419,23 @@ try {
     $systemPrompt .= "ZeroAI Context:\n";
     $systemPrompt .= "- ZeroAI is a zero-cost AI workforce platform that runs entirely on user's hardware\n";
     $systemPrompt .= "- It uses local Ollama models and CrewAI for agent orchestration\n";
-    $systemPrompt .= "- You can access project files using @file, @list, @search commands\n";
-    $systemPrompt .= "- You can monitor crew executions using @crews and @analyze_crew commands\n";
     $systemPrompt .= "- You help with code review, system optimization, and development guidance\n";
     $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n";
     $systemPrompt .= "- You have access to crew execution history and can analyze running tasks\n\n";
+    $systemPrompt .= "File Operations (use these commands in your responses):\n";
+    $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
+    $systemPrompt .= "- @list path/to/directory - List directory contents\n";
+    $systemPrompt .= "- @search pattern - Find files matching pattern\n";
+    $systemPrompt .= "- @create path/to/file.py content - Create file with content\n";
+    $systemPrompt .= "- @edit path/to/file.py new_content - Replace file content\n";
+    $systemPrompt .= "- @append path/to/file.py additional_content - Add to end of file\n";
+    $systemPrompt .= "- @delete path/to/file.py - Delete file\n";
+    $systemPrompt .= "- Use code blocks with @create/@edit: @create file.py ```code here```\n\n";
+    $systemPrompt .= "Crew Management:\n";
+    $systemPrompt .= "- @crews - Show running and recent crew executions\n";
+    $systemPrompt .= "- @analyze_crew task_id - Get detailed crew execution info\n";
+    $systemPrompt .= "- @agents - List all agents and their status\n";
+    $systemPrompt .= "- @logs [days] [agent_role] - View crew conversation logs\n\n";
     
     // Add crew context automatically
     require_once __DIR__ . '/crew_context.php';
