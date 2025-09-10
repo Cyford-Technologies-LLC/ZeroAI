@@ -166,7 +166,7 @@ function processClaudeCommands(&$message) {
     if (preg_match('/\@compose\s+(.+)/', $message, $matches)) {
         $composeCmd = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @compose: $composeCmd\n", FILE_APPEND);
-        $output = shell_exec("cd /app && docker-compose $composeCmd 2>&1");
+        $output = shell_exec("cd /app && docker compose $composeCmd 2>&1");
         $message .= "\n\n🐙 Compose: $composeCmd\n" . ($output ?: "Command executed");
     }
 
