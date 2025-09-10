@@ -104,7 +104,17 @@ async function sendMessage() {
             })
         });
         
-        const result = await response.json();
+        const text = await response.text();
+        if (!text.trim()) {
+            throw new Error('Empty response from server');
+        }
+        
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+        }
         
         if (result.success) {
             addMessageToChat('Claude', result.response, 'claude');
