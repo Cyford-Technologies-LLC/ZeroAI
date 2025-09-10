@@ -256,6 +256,28 @@ if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     }
 }
 
+// Handle mkdir command
+if (preg_match('/\@mkdir\s+(.+)/', $message, $matches)) {
+    $dirPath = trim($matches[1]);
+    $cleanPath = ltrim($dirPath, '/');
+    if (strpos($cleanPath, 'app/') === 0) {
+        $cleanPath = substr($cleanPath, 4);
+    }
+    $fullPath = '/app/' . $cleanPath;
+    
+    if (!is_dir($fullPath)) {
+        if (mkdir($fullPath, 0755, true)) {
+            $message .= "\n\n✅ Directory created: " . $dirPath;
+        } else {
+            $error = error_get_last();
+            $message .= "\n\n❌ Failed to create directory: " . $dirPath;
+            $message .= "\n   Error: " . ($error['message'] ?? 'Permission denied');
+        }
+    } else {
+        $message .= "\n\n⚠️ Directory already exists: " . $dirPath;
+    }
+}
+
 // Handle delete file command
 if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
 
@@ -478,7 +500,8 @@ try {
     $systemPrompt .= "- It uses local Ollama models and CrewAI for agent orchestration\n";
     $systemPrompt .= "- You help with code review, system optimization, and development guidance\n";
     $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n";
-    $systemPrompt .= "- You have access to crew execution history and can analyze running tasks\n\n";
+    $systemPrompt .= "- Your saved data/knowledge is stored in: knowledge/internal_crew/agent_learning/self/claude\n";
+    $systemPrompt .= "- You can save/load your own files there for persistence across conversations\n\n";
     $systemPrompt .= "File Operations (use these commands in your responses):\n";
     $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
     $systemPrompt .= "- @list path/to/directory - List directory contents\n";
@@ -487,6 +510,7 @@ try {
     $systemPrompt .= "- @edit path/to/file.py new_content - Replace file content\n";
     $systemPrompt .= "- @append path/to/file.py additional_content - Add to end of file\n";
     $systemPrompt .= "- @delete path/to/file.py - Delete file\n";
+    $systemPrompt .= "- @mkdir path/to/directory - Create directory\n";
     $systemPrompt .= "- Use code blocks with @create/@edit: @create file.py ```code here```\n\n";
     $systemPrompt .= "Crew Management:\n";
     $systemPrompt .= "- @crews - Show running and recent crew executions\n";
@@ -518,10 +542,27 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
+    // Log token usage to database
+    $inputTokens = $response['usage']['input_tokens'] ?? 0;
+    $outputTokens = $response['usage']['output_tokens'] ?? 0;
+    $totalTokens = $inputTokens + $outputTokens;
+    
+    // Calculate cost (you'll need to add pricing logic)
+    $cost = 0.0;
+    if (strpos($selectedModel, 'claude') !== false) {
+        // Claude pricing: $3/1M input, $15/1M output tokens for Sonnet
+        $cost = ($inputTokens / 1000000 * 3) + ($outputTokens / 1000000 * 15);
+    }
+    
+    // Log to database via shell command (simple approach)
+    $logCmd = "cd /app && /app/venv/bin/python -c \"from src.database.token_tracking import tracker; tracker.log_usage('claude', 'claude-chat', {$inputTokens}, {$outputTokens}, '{$selectedModel}', {$cost})\" 2>/dev/null";
+    shell_exec($logCmd);
+    
     echo json_encode([
         'success' => true,
         'response' => $response['message'],
-        'tokens' => ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0),
+        'tokens' => $totalTokens,
+        'cost' => round($cost, 6),
         'model' => $response['model'] ?? $selectedModel
     ]);
     
