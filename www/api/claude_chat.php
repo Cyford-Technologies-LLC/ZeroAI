@@ -64,12 +64,8 @@ if ($autonomousMode) {
     }
 }
 
-// Initialize command logging
-require_once __DIR__ . '/claude_debug.php';
-
 // Process file commands
 if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
-    logClaudeCommand('@file', 'Processing file read: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $cleanPath = ltrim($filePath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
@@ -166,7 +162,6 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
 
 // Handle file creation command - support both formats
 if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
-    logClaudeCommand('@create', 'Processing file creation: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
     
@@ -199,7 +194,6 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 
 // Handle file editing command - support both formats
 if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
-    logClaudeCommand('@edit', 'Processing file edit: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $newContent = isset($matches[2]) ? trim($matches[2]) : "";
     
@@ -230,7 +224,6 @@ if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $match
 
 // Handle file append command - support both formats
 if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
-    logClaudeCommand('@append', 'Processing file append: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $appendContent = isset($matches[2]) ? trim($matches[2]) : "";
     
@@ -260,7 +253,6 @@ if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 
 // Handle mkdir command
 if (preg_match('/\@mkdir\s+(.+)/', $message, $matches)) {
-    logClaudeCommand('@mkdir', 'Processing directory creation: ' . $matches[1]);
     $dirPath = trim($matches[1]);
     $cleanPath = ltrim($dirPath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
@@ -289,7 +281,6 @@ if (preg_match('/\@mkdir\s+(.+)/', $message, $matches)) {
 
 // Handle delete file command
 if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
-    logClaudeCommand('@delete', 'Processing file deletion: ' . $matches[1]);
 
     $filePath = trim($matches[1]);
     // Clean up path - remove leading /app/ if present to avoid double path
