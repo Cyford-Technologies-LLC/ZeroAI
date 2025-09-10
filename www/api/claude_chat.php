@@ -549,34 +549,76 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Process @create commands in Claude's response
+    // Process Claude's response commands
     $claudeResponse = $response['message'];
+    
+    // @create
     if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
-        @file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " @create FOUND in Claude response\n", FILE_APPEND);
-        
         $filePath = trim($matches[1]);
         $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
-        
         $cleanPath = ltrim($filePath, '/');
-        if (strpos($cleanPath, 'app/') === 0) {
-            $cleanPath = substr($cleanPath, 4);
-        }
-        
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
         $fullPath = '/app/' . $cleanPath;
         $dir = dirname($fullPath);
-        
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        
+        if (!is_dir($dir)) mkdir($dir, 0777, true);
         $result = file_put_contents($fullPath, $fileContent);
         if ($result !== false) {
             @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @create SUCCESS: $cleanPath ($result bytes)\n", FILE_APPEND);
             $response['message'] .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
         } else {
-            $error = error_get_last();
             @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @create FAILED: $cleanPath\n", FILE_APPEND);
-            $response['message'] .= "\n\n❌ Failed to create: " . $cleanPath;
+        }
+    }
+    
+    // @edit
+    if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
+        $filePath = trim($matches[1]);
+        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
+        $fullPath = '/app/' . $cleanPath;
+        if (file_exists($fullPath)) {
+            $result = file_put_contents($fullPath, $fileContent);
+            if ($result !== false) {
+                @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @edit SUCCESS: $cleanPath ($result bytes)\n", FILE_APPEND);
+                $response['message'] .= "\n\n✅ File edited: " . $cleanPath . " (" . $result . " bytes)";
+            } else {
+                @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @edit FAILED: $cleanPath\n", FILE_APPEND);
+            }
+        }
+    }
+    
+    // @append
+    if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
+        $filePath = trim($matches[1]);
+        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
+        $fullPath = '/app/' . $cleanPath;
+        if (file_exists($fullPath)) {
+            $result = file_put_contents($fullPath, "\n" . $fileContent, FILE_APPEND);
+            if ($result !== false) {
+                @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @append SUCCESS: $cleanPath ($result bytes)\n", FILE_APPEND);
+                $response['message'] .= "\n\n✅ Content appended: " . $cleanPath;
+            } else {
+                @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @append FAILED: $cleanPath\n", FILE_APPEND);
+            }
+        }
+    }
+    
+    // @delete
+    if (preg_match('/\@delete\s+([^\s\n]+)/', $claudeResponse, $matches)) {
+        $filePath = trim($matches[1]);
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
+        $fullPath = '/app/' . $cleanPath;
+        if (file_exists($fullPath)) {
+            if (unlink($fullPath)) {
+                @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @delete SUCCESS: $cleanPath\n", FILE_APPEND);
+                $response['message'] .= "\n\n✅ File deleted: " . $cleanPath;
+            } else {
+                @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @delete FAILED: $cleanPath\n", FILE_APPEND);
+            }
         }
     }
     
