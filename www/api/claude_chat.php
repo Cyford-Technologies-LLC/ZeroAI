@@ -498,7 +498,12 @@ try {
         }
     }
     
-    $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
+    // Check for custom system prompt
+    $customPromptFile = '/app/data/custom_system_prompt.txt';
+    if (file_exists($customPromptFile)) {
+        $systemPrompt = file_get_contents($customPromptFile);
+    } else {
+        $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
     $systemPrompt .= "Role: AI Architect & Code Review Specialist\n";
     $systemPrompt .= "Goal: Provide code review and optimization for ZeroAI\n\n";
     $systemPrompt .= "ZeroAI Context:\n";

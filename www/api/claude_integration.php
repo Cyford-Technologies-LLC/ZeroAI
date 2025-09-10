@@ -62,7 +62,24 @@ class ClaudeIntegration {
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
+        
+        // Retry on timeout
+        if ($curlError && strpos($curlError, 'timeout') !== false) {
+            sleep(2);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $this->baseUrl);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 180);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 45);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+        }
         
         if ($httpCode !== 200) {
             throw new Exception('Claude API error: ' . $response);

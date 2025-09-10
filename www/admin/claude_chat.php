@@ -10,6 +10,18 @@ include __DIR__ . '/includes/header.php';
     <h3>Direct Claude AI Chat</h3>
     <p>Chat directly with Claude using your configured personality and ZeroAI context. Use @file, @list, @search commands to share project files.</p>
     
+    <div style="margin-bottom: 15px;">
+        <button onclick="togglePromptEditor()" class="btn-warning" style="margin-bottom: 10px;">✏️ Edit System Prompt</button>
+        <div id="prompt-editor" style="display: none;">
+            <textarea id="system-prompt" rows="8" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder="Loading system prompt..."></textarea>
+            <div style="margin-top: 10px;">
+                <button onclick="saveSystemPrompt()" class="btn-success">Save Prompt</button>
+                <button onclick="resetSystemPrompt()" class="btn-danger">Reset to Default</button>
+                <button onclick="togglePromptEditor()" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
     <div style="display: flex; gap: 20px; margin-bottom: 10px; align-items: center;">
         <div>
             <label><strong>Claude Model:</strong></label>
@@ -247,6 +259,65 @@ function clearChatHistory() {
 
 // Load chat history on page load
 loadChatHistory();
+
+// System prompt editing functions
+let currentSystemPrompt = '';
+
+function togglePromptEditor() {
+    const editor = document.getElementById('prompt-editor');
+    if (editor.style.display === 'none') {
+        editor.style.display = 'block';
+        loadSystemPrompt();
+    } else {
+        editor.style.display = 'none';
+    }
+}
+
+async function loadSystemPrompt() {
+    try {
+        const response = await fetch('/api/get_system_prompt.php');
+        const result = await response.json();
+        if (result.success) {
+            currentSystemPrompt = result.prompt;
+            document.getElementById('system-prompt').value = result.prompt;
+        }
+    } catch (error) {
+        console.error('Failed to load system prompt:', error);
+    }
+}
+
+async function saveSystemPrompt() {
+    const prompt = document.getElementById('system-prompt').value;
+    try {
+        const response = await fetch('/api/save_system_prompt.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt: prompt})
+        });
+        const result = await response.json();
+        if (result.success) {
+            addMessageToChat('System', '✅ System prompt updated successfully', 'claude');
+            togglePromptEditor();
+        } else {
+            addMessageToChat('System', '❌ Failed to save prompt: ' + result.error, 'error');
+        }
+    } catch (error) {
+        addMessageToChat('System', '❌ Error saving prompt: ' + error.message, 'error');
+    }
+}
+
+function resetSystemPrompt() {
+    if (confirm('Reset to default system prompt? This will overwrite your custom prompt.')) {
+        fetch('/api/reset_system_prompt.php', {method: 'POST'})
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    loadSystemPrompt();
+                    addMessageToChat('System', '✅ System prompt reset to default', 'claude');
+                }
+            });
+    }
+}
 </script>
 
 <div class="card">
