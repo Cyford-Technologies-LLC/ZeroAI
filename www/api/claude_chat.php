@@ -2,7 +2,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
-ini_set('error_log', '/tmp/php_errors.log');
+ini_set('error_log', '/var/log/nginx/error.log');
 
 header('Content-Type: application/json');
 
@@ -253,7 +253,7 @@ if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 
 // Handle delete file command
 if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
-    error_log("DELETE COMMAND MATCHED: " . print_r($matches, true));
+
     $filePath = trim($matches[1]);
     // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
