@@ -48,8 +48,8 @@ WORKDIR /app
 # to be able to create the user and group based on host UID/GID.
 USER root
 
-# Install Nginx and PHP-FPM before entrypoint
-RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 \
+# Install Nginx and PHP-FPM with curl extension
+RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 php-curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy nginx config
@@ -65,22 +65,13 @@ RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /va
 
 # Skip chown on /app since it will be mounted volumes
 
-# Configure git to maintain www-data ownership
-RUN git config --global --add safe.directory /app \
-    && git config --global user.name "www-data" \
-    && git config --global user.email "www-data@zeroai.local"
+# Create /var/www directory for www-data user
+RUN mkdir -p /var/www && chown www-data:www-data /var/www
 
-# Install git wrapper and configure sudo
-COPY git-wrapper.sh /usr/local/bin/git-wrapper
-RUN chmod +x /usr/local/bin/git-wrapper \
-    && echo 'www-data ALL=(ALL) NOPASSWD: /usr/bin/git' >> /etc/sudoers \
-    && echo 'alias git="/usr/local/bin/git-wrapper"' >> /etc/bash.bashrc
-
-# Create git hook to fix ownership after pulls
-RUN mkdir -p /app/.git/hooks \
-    && echo '#!/bin/bash' > /app/.git/hooks/post-merge \
-    && echo 'chown -R www-data:www-data /app' >> /app/.git/hooks/post-merge \
-    && chmod +x /app/.git/hooks/post-merge
+# Configure git using direct binary to avoid wrapper issues
+RUN /usr/bin/git config --global --add safe.directory /app \
+    && /usr/bin/git config --global user.name "www-data" \
+    && /usr/bin/git config --global user.email "www-data@zeroai.local"
 
 # Configure nginx directories and permissions
 RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
@@ -88,7 +79,7 @@ RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
 
 # Create startup script
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
-    && echo 'set -e' >> /app/start_portal.sh \
+    && echo 'set +e' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \

@@ -4,7 +4,8 @@
 # Run git command as www-data
 sudo -u www-data git "$@"
 
-# Fix ownership after any git operation
-chown -R www-data:www-data /app
+# Fix ownership after git operations, but skip read-only files
+find /app -type f -writable -exec chown www-data:www-data {} + 2>/dev/null || true
+find /app -type d -writable -exec chown www-data:www-data {} + 2>/dev/null || true
 
 exit $?
