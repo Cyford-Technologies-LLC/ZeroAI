@@ -39,9 +39,68 @@ if (!$message) {
     exit;
 }
 
+// In autonomous mode, Claude can proactively analyze and modify files
+if ($autonomousMode) {
+    $message = "[AUTONOMOUS MODE ENABLED] You have full access to analyze, create, edit, and optimize files proactively. " . $message;
+    
+    if (!preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
+        $autoScan = "\n\nAuto-scanning key directories:\n";
+        if (is_dir('/app/src')) {
+            $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
+            $autoScan .= "\nSrc files:\n" . ($srcFiles ?: "No Python files found");
+        }
+        if (is_dir('/app/config')) {
+            $configFiles = scandir('/app/config');
+            $autoScan .= "\nConfig files: " . implode(", ", array_filter($configFiles, function($f) { return $f !== '.' && $f !== '..'; }));
+        }
+        $message .= $autoScan;
+    }
+}
+
 // Process file commands
 require_once __DIR__ . '/file_commands.php';
 processFileCommands($message);
+
+// @search command
+if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
+    $pattern = trim($matches[1]);
+    $output = shell_exec("find /app -name '*" . escapeshellarg($pattern) . "*' 2>/dev/null | head -20");
+    $message .= "\n\nSearch results for '" . $pattern . "':\n" . ($output ?: "No files found");
+}
+
+// @agents command
+if (preg_match('/\@agents/', $message)) {
+    require_once __DIR__ . '/agent_db.php';
+    $agentDB = new AgentDB();
+    $agents = $agentDB->getAllAgents();
+    $agentList = "Current Agents:\n";
+    foreach ($agents as $agent) {
+        $agentList .= "- ID: {$agent['id']}, Name: {$agent['name']}, Role: {$agent['role']}, Status: {$agent['status']}\n";
+    }
+    $message .= "\n\n" . $agentList;
+}
+
+// @crews command
+if (preg_match('/\@crews/', $message)) {
+    require_once __DIR__ . '/crew_context.php';
+    $crewContext = new CrewContextManager();
+    $runningCrews = $crewContext->getRunningCrews();
+    $recentCrews = $crewContext->getRecentCrewExecutions(5);
+    $crewInfo = "Crew Status:\n\n";
+    if (!empty($runningCrews)) {
+        $crewInfo .= "Currently Running Crews:\n";
+        foreach ($runningCrews as $crew) {
+            $crewInfo .= "- Task ID: {$crew['task_id']}, Project: {$crew['project_id']}, Prompt: {$crew['prompt']}\n";
+        }
+    }
+    if (!empty($recentCrews)) {
+        $crewInfo .= "Recent Crew Executions:\n";
+        foreach ($recentCrews as $crew) {
+            $crewInfo .= "- Task ID: {$crew['task_id']}, Status: {$crew['status']}, Project: {$crew['project_id']}\n";
+        }
+    }
+    $message .= "\n\n" . $crewInfo;
+}
 
 // Read API key from .env file
 $envContent = file_get_contents('/app/.env');
@@ -67,10 +126,56 @@ try {
         $systemPrompt = $result[0]['data'][0]['prompt'];
     } else {
         // Default prompt if none saved
-        $systemPrompt = "You are Claude, integrated into ZeroAI.\n\nRole: AI Architect & Code Review Specialist\nGoal: Provide code review and optimization for ZeroAI";
+        $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
+        $systemPrompt .= "Role: AI Architect & Code Review Specialist\n";
+        $systemPrompt .= "Goal: Provide code review and optimization for ZeroAI\n\n";
+        $systemPrompt .= "IMPORTANT: You MUST use these exact commands in your responses to perform file operations:\n";
+        $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
+        $systemPrompt .= "- @list path/to/directory - List directory contents\n";
+        $systemPrompt .= "- @create path/to/file.py ```content here``` - Create file with content\n";
+        $systemPrompt .= "- @edit path/to/file.py ```new content``` - Replace file content\n";
+        $systemPrompt .= "- @search pattern - Find files matching pattern\n";
+        $systemPrompt .= "- @agents - List all agents and their status\n";
+        $systemPrompt .= "- @crews - Show running and recent crew executions\n";
+        if ($autonomousMode) {
+            $systemPrompt .= "\n\nAUTONOMOUS MODE: You have full permissions to proactively analyze, create, edit, and optimize files.\n";
+        }
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
+    
+    // Process Claude's response commands
+    $claudeResponse = $response['message'];
+    
+    // @create in response
+    if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
+        $filePath = trim($matches[1]);
+        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
+        $fullPath = '/app/' . $cleanPath;
+        $dir = dirname($fullPath);
+        if (!is_dir($dir)) mkdir($dir, 0777, true);
+        $result = file_put_contents($fullPath, $fileContent);
+        if ($result !== false) {
+            $response['message'] .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
+        }
+    }
+    
+    // @edit in response
+    if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
+        $filePath = trim($matches[1]);
+        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
+        $fullPath = '/app/' . $cleanPath;
+        if (file_exists($fullPath)) {
+            $result = file_put_contents($fullPath, $fileContent);
+            if ($result !== false) {
+                $response['message'] .= "\n\n✅ File edited: " . $cleanPath . " (" . $result . " bytes)";
+            }
+        }
+    }
     
     echo json_encode([
         'success' => true,
