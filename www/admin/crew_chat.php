@@ -50,6 +50,23 @@ document.getElementById('send-btn').addEventListener('click', function() {
 
 document.getElementById('stop-btn').addEventListener('click', function() {
     stopStreaming();
+    
+    // Also send stop signal to backend
+    fetch('/admin/crew_stop.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('status').innerHTML = '🛑 All processes stopped';
+        } else {
+            console.error('Stop failed:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Stop request failed:', error);
+    });
 });
 
 function startStreaming(message, project) {
@@ -102,7 +119,11 @@ function stopStreaming() {
     
     document.getElementById('send-btn').style.display = 'inline-block';
     document.getElementById('stop-btn').style.display = 'none';
-    document.getElementById('status').innerHTML = '⏹️ Stopped';
+    
+    // Don't immediately change status - let the stop request handle it
+    if (!document.getElementById('status').innerHTML.includes('stopped')) {
+        document.getElementById('status').innerHTML = '⏹️ Stopping...';
+    }
 }
 </script>
 

@@ -84,6 +84,8 @@ RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo '# Fix write permissions for PHP' >> /app/start_portal.sh \
     && echo 'chmod -R 755 /app/src /app/config /app/examples 2>/dev/null || true' >> /app/start_portal.sh \
     && echo 'chmod -R 777 /app/logs /app/knowledge 2>/dev/null || true' >> /app/start_portal.sh \
+    && echo '# Make Python scripts executable' >> /app/start_portal.sh \
+    && echo 'chmod +x /app/run/internal/*.py 2>/dev/null || true' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
