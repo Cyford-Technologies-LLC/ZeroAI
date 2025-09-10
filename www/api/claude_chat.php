@@ -64,8 +64,12 @@ if ($autonomousMode) {
     }
 }
 
+// Initialize command logging
+require_once __DIR__ . '/claude_debug.php';
+
 // Process file commands
 if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
+    logClaudeCommand('@file', 'Processing file read: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $cleanPath = ltrim($filePath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
@@ -162,22 +166,15 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
 
 // Handle file creation command - support both formats
 if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
-    // First ensure claude directory exists
-    $claudeDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
-    if (!is_dir($claudeDir)) {
-        shell_exec('mkdir -p ' . escapeshellarg($claudeDir));
-        shell_exec('chmod 777 ' . escapeshellarg($claudeDir));
-    }
+    logClaudeCommand('@create', 'Processing file creation: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
     
-    // Clean up path - remove leading /app/ if present to avoid double path
     $cleanPath = ltrim($filePath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
         $cleanPath = substr($cleanPath, 4);
     }
     
-    // Ensure we have a valid filename
     if (empty($cleanPath) || $cleanPath === '/') {
         $cleanPath = 'claude_file.txt';
     }
@@ -192,19 +189,17 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
         $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
+        // Remove the @create command from message to prevent Claude from seeing it
+        $message = preg_replace('/\@create\s+[^\s\n]+(?:\s+```[\s\S]*?```)?/', '', $message);
     } else {
         $error = error_get_last();
-        $perms = is_dir($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
-        $owner = is_dir($dir) ? posix_getpwuid(fileowner($dir))['name'] : 'N/A';
-        $message .= "\n\n❌ Failed to create: " . $cleanPath;
-        $message .= "\n   Directory: " . $dir . " (owner: " . $owner . ", perms: " . $perms . ")";
-        $message .= "\n   PHP runs as: " . posix_getpwuid(posix_geteuid())['name'];
-        $message .= "\n   Error: " . ($error['message'] ?? 'Unknown error');
+        $message .= "\n\n❌ Failed to create: " . $cleanPath . " - " . ($error['message'] ?? 'Unknown error');
     }
 }
 
 // Handle file editing command - support both formats
 if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+    logClaudeCommand('@edit', 'Processing file edit: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $newContent = isset($matches[2]) ? trim($matches[2]) : "";
     
@@ -235,6 +230,7 @@ if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $match
 
 // Handle file append command - support both formats
 if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+    logClaudeCommand('@append', 'Processing file append: ' . $matches[1]);
     $filePath = trim($matches[1]);
     $appendContent = isset($matches[2]) ? trim($matches[2]) : "";
     
@@ -264,6 +260,7 @@ if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 
 // Handle mkdir command
 if (preg_match('/\@mkdir\s+(.+)/', $message, $matches)) {
+    logClaudeCommand('@mkdir', 'Processing directory creation: ' . $matches[1]);
     $dirPath = trim($matches[1]);
     $cleanPath = ltrim($dirPath, '/');
     if (strpos($cleanPath, 'app/') === 0) {
@@ -292,6 +289,7 @@ if (preg_match('/\@mkdir\s+(.+)/', $message, $matches)) {
 
 // Handle delete file command
 if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
+    logClaudeCommand('@delete', 'Processing file deletion: ' . $matches[1]);
 
     $filePath = trim($matches[1]);
     // Clean up path - remove leading /app/ if present to avoid double path
@@ -514,16 +512,17 @@ try {
     $systemPrompt .= "- The user is managing their AI workforce through the admin portal\n";
     $systemPrompt .= "- Your saved data/knowledge is stored in: knowledge/internal_crew/agent_learning/self/claude\n";
     $systemPrompt .= "- You can save/load your own files there for persistence across conversations\n\n";
-    $systemPrompt .= "File Operations (use these commands in your responses):\n";
+    $systemPrompt .= "IMPORTANT: You MUST use these exact commands in your responses to perform file operations:\n";
     $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
     $systemPrompt .= "- @list path/to/directory - List directory contents\n";
     $systemPrompt .= "- @search pattern - Find files matching pattern\n";
-    $systemPrompt .= "- @create path/to/file.py content - Create file with content\n";
-    $systemPrompt .= "- @edit path/to/file.py new_content - Replace file content\n";
-    $systemPrompt .= "- @append path/to/file.py additional_content - Add to end of file\n";
+    $systemPrompt .= "- @create path/to/file.py ```content here``` - Create file with content\n";
+    $systemPrompt .= "- @edit path/to/file.py ```new content``` - Replace file content\n";
+    $systemPrompt .= "- @append path/to/file.py ```additional content``` - Add to end of file\n";
     $systemPrompt .= "- @delete path/to/file.py - Delete file\n";
-    $systemPrompt .= "- @mkdir path/to/directory - Create directory\n";
-    $systemPrompt .= "- Use code blocks with @create/@edit: @create file.py ```code here```\n\n";
+    $systemPrompt .= "- @mkdir path/to/directory - Create directory\n\n";
+    $systemPrompt .= "CRITICAL: When you want to create/edit files, you MUST include the @create or @edit command in your response. Example:\n";
+    $systemPrompt .= "@create knowledge/internal_crew/agent_learning/self/claude/notes.md ```\n# My Notes\nThis is my learning file\n```\n\n";
     $systemPrompt .= "Crew Management:\n";
     $systemPrompt .= "- @crews - Show running and recent crew executions\n";
     $systemPrompt .= "- @analyze_crew task_id - Get detailed crew execution info\n";
@@ -553,6 +552,10 @@ try {
     $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
+    
+    // Log Claude's response to see if she's using commands
+    require_once __DIR__ . '/claude_response_logger.php';
+    logClaudeResponse($input['message'] ?? '', $response['message']);
     
     // Log token usage to database
     $inputTokens = $response['usage']['input_tokens'] ?? 0;
