@@ -115,17 +115,7 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Process Claude's response commands in autonomous mode
-    if ($autonomousMode) {
-        $originalResponse = $response['message'];
-        processFileCommands($response['message']);
-        processClaudeCommands($response['message']);
-        
-        // If commands were processed, log it
-        if ($response['message'] !== $originalResponse) {
-            @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " AUTONOMOUS: Commands executed from Claude response\n", FILE_APPEND);
-        }
-    }
+    // Autonomous mode enabled but no command processing on responses to prevent loops
     
     echo json_encode([
         'success' => true,
