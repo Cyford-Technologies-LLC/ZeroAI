@@ -279,6 +279,26 @@ if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
     }
 }
 
+// Handle crew chat command
+if (preg_match('/\@crew_chat\s+(.+)/', $message, $matches)) {
+    $crewMessage = trim($matches[1]);
+    $project = 'zeroai'; // Default project
+    
+    // Execute crew task
+    $escapedMessage = escapeshellarg($crewMessage);
+    $escapedProject = escapeshellarg($project);
+    
+    $pythonCmd = 'export HOME=/tmp && cd /app && timeout 30 /app/venv/bin/python -u run/internal/run_dev_ops.py ' . $escapedMessage . ' --project=' . $escapedProject . ' 2>&1';
+    
+    $output = shell_exec($pythonCmd);
+    
+    if ($output) {
+        $message .= "\n\nCrew Response:\n" . $output;
+    } else {
+        $message .= "\n\nCrew did not respond or timed out.";
+    }
+}
+
 // Handle crew logs command
 if (preg_match('/\@logs(?:\s+(\d+))?(?:\s+(\w+))?/', $message, $matches)) {
     $days = isset($matches[1]) ? (int)$matches[1] : 7;
@@ -442,7 +462,8 @@ try {
     $systemPrompt .= "- @crews - Show running and recent crew executions\n";
     $systemPrompt .= "- @analyze_crew task_id - Get detailed crew execution info\n";
     $systemPrompt .= "- @agents - List all agents and their status\n";
-    $systemPrompt .= "- @logs [days] [agent_role] - View crew conversation logs\n\n";
+    $systemPrompt .= "- @logs [days] [agent_role] - View crew conversation logs\n";
+    $systemPrompt .= "- @crew_chat message - Send message to crew agents\n\n";
     
     // Add crew context automatically
     require_once __DIR__ . '/crew_context.php';
