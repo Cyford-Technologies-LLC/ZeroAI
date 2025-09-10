@@ -192,9 +192,14 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
         }
     }
     
+    $message .= "\n\n🔍 Attempting to write file: " . $fullPath;
+    $message .= "\n   Directory writable: " . (is_writable($dir) ? 'Yes' : 'No');
+    $message .= "\n   PHP user: " . posix_getpwuid(posix_geteuid())['name'];
+    
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
         $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
+        $message .= "\n   File exists: " . (file_exists($fullPath) ? 'Yes' : 'No');
     } else {
         $error = error_get_last();
         $perms = is_dir($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
