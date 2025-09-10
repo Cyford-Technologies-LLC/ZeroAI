@@ -180,7 +180,9 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $dir = dirname($fullPath);
     
     if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+        mkdir($dir, 0777, true);
+        chown($dir, 'www-data');
+        chgrp($dir, 'www-data');
     }
     
     $result = file_put_contents($fullPath, $fileContent);
@@ -546,6 +548,37 @@ try {
     $systemPrompt .= "Respond as Claude with your configured personality and expertise. Be helpful, insightful, and focus on practical solutions for ZeroAI optimization.";
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
+    
+    // Process @create commands in Claude's response
+    $claudeResponse = $response['message'];
+    if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
+        @file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " @create FOUND in Claude response\n", FILE_APPEND);
+        
+        $filePath = trim($matches[1]);
+        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
+        
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) {
+            $cleanPath = substr($cleanPath, 4);
+        }
+        
+        $fullPath = '/app/' . $cleanPath;
+        $dir = dirname($fullPath);
+        
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        
+        $result = file_put_contents($fullPath, $fileContent);
+        if ($result !== false) {
+            @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @create SUCCESS: $cleanPath ($result bytes)\n", FILE_APPEND);
+            $response['message'] .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
+        } else {
+            $error = error_get_last();
+            @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @create FAILED: $cleanPath\n", FILE_APPEND);
+            $response['message'] .= "\n\n❌ Failed to create: " . $cleanPath;
+        }
+    }
     
     // Log Claude's response to see if she's using commands
     require_once __DIR__ . '/claude_response_logger.php';
