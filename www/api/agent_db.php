@@ -78,5 +78,35 @@ class AgentDB {
         $stmt->bindValue(1, $id, SQLITE3_INTEGER);
         return $stmt->execute();
     }
+    
+    public function getActiveAgents() {
+        $result = $this->db->query('SELECT * FROM agents WHERE status = "active" ORDER BY id');
+        $agents = [];
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $row['is_core'] = in_array($row['name'], ['Team Manager', 'Project Manager', 'Senior Developer', 'Junior Developer', 'Code Researcher']);
+            $agents[] = $row;
+        }
+        return $agents;
+    }
+    
+    public function importExistingAgents() {
+        // Create default agents if none exist
+        $existing = $this->getAllAgents();
+        if (empty($existing)) {
+            $defaultAgents = [
+                ['name' => 'Team Manager', 'role' => 'Team Lead', 'goal' => 'Coordinate team activities', 'backstory' => 'Experienced team leader'],
+                ['name' => 'Project Manager', 'role' => 'Project Coordinator', 'goal' => 'Manage project timelines', 'backstory' => 'Skilled project manager'],
+                ['name' => 'Senior Developer', 'role' => 'Senior Software Engineer', 'goal' => 'Develop high-quality code', 'backstory' => 'Expert programmer'],
+                ['name' => 'Junior Developer', 'role' => 'Junior Software Engineer', 'goal' => 'Learn and contribute', 'backstory' => 'Eager to learn'],
+                ['name' => 'Code Researcher', 'role' => 'Research Specialist', 'goal' => 'Research and analyze code', 'backstory' => 'Detail-oriented researcher']
+            ];
+            
+            foreach ($defaultAgents as $agent) {
+                $this->createAgent($agent);
+            }
+            return $defaultAgents;
+        }
+        return [];
+    }
 }
 ?>
