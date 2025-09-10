@@ -184,6 +184,7 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $result = file_put_contents($fullPath, $fileContent);
     if ($result !== false) {
         $message .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @create SUCCESS: $cleanPath ($result bytes)\n", FILE_APPEND);
         // Remove the @create command from message to prevent Claude from seeing it
         $message = preg_replace('/\@create\s+[^\s\n]+(?:\s+```[\s\S]*?```)?/', '', $message);
     } else {
