@@ -687,4 +687,5 @@ try {
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => 'Claude error: ' . $e->getMessage()]);
 }
+
 ?>
