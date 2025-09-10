@@ -270,7 +270,13 @@ if (preg_match('/\@mkdir\s+(.+)/', $message, $matches)) {
             $message .= "\n\n✅ Directory created: " . $dirPath;
         } else {
             $error = error_get_last();
+            $parentDir = dirname($fullPath);
+            $parentPerms = is_dir($parentDir) ? substr(sprintf('%o', fileperms($parentDir)), -4) : 'N/A';
+            $parentOwner = is_dir($parentDir) ? posix_getpwuid(fileowner($parentDir))['name'] : 'N/A';
             $message .= "\n\n❌ Failed to create directory: " . $dirPath;
+            $message .= "\n   Full path: " . $fullPath;
+            $message .= "\n   Parent dir: " . $parentDir . " (owner: " . $parentOwner . ", perms: " . $parentPerms . ")";
+            $message .= "\n   PHP runs as: " . posix_getpwuid(posix_geteuid())['name'];
             $message .= "\n   Error: " . ($error['message'] ?? 'Permission denied');
         }
     } else {
