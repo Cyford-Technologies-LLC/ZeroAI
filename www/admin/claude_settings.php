@@ -220,4 +220,60 @@ $hasAnthropicKey = !empty($_ENV['ANTHROPIC_API_KEY']);
     </div>
 </div>
 
+<div class="card" id="commands">
+    <h3>🔧 Claude Commands Reference</h3>
+    <p>Use these commands when chatting with Claude to interact with your ZeroAI system:</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div>
+            <h4>📁 File Access Commands</h4>
+            <ul style="font-family: monospace; font-size: 12px; line-height: 1.6;">
+                <li><strong>@file</strong> path/to/file.py - Read file contents</li>
+                <li><strong>@read</strong> path/to/file.py - Read file contents (alias)</li>
+                <li><strong>@list</strong> directory/ - List directory contents</li>
+                <li><strong>@search</strong> pattern - Find files matching pattern</li>
+            </ul>
+        </div>
+        
+        <div>
+            <h4>✏️ File Modification Commands</h4>
+            <ul style="font-family: monospace; font-size: 12px; line-height: 1.6;">
+                <li><strong>@create</strong> path/file.py ```code``` - Create new file</li>
+                <li><strong>@edit</strong> path/file.py ```code``` - Replace file content</li>
+                <li><strong>@append</strong> path/file.py ```code``` - Add to file</li>
+                <li><strong>@delete</strong> path/file.py - Delete file</li>
+            </ul>
+        </div>
+        
+        <div>
+            <h4>🤖 Agent Management Commands</h4>
+            <ul style="font-family: monospace; font-size: 12px; line-height: 1.6;">
+                <li><strong>@agents</strong> - List all agents</li>
+                <li><strong>@update_agent</strong> 5 role="New Role" - Update agent</li>
+                <li><strong>@crews</strong> - Show crew status</li>
+                <li><strong>@analyze_crew</strong> task_id - Analyze crew execution</li>
+            </ul>
+        </div>
+        
+        <div>
+            <h4>📈 Analysis Commands</h4>
+            <ul style="font-family: monospace; font-size: 12px; line-height: 1.6;">
+                <li><strong>@logs</strong> [days] [role] - Show crew logs</li>
+                <li><strong>@optimize_agents</strong> - Analyze agent performance</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <h4>💡 Usage Examples</h4>
+        <ul style="font-size: 13px; line-height: 1.6;">
+            <li><code>@file src/main.py</code> - Share a Python file with Claude</li>
+            <li><code>@list www/admin/</code> - Show Claude your admin directory structure</li>
+            <li><code>@agents</code> - Get current agent status</li>
+            <li><code>@create config/new_feature.yaml ```yaml content```</code> - Create a new config file</li>
+            <li><code>@logs 7 developer</code> - Show last 7 days of developer agent logs</li>
+        </ul>
+    </div>
+</div>
+
 <?php include __DIR__ . '/includes/footer.php'; ?>
