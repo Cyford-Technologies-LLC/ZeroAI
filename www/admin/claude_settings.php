@@ -183,6 +183,7 @@ $hasAnthropicKey = !empty($_ENV['ANTHROPIC_API_KEY']);
                 <li>@list directory/</li>
                 <li>@search pattern</li>
             </ul>
+            <a href="#commands" class="btn-secondary" style="font-size: 11px;">View All Commands</a>
         </div>
         <div>
             <h4>🔍 Code Review</h4>

@@ -39,6 +39,7 @@ function processClaudeCommands(&$message) {
     if (preg_match('/\@update_agent\s+(\d+)\s+(.+)/', $message, $matches)) {
         $agentId = trim($matches[1]);
         $updates = trim($matches[2]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @update_agent: $agentId $updates\n", FILE_APPEND);
         require_once __DIR__ . '/agent_db.php';
         $agentDB = new AgentDB();
         $updateData = [];
@@ -54,6 +55,7 @@ function processClaudeCommands(&$message) {
 
     // @crews command
     if (preg_match('/\@crews/', $message)) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @crews\n", FILE_APPEND);
         require_once __DIR__ . '/crew_context.php';
         $crewContext = new CrewContextManager();
         $runningCrews = $crewContext->getRunningCrews();
@@ -77,6 +79,7 @@ function processClaudeCommands(&$message) {
     // @analyze_crew command
     if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
         $taskId = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @analyze_crew: $taskId\n", FILE_APPEND);
         require_once __DIR__ . '/crew_context.php';
         $crewContext = new CrewContextManager();
         $execution = $crewContext->getCrewExecution($taskId);
@@ -91,6 +94,7 @@ function processClaudeCommands(&$message) {
     if (preg_match('/\@logs(?:\s+(\d+))?(?:\s+(\w+))?/', $message, $matches)) {
         $days = isset($matches[1]) ? (int)$matches[1] : 7;
         $agentRole = isset($matches[2]) ? $matches[2] : null;
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @logs: $days days" . ($agentRole ? " role=$agentRole" : "") . "\n", FILE_APPEND);
         $logDir = '/app/logs/crews';
         if (is_dir($logDir)) {
             $logFiles = glob($logDir . '/crew_conversations_*.jsonl');
@@ -124,6 +128,7 @@ function processClaudeCommands(&$message) {
 
     // @optimize_agents command
     if (preg_match('/\@optimize_agents/', $message)) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @optimize_agents\n", FILE_APPEND);
         $logDir = '/app/logs/crews';
         if (is_dir($logDir)) {
             $logFiles = glob($logDir . '/crew_conversations_*.jsonl');

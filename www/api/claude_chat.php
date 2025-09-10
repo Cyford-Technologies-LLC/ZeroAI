@@ -87,6 +87,24 @@ try {
     
     if (!empty($result[0]['data'])) {
         $systemPrompt = $result[0]['data'][0]['prompt'];
+        // Ensure commands are always included
+        if (strpos($systemPrompt, '@file') === false) {
+            $systemPrompt .= "\n\nCOMMANDS:\n";
+            $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
+            $systemPrompt .= "- @read path/to/file.py - Read file contents (alias)\n";
+            $systemPrompt .= "- @list path/to/directory - List directory contents\n";
+            $systemPrompt .= "- @search pattern - Find files matching pattern\n";
+            $systemPrompt .= "- @create path/to/file.py ```content``` - Create file\n";
+            $systemPrompt .= "- @edit path/to/file.py ```content``` - Replace file content\n";
+            $systemPrompt .= "- @append path/to/file.py ```content``` - Add to file\n";
+            $systemPrompt .= "- @delete path/to/file.py - Delete file\n";
+            $systemPrompt .= "- @agents - List all agents\n";
+            $systemPrompt .= "- @update_agent ID role=\"Role\" goal=\"Goal\" - Update agent\n";
+            $systemPrompt .= "- @crews - Show crew status\n";
+            $systemPrompt .= "- @analyze_crew task_id - Analyze crew execution\n";
+            $systemPrompt .= "- @logs [days] [role] - Show crew logs\n";
+            $systemPrompt .= "- @optimize_agents - Analyze agent performance\n";
+        }
     } else {
         // Default prompt if none saved
         $systemPrompt = "You are Claude, integrated into ZeroAI.\n\n";
