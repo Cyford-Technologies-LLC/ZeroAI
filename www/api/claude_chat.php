@@ -161,7 +161,9 @@ if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
 }
 
 // Handle file creation command - support both formats
+@file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " Checking @create in message: " . substr($message, 0, 100) . "\n", FILE_APPEND);
 if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+    @file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " @create MATCHED in claude_chat.php\n", FILE_APPEND);
     $filePath = trim($matches[1]);
     $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
     
