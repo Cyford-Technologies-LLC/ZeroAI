@@ -39,6 +39,10 @@ if (!$message) {
     exit;
 }
 
+// Process file commands
+require_once __DIR__ . '/file_commands.php';
+processFileCommands($message);
+
 // Read API key from .env file
 $envContent = file_get_contents('/app/.env');
 preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
