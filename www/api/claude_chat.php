@@ -180,12 +180,15 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
     $dir = dirname($fullPath);
     
     if (!is_dir($dir)) {
-        if (!mkdir($dir, 0755, true)) {
-            $error = error_get_last();
-            $message .= "\n\n❌ Failed to create directory: " . $dir;
-            $message .= "\n   Error: " . ($error['message'] ?? 'Permission denied');
+        $message .= "\n\n🔍 Attempting to create directory: " . str_replace('/app/', '', $dir);
+        if (mkdir($dir, 0777, true)) {
+            $message .= "\n✅ Directory created successfully";
         } else {
-            $message .= "\n\n📁 Created directory: " . str_replace('/app/', '', $dir);
+            $error = error_get_last();
+            $message .= "\n❌ Failed to create directory";
+            $message .= "\n   Error: " . ($error['message'] ?? 'Unknown error');
+            $message .= "\n   Parent exists: " . (is_dir(dirname($dir)) ? 'Yes' : 'No');
+            $message .= "\n   Parent writable: " . (is_writable(dirname($dir)) ? 'Yes' : 'No');
         }
     }
     
