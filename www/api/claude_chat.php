@@ -265,7 +265,13 @@ if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
         if (unlink($fullPath)) {
             $message .= "\n\nFile deleted successfully: " . $filePath;
         } else {
+            $error = error_get_last();
+            $perms = file_exists($fullPath) ? substr(sprintf('%o', fileperms($fullPath)), -4) : 'N/A';
+            $owner = file_exists($fullPath) ? posix_getpwuid(fileowner($fullPath))['name'] : 'N/A';
             $message .= "\n\nFailed to delete file: " . $filePath;
+            $message .= "\n   File owner: " . $owner . ", perms: " . $perms;
+            $message .= "\n   PHP runs as: " . posix_getpwuid(posix_geteuid())['name'];
+            $message .= "\n   Error: " . ($error['message'] ?? 'Permission denied or file in use');
         }
     } else {
         $message .= "\n\nFile not found: " . $filePath;
