@@ -48,8 +48,8 @@ WORKDIR /app
 # to be able to create the user and group based on host UID/GID.
 USER root
 
-# Install Nginx and PHP-FPM with curl extension
-RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 php-curl \
+# Install Nginx and PHP-FPM with essential extensions
+RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 php-curl php-json php-mbstring php-xml php-zip php-gd php-intl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy nginx config
@@ -77,10 +77,13 @@ RUN /usr/bin/git config --global --add safe.directory /app \
 RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
     && chown -R www-data:www-data /var/log/nginx /var/lib/nginx /run /tmp/nginx
 
-# Create startup script
+# Create startup script with write permissions fix
 RUN echo '#!/bin/bash' > /app/start_portal.sh \
     && echo 'set +e' >> /app/start_portal.sh \
     && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
+    && echo '# Fix write permissions for PHP' >> /app/start_portal.sh \
+    && echo 'chmod -R 755 /app/src /app/config /app/examples 2>/dev/null || true' >> /app/start_portal.sh \
+    && echo 'chmod -R 777 /app/logs /app/knowledge 2>/dev/null || true' >> /app/start_portal.sh \
     && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
     && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
     && chmod +x /app/start_portal.sh
