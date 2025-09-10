@@ -82,7 +82,15 @@ class ClaudeIntegration {
         }
         
         if ($httpCode !== 200) {
-            throw new Exception('Claude API error: ' . $response);
+            $errorMsg = 'Claude API error (HTTP ' . $httpCode . ')';
+            if ($httpCode === 0) {
+                $errorMsg = 'Claude API unavailable - connection failed';
+            } elseif ($httpCode >= 500) {
+                $errorMsg = 'Claude API server error - service may be down';
+            } elseif ($httpCode === 429) {
+                $errorMsg = 'Claude API rate limit exceeded';
+            }
+            throw new Exception($errorMsg . ': ' . $response);
         }
         
         $result = json_decode($response, true);
