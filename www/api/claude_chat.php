@@ -279,12 +279,30 @@ if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
     }
 }
 
-// Handle crew chat command
+// Handle run crew command
+if (preg_match('/\@run_crew\s+(\w+)\s+(.+)/', $message, $matches)) {
+    $project = trim($matches[1]);
+    $task = trim($matches[2]);
+    
+    $escapedTask = escapeshellarg($task);
+    $escapedProject = escapeshellarg($project);
+    
+    $pythonCmd = 'export HOME=/tmp && cd /app && timeout 60 /app/venv/bin/python -u run/internal/run_dev_ops.py ' . $escapedTask . ' --project=' . $escapedProject . ' 2>&1';
+    
+    $output = shell_exec($pythonCmd);
+    
+    if ($output) {
+        $message .= "\n\n🤖 Crew Execution Result:\n" . $output;
+    } else {
+        $message .= "\n\n❌ Crew execution failed or timed out.";
+    }
+}
+
+// Handle crew chat command (shorter timeout for quick messages)
 if (preg_match('/\@crew_chat\s+(.+)/', $message, $matches)) {
     $crewMessage = trim($matches[1]);
-    $project = 'zeroai'; // Default project
+    $project = 'zeroai';
     
-    // Execute crew task
     $escapedMessage = escapeshellarg($crewMessage);
     $escapedProject = escapeshellarg($project);
     
@@ -293,9 +311,9 @@ if (preg_match('/\@crew_chat\s+(.+)/', $message, $matches)) {
     $output = shell_exec($pythonCmd);
     
     if ($output) {
-        $message .= "\n\nCrew Response:\n" . $output;
+        $message .= "\n\n💬 Crew Response:\n" . $output;
     } else {
-        $message .= "\n\nCrew did not respond or timed out.";
+        $message .= "\n\n❌ Crew did not respond or timed out.";
     }
 }
 
@@ -463,7 +481,8 @@ try {
     $systemPrompt .= "- @analyze_crew task_id - Get detailed crew execution info\n";
     $systemPrompt .= "- @agents - List all agents and their status\n";
     $systemPrompt .= "- @logs [days] [agent_role] - View crew conversation logs\n";
-    $systemPrompt .= "- @crew_chat message - Send message to crew agents\n\n";
+    $systemPrompt .= "- @crew_chat message - Send message to crew agents\n";
+    $systemPrompt .= "- @run_crew project task_description - Execute crew task\n\n";
     
     // Add crew context automatically
     require_once __DIR__ . '/crew_context.php';
