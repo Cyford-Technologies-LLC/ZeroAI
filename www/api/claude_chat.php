@@ -61,46 +61,9 @@ if ($autonomousMode) {
 require_once __DIR__ . '/file_commands.php';
 processFileCommands($message);
 
-// @search command
-if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
-    $pattern = trim($matches[1]);
-    $output = shell_exec("find /app -name '*" . escapeshellarg($pattern) . "*' 2>/dev/null | head -20");
-    $message .= "\n\nSearch results for '" . $pattern . "':\n" . ($output ?: "No files found");
-}
-
-// @agents command
-if (preg_match('/\@agents/', $message)) {
-    require_once __DIR__ . '/agent_db.php';
-    $agentDB = new AgentDB();
-    $agents = $agentDB->getAllAgents();
-    $agentList = "Current Agents:\n";
-    foreach ($agents as $agent) {
-        $agentList .= "- ID: {$agent['id']}, Name: {$agent['name']}, Role: {$agent['role']}, Status: {$agent['status']}\n";
-    }
-    $message .= "\n\n" . $agentList;
-}
-
-// @crews command
-if (preg_match('/\@crews/', $message)) {
-    require_once __DIR__ . '/crew_context.php';
-    $crewContext = new CrewContextManager();
-    $runningCrews = $crewContext->getRunningCrews();
-    $recentCrews = $crewContext->getRecentCrewExecutions(5);
-    $crewInfo = "Crew Status:\n\n";
-    if (!empty($runningCrews)) {
-        $crewInfo .= "Currently Running Crews:\n";
-        foreach ($runningCrews as $crew) {
-            $crewInfo .= "- Task ID: {$crew['task_id']}, Project: {$crew['project_id']}, Prompt: {$crew['prompt']}\n";
-        }
-    }
-    if (!empty($recentCrews)) {
-        $crewInfo .= "Recent Crew Executions:\n";
-        foreach ($recentCrews as $crew) {
-            $crewInfo .= "- Task ID: {$crew['task_id']}, Status: {$crew['status']}, Project: {$crew['project_id']}\n";
-        }
-    }
-    $message .= "\n\n" . $crewInfo;
-}
+// Process Claude commands
+require_once __DIR__ . '/claude_commands.php';
+processClaudeCommands($message);
 
 // Read API key from .env file
 $envContent = file_get_contents('/app/.env');
@@ -134,9 +97,16 @@ try {
         $systemPrompt .= "- @list path/to/directory - List directory contents\n";
         $systemPrompt .= "- @create path/to/file.py ```content here``` - Create file with content\n";
         $systemPrompt .= "- @edit path/to/file.py ```new content``` - Replace file content\n";
+        $systemPrompt .= "- @read path/to/file.py - Read file contents (alias for @file)\n";
         $systemPrompt .= "- @search pattern - Find files matching pattern\n";
         $systemPrompt .= "- @agents - List all agents and their status\n";
+        $systemPrompt .= "- @update_agent 5 role=\"New Role\" goal=\"New Goal\" - Update agent config\n";
         $systemPrompt .= "- @crews - Show running and recent crew executions\n";
+        $systemPrompt .= "- @analyze_crew task_id - Analyze specific crew execution\n";
+        $systemPrompt .= "- @append path/to/file.py ```content``` - Add content to file\n";
+        $systemPrompt .= "- @delete path/to/file.py - Delete file\n";
+        $systemPrompt .= "- @logs [days] [agent_role] - Show crew conversation logs\n";
+        $systemPrompt .= "- @optimize_agents - Analyze and suggest agent improvements\n";
         if ($autonomousMode) {
             $systemPrompt .= "\n\nAUTONOMOUS MODE: You have full permissions to proactively analyze, create, edit, and optimize files.\n";
         }
@@ -146,36 +116,7 @@ try {
     
     // Process Claude's response commands
     $claudeResponse = $response['message'];
-    
-    // @create in response
-    if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
-        $filePath = trim($matches[1]);
-        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
-        $cleanPath = ltrim($filePath, '/');
-        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
-        $fullPath = '/app/' . $cleanPath;
-        $dir = dirname($fullPath);
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
-        $result = file_put_contents($fullPath, $fileContent);
-        if ($result !== false) {
-            $response['message'] .= "\n\n✅ File created: " . $cleanPath . " (" . $result . " bytes)";
-        }
-    }
-    
-    // @edit in response
-    if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $claudeResponse, $matches)) {
-        $filePath = trim($matches[1]);
-        $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
-        $cleanPath = ltrim($filePath, '/');
-        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
-        $fullPath = '/app/' . $cleanPath;
-        if (file_exists($fullPath)) {
-            $result = file_put_contents($fullPath, $fileContent);
-            if ($result !== false) {
-                $response['message'] .= "\n\n✅ File edited: " . $cleanPath . " (" . $result . " bytes)";
-            }
-        }
-    }
+    processClaudeResponseCommands($claudeResponse, $response['message']);
     
     echo json_encode([
         'success' => true,

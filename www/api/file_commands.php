@@ -3,6 +3,22 @@ function processFileCommands(&$message) {
     // @file command
     if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
         $filePath = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @file: $filePath\n", FILE_APPEND);
+        $cleanPath = ltrim($filePath, '/');
+        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
+        $fullPath = '/app/' . $cleanPath;
+        if (file_exists($fullPath)) {
+            $fileContent = file_get_contents($fullPath);
+            $message .= "\n\nFile content of " . $filePath . ":\n" . $fileContent;
+        } else {
+            $message .= "\n\nFile not found: " . $filePath;
+        }
+    }
+
+    // @read command (alias for @file)
+    if (preg_match('/\@read\s+(.+)/', $message, $matches)) {
+        $filePath = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @read: $filePath\n", FILE_APPEND);
         $cleanPath = ltrim($filePath, '/');
         if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
         $fullPath = '/app/' . $cleanPath;
@@ -17,6 +33,7 @@ function processFileCommands(&$message) {
     // @list command
     if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
         $dirPath = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @list: $dirPath\n", FILE_APPEND);
         $cleanPath = ltrim($dirPath, '/');
         if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
         $fullDirPath = '/app/' . $cleanPath;
