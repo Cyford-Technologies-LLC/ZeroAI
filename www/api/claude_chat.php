@@ -2,6 +2,11 @@
 // Suppress all output until we're ready to send JSON
 ob_start();
 
+// Set timeout limits to prevent 504 errors
+ini_set('max_execution_time', 300); // 5 minutes
+ini_set('memory_limit', '512M');
+set_time_limit(300);
+
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // Don't display errors in output
 ini_set('log_errors', 1);
