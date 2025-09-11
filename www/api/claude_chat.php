@@ -104,6 +104,9 @@ try {
             $systemPrompt .= "- @analyze_crew task_id - Analyze crew execution\n";
             $systemPrompt .= "- @logs [days] [role] - Show crew logs\n";
             $systemPrompt .= "- @optimize_agents - Analyze agent performance\n";
+            $systemPrompt .= "- @docker [command] - Execute Docker commands\n";
+            $systemPrompt .= "- @compose [command] - Execute Docker Compose commands\n";
+            $systemPrompt .= "- @ps - Show running containers\n";
         }
     } else {
         // Initialize complete system prompt
