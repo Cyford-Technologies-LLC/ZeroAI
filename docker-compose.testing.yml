@@ -24,8 +24,10 @@ services:
         - LOCAL_UID=${LOCAL_UID}
         - LOCAL_GID=${LOCAL_GID}
       command: >
-        bash -c "mkdir -p /app/tmp && 
+        bash -c "apt-get update && apt-get install -y docker.io && 
+        mkdir -p /app/tmp && 
         /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+      privileged: true
       env_file:
         - .env
       depends_on:
@@ -58,8 +60,10 @@ services:
     env_file:
       - .env
     command: >
-      bash -c "mkdir -p /app/tmp && 
+      bash -c "apt-get update && apt-get install -y docker.io && 
+      mkdir -p /app/tmp && 
       /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+    privileged: true
     depends_on:
       - ollama-test
     restart: unless-stopped
