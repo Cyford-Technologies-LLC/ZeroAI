@@ -98,13 +98,13 @@ function processFileCommands(&$message) {
             if (!is_dir($dir)) mkdir($dir, 0777, true);
             $result = file_put_contents($fullPath, $fileContent);
             if ($result !== false) {
-                $message .= "\n\n✅ File created in Claude's directory: " . $filePath . " (" . $result . " bytes)";
+                $message .= "\n\n[SUCCESS] File created in Claude's directory: " . $filePath . " (" . $result . " bytes)";
             } else {
-                $message .= "\n\n❌ Failed to create in Claude's directory: " . $filePath;
+                $message .= "\n\n[ERROR] Failed to create in Claude's directory: " . $filePath;
             }
         } else {
             // Read-only mode for other directories
-            $message .= "\n\n⚠️ Write access restricted. Claude can only write to: knowledge/internal_crew/agent_learning/self/claude/";
+            $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only write to: knowledge/internal_crew/agent_learning/self/claude/";
         }
     }
 
@@ -128,15 +128,15 @@ function processFileCommands(&$message) {
             if (file_exists($fullPath)) {
                 $result = file_put_contents($fullPath, $newContent);
                 if ($result !== false) {
-                    $message .= "\n\n✅ File updated in Claude's directory: " . $filePath . " (" . $result . " bytes)";
+                    $message .= "\n\n[SUCCESS] File updated in Claude's directory: " . $filePath . " (" . $result . " bytes)";
                 } else {
-                    $message .= "\n\n❌ Failed to update in Claude's directory: " . $filePath;
+                    $message .= "\n\n[ERROR] Failed to update in Claude's directory: " . $filePath;
                 }
             } else {
                 $message .= "\n\nFile not found in Claude's directory: " . $filePath;
             }
         } else {
-            $message .= "\n\n⚠️ Write access restricted. Claude can only edit files in: knowledge/internal_crew/agent_learning/self/claude/";
+            $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only edit files in: knowledge/internal_crew/agent_learning/self/claude/";
         }
     }
 
@@ -159,12 +159,12 @@ function processFileCommands(&$message) {
         if ($isClaudeDir) {
             $result = file_put_contents($fullPath, "\n" . $appendContent, FILE_APPEND);
             if ($result !== false) {
-                $message .= "\n\n✅ Content appended to Claude's file: " . $filePath . " (" . $result . " bytes)";
+                $message .= "\n\n[SUCCESS] Content appended to Claude's file: " . $filePath . " (" . $result . " bytes)";
             } else {
-                $message .= "\n\n❌ Failed to append to Claude's file: " . $filePath;
+                $message .= "\n\n[ERROR] Failed to append to Claude's file: " . $filePath;
             }
         } else {
-            $message .= "\n\n⚠️ Write access restricted. Claude can only append to files in: knowledge/internal_crew/agent_learning/self/claude/";
+            $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only append to files in: knowledge/internal_crew/agent_learning/self/claude/";
         }
     }
 
@@ -186,15 +186,15 @@ function processFileCommands(&$message) {
         if ($isClaudeDir) {
             if (file_exists($fullPath)) {
                 if (unlink($fullPath)) {
-                    $message .= "\n\n✅ File deleted from Claude's directory: " . $filePath;
+                    $message .= "\n\n[SUCCESS] File deleted from Claude's directory: " . $filePath;
                 } else {
-                    $message .= "\n\n❌ Failed to delete from Claude's directory: " . $filePath;
+                    $message .= "\n\n[ERROR] Failed to delete from Claude's directory: " . $filePath;
                 }
             } else {
                 $message .= "\n\nFile not found in Claude's directory: " . $filePath;
             }
         } else {
-            $message .= "\n\n⚠️ Delete access restricted. Claude can only delete files in: knowledge/internal_crew/agent_learning/self/claude/";
+            $message .= "\n\n[RESTRICTED] Delete access restricted. Claude can only delete files in: knowledge/internal_crew/agent_learning/self/claude/";
         }
     }
 }
