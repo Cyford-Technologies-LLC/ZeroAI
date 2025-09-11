@@ -11,7 +11,7 @@ services:
         - ./run:/app/run
         - ./config:/app/config
         - ./examples:/app/examples
-        - ./knowledge:/app/knowledge
+        - /etc/cyford/zeroai/knowledge:/app/knowledge
         - ./logs:/app/logs
         - ./www:/app/www
         - /etc/cyford/zeroai/data:/app/data
@@ -29,8 +29,8 @@ services:
         mkdir -p /app/tmp && 
         /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
       privileged: true
-      env_file:
-        - .env
+      # env_file:
+      #   - .env
       depends_on:
         - ollama-test
       restart: unless-stopped
@@ -48,7 +48,7 @@ services:
       - ./run:/app/run
       - ./config:/app/config
       - ./examples:/app/examples
-      - ./knowledge:/app/knowledge
+      - /etc/cyford/zeroai/knowledge:/app/knowledge
       - ./logs:/app/logs
       - ./www:/app/www
       - /etc/cyford/zeroai/data:/app/data
@@ -60,8 +60,8 @@ services:
       - OLLAMA_HOST=http://ollama-test:11434
       - LOCAL_UID=${LOCAL_UID}
       - LOCAL_GID=${LOCAL_GID}
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     command: >
       bash -c "apt-get update && apt-get install -y docker.io && 
       mkdir -p /app/tmp && 
