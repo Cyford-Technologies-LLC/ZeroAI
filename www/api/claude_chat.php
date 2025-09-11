@@ -107,10 +107,9 @@ try {
             $systemPrompt .= "- @docker [command] - Execute Docker commands\n";
             $systemPrompt .= "- @compose [command] - Execute Docker Compose commands\n";
             $systemPrompt .= "- @ps - Show running containers\n";
-            $systemPrompt .= "- @shell [container] [command] - Start interactive shell session\n";
-            $systemPrompt .= "- @exec [session_id] [command] - Execute command in shell session\n";
-            $systemPrompt .= "- @exit [session_id] - Close shell session\n";
-            $systemPrompt .= "- @sessions - List active shell sessions\n";
+            $systemPrompt .= "- @exec [container] [command] - Execute command in container\n";
+            $systemPrompt .= "- @inspect [container] - Get container details\n";
+            $systemPrompt .= "- @container_logs [container] [lines] - Get container logs\n";
         }
     } else {
         // Initialize complete system prompt

@@ -280,73 +280,34 @@ function processClaudeResponseCommands($claudeResponse, &$responseMessage) {
         $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
     }
 
-    // @shell command - Interactive shell access to containers
-    if (preg_match('/\@shell\s+([^\s]+)(?:\s+(.+))?/', $message, $matches)) {
-        $containerName = trim($matches[1]);
-        $command = isset($matches[2]) ? trim($matches[2]) : 'bash';
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @shell: $containerName $command\n", FILE_APPEND);
-        
-        // Create interactive shell session
-        $sessionId = uniqid('shell_');
-        $sessionFile = "/tmp/claude_shell_$sessionId";
-        
-        // Start shell session in background
-        $cmd = "docker exec -it $containerName $command > $sessionFile 2>&1 & echo \$!";
-        $pid = trim(shell_exec($cmd));
-        
-        if ($pid) {
-            $message .= "\n\n🐚 Shell session started: $containerName\n";
-            $message .= "Session ID: $sessionId\n";
-            $message .= "Use @exec $sessionId [command] to run commands\n";
-            $message .= "Use @exit $sessionId to close session";
-        } else {
-            $message .= "\n\n❌ Failed to start shell session in $containerName";
-        }
-    }
-
-    // @exec command - Execute in shell session
+    // @exec command - Execute command in container
     if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/', $message, $matches)) {
-        $sessionId = trim($matches[1]);
+        $containerName = trim($matches[1]);
         $command = trim($matches[2]);
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $sessionId $command\n", FILE_APPEND);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
         
-        $sessionFile = "/tmp/claude_shell_$sessionId";
-        if (file_exists($sessionFile)) {
-            // Execute command in session
-            $output = shell_exec("echo '$command' >> $sessionFile && timeout 10 tail -f $sessionFile | head -20");
-            $message .= "\n\n💻 Executed: $command\n" . ($output ?: "Command executed");
-        } else {
-            $message .= "\n\n❌ Shell session $sessionId not found";
-        }
+        // Execute command directly in container
+        $output = shell_exec("timeout 15 docker exec $containerName bash -c '$command' 2>&1");
+        $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
     }
 
-    // @exit command - Close shell session
-    if (preg_match('/\@exit\s+([^\s]+)/', $message, $matches)) {
-        $sessionId = trim($matches[1]);
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exit: $sessionId\n", FILE_APPEND);
+    // @inspect command - Get container details
+    if (preg_match('/\@inspect\s+([^\s]+)/', $message, $matches)) {
+        $containerName = trim($matches[1]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @inspect: $containerName\n", FILE_APPEND);
         
-        $sessionFile = "/tmp/claude_shell_$sessionId";
-        if (file_exists($sessionFile)) {
-            unlink($sessionFile);
-            $message .= "\n\n🚪 Shell session $sessionId closed";
-        } else {
-            $message .= "\n\n❌ Shell session $sessionId not found";
-        }
+        $output = shell_exec("timeout 10 docker inspect $containerName --format='{{.State.Status}} {{.Config.Image}} {{.NetworkSettings.IPAddress}}' 2>&1");
+        $message .= "\n\n🔍 Container Info [$containerName]:\n" . ($output ?: "Container not found");
     }
 
-    // @sessions command - List active shell sessions
-    if (preg_match('/\@sessions/', $message)) {
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @sessions\n", FILE_APPEND);
-        $sessions = glob('/tmp/claude_shell_*');
-        if ($sessions) {
-            $message .= "\n\n📱 Active Shell Sessions:\n";
-            foreach ($sessions as $session) {
-                $sessionId = basename($session, '');
-                $message .= "- $sessionId\n";
-            }
-        } else {
-            $message .= "\n\n📱 No active shell sessions";
-        }
+    // @logs command - Get container logs
+    if (preg_match('/\@container_logs\s+([^\s]+)(?:\s+(\d+))?/', $message, $matches)) {
+        $containerName = trim($matches[1]);
+        $lines = isset($matches[2]) ? (int)$matches[2] : 50;
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @container_logs: $containerName $lines\n", FILE_APPEND);
+        
+        $output = shell_exec("timeout 10 docker logs --tail=$lines $containerName 2>&1");
+        $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
     }
 }
 ?>
