@@ -52,17 +52,15 @@ chmod -R 755 /etc/cyford/zeroai
 
 # Clean Docker if requested
 if [ "$CLEAN" = "clean" ]; then
-    echo "🧹 Cleaning Docker system..."
-    docker system prune -f
+    echo "🧹 Stopping ZeroAI containers..."
+    docker stop zeroai_api-prod zeroai_peer-prod zeroai_ollama zeroai_api-test zeroai_peer-test zeroai_ollama-test 2>/dev/null || true
+    echo "🗑️ Removing ZeroAI containers..."
+    docker rm zeroai_api-prod zeroai_peer-prod zeroai_ollama zeroai_api-test zeroai_peer-test zeroai_ollama-test 2>/dev/null || true
     echo "🗑️ Removing ZeroAI images..."
     docker images | grep zeroai | awk '{print $3}' | xargs -r docker rmi -f
     docker images | grep "<none>" | awk '{print $3}' | xargs -r docker rmi -f
-    echo "✅ Docker cleanup complete"
+    echo "✅ ZeroAI cleanup complete"
 fi
-
-# Always prune before building
-echo "🧹 Pruning Docker system..."
-docker system prune -f
 
 # Build and start containers based on environment
 case $ENV in
