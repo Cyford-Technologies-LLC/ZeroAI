@@ -275,41 +275,6 @@ function processClaudeResponseCommands($claudeResponse, &$responseMessage) {
         }
     }
 
-    // @docker command with timeout protection
-    if (preg_match('/\@docker\s+(.+)/', $message, $matches)) {
-        $dockerCmd = trim($matches[1]);
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @docker: $dockerCmd\n", FILE_APPEND);
-        
-        // Prevent dangerous commands
-        if (preg_match('/(rm|kill|stop|restart)/', $dockerCmd)) {
-            $message .= "\n\n❌ Docker: Dangerous command blocked for safety";
-        } else {
-            $output = shell_exec("timeout 10 docker $dockerCmd 2>&1");
-            $message .= "\n\n🐳 Docker: $dockerCmd\n" . ($output ?: "Command executed");
-        }
-    }
-
-    // @compose command with timeout protection
-    if (preg_match('/\@compose\s+(.+)/', $message, $matches)) {
-        $composeCmd = trim($matches[1]);
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @compose: $composeCmd\n", FILE_APPEND);
-        
-        // Prevent dangerous commands
-        if (preg_match('/(down|kill|stop)/', $composeCmd)) {
-            $message .= "\n\n❌ Compose: Dangerous command blocked for safety";
-        } else {
-            $output = shell_exec("timeout 30 bash -c 'cd /app && docker-compose $composeCmd' 2>&1");
-            $message .= "\n\n🐙 Compose: $composeCmd\n" . ($output ?: "Command executed");
-        }
-    }
-
-    // @ps command with timeout
-    if (preg_match('/\@ps/', $message)) {
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @ps\n", FILE_APPEND);
-        $output = shell_exec("timeout 5 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>&1");
-        $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
-    }
-
 
 }
 ?>
