@@ -3,8 +3,8 @@ services:
       build: .
       container_name: zeroai_api-test
       ports:
-        - "0.0.0.0:4949:3939"  # Different port to avoid conflict
-        - "0.0.0.0:444:333"    # Different port to avoid conflict
+        - "0.0.0.0:4949:3939"  # Different port to avoid conflict  : api
+        - "0.0.0.0:444:333"    # Different port to avoid conflict :   web enterface
       volumes:
         - ./src:/app/src
         - ./API:/app/API
