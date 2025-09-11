@@ -210,6 +210,18 @@ function processClaudeCommands(&$message) {
 }
 
 function processClaudeResponseCommands($claudeResponse, &$responseMessage) {
+    // @exec command - Execute command in container
+    if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/', $claudeResponse, $matches)) {
+        $containerName = trim($matches[1]);
+        $command = trim($matches[2]);
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " Claude @exec: $containerName $command\n", FILE_APPEND);
+        
+        // Execute command directly in container with proper escaping
+        $escapedCommand = escapeshellarg($command);
+        $output = shell_exec("timeout 15 docker exec $containerName bash -c $escapedCommand 2>&1");
+        $responseMessage .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
+    }
+    
     // @sql command
     if (preg_match('/\@sql\s+```([\s\S]*?)```/', $claudeResponse, $matches)) {
         require_once __DIR__ . '/sqlite_manager.php';
