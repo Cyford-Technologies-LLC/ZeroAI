@@ -27,10 +27,7 @@ include __DIR__ . '/includes/header.php';
         <div>
             <label><strong>Claude Model:</strong></label>
             <select id="claude-model" style="width: 300px;">
-                <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Default)</option>
-                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                <option value="">Loading models...</option>
             </select>
         </div>
         <div>
@@ -268,6 +265,33 @@ function clearChatHistory() {
 
 // Load chat history on page load
 loadChatHistory();
+
+// Load Claude models
+loadClaudeModels();
+
+async function loadClaudeModels() {
+    try {
+        const response = await fetch('/api/get_claude_models.php');
+        const result = await response.json();
+        
+        if (result.success) {
+            const select = document.getElementById('claude-model');
+            select.innerHTML = '';
+            
+            result.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.model_id;
+                option.textContent = model.display_name;
+                if (model.is_default) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load Claude models:', error);
+    }
+}
 
 // System prompt editing functions
 let currentSystemPrompt = '';
