@@ -43,7 +43,7 @@ knowledge/internal_crew/default/
 
 # User data
 config/local/
-logs/
+tools/logs/
 
 # Remove problematic ignores that prevent code updates
 # app/ - REMOVED so web portal updates work

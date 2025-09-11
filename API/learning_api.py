@@ -1,16 +1,15 @@
 # src/api/learning_api.py
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Dict, Any, Optional, List
-import json
+from typing import Dict, Any, Optional
 import time
 import uuid
 
 # Import the learning feedback loop
 try:
     from learning.feedback_loop import feedback_loop, record_task_result
-    from learning.frontend_integration import FrontendLearningAdapter
+    from docs.learning.frontend_integration import FrontendLearningAdapter
     has_learning = True
 except ImportError:
     has_learning = False
