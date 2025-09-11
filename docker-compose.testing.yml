@@ -13,6 +13,7 @@ services:
         - ./examples:/app/examples
         - ./knowledge:/app/knowledge
         - ./logs:/app/logs
+        - ./www:/app/www
         - zeroai_test_data:/app/data
         - ./tmp:/app/tmp
         - /etc/cyford/zeroai/.env:/app/.env:ro
@@ -22,6 +23,9 @@ services:
         - OLLAMA_HOST=http://ollama-test:11434
         - LOCAL_UID=${LOCAL_UID}
         - LOCAL_GID=${LOCAL_GID}
+      command: >
+        bash -c "mkdir -p /app/tmp && 
+        /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
       env_file:
         - .env
       depends_on:
@@ -43,6 +47,7 @@ services:
       - ./examples:/app/examples
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
+      - ./www:/app/www
       - ./tmp:/app/tmp
       - /etc/cyford/zeroai/.env:/app/.env:ro
     environment:
@@ -52,7 +57,9 @@ services:
       - LOCAL_GID=${LOCAL_GID}
     env_file:
       - .env
-    command: ["/app/venv/bin/gunicorn", "API.persistent_crew_api:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--preload"]
+    command: >
+      bash -c "mkdir -p /app/tmp && 
+      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
     depends_on:
       - ollama-test
     restart: unless-stopped
