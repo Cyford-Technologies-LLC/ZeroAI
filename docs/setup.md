@@ -88,8 +88,8 @@ This starts the server on `http://ollama:11434`. Keep this terminal open.
 #### Manual Installation
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ZeroAI.git
-cd ZeroAI 
+git clone https://github.com/yourusername/ZeroAI.git /opt/cyford/zeroai
+cd /opt/cyford/zeroai
 
 # Create virtual environment (recommended)
 python -m venv venv
@@ -109,8 +109,8 @@ pip install -r requirements.txt
 **For CPU-only systems:**
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ZeroAI.git
-cd ZeroAI
+git clone https://github.com/yourusername/ZeroAI.git /opt/cyford/zeroai
+cd /opt/cyford/zeroai
 
 # Start with Docker Compose
 docker-compose up -d
@@ -122,8 +122,8 @@ docker-compose up -d
 **For GPU-enabled systems (NVIDIA):**
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ZeroAI.git
-cd ZeroAI
+git clone https://github.com/yourusername/ZeroAI.git /opt/cyford/zeroai
+cd /opt/cyford/zeroai
 
 # Start with GPU support
 docker-compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d
