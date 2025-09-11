@@ -14,7 +14,8 @@ services:
         - ./knowledge:/app/knowledge
         - ./logs:/app/logs
         - ./www:/app/www
-        - zeroai_test_data:/app/data
+        - /etc/cyford/zeroai/data:/app/data
+        - /etc/cyford/zeroai/backup:/app/backup
         - ./tmp:/app/tmp
         - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
@@ -50,6 +51,8 @@ services:
       - ./knowledge:/app/knowledge
       - ./logs:/app/logs
       - ./www:/app/www
+      - /etc/cyford/zeroai/data:/app/data
+      - /etc/cyford/zeroai/backup:/app/backup
       - ./tmp:/app/tmp
       - /etc/cyford/zeroai/.env:/app/.env:ro
     environment:
@@ -83,7 +86,6 @@ services:
 
 volumes:
   ollama_test_data:
-  zeroai_test_data:
 
 networks:
   zeroai-test-network:

@@ -15,7 +15,8 @@ services:
         - /etc/cyford/zeroai/knowledge:/app/knowledge
         - ./logs:/app/logs
         - ./www:/app/www
-        - zeroai_data:/app/data
+        - /etc/cyford/zeroai/data:/app/data
+        - /etc/cyford/zeroai/backup:/app/backup
         - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
       environment:
@@ -66,4 +67,3 @@ services:
 
 volumes:
   ollama_data:
-  zeroai_data:
