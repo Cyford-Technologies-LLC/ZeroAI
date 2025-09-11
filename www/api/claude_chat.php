@@ -121,7 +121,14 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Autonomous mode enabled but no command processing on responses to prevent loops
+    // Process commands in Claude's response
+    $responseMessage = '';
+    processClaudeResponseCommands($response['message'], $responseMessage);
+    
+    // Append command results to response
+    if ($responseMessage) {
+        $response['message'] .= $responseMessage;
+    }
     
     echo json_encode([
         'success' => true,
