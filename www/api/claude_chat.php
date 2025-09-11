@@ -62,15 +62,32 @@ if ($autonomousMode) {
     }
 }
 
-// Process file commands
+// Process file commands locally first
 require_once __DIR__ . '/file_commands.php';
+$originalMessage = $message;
 processFileCommands($message);
 
-// Process Claude commands
+// Process Claude commands locally
 require_once __DIR__ . '/claude_commands.php';
 processClaudeCommands($message);
 
-// Read API key from .env file
+// Check if this is a simple command that can be handled locally
+$isSimpleCommand = preg_match('/^\s*@(file|read|list|search|agents|crews|logs|ps|docker|compose)\s/', trim($originalMessage));
+$hasOnlyCommands = preg_match('/^\s*@\w+/', trim($originalMessage)) && !preg_match('/[.?!]\s*[A-Z]/', $originalMessage);
+
+// If message was processed by commands and no complex query, return local result
+if (($isSimpleCommand || $hasOnlyCommands) && $message !== $originalMessage) {
+    echo json_encode([
+        'success' => true,
+        'response' => "Command executed locally (no API cost):\n\n" . substr($message, strlen($originalMessage)),
+        'tokens' => 0,
+        'cost' => 0.0,
+        'model' => 'local-processing'
+    ]);
+    exit;
+}
+
+// Only use Claude API for complex queries or when explicitly needed
 $envContent = file_get_contents('/app/.env');
 preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
 $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
