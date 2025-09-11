@@ -183,8 +183,9 @@ function processClaudeCommands(&$message) {
         $command = trim($matches[2]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
         
-        // Execute command directly in container
-        $output = shell_exec("timeout 15 docker exec $containerName bash -c '$command' 2>&1");
+        // Execute command directly in container with proper escaping
+        $escapedCommand = escapeshellarg($command);
+        $output = shell_exec("timeout 15 docker exec $containerName bash -c $escapedCommand 2>&1");
         $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
     }
 
