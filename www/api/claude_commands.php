@@ -219,30 +219,37 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
     }
     
-    // @memory command - Create memory files with hyperlinks
+    // @memory command - Query database and create file with hyperlink
     if (preg_match('/\@memory\s+(chat|commands|search)\s*(.*)/', $message, $matches)) {
         $action = $matches[1];
         $params = trim($matches[2]);
         
-        // Create memory directory
+        $memoryData = [];
+        
+        // Query database based on action
+        if ($action === 'chat' && preg_match('/(\d+)min/', $params, $timeMatch)) {
+            $minutes = (int)$timeMatch[1];
+            try {
+                $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+                $pdo = new PDO("sqlite:$dbPath");
+                $stmt = $pdo->prepare("SELECT sender, message, model_used, timestamp FROM chat_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                $memoryData = [['error' => 'Database query failed: ' . $e->getMessage()]];
+            }
+        }
+        
+        // Create memory file
         $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
         if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
         
-        // Create memory file based on action
         $filename = $action . '_memory_' . date('Y-m-d_H-i-s') . '.json';
         $memoryFile = $memoryDir . '/' . $filename;
         
-        // Sample memory data (replace with actual data later)
-        $memoryData = [
-            'action' => $action,
-            'params' => $params,
-            'timestamp' => date('Y-m-d H:i:s'),
-            'note' => 'Memory system active'
-        ];
-        
         file_put_contents($memoryFile, json_encode($memoryData, JSON_PRETTY_PRINT));
         
-        $message .= "\n\n🧠 Memory: $action results saved\n";
+        $message .= "\n\n🧠 Memory: Found " . count($memoryData) . " $action records\n";
         $message .= "[View Memory File](../knowledge/internal_crew/agent_learning/self/claude/$filename)";
     }
 }
