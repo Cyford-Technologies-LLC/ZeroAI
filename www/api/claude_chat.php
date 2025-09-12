@@ -112,6 +112,8 @@ try {
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_config (id INTEGER PRIMARY KEY, system_prompt TEXT, goals TEXT, personality TEXT, capabilities TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, model_used TEXT, mode TEXT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS system_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
     // Start session
     $memoryPdo->prepare("INSERT INTO sessions (start_time, primary_model) VALUES (datetime('now'), ?)") ->execute([$selectedModel]);
@@ -133,12 +135,20 @@ try {
 try {
     $claude = new ClaudeIntegration($apiKey);
     
-    // Get system prompt from SQLite
-    $sql = "SELECT prompt FROM system_prompts WHERE id = 1 ORDER BY created_at DESC LIMIT 1";
-    $result = SQLiteManager::executeSQL($sql);
+    // Get system prompt from memory database
+    $systemPrompt = '';
+    if ($memoryPdo) {
+        try {
+            $stmt = $memoryPdo->prepare("SELECT prompt FROM system_prompts ORDER BY created_at DESC LIMIT 1");
+            $stmt->execute();
+            $promptResult = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($promptResult) {
+                $systemPrompt = $promptResult['prompt'];
+            }
+        } catch (Exception $e) {}
+    }
     
-    if (!empty($result[0]['data'])) {
-        $systemPrompt = $result[0]['data'][0]['prompt'];
+    if ($systemPrompt) {
         // Ensure commands are always included
         if (strpos($systemPrompt, '@file') === false) {
             $systemPrompt .= "\n\nCOMMANDS:\n";
@@ -171,9 +181,17 @@ try {
     } else {
         // Initialize complete system prompt
         require_once __DIR__ . '/init_claude_prompt.php';
-        // Re-fetch after initialization
-        $result = SQLiteManager::executeSQL($sql);
-        $systemPrompt = $result[0]['data'][0]['prompt'];
+        // Re-fetch from memory database after initialization
+        if ($memoryPdo) {
+            try {
+                $stmt = $memoryPdo->prepare("SELECT prompt FROM system_prompts ORDER BY created_at DESC LIMIT 1");
+                $stmt->execute();
+                $promptResult = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($promptResult) {
+                    $systemPrompt = $promptResult['prompt'];
+                }
+            } catch (Exception $e) {}
+        }
     }
     
     // Save user message to memory
