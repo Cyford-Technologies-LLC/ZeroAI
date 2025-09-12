@@ -194,9 +194,21 @@ try {
         } catch (Exception $e) {}
     }
     
-    // Replace @commands with the command name, preserve hyperlinks
-    $cleanResponse = preg_replace('/\@(\w+)\s+([^\n]*)/m', '[@$1: $2]', $claudeResponse);
-    $response['message'] = $cleanResponse;
+    // Show @commands and preserve hyperlinks
+    $lines = explode("\n", $claudeResponse);
+    $result = [];
+    
+    foreach ($lines as $line) {
+        if (preg_match('/^\@(\w+)\s+(.*)/', $line, $matches)) {
+            $result[] = "[@{$matches[1]}: {$matches[2]}]";
+        } elseif (preg_match('/\[View.*File\]/', $line) || preg_match('/🧠 Memory:/', $line)) {
+            $result[] = $line; // Keep memory results and hyperlinks
+        } elseif (!preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker)/', $line)) {
+            $result[] = $line; // Keep non-command output
+        }
+    }
+    
+    $response['message'] = implode("\n", $result);
     
     echo json_encode([
         'success' => true,
