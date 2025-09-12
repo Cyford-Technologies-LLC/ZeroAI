@@ -246,16 +246,21 @@ try {
                      ->execute(['Claude', $claudeResponse, $selectedModel, $sessionId]);
             
             // Save executed commands with their outputs
-            if (preg_match_all('/\@(\w+)\s+([^\n]*(?:\n(?!\@)[^\n]*)*)/m', $processedResponse, $cmdMatches, PREG_SET_ORDER)) {
+            if (preg_match_all('/\@(\w+)\s+([^\n]*)/m', $claudeResponse, $cmdMatches, PREG_SET_ORDER)) {
                 foreach ($cmdMatches as $match) {
                     $fullCommand = $match[0];
-                    // Extract output that comes after the command
+                    // Extract output from the difference between processed and original response
                     $commandOutput = '';
                     if (strlen($processedResponse) > strlen($claudeResponse)) {
-                        $allOutput = substr($processedResponse, strlen($claudeResponse));
-                        // Try to match output for this specific command
-                        if (preg_match('/\Q' . $fullCommand . '\E\n([^@]*?)(?=\n@|$)/s', $allOutput, $outputMatch)) {
-                            $commandOutput = trim($outputMatch[1]);
+                        $outputs = substr($processedResponse, strlen($claudeResponse));
+                        // Get the section after this command
+                        $commandPos = strpos($outputs, $fullCommand);
+                        if ($commandPos !== false) {
+                            $afterCommand = substr($outputs, $commandPos + strlen($fullCommand));
+                            // Extract until next @ command or end
+                            if (preg_match('/^[^@]*?(?=\n@|$)/s', $afterCommand, $outputMatch)) {
+                                $commandOutput = trim($outputMatch[0]);
+                            }
                         }
                     }
                     

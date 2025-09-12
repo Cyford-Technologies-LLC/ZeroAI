@@ -224,8 +224,6 @@ function processClaudeCommands(&$message) {
         $action = $matches[1];
         $params = trim($matches[2]);
         
-        // Wait 2 seconds for command processing to complete
-        sleep(2);
         
         $memoryData = [];
         
