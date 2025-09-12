@@ -146,7 +146,13 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Don't process commands in Claude's response to avoid showing exec outputs
+    // Process commands in Claude's response so she can use @exec
+    $claudeResponse = $response['message'];
+    processFileCommands($claudeResponse);
+    processClaudeCommands($claudeResponse);
+    
+    // Use processed response
+    $response['message'] = $claudeResponse;
     
     echo json_encode([
         'success' => true,
