@@ -196,8 +196,9 @@ function processClaudeCommands(&$message) {
         $containerName = trim($matches[1]);
         $command = trim($matches[2]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
-        $escapedCommand = escapeshellarg($command);
-        $output = shell_exec("timeout 15 docker exec $containerName bash -c $escapedCommand 2>&1");
+        // Use base64 encoding to safely pass complex commands
+        $encodedCommand = base64_encode($command);
+        $output = shell_exec("timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash' 2>&1");
         $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
     }
 
