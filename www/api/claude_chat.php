@@ -244,6 +244,25 @@ try {
         try {
             $memoryPdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
                      ->execute(['Claude', $claudeResponse, $selectedModel, $sessionId]);
+            
+            // Save executed commands with their outputs
+            if (preg_match_all('/\@(\w+)\s+([^\n]*(?:\n(?!\@)[^\n]*)*)/m', $processedResponse, $cmdMatches, PREG_SET_ORDER)) {
+                foreach ($cmdMatches as $match) {
+                    $fullCommand = $match[0];
+                    // Extract output that comes after the command
+                    $commandOutput = '';
+                    if (strlen($processedResponse) > strlen($claudeResponse)) {
+                        $allOutput = substr($processedResponse, strlen($claudeResponse));
+                        // Try to match output for this specific command
+                        if (preg_match('/\Q' . $fullCommand . '\E\n([^@]*?)(?=\n@|$)/s', $allOutput, $outputMatch)) {
+                            $commandOutput = trim($outputMatch[1]);
+                        }
+                    }
+                    
+                    $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
+                             ->execute([$fullCommand, $commandOutput, 'success', $selectedModel, $sessionId]);
+                }
+            }
         } catch (Exception $e) {}
     }
     

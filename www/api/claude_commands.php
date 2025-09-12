@@ -236,6 +236,11 @@ function processClaudeCommands(&$message) {
                 $stmt = $pdo->prepare("SELECT sender, message, model_used, timestamp FROM chat_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
                 $stmt->execute();
                 $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($action === 'commands' && preg_match('/(\d+)min/', $params, $timeMatch)) {
+                $minutes = (int)$timeMatch[1];
+                $stmt = $pdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } elseif ($action === 'config') {
                 $stmt = $pdo->prepare("SELECT system_prompt, goals, personality, capabilities, updated_at FROM claude_config WHERE id = 1");
                 $stmt->execute();
