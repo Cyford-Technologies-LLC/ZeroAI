@@ -192,7 +192,7 @@ function processClaudeCommands(&$message) {
     }
 
     // @exec command - Always allowed
-    if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/s', $message, $matches)) {
         $containerName = trim($matches[1]);
         $command = trim($matches[2]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
