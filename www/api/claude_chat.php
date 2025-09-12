@@ -160,18 +160,26 @@ try {
     
     // Claude response processed
     
-    // Remove @commands from chat display but preserve memory hyperlinks
-    $cleanResponse = $claudeResponse;
-    
-    // Replace @commands with [Command executed] but preserve lines with hyperlinks
-    $lines = explode("\n", $cleanResponse);
+    // Show @commands but hide their outputs, preserve hyperlinks
+    $lines = explode("\n", $claudeResponse);
     $processedLines = [];
+    $skipOutput = false;
     
     foreach ($lines as $line) {
-        if (preg_match('/\@\w+/', $line) && !preg_match('/\[View.*File\]/', $line)) {
-            $processedLines[] = '[Command executed]';
+        if (preg_match('/^\@\w+/', $line)) {
+            // Show the @command itself
+            $processedLines[] = $line;
+            $skipOutput = true;
+        } elseif (preg_match('/\[View.*File\]/', $line)) {
+            // Show hyperlinks
+            $processedLines[] = $line;
+            $skipOutput = false;
+        } elseif ($skipOutput && (strpos($line, '🧠') !== false || strpos($line, '💻') !== false || strpos($line, '📋') !== false)) {
+            // Skip command output lines
+            continue;
         } else {
             $processedLines[] = $line;
+            $skipOutput = false;
         }
     }
     
