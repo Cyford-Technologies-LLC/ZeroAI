@@ -191,7 +191,7 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
     }
 
-    // @exec command
+    // @exec command - Always allowed
     if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/', $message, $matches)) {
         $containerName = trim($matches[1]);
         $command = trim($matches[2]);
