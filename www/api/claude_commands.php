@@ -254,17 +254,21 @@ function processClaudeCommands(&$message) {
             $memoryData = [['error' => 'Database query failed: ' . $e->getMessage()]];
         }
         
-        // Create memory file
-        $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
-        if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
+        // Create memory file in sessions directory
+        $sessionsDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions';
+        if (!is_dir($sessionsDir)) mkdir($sessionsDir, 0777, true);
         
-        $filename = $action . '_memory_' . date('Y-m-d_H-i-s') . '.json';
-        $memoryFile = $memoryDir . '/' . $filename;
+        $filename = 'memory.json';
+        $memoryFile = $sessionsDir . '/' . $filename;
         
+        // Save to file
         file_put_contents($memoryFile, json_encode($memoryData, JSON_PRETTY_PRINT));
         
+        // Auto-read file content for Claude
+        $fileContent = file_get_contents($memoryFile);
         $message .= "\n\n🧠 Memory: Found " . count($memoryData) . " $action records\n";
-        $message .= "[View Memory File](../knowledge/internal_crew/agent_learning/self/claude/$filename)";
+        $message .= "File content of sessions/memory.json:\n" . $fileContent . "\n";
+        $message .= "[View Memory File](../knowledge/internal_crew/agent_learning/self/claude/sessions/memory.json)";
     }
 }
 

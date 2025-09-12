@@ -275,8 +275,10 @@ try {
             $result[] = "[@{$matches[1]}: {$matches[2]}]";
         } elseif (preg_match('/\[View.*File\]/', $line) || preg_match('/🧠 Memory:/', $line)) {
             $result[] = $line; // Keep memory results and hyperlinks
-        } elseif (!preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker)/', $line)) {
-            $result[] = $line; // Keep non-command output
+        } elseif (preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker|Directory listing|\[SUCCESS\]|\[ERROR\]|\[RESTRICTED\])/', $line)) {
+            $result[] = $line; // Keep command outputs
+        } else {
+            $result[] = $line; // Keep other content
         }
     }
     
