@@ -219,10 +219,31 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
     }
     
-    // @memory command - Simple file-based memory
-    if (preg_match('/\@memory\s+(.+)/', $message, $matches)) {
-        $params = trim($matches[1]);
-        $message .= "\n\n🧠 Memory: Command noted - $params";
+    // @memory command - Create memory files with hyperlinks
+    if (preg_match('/\@memory\s+(chat|commands|search)\s*(.*)/', $message, $matches)) {
+        $action = $matches[1];
+        $params = trim($matches[2]);
+        
+        // Create memory directory
+        $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+        if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
+        
+        // Create memory file based on action
+        $filename = $action . '_memory_' . date('Y-m-d_H-i-s') . '.json';
+        $memoryFile = $memoryDir . '/' . $filename;
+        
+        // Sample memory data (replace with actual data later)
+        $memoryData = [
+            'action' => $action,
+            'params' => $params,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'note' => 'Memory system active'
+        ];
+        
+        file_put_contents($memoryFile, json_encode($memoryData, JSON_PRETTY_PRINT));
+        
+        $message .= "\n\n🧠 Memory: $action results saved\n";
+        $message .= "[View Memory File](../knowledge/internal_crew/agent_learning/self/claude/$filename)";
     }
 }
 
