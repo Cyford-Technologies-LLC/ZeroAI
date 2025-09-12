@@ -28,7 +28,7 @@ include __DIR__ . '/includes/header.php';
             <label><strong>Claude Model:</strong></label>
             <select id="claude-model" style="width: 300px;">
                 <option value="claude-sonnet-4-20250514" selected>Claude Sonnet 4 (High Performance - Default)</option>
-                <option value="claude-opus-4.1-20250514">Claude Opus 4.1 (Most Capable)</option>
+                <option value="claude-opus-4-1-20250805">Claude Opus 4.1 (Most Capable)</option>
                 <option value="claude-opus-4-20250514">Claude Opus 4 (Previous Flagship)</option>
                 <option value="claude-sonnet-3.7-20250514">Claude Sonnet 3.7 (Extended Thinking)</option>
                 <option value="claude-haiku-3.5-20250514">Claude Haiku 3.5 (Fastest)</option>
@@ -39,13 +39,11 @@ include __DIR__ . '/includes/header.php';
             </select>
         </div>
         <div>
-            <label><strong>Claude Mode:</strong></label>
-            <select id="claude-mode" onchange="changeClaudeMode()" style="width: 200px;">
-                <option value="chat">💬 Chat Mode</option>
-                <option value="autonomous">🤖 Autonomous Mode</option>
-                <option value="hybrid" selected>⚡ Hybrid Mode</option>
-            </select>
-            <div id="mode-description" style="font-size: 12px; color: #666; margin-top: 5px;">Chat + background autonomous tasks</div>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="autonomous-mode" onchange="toggleAutonomousMode()">
+                <strong>🤖 Autonomous Mode</strong>
+            </label>
+            <small style="color: #666;">Claude can proactively analyze and modify files</small>
         </div>
     </div>
     
@@ -83,8 +81,7 @@ async function sendMessage() {
     if (!message) return;
     
     const selectedModel = document.getElementById('claude-model').value;
-    const claudeMode = document.getElementById('claude-mode').value;
-    const autonomousMode = claudeMode === 'autonomous';
+    const autonomousMode = document.getElementById('autonomous-mode').checked;
     const sendButton = document.getElementById('send-button');
     const status = document.getElementById('status');
     
@@ -106,7 +103,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 message: message,
                 model: selectedModel,
-                mode: claudeMode,
+                autonomous: autonomousMode,
                 history: chatHistory
             })
         });
@@ -125,8 +122,7 @@ async function sendMessage() {
         
         if (result.success) {
             addMessageToChat('Claude', result.response, 'claude');
-            const mode = document.getElementById('claude-mode').value;
-            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${mode}`;
+            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${autonomousMode ? 'Autonomous' : 'Manual'}`;
         } else {
             addMessageToChat('System', 'Error: ' + result.error, 'error');
             status.textContent = 'Error occurred';
@@ -209,29 +205,16 @@ document.getElementById('message-input').addEventListener('keypress', function(e
     }
 });
 
-function changeClaudeMode() {
-    const mode = document.getElementById('claude-mode').value;
-    const description = document.getElementById('mode-description');
+function toggleAutonomousMode() {
+    const autonomous = document.getElementById('autonomous-mode').checked;
     const status = document.getElementById('status');
     
-    switch(mode) {
-        case 'chat':
-            description.textContent = 'Normal chat with command execution';
-            status.textContent = '💬 Chat Mode: Use @commands to interact';
-            addMessageToChat('System', '💬 Chat Mode: Normal conversation with @command support', 'claude');
-            break;
-        case 'autonomous':
-            description.textContent = 'Claude works continuously and proactively';
-            status.textContent = '🤖 Autonomous Mode: Claude analyzing and improving system';
-            addMessageToChat('System', '🤖 Autonomous Mode: Claude will continuously monitor and improve your system', 'claude');
-            startAutonomousMode();
-            break;
-        case 'hybrid':
-            description.textContent = 'Chat + background autonomous tasks';
-            status.textContent = '⚡ Hybrid Mode: Chat available + background tasks running';
-            addMessageToChat('System', '⚡ Hybrid Mode: You can chat while Claude works in background', 'claude');
-            startHybridMode();
-            break;
+    if (autonomous) {
+        status.textContent = '🤖 Autonomous Mode: Claude can proactively analyze and modify files';
+        addMessageToChat('System', '🤖 Autonomous Mode ENABLED: Claude can now proactively analyze your codebase and make improvements without explicit commands. She will automatically scan files, identify issues, and apply fixes.', 'claude');
+    } else {
+        status.textContent = '👤 Manual Mode: Use @commands to interact with Claude';
+        addMessageToChat('System', '👤 Manual Mode ENABLED: Claude will only perform actions when you use specific @commands.', 'claude');
     }
 }
 
@@ -290,60 +273,6 @@ function clearChatHistory() {
 
 // Load chat history on page load
 loadChatHistory();
-
-function startAutonomousMode() {
-    // Start autonomous worker
-    fetch('/api/claude_autonomous_start.php', {method: 'POST'})
-        .then(r => r.json())
-        .then(result => {
-            if (result.success) {
-                addMessageToChat('System', '🤖 Autonomous worker started. Claude is now monitoring your system.', 'claude');
-                pollAutonomousUpdates();
-            }
-        });
-}
-
-function startHybridMode() {
-    // Start background tasks but keep chat active
-    fetch('/api/claude_hybrid_start.php', {method: 'POST'})
-        .then(r => r.json())
-        .then(result => {
-            if (result.success) {
-                addMessageToChat('System', '⚡ Hybrid mode active. Background tasks running.', 'claude');
-                pollHybridUpdates();
-            }
-        });
-}
-
-function pollAutonomousUpdates() {
-    const mode = document.getElementById('claude-mode').value;
-    if (mode !== 'autonomous') return;
-    
-    fetch('/api/claude_autonomous_status.php')
-        .then(r => r.json())
-        .then(result => {
-            if (result.updates && result.updates.length > 0) {
-                result.updates.forEach(update => {
-                    addMessageToChat('Claude (Auto)', update, 'claude');
-                });
-            }
-            setTimeout(pollAutonomousUpdates, 5000);
-        });
-}
-
-function pollHybridUpdates() {
-    const mode = document.getElementById('claude-mode').value;
-    if (mode !== 'hybrid') return;
-    
-    fetch('/api/claude_hybrid_status.php')
-        .then(r => r.json())
-        .then(result => {
-            if (result.background_tasks) {
-                document.getElementById('status').textContent += ` | BG Tasks: ${result.background_tasks}`;
-            }
-            setTimeout(pollHybridUpdates, 10000);
-        });
-}
 
 // System prompt editing functions
 let currentSystemPrompt = '';

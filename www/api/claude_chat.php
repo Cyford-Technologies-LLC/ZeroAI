@@ -148,8 +148,15 @@ try {
     
     // Process commands in Claude's response so she can use @exec
     $claudeResponse = $response['message'];
+    $originalLength = strlen($claudeResponse);
+    
     processFileCommands($claudeResponse);
     processClaudeCommands($claudeResponse);
+    
+    // Log if commands were processed
+    if (strlen($claudeResponse) > $originalLength) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " Claude response commands processed\n", FILE_APPEND);
+    }
     
     // Use processed response
     $response['message'] = $claudeResponse;
