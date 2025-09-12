@@ -97,6 +97,10 @@ if (!$apiKey) {
 
 require_once __DIR__ . '/claude_integration.php';
 require_once __DIR__ . '/sqlite_manager.php';
+require_once __DIR__ . '/claude_memory.php';
+
+// Initialize memory system
+$memory = new ClaudeMemory();
 
 try {
     $claude = new ClaudeIntegration($apiKey);
@@ -139,6 +143,9 @@ try {
         $systemPrompt = $result[0]['data'][0]['prompt'];
     }
     
+    // Save user message to memory
+    $memory->saveChatMessage('User', $originalMessage, $selectedModel);
+    
     // Add command outputs to message for Claude to see
     if ($commandOutputs) {
         $message .= $commandOutputs;
@@ -146,15 +153,27 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Execute Claude's commands but hide outputs from chat
+    // Execute Claude's commands but hide them from chat
     $claudeResponse = $response['message'];
     $processedResponse = $claudeResponse;
     
     processFileCommands($processedResponse);
     processClaudeCommands($processedResponse);
     
-    // Commands executed, but return clean response for chat
-    $response['message'] = $claudeResponse;
+    // Save Claude's response to memory
+    $memory->saveChatMessage('Claude', $claudeResponse, $selectedModel);
+    
+    // Save executed commands to memory
+    if (preg_match_all('/\@(\w+)\s+([^\n]*(?:\n(?!\@)[^\n]*)*)/m', $claudeResponse, $cmdMatches, PREG_SET_ORDER)) {
+        foreach ($cmdMatches as $match) {
+            $fullCommand = $match[0];
+            $memory->saveCommand($fullCommand, 'Executed', 'success', $selectedModel);
+        }
+    }
+    
+    // Remove @commands from chat display to save tokens
+    $cleanResponse = preg_replace('/\@\w+\s+[^\n]*(?:\n(?!\@)[^\n]*)*/m', '[Command executed]', $claudeResponse);
+    $response['message'] = $cleanResponse;
     
     echo json_encode([
         'success' => true,

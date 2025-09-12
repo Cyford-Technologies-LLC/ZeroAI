@@ -218,6 +218,72 @@ function processClaudeCommands(&$message) {
         $output = shell_exec("timeout 10 docker logs --tail=$lines $containerName 2>&1");
         $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
     }
+    
+    // @memory commands
+    if (preg_match('/\@memory\s+(chat|commands|search|session|models)\s*(.*)/', $message, $matches)) {
+        $action = $matches[1];
+        $params = trim($matches[2]);
+        
+        require_once __DIR__ . '/claude_memory.php';
+        $memory = new ClaudeMemory();
+        
+        $memoryData = [];
+        
+        switch($action) {
+            case 'chat':
+                if (preg_match('/(\d+)min(?:\s+model:([^\s]+))?/', $params, $timeMatch)) {
+                    $minutes = (int)$timeMatch[1];
+                    $model = isset($timeMatch[2]) ? $timeMatch[2] : null;
+                    $memoryData = $memory->getChatHistory($minutes, $model);
+                }
+                break;
+            case 'commands':
+                if (preg_match('/(\d+)min(?:\s+model:([^\s]+))?/', $params, $timeMatch)) {
+                    $minutes = (int)$timeMatch[1];
+                    $model = isset($timeMatch[2]) ? $timeMatch[2] : null;
+                    $memoryData = $memory->getCommandHistory($minutes, $model);
+                }
+                break;
+            case 'search':
+                if (preg_match('/"([^"]+)"(?:\s+model:([^\s]+))?/', $params, $searchMatch)) {
+                    $keyword = $searchMatch[1];
+                    $model = isset($searchMatch[2]) ? $searchMatch[2] : null;
+                    $memoryData = $memory->searchMemory($keyword, $model);
+                }
+                break;
+        }
+        
+        // Save memory data to Claude's command history
+        $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+        if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
+        $memoryFile = $memoryDir . '/commands.json';
+        
+        // Prepend new data to existing file (recent first)
+        $existingData = file_exists($memoryFile) ? json_decode(file_get_contents($memoryFile), true) : [];
+        $combinedData = array_merge($memoryData, $existingData);
+        file_put_contents($memoryFile, json_encode($combinedData, JSON_PRETTY_PRINT));
+        
+        // Format memory data for Claude to see
+        $memoryText = "\n\n🧠 Memory Results:\n";
+        foreach ($memoryData as $item) {
+            $time = date('H:i', strtotime($item['timestamp']));
+            $model = substr($item['model_used'], -3);
+            
+            if (isset($item['sender'])) {
+                $memoryText .= "[$time $model] {$item['sender']}: {$item['message']}\n";
+            } else {
+                $memoryText .= "[$time $model] CMD: {$item['command']}\n";
+                if ($item['output']) {
+                    $memoryText .= "  → " . substr($item['output'], 0, 100) . "...\n";
+                }
+            }
+        }
+        
+        // Add hyperlink for user to view file
+        $memoryText .= "\n[View Commands File](../knowledge/internal_crew/agent_learning/self/claude/commands.json)";
+        
+        $message .= $memoryText;
+    }
 }
 
 function processClaudeResponseCommands($claudeResponse, &$responseMessage) {

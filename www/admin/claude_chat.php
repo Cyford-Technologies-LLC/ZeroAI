@@ -296,6 +296,43 @@ async function clearChatHistory() {
 // Load chat history on page load
 loadChatHistory();
 
+// Initialize Claude memory database
+fetch('/api/claude_memory_init.php');
+
+// Memory popup functions
+function showMemoryPopup(memoryId) {
+    fetch(`/api/get_memory_data.php?id=${memoryId}`)
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                displayMemoryModal(result.data);
+            }
+        });
+}
+
+function displayMemoryModal(data) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center';
+    
+    const content = document.createElement('div');
+    content.style.cssText = 'background:white;padding:20px;border-radius:8px;max-width:80%;max-height:80%;overflow:auto';
+    
+    let html = '<h3>Claude Memory Data</h3><button onclick="this.closest(\'div\').remove()" style="float:right">Close</button><div style="clear:both"></div>';
+    
+    data.forEach(item => {
+        const time = new Date(item.timestamp).toLocaleString();
+        html += `<div style="border:1px solid #ddd;margin:10px 0;padding:10px;border-radius:4px">`;
+        html += `<strong>${item.sender || item.type}</strong> <small>(${item.model_used} - ${time})</small><br>`;
+        html += `<pre style="white-space:pre-wrap;margin:5px 0">${item.message || item.content || item.command}</pre>`;
+        if (item.output) html += `<div style="background:#f5f5f5;padding:5px;margin-top:5px"><strong>Output:</strong><pre>${item.output}</pre></div>`;
+        html += '</div>';
+    });
+    
+    content.innerHTML = html;
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+}
+
 // System prompt editing functions
 let currentSystemPrompt = '';
 
