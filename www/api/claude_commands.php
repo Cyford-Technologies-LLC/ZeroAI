@@ -227,17 +227,26 @@ function processClaudeCommands(&$message) {
         $memoryData = [];
         
         // Query database based on action
-        if ($action === 'chat' && preg_match('/(\d+)min/', $params, $timeMatch)) {
-            $minutes = (int)$timeMatch[1];
-            try {
-                $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
-                $pdo = new PDO("sqlite:$dbPath");
+        try {
+            $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+            $pdo = new PDO("sqlite:$dbPath");
+            
+            if ($action === 'chat' && preg_match('/(\d+)min/', $params, $timeMatch)) {
+                $minutes = (int)$timeMatch[1];
                 $stmt = $pdo->prepare("SELECT sender, message, model_used, timestamp FROM chat_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
                 $stmt->execute();
                 $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            } catch (Exception $e) {
-                $memoryData = [['error' => 'Database query failed: ' . $e->getMessage()]];
+            } elseif ($action === 'config') {
+                $stmt = $pdo->prepare("SELECT system_prompt, goals, personality, capabilities, updated_at FROM claude_config WHERE id = 1");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($action === 'sessions') {
+                $stmt = $pdo->prepare("SELECT model_used, mode, start_time, message_count, command_count FROM claude_sessions ORDER BY start_time DESC LIMIT 10");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
+        } catch (Exception $e) {
+            $memoryData = [['error' => 'Database query failed: ' . $e->getMessage()]];
         }
         
         // Create memory file

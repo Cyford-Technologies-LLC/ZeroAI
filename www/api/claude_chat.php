@@ -110,10 +110,20 @@ try {
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, primary_model TEXT, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_config (id INTEGER PRIMARY KEY, system_prompt TEXT, goals TEXT, personality TEXT, capabilities TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, model_used TEXT, mode TEXT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
     
     // Start session
     $memoryPdo->prepare("INSERT INTO sessions (start_time, primary_model) VALUES (datetime('now'), ?)") ->execute([$selectedModel]);
     $sessionId = $memoryPdo->lastInsertId();
+    
+    // Save session info to claude_sessions
+    $memoryPdo->prepare("INSERT INTO claude_sessions (model_used, mode, start_time) VALUES (?, ?, datetime('now'))")
+             ->execute([$selectedModel, $claudeMode]);
+    
+    // Save/update system prompt to claude_config
+    $memoryPdo->prepare("INSERT OR REPLACE INTO claude_config (id, system_prompt, updated_at) VALUES (1, ?, datetime('now'))")
+             ->execute([$systemPrompt]);
 } catch (Exception $e) {
     // Memory system failed, continue without it
     $memoryPdo = null;
@@ -154,6 +164,8 @@ try {
             $systemPrompt .= "- @container_logs [container] [lines] - Get container logs\n";
             $systemPrompt .= "- @memory chat 30min - View recent chat history\n";
             $systemPrompt .= "- @memory commands 5min - View recent command history\n";
+            $systemPrompt .= "- @memory config - View your system prompt and configuration\n";
+            $systemPrompt .= "- @memory sessions - View your recent session history\n";
             $systemPrompt .= "- @memory search \"keyword\" - Search memory for keyword\n";
         }
     } else {
