@@ -106,7 +106,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 message: message,
                 model: selectedModel,
-                autonomous: autonomousMode,
+                mode: claudeMode,
                 history: chatHistory
             })
         });

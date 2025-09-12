@@ -36,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true);
 $message = $input['message'] ?? '';
 $selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
-$autonomousMode = $input['autonomous'] ?? true;
+$claudeMode = $input['mode'] ?? 'hybrid';
+$autonomousMode = ($claudeMode === 'autonomous');
 $conversationHistory = $input['history'] ?? [];
 
 if (!$message) {
