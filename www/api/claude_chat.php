@@ -123,6 +123,23 @@ try {
     $memoryPdo->prepare("INSERT INTO claude_sessions (model_used, mode, start_time) VALUES (?, ?, datetime('now'))")
              ->execute([$selectedModel, $claudeMode]);
     
+    // Migrate prompt from old database to new memory database if not exists
+    $stmt = $memoryPdo->prepare("SELECT COUNT(*) FROM system_prompts");
+    $stmt->execute();
+    $promptCount = $stmt->fetchColumn();
+    
+    if ($promptCount == 0) {
+        // Copy from old database
+        try {
+            $sql = "SELECT prompt FROM system_prompts WHERE id = 1 ORDER BY created_at DESC LIMIT 1";
+            $result = SQLiteManager::executeSQL($sql);
+            if (!empty($result[0]['data'])) {
+                $oldPrompt = $result[0]['data'][0]['prompt'];
+                $memoryPdo->prepare("INSERT INTO system_prompts (prompt) VALUES (?)")->execute([$oldPrompt]);
+            }
+        } catch (Exception $e) {}
+    }
+    
     // Save/update system prompt to claude_config
     $memoryPdo->prepare("INSERT OR REPLACE INTO claude_config (id, system_prompt, updated_at) VALUES (1, ?, datetime('now'))")
              ->execute([$systemPrompt]);
