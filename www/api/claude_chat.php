@@ -72,6 +72,7 @@ $commandOutputs = '';
 
 // Process commands silently - capture outputs for Claude context only
 $tempMessage = $message;
+$GLOBALS['executedCommands'] = []; // Global to capture commands
 processFileCommands($tempMessage);
 processClaudeCommands($tempMessage);
 
