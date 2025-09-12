@@ -138,9 +138,9 @@ try {
         $systemPrompt = $result[0]['data'][0]['prompt'];
     }
     
-    // Add command outputs to system prompt instead of message
+    // Add command outputs to message for Claude to see
     if ($commandOutputs) {
-        $systemPrompt .= "\n\nCOMMAND CONTEXT (do not repeat in chat):\n" . $commandOutputs;
+        $message .= $commandOutputs;
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
