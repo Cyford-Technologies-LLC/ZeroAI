@@ -39,11 +39,13 @@ include __DIR__ . '/includes/header.php';
             </select>
         </div>
         <div>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" id="autonomous-mode" onchange="toggleAutonomousMode()">
-                <strong>🤖 Autonomous Mode</strong>
-            </label>
-            <small style="color: #666;">Claude can proactively analyze and modify files</small>
+            <label><strong>Claude Mode:</strong></label>
+            <select id="claude-mode" onchange="changeClaudeMode()" style="width: 200px;">
+                <option value="chat">💬 Chat Mode</option>
+                <option value="autonomous">🤖 Autonomous Mode</option>
+                <option value="hybrid" selected>⚡ Hybrid Mode</option>
+            </select>
+            <div id="mode-description" style="font-size: 12px; color: #666; margin-top: 5px;">Chat + background autonomous tasks</div>
         </div>
     </div>
     
@@ -81,7 +83,8 @@ async function sendMessage() {
     if (!message) return;
     
     const selectedModel = document.getElementById('claude-model').value;
-    const autonomousMode = document.getElementById('autonomous-mode').checked;
+    const claudeMode = document.getElementById('claude-mode').value;
+    const autonomousMode = claudeMode === 'autonomous';
     const sendButton = document.getElementById('send-button');
     const status = document.getElementById('status');
     
@@ -103,7 +106,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 message: message,
                 model: selectedModel,
-                autonomous: autonomousMode,
+                mode: claudeMode,
                 history: chatHistory
             })
         });
@@ -205,16 +208,27 @@ document.getElementById('message-input').addEventListener('keypress', function(e
     }
 });
 
-function toggleAutonomousMode() {
-    const autonomous = document.getElementById('autonomous-mode').checked;
+function changeClaudeMode() {
+    const mode = document.getElementById('claude-mode').value;
+    const description = document.getElementById('mode-description');
     const status = document.getElementById('status');
     
-    if (autonomous) {
-        status.textContent = '🤖 Autonomous Mode: Claude can proactively analyze and modify files';
-        addMessageToChat('System', '🤖 Autonomous Mode ENABLED: Claude can now proactively analyze your codebase and make improvements without explicit commands. She will automatically scan files, identify issues, and apply fixes.', 'claude');
-    } else {
-        status.textContent = '👤 Manual Mode: Use @commands to interact with Claude';
-        addMessageToChat('System', '👤 Manual Mode ENABLED: Claude will only perform actions when you use specific @commands.', 'claude');
+    switch(mode) {
+        case 'chat':
+            description.textContent = 'Normal chat with command execution';
+            status.textContent = '💬 Chat Mode: Use @commands to interact';
+            addMessageToChat('System', '💬 Chat Mode: Normal conversation with @command support', 'claude');
+            break;
+        case 'autonomous':
+            description.textContent = 'Claude works continuously and proactively';
+            status.textContent = '🤖 Autonomous Mode: Claude analyzing and improving system';
+            addMessageToChat('System', '🤖 Autonomous Mode: Claude will continuously monitor and improve your system', 'claude');
+            break;
+        case 'hybrid':
+            description.textContent = 'Chat + background autonomous tasks';
+            status.textContent = '⚡ Hybrid Mode: Chat available + background tasks running';
+            addMessageToChat('System', '⚡ Hybrid Mode: You can chat while Claude works in background', 'claude');
+            break;
     }
 }
 
@@ -264,7 +278,14 @@ function addMessageToChatNoStore(sender, message, type) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function clearChatHistory() {
+async function clearChatHistory() {
+    if (chatHistory.length > 0) {
+        await fetch('/api/save_chat_history.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({history: chatHistory})
+        });
+    }
     chatHistory = [];
     localStorage.removeItem('claude_chat_history');
     document.getElementById('chat-messages').innerHTML = '';

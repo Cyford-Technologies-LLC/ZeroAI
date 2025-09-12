@@ -146,19 +146,19 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Process commands in Claude's response so she can use @exec
+    // Process commands silently - don't show outputs in chat
     $claudeResponse = $response['message'];
-    $originalLength = strlen($claudeResponse);
+    $tempResponse = $claudeResponse;
     
-    processFileCommands($claudeResponse);
-    processClaudeCommands($claudeResponse);
+    processFileCommands($tempResponse);
+    processClaudeCommands($tempResponse);
     
-    // Log if commands were processed
-    if (strlen($claudeResponse) > $originalLength) {
-        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " Claude response commands processed\n", FILE_APPEND);
+    // Log command execution but don't show outputs in chat
+    if (strlen($tempResponse) > strlen($claudeResponse)) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " Claude executed commands silently\n", FILE_APPEND);
     }
     
-    // Use processed response
+    // Keep original response clean for chat display
     $response['message'] = $claudeResponse;
     
     echo json_encode([
