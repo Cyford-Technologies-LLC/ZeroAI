@@ -154,6 +154,20 @@ function processClaudeCommands(&$message) {
         }
     }
 
+    // @train_agents command - Autonomous training
+    if (preg_match('/\@train_agents/', $message)) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @train_agents\n", FILE_APPEND);
+        $response = file_get_contents('http://localhost/api/claude_autonomous.php', false, stream_context_create([
+            'http' => ['method' => 'POST']
+        ]));
+        $result = json_decode($response, true);
+        if ($result && $result['success']) {
+            $message .= "\n\nAutonomous Training Results:\n" . implode("\n", $result['improvements']);
+        } else {
+            $message .= "\n\nAutonomous training failed: " . ($result['error'] ?? 'Unknown error');
+        }
+    }
+
     // @docker command
     if (preg_match('/\@docker\s+(.+)/', $message, $matches)) {
         $dockerCmd = trim($matches[1]);
