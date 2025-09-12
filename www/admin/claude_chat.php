@@ -125,7 +125,8 @@ async function sendMessage() {
         
         if (result.success) {
             addMessageToChat('Claude', result.response, 'claude');
-            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${autonomousMode ? 'Autonomous' : 'Manual'}`;
+            const mode = document.getElementById('claude-mode').value;
+            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${mode}`;
         } else {
             addMessageToChat('System', 'Error: ' + result.error, 'error');
             status.textContent = 'Error occurred';
