@@ -247,14 +247,10 @@ try {
                      ->execute(['Claude', $claudeResponse, $selectedModel, $sessionId]);
             
             // Save executed commands with their outputs
-            if (preg_match_all('/\@(\w+)\s+([^\n]*)/m', $claudeResponse, $cmdMatches, PREG_SET_ORDER)) {
-                foreach ($cmdMatches as $match) {
-                    $fullCommand = $match[0];
-                    // Use the captured command outputs
-                    $commandOutput = isset($commandOutputs) ? $commandOutputs : 'Output captured';
-                    
+            if (isset($GLOBALS['executedCommands']) && !empty($GLOBALS['executedCommands'])) {
+                foreach ($GLOBALS['executedCommands'] as $cmdData) {
                     $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
-                             ->execute([$fullCommand, $commandOutput, 'success', $selectedModel, $sessionId]);
+                             ->execute([$cmdData['command'], $cmdData['output'], 'success', $selectedModel, $sessionId]);
                 }
             }
         } catch (Exception $e) {}
