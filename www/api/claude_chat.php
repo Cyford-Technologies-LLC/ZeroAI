@@ -130,6 +130,9 @@ try {
             $systemPrompt .= "- @exec [container] [command] - Execute command in container\n";
             $systemPrompt .= "- @inspect [container] - Get container details\n";
             $systemPrompt .= "- @container_logs [container] [lines] - Get container logs\n";
+            $systemPrompt .= "- @memory chat 30min - View recent chat history\n";
+            $systemPrompt .= "- @memory commands 5min - View recent command history\n";
+            $systemPrompt .= "- @memory search \"keyword\" - Search memory for keyword\n";
         }
     } else {
         // Initialize complete system prompt
