@@ -62,14 +62,25 @@ if ($autonomousMode) {
     }
 }
 
-// Process file commands locally first
+// Capture command outputs separately from chat
 require_once __DIR__ . '/file_commands.php';
-$originalMessage = $message;
-processFileCommands($message);
-
-// Process Claude commands locally
 require_once __DIR__ . '/claude_commands.php';
-processClaudeCommands($message);
+
+$originalMessage = $message;
+$commandOutputs = '';
+
+// Process commands and capture outputs
+$tempMessage = $message;
+processFileCommands($tempMessage);
+processClaudeCommands($tempMessage);
+
+// Extract command outputs
+if (strlen($tempMessage) > strlen($message)) {
+    $commandOutputs = substr($tempMessage, strlen($message));
+}
+
+// Keep original message for chat, add outputs to system prompt
+$message = $originalMessage;
 
 // All messages go to Claude for processing
 
@@ -125,6 +136,11 @@ try {
         // Re-fetch after initialization
         $result = SQLiteManager::executeSQL($sql);
         $systemPrompt = $result[0]['data'][0]['prompt'];
+    }
+    
+    // Add command outputs to system prompt instead of message
+    if ($commandOutputs) {
+        $systemPrompt .= "\n\nCOMMAND CONTEXT (do not repeat in chat):\n" . $commandOutputs;
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);

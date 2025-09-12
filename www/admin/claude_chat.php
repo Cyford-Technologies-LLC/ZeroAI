@@ -274,32 +274,7 @@ function clearChatHistory() {
 // Load chat history on page load
 loadChatHistory();
 
-// Load Claude models
-loadClaudeModels();
-
-async function loadClaudeModels() {
-    try {
-        const response = await fetch('/api/get_claude_models.php');
-        const result = await response.json();
-        
-        if (result.success) {
-            const select = document.getElementById('claude-model');
-            select.innerHTML = '';
-            
-            result.models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.model_id;
-                option.textContent = model.display_name;
-                if (model.is_default) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Failed to load Claude models:', error);
-    }
-}
+// Models are now static in HTML
 
 // System prompt editing functions
 let currentSystemPrompt = '';
