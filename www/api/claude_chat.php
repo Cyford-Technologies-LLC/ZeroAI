@@ -249,20 +249,8 @@ try {
             if (preg_match_all('/\@(\w+)\s+([^\n]*)/m', $claudeResponse, $cmdMatches, PREG_SET_ORDER)) {
                 foreach ($cmdMatches as $match) {
                     $fullCommand = $match[0];
-                    // Extract output from the difference between processed and original response
-                    $commandOutput = '';
-                    if (strlen($processedResponse) > strlen($claudeResponse)) {
-                        $outputs = substr($processedResponse, strlen($claudeResponse));
-                        // Get the section after this command
-                        $commandPos = strpos($outputs, $fullCommand);
-                        if ($commandPos !== false) {
-                            $afterCommand = substr($outputs, $commandPos + strlen($fullCommand));
-                            // Extract until next @ command or end
-                            if (preg_match('/^[^@]*?(?=\n@|$)/s', $afterCommand, $outputMatch)) {
-                                $commandOutput = trim($outputMatch[0]);
-                            }
-                        }
-                    }
+                    // Use the captured command outputs
+                    $commandOutput = isset($commandOutputs) ? $commandOutputs : 'Output captured';
                     
                     $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
                              ->execute([$fullCommand, $commandOutput, 'success', $selectedModel, $sessionId]);
