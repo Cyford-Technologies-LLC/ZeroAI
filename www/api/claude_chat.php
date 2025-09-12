@@ -75,8 +75,8 @@ processFileCommands($tempMessage);
 processClaudeCommands($tempMessage);
 
 // Extract command outputs
-if (strlen($tempMessage) > strlen($message)) {
-    $commandOutputs = substr($tempMessage, strlen($message));
+if (strlen($tempMessage) > strlen($originalMessage)) {
+    $commandOutputs = substr($tempMessage, strlen($originalMessage));
 }
 
 // Keep original message for chat, add outputs to system prompt
