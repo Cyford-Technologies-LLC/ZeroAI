@@ -13,5 +13,8 @@ SQLiteManager::executeSQL($createTable);
 $insertPrompt = "INSERT OR REPLACE INTO system_prompts (id, prompt) VALUES (1, '" . SQLite3::escapeString($systemPrompt) . "')";
 SQLiteManager::executeSQL($insertPrompt);
 
-echo json_encode(['success' => true, 'message' => 'Complete system prompt saved to SQLite']);
+// Don't output JSON when included from other scripts
+if (basename($_SERVER['PHP_SELF']) === 'init_claude_prompt.php') {
+    echo json_encode(['success' => true, 'message' => 'Complete system prompt saved to SQLite']);
+}
 ?>
