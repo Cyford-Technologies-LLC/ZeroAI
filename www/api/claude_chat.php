@@ -62,30 +62,21 @@ if ($autonomousMode) {
     }
 }
 
-// Process file commands locally first
-require_once __DIR__ . '/file_commands.php';
+// Process commands and capture results separately
+require_once __DIR__ . '/file_commands_context.php';
+require_once __DIR__ . '/claude_commands_context.php';
+
 $originalMessage = $message;
-processFileCommands($message);
+$commandContext = '';
 
-// Process Claude commands locally
-require_once __DIR__ . '/claude_commands.php';
-processClaudeCommands($message);
+// Process commands but capture output separately
+processFileCommandsToContext($message, $commandContext);
+processClaudeCommandsToContext($message, $commandContext);
 
-// Check if this is a simple command that can be handled locally
-$isSimpleCommand = preg_match('/^\s*@(file|read|list|search|agents|crews|logs|ps|docker|compose)\s/', trim($originalMessage));
-$hasOnlyCommands = preg_match('/^\s*@\w+/', trim($originalMessage)) && !preg_match('/[.?!]\s*[A-Z]/', $originalMessage);
+// Reset message to original (no command outputs in chat)
+$message = $originalMessage;
 
-// If message was processed by commands and no complex query, return local result
-if (($isSimpleCommand || $hasOnlyCommands) && $message !== $originalMessage) {
-    echo json_encode([
-        'success' => true,
-        'response' => "Command executed locally (no API cost):\n\n" . substr($message, strlen($originalMessage)),
-        'tokens' => 0,
-        'cost' => 0.0,
-        'model' => 'local-processing'
-    ]);
-    exit;
-}
+// All messages go to Claude for processing
 
 // Only use Claude API for complex queries or when explicitly needed
 $envContent = file_get_contents('/app/.env');
@@ -139,6 +130,11 @@ try {
         // Re-fetch after initialization
         $result = SQLiteManager::executeSQL($sql);
         $systemPrompt = $result[0]['data'][0]['prompt'];
+    }
+    
+    // Add command context to system prompt
+    if ($commandContext) {
+        $systemPrompt .= "\n\nCURRENT COMMAND CONTEXT:\n" . $commandContext;
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
