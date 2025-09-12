@@ -145,7 +145,14 @@ try {
             if ($promptResult) {
                 $systemPrompt = $promptResult['prompt'];
             }
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            // Fallback to old system if memory db fails
+            $sql = "SELECT prompt FROM system_prompts WHERE id = 1 ORDER BY created_at DESC LIMIT 1";
+            $result = SQLiteManager::executeSQL($sql);
+            if (!empty($result[0]['data'])) {
+                $systemPrompt = $result[0]['data'][0]['prompt'];
+            }
+        }
     }
     
     if ($systemPrompt) {
