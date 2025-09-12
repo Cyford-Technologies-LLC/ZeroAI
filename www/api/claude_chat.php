@@ -160,9 +160,22 @@ try {
     
     // Claude response processed
     
-    // Remove @commands from chat display to save tokens
-    $cleanResponse = preg_replace('/\@\w+\s+[^\n]*(?:\n(?!\@)[^\n]*)*/m', '[Command executed]', $claudeResponse);
-    $response['message'] = $cleanResponse;
+    // Remove @commands from chat display but preserve memory hyperlinks
+    $cleanResponse = $claudeResponse;
+    
+    // Replace @commands with [Command executed] but preserve lines with hyperlinks
+    $lines = explode("\n", $cleanResponse);
+    $processedLines = [];
+    
+    foreach ($lines as $line) {
+        if (preg_match('/\@\w+/', $line) && !preg_match('/\[View.*File\]/', $line)) {
+            $processedLines[] = '[Command executed]';
+        } else {
+            $processedLines[] = $line;
+        }
+    }
+    
+    $response['message'] = implode("\n", $processedLines);
     
     echo json_encode([
         'success' => true,
