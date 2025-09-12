@@ -98,6 +98,28 @@ if (!$apiKey) {
 require_once __DIR__ . '/claude_integration.php';
 require_once __DIR__ . '/sqlite_manager.php';
 
+// Initialize memory system with error handling
+try {
+    $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+    if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
+    
+    $dbPath = $memoryDir . '/claude_memory.db';
+    $memoryPdo = new PDO("sqlite:$dbPath");
+    
+    // Create tables if they don't exist
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, primary_model TEXT, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+    
+    // Start session
+    $memoryPdo->prepare("INSERT INTO sessions (start_time, primary_model) VALUES (datetime('now'), ?)") ->execute([$selectedModel]);
+    $sessionId = $memoryPdo->lastInsertId();
+} catch (Exception $e) {
+    // Memory system failed, continue without it
+    $memoryPdo = null;
+    $sessionId = null;
+}
+
 try {
     $claude = new ClaudeIntegration($apiKey);
     
@@ -142,7 +164,13 @@ try {
         $systemPrompt = $result[0]['data'][0]['prompt'];
     }
     
-    // User message logged
+    // Save user message to memory
+    if ($memoryPdo && $sessionId) {
+        try {
+            $memoryPdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
+                     ->execute(['User', $originalMessage, $selectedModel, $sessionId]);
+        } catch (Exception $e) {}
+    }
     
     // Add command outputs to message for Claude to see
     if ($commandOutputs) {
@@ -158,32 +186,17 @@ try {
     processFileCommands($processedResponse);
     processClaudeCommands($processedResponse);
     
-    // Claude response processed
-    
-    // Show @commands but hide their outputs, preserve hyperlinks
-    $lines = explode("\n", $claudeResponse);
-    $processedLines = [];
-    $skipOutput = false;
-    
-    foreach ($lines as $line) {
-        if (preg_match('/^\@\w+/', $line)) {
-            // Show the @command itself
-            $processedLines[] = $line;
-            $skipOutput = true;
-        } elseif (preg_match('/\[View.*File\]/', $line)) {
-            // Show hyperlinks
-            $processedLines[] = $line;
-            $skipOutput = false;
-        } elseif ($skipOutput && (strpos($line, '🧠') !== false || strpos($line, '💻') !== false || strpos($line, '📋') !== false)) {
-            // Skip command output lines
-            continue;
-        } else {
-            $processedLines[] = $line;
-            $skipOutput = false;
-        }
+    // Save Claude's response to memory
+    if ($memoryPdo && $sessionId) {
+        try {
+            $memoryPdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
+                     ->execute(['Claude', $claudeResponse, $selectedModel, $sessionId]);
+        } catch (Exception $e) {}
     }
     
-    $response['message'] = implode("\n", $processedLines);
+    // Replace @commands with the command name, preserve hyperlinks
+    $cleanResponse = preg_replace('/\@(\w+)\s+([^\n]*)/m', '[@$1: $2]', $claudeResponse);
+    $response['message'] = $cleanResponse;
     
     echo json_encode([
         'success' => true,
