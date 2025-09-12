@@ -69,17 +69,17 @@ require_once __DIR__ . '/claude_commands.php';
 $originalMessage = $message;
 $commandOutputs = '';
 
-// Process commands and capture outputs
+// Process commands silently - capture outputs for Claude context only
 $tempMessage = $message;
 processFileCommands($tempMessage);
 processClaudeCommands($tempMessage);
 
-// Extract command outputs
+// Extract ALL command outputs (file + exec)
 if (strlen($tempMessage) > strlen($originalMessage)) {
     $commandOutputs = substr($tempMessage, strlen($originalMessage));
 }
 
-// Keep original message for chat, add outputs to system prompt
+// Keep original message clean for chat
 $message = $originalMessage;
 
 // All messages go to Claude for processing

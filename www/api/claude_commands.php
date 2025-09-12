@@ -191,33 +191,29 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
     }
 
-    // @exec command - Execute command in container
+    // @exec command
     if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/', $message, $matches)) {
         $containerName = trim($matches[1]);
         $command = trim($matches[2]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
-        
-        // Execute command directly in container with proper escaping
         $escapedCommand = escapeshellarg($command);
         $output = shell_exec("timeout 15 docker exec $containerName bash -c $escapedCommand 2>&1");
         $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
     }
 
-    // @inspect command - Get container details
+    // @inspect command
     if (preg_match('/\@inspect\s+([^\s]+)/', $message, $matches)) {
         $containerName = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @inspect: $containerName\n", FILE_APPEND);
-        
         $output = shell_exec("timeout 10 docker inspect $containerName --format='{{.State.Status}} {{.Config.Image}} {{.NetworkSettings.IPAddress}}' 2>&1");
         $message .= "\n\n🔍 Container Info [$containerName]:\n" . ($output ?: "Container not found");
     }
 
-    // @container_logs command - Get container logs
+    // @container_logs command
     if (preg_match('/\@container_logs\s+([^\s]+)(?:\s+(\d+))?/', $message, $matches)) {
         $containerName = trim($matches[1]);
         $lines = isset($matches[2]) ? (int)$matches[2] : 50;
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @container_logs: $containerName $lines\n", FILE_APPEND);
-        
         $output = shell_exec("timeout 10 docker logs --tail=$lines $containerName 2>&1");
         $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
     }
