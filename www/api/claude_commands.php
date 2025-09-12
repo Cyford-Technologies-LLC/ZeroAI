@@ -220,9 +220,12 @@ function processClaudeCommands(&$message) {
     }
     
     // @memory command - Query database and create file with hyperlink
-    if (preg_match('/\@memory\s+(chat|commands|search)\s*(.*)/', $message, $matches)) {
+    if (preg_match('/\@memory\s+(chat|commands|search|config|sessions)\s*(.*)/', $message, $matches)) {
         $action = $matches[1];
         $params = trim($matches[2]);
+        
+        // Wait 2 seconds for command processing to complete
+        sleep(2);
         
         $memoryData = [];
         
@@ -238,7 +241,7 @@ function processClaudeCommands(&$message) {
                 $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } elseif ($action === 'commands' && preg_match('/(\d+)min/', $params, $timeMatch)) {
                 $minutes = (int)$timeMatch[1];
-                $stmt = $pdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
+                $stmt = $pdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history WHERE datetime(timestamp) >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
                 $stmt->execute();
                 $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } elseif ($action === 'config') {
