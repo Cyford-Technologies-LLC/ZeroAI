@@ -145,14 +145,7 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Process commands in Claude's response
-    $responseMessage = '';
-    processClaudeResponseCommands($response['message'], $responseMessage);
-    
-    // Append command results to response
-    if ($responseMessage) {
-        $response['message'] .= $responseMessage;
-    }
+    // Don't process commands in Claude's response to avoid showing exec outputs
     
     echo json_encode([
         'success' => true,

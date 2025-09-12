@@ -27,6 +27,8 @@ services:
       command: >
         bash -c "apt-get update && apt-get install -y docker.io && 
         mkdir -p /app/tmp && 
+        service php8.4-fpm start && 
+        nginx && 
         /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
       privileged: true
       # env_file:
