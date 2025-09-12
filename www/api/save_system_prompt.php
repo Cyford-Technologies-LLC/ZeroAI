@@ -19,10 +19,10 @@ try {
     $pdo = new PDO("sqlite:$dbPath");
     
     // Create table if not exists
-    $pdo->exec("CREATE TABLE IF NOT EXISTS system_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
     // Insert new prompt
-    $stmt = $pdo->prepare("INSERT INTO system_prompts (prompt) VALUES (?)");
+    $stmt = $pdo->prepare("INSERT INTO claude_prompts (prompt) VALUES (?)");
     $stmt->execute([$newPrompt]);
     
     echo json_encode(['success' => true, 'message' => 'System prompt saved to memory database']);

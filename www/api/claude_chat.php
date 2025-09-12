@@ -114,6 +114,7 @@ try {
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, model_used TEXT, mode TEXT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS system_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
     // Start session
     $memoryPdo->prepare("INSERT INTO sessions (start_time, primary_model) VALUES (datetime('now'), ?)") ->execute([$selectedModel]);
@@ -152,24 +153,17 @@ try {
 try {
     $claude = new ClaudeIntegration($apiKey);
     
-    // Get system prompt from memory database
+    // Get system prompt from claude_prompts table
     $systemPrompt = '';
     if ($memoryPdo) {
         try {
-            $stmt = $memoryPdo->prepare("SELECT prompt FROM system_prompts ORDER BY created_at DESC LIMIT 1");
+            $stmt = $memoryPdo->prepare("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
             $stmt->execute();
             $promptResult = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($promptResult) {
                 $systemPrompt = $promptResult['prompt'];
             }
-        } catch (Exception $e) {
-            // Fallback to old system if memory db fails
-            $sql = "SELECT prompt FROM system_prompts WHERE id = 1 ORDER BY created_at DESC LIMIT 1";
-            $result = SQLiteManager::executeSQL($sql);
-            if (!empty($result[0]['data'])) {
-                $systemPrompt = $result[0]['data'][0]['prompt'];
-            }
-        }
+        } catch (Exception $e) {}
     }
     
     if ($systemPrompt) {
@@ -203,18 +197,23 @@ try {
             $systemPrompt .= "- @memory search \"keyword\" - Search memory for keyword\n";
         }
     } else {
-        // Initialize complete system prompt
-        require_once __DIR__ . '/init_claude_prompt.php';
-        // Re-fetch from memory database after initialization
-        if ($memoryPdo) {
-            try {
-                $stmt = $memoryPdo->prepare("SELECT prompt FROM system_prompts ORDER BY created_at DESC LIMIT 1");
-                $stmt->execute();
-                $promptResult = $stmt->fetch(PDO::FETCH_ASSOC);
-                if ($promptResult) {
-                    $systemPrompt = $promptResult['prompt'];
+        // Use default prompt as fallback
+        try {
+            $sql = "SELECT prompt FROM default_prompts WHERE id = 1";
+            $result = SQLiteManager::executeSQL($sql);
+            if (!empty($result[0]['data'])) {
+                $systemPrompt = $result[0]['data'][0]['prompt'];
+            } else {
+                // Create default if none exists
+                require_once __DIR__ . '/init_claude_prompt.php';
+                $sql = "SELECT prompt FROM default_prompts WHERE id = 1";
+                $result = SQLiteManager::executeSQL($sql);
+                if (!empty($result[0]['data'])) {
+                    $systemPrompt = $result[0]['data'][0]['prompt'];
                 }
-            } catch (Exception $e) {}
+            }
+        } catch (Exception $e) {
+            $systemPrompt = "You are Claude, integrated into ZeroAI.";
         }
     }
     
