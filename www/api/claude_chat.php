@@ -62,19 +62,14 @@ if ($autonomousMode) {
     }
 }
 
-// Process commands and capture results separately
-require_once __DIR__ . '/file_commands_context.php';
-require_once __DIR__ . '/claude_commands_context.php';
-
+// Process file commands locally first
+require_once __DIR__ . '/file_commands.php';
 $originalMessage = $message;
-$commandContext = '';
+processFileCommands($message);
 
-// Process commands but capture output separately
-processFileCommandsToContext($message, $commandContext);
-processClaudeCommandsToContext($message, $commandContext);
-
-// Reset message to original (no command outputs in chat)
-$message = $originalMessage;
+// Process Claude commands locally
+require_once __DIR__ . '/claude_commands.php';
+processClaudeCommands($message);
 
 // All messages go to Claude for processing
 
@@ -130,11 +125,6 @@ try {
         // Re-fetch after initialization
         $result = SQLiteManager::executeSQL($sql);
         $systemPrompt = $result[0]['data'][0]['prompt'];
-    }
-    
-    // Add command context to system prompt
-    if ($commandContext) {
-        $systemPrompt .= "\n\nCURRENT COMMAND CONTEXT:\n" . $commandContext;
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
