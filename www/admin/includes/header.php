@@ -140,7 +140,7 @@ require_once __DIR__ . '/../auth_check.php';
                 </div>
                 <div class="sidebar-group">
                     <h3>Diagnostics</h3>
-                    <a href="/admin/error_logs" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>🚨 Error Logs</a>
+                    <a href="/admin/error_logs.php" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>🚨 Error Logs</a>
                     <a href="/admin/diagnostics" <?= ($currentPage ?? '') === 'diagnostics' ? 'class="active"' : '' ?>>🔍 System Diagnostics</a>
                 </div>
                 <div class="sidebar-group">

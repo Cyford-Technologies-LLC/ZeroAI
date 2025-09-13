@@ -1,43 +1,53 @@
 <?php
-
 namespace ZeroAI\Services;
 
-use ZeroAI\Core\System;
+use ZeroAI\Core\DatabaseManager;
 
 class SettingsService {
-    private $system;
+    private $db;
     
     public function __construct() {
-        $this->system = new System();
+        $this->db = new DatabaseManager();
+        $this->initTable();
     }
     
-    public function saveSettings($settings) {
-        foreach ($settings as $key => $value) {
-            $_SESSION[$key] = $value;
-        }
-        
-        if (isset($settings['display_errors'])) {
-            ini_set('display_errors', $settings['display_errors'] ? 1 : 0);
-        }
-        
-        return true;
+    private function initTable() {
+        $this->db->executeSQL("
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT,
+                category TEXT DEFAULT 'general',
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
     }
     
-    public function getSystemInfo() {
-        return [
-            'php_version' => phpversion(),
-            'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
-            'document_root' => $_SERVER['DOCUMENT_ROOT'],
-            'error_display' => isset($_SESSION['display_errors']) && $_SESSION['display_errors'] ? 'Enabled' : 'Disabled',
-            'memory_limit' => ini_get('memory_limit'),
-            'max_execution_time' => ini_get('max_execution_time'),
-            'upload_max_filesize' => ini_get('upload_max_filesize')
-        ];
+    public function getSetting(string $key, string $default = ''): string {
+        $result = $this->db->executeSQL("SELECT value FROM settings WHERE key = '$key'");
+        return $result[0]['data'][0]['value'] ?? $default;
     }
     
-    public function getDebugSettings() {
-        return [
-            'display_errors' => isset($_SESSION['display_errors']) && $_SESSION['display_errors']
-        ];
+    public function setSetting(string $key, string $value, string $category = 'general'): bool {
+        $result = $this->db->executeSQL("
+            INSERT OR REPLACE INTO settings (key, value, category, updated_at) 
+            VALUES ('$key', '$value', '$category', datetime('now'))
+        ");
+        return !isset($result[0]['error']);
+    }
+    
+    public function getAllSettings(): array {
+        $result = $this->db->executeSQL("SELECT * FROM settings ORDER BY category, key");
+        return $result[0]['data'] ?? [];
+    }
+    
+    public function getSettingsByCategory(string $category): array {
+        $result = $this->db->executeSQL("SELECT * FROM settings WHERE category = '$category' ORDER BY key");
+        return $result[0]['data'] ?? [];
+    }
+    
+    public function deleteSetting(string $key): bool {
+        $result = $this->db->executeSQL("DELETE FROM settings WHERE key = '$key'");
+        return !isset($result[0]['error']);
     }
 }

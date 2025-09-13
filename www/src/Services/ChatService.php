@@ -9,7 +9,7 @@ class ChatService {
     private $system;
     
     public function __construct() {
-        $this->system = new System();
+        $this->system = System::getInstance();
     }
     
     public function processChat($message, $provider = 'claude', $model = 'claude-sonnet-4-20250514', $autonomous = true, $history = []) {
