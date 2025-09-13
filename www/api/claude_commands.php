@@ -154,6 +154,20 @@ function processClaudeCommands(&$message) {
         }
     }
 
+    // @train_agents command - Autonomous training
+    if (preg_match('/\@train_agents/', $message)) {
+        @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @train_agents\n", FILE_APPEND);
+        $response = file_get_contents('http://localhost/api/claude_autonomous.php', false, stream_context_create([
+            'http' => ['method' => 'POST']
+        ]));
+        $result = json_decode($response, true);
+        if ($result && $result['success']) {
+            $message .= "\n\nAutonomous Training Results:\n" . implode("\n", $result['improvements']);
+        } else {
+            $message .= "\n\nAutonomous training failed: " . ($result['error'] ?? 'Unknown error');
+        }
+    }
+
     // @docker command
     if (preg_match('/\@docker\s+(.+)/', $message, $matches)) {
         $dockerCmd = trim($matches[1]);
@@ -177,35 +191,85 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
     }
 
-    // @exec command - Execute command in container
-    if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/', $message, $matches)) {
+    // @exec command - Always allowed
+    if (preg_match('/\@exec\s+([^\s]+)\s+(.+)/s', $message, $matches)) {
         $containerName = trim($matches[1]);
         $command = trim($matches[2]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
-        
-        // Execute command directly in container with proper escaping
-        $escapedCommand = escapeshellarg($command);
-        $output = shell_exec("timeout 15 docker exec $containerName bash -c $escapedCommand 2>&1");
+        // Use base64 encoding to safely pass complex commands
+        $encodedCommand = base64_encode($command);
+        $output = shell_exec("timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash' 2>&1");
         $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
     }
 
-    // @inspect command - Get container details
+    // @inspect command
     if (preg_match('/\@inspect\s+([^\s]+)/', $message, $matches)) {
         $containerName = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @inspect: $containerName\n", FILE_APPEND);
-        
         $output = shell_exec("timeout 10 docker inspect $containerName --format='{{.State.Status}} {{.Config.Image}} {{.NetworkSettings.IPAddress}}' 2>&1");
         $message .= "\n\n🔍 Container Info [$containerName]:\n" . ($output ?: "Container not found");
     }
 
-    // @container_logs command - Get container logs
+    // @container_logs command
     if (preg_match('/\@container_logs\s+([^\s]+)(?:\s+(\d+))?/', $message, $matches)) {
         $containerName = trim($matches[1]);
         $lines = isset($matches[2]) ? (int)$matches[2] : 50;
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @container_logs: $containerName $lines\n", FILE_APPEND);
-        
         $output = shell_exec("timeout 10 docker logs --tail=$lines $containerName 2>&1");
         $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
+    }
+    
+    // @memory command - Query database and create file with hyperlink
+    if (preg_match('/\@memory\s+(chat|commands|search|config|sessions)\s*(.*)/', $message, $matches)) {
+        $action = $matches[1];
+        $params = trim($matches[2]);
+        
+        
+        $memoryData = [];
+        
+        // Query database based on action
+        try {
+            $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+            $pdo = new PDO("sqlite:$dbPath");
+            
+            if ($action === 'chat' && preg_match('/(\d+)min/', $params, $timeMatch)) {
+                $minutes = (int)$timeMatch[1];
+                $stmt = $pdo->prepare("SELECT sender, message, model_used, timestamp FROM chat_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($action === 'commands' && preg_match('/(\d+)min/', $params, $timeMatch)) {
+                $minutes = (int)$timeMatch[1];
+                $stmt = $pdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history WHERE datetime(timestamp) >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($action === 'config') {
+                $stmt = $pdo->prepare("SELECT system_prompt, goals, personality, capabilities, updated_at FROM claude_config WHERE id = 1");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($action === 'sessions') {
+                $stmt = $pdo->prepare("SELECT model_used, mode, start_time, message_count, command_count FROM claude_sessions ORDER BY start_time DESC LIMIT 10");
+                $stmt->execute();
+                $memoryData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Exception $e) {
+            $memoryData = [['error' => 'Database query failed: ' . $e->getMessage()]];
+        }
+        
+        // Create memory file in sessions directory
+        $sessionsDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions';
+        if (!is_dir($sessionsDir)) mkdir($sessionsDir, 0777, true);
+        
+        $filename = 'memory.json';
+        $memoryFile = $sessionsDir . '/' . $filename;
+        
+        // Save to file
+        file_put_contents($memoryFile, json_encode($memoryData, JSON_PRETTY_PRINT));
+        
+        // Auto-read file content for Claude
+        $fileContent = file_get_contents($memoryFile);
+        $message .= "\n\n🧠 Memory: Found " . count($memoryData) . " $action records\n";
+        $message .= "File content of sessions/memory.json:\n" . $fileContent . "\n";
+        $message .= "[View Memory File](../knowledge/internal_crew/agent_learning/self/claude/sessions/memory.json)";
     }
 }
 

@@ -11,15 +11,21 @@ if (!$newPrompt) {
 }
 
 try {
+    // Save to new memory database
+    $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+    if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
+    
+    $dbPath = $memoryDir . '/claude_memory.db';
+    $pdo = new PDO("sqlite:$dbPath");
+    
     // Create table if not exists
-    $createTable = "CREATE TABLE IF NOT EXISTS system_prompts (id INTEGER PRIMARY KEY, prompt TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)";
-    SQLiteManager::executeSQL($createTable);
+    $pdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
-    // Insert or update prompt
-    $insertPrompt = "INSERT OR REPLACE INTO system_prompts (id, prompt) VALUES (1, '" . SQLite3::escapeString($newPrompt) . "')";
-    $result = SQLiteManager::executeSQL($insertPrompt);
+    // Insert new prompt
+    $stmt = $pdo->prepare("INSERT INTO claude_prompts (prompt) VALUES (?)");
+    $stmt->execute([$newPrompt]);
     
-    echo json_encode(['success' => true, 'result' => $result]);
+    echo json_encode(['success' => true, 'message' => 'System prompt saved to memory database']);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

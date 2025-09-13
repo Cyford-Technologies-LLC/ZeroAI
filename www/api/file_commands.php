@@ -1,17 +1,29 @@
 <?php
 function processFileCommands(&$message) {
-    // @file command
+    // @file command - Unrestricted read access
     if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
         $filePath = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @file: $filePath\n", FILE_APPEND);
-        $cleanPath = ltrim($filePath, '/');
-        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
-        $fullPath = '/app/' . $cleanPath;
-        if (file_exists($fullPath)) {
-            $fileContent = file_get_contents($fullPath);
-            $message .= "\n\nFile content of " . $filePath . ":\n" . $fileContent;
-        } else {
-            $message .= "\n\nFile not found: " . $filePath;
+        
+        // Try multiple path variations for unrestricted access
+        $paths = [
+            $filePath,
+            '/app/' . ltrim($filePath, '/'),
+            '/app/' . $filePath
+        ];
+        
+        $found = false;
+        foreach ($paths as $tryPath) {
+            if (file_exists($tryPath) && is_readable($tryPath)) {
+                $fileContent = file_get_contents($tryPath);
+                $message .= "\n\nFile content of " . $filePath . ":\n" . $fileContent;
+                $found = true;
+                break;
+            }
+        }
+        
+        if (!$found) {
+            $message .= "\n\nFile not found or not readable: " . $filePath;
         }
     }
 
@@ -63,45 +75,126 @@ function processFileCommands(&$message) {
         }
     }
 
-    // @create command
+    // @create command - Unrestricted write to Claude's directory, read-only elsewhere
     if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
         $filePath = trim($matches[1]);
         $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
         
-        // Smart path handling - don't double-prepend /app/
+        // Smart path handling
         if (strpos($filePath, '/app/') === 0) {
-            $fullPath = $filePath; // Already has /app/
+            $fullPath = $filePath;
         } else {
             $cleanPath = ltrim($filePath, '/');
             $fullPath = '/app/' . $cleanPath;
         }
         
-        $dir = dirname($fullPath);
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
-        $result = file_put_contents($fullPath, $fileContent);
-        if ($result !== false) {
-            $message .= "\n\n✅ File created: " . $filePath . " (" . $result . " bytes)";
+        // Check if writing to Claude's learning directory
+        $claudeDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+        $isClaudeDir = strpos($fullPath, $claudeDir) === 0;
+        
+        if ($isClaudeDir) {
+            // Unrestricted write access to Claude's directory
+            $dir = dirname($fullPath);
+            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            $result = file_put_contents($fullPath, $fileContent);
+            if ($result !== false) {
+                $message .= "\n\n[SUCCESS] File created in Claude's directory: " . $filePath . " (" . $result . " bytes)";
+            } else {
+                $message .= "\n\n[ERROR] Failed to create in Claude's directory: " . $filePath;
+            }
         } else {
-            $message .= "\n\n❌ Failed to create: " . $filePath;
+            // Read-only mode for other directories
+            $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only write to: knowledge/internal_crew/agent_learning/self/claude/";
         }
     }
 
-    // @edit command
+    // @edit command - Unrestricted write to Claude's directory only
     if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
         $filePath = trim($matches[1]);
         $newContent = isset($matches[2]) ? trim($matches[2]) : "";
-        $cleanPath = ltrim($filePath, '/');
-        if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
-        $fullPath = '/app/' . $cleanPath;
-        if (file_exists($fullPath)) {
-            $result = file_put_contents($fullPath, $newContent);
-            if ($result !== false) {
-                $message .= "\n\n✅ File updated: " . $filePath . " (" . $result . " bytes)";
+        
+        if (strpos($filePath, '/app/') === 0) {
+            $fullPath = $filePath;
+        } else {
+            $cleanPath = ltrim($filePath, '/');
+            $fullPath = '/app/' . $cleanPath;
+        }
+        
+        // Check if writing to Claude's learning directory
+        $claudeDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+        $isClaudeDir = strpos($fullPath, $claudeDir) === 0;
+        
+        if ($isClaudeDir) {
+            if (file_exists($fullPath)) {
+                $result = file_put_contents($fullPath, $newContent);
+                if ($result !== false) {
+                    $message .= "\n\n[SUCCESS] File updated in Claude's directory: " . $filePath . " (" . $result . " bytes)";
+                } else {
+                    $message .= "\n\n[ERROR] Failed to update in Claude's directory: " . $filePath;
+                }
             } else {
-                $message .= "\n\n❌ Failed to update: " . $filePath;
+                $message .= "\n\nFile not found in Claude's directory: " . $filePath;
             }
         } else {
-            $message .= "\n\nFile not found: " . $filePath;
+            $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only edit files in: knowledge/internal_crew/agent_learning/self/claude/";
+        }
+    }
+
+    // @append command - Unrestricted write to Claude's directory only
+    if (preg_match('/\@append\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+        $filePath = trim($matches[1]);
+        $appendContent = isset($matches[2]) ? trim($matches[2]) : "";
+        
+        if (strpos($filePath, '/app/') === 0) {
+            $fullPath = $filePath;
+        } else {
+            $cleanPath = ltrim($filePath, '/');
+            $fullPath = '/app/' . $cleanPath;
+        }
+        
+        // Check if writing to Claude's learning directory
+        $claudeDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+        $isClaudeDir = strpos($fullPath, $claudeDir) === 0;
+        
+        if ($isClaudeDir) {
+            $result = file_put_contents($fullPath, "\n" . $appendContent, FILE_APPEND);
+            if ($result !== false) {
+                $message .= "\n\n[SUCCESS] Content appended to Claude's file: " . $filePath . " (" . $result . " bytes)";
+            } else {
+                $message .= "\n\n[ERROR] Failed to append to Claude's file: " . $filePath;
+            }
+        } else {
+            $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only append to files in: knowledge/internal_crew/agent_learning/self/claude/";
+        }
+    }
+
+    // @delete command - Unrestricted delete in Claude's directory only
+    if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
+        $filePath = trim($matches[1]);
+        
+        if (strpos($filePath, '/app/') === 0) {
+            $fullPath = $filePath;
+        } else {
+            $cleanPath = ltrim($filePath, '/');
+            $fullPath = '/app/' . $cleanPath;
+        }
+        
+        // Check if deleting from Claude's learning directory
+        $claudeDir = '/app/knowledge/internal_crew/agent_learning/self/claude';
+        $isClaudeDir = strpos($fullPath, $claudeDir) === 0;
+        
+        if ($isClaudeDir) {
+            if (file_exists($fullPath)) {
+                if (unlink($fullPath)) {
+                    $message .= "\n\n[SUCCESS] File deleted from Claude's directory: " . $filePath;
+                } else {
+                    $message .= "\n\n[ERROR] Failed to delete from Claude's directory: " . $filePath;
+                }
+            } else {
+                $message .= "\n\nFile not found in Claude's directory: " . $filePath;
+            }
+        } else {
+            $message .= "\n\n[RESTRICTED] Delete access restricted. Claude can only delete files in: knowledge/internal_crew/agent_learning/self/claude/";
         }
     }
 }
