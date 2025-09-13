@@ -3,8 +3,10 @@ $pageTitle = 'User Management - ZeroAI';
 $currentPage = 'users';
 
 use ZeroAI\Services\UserService;
+use ZeroAI\Services\GroupService;
 
 $userService = new UserService();
+$groupService = new GroupService();
 
 $message = '';
 $error = '';
@@ -31,11 +33,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Failed to delete user.";
         }
+    } elseif (isset($_POST['add_to_group'])) {
+        // Add user to group
+        $userId = (int)$_POST['user_id'];
+        $groupId = (int)$_POST['group_id'];
+        if ($groupService->addUserToGroup($userId, $groupId)) {
+            $message = "User added to group successfully!";
+        } else {
+            $error = "Failed to add user to group.";
+        }
+    } elseif (isset($_POST['remove_from_group'])) {
+        // Remove user from group
+        $userId = (int)$_POST['user_id'];
+        $groupId = (int)$_POST['group_id'];
+        if ($groupService->removeUserFromGroup($userId, $groupId)) {
+            $message = "User removed from group successfully!";
+        } else {
+            $error = "Failed to remove user from group.";
+        }
     }
 }
 
-// Get all users
+// Get all users and groups
 $users = $userService->getAllUsers();
+$groups = $groupService->getAllGroups();
 
 include __DIR__ . '/includes/header.php';
 ?>
@@ -56,8 +77,14 @@ include __DIR__ . '/includes/header.php';
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <select name="role">
-            <option value="user">Frontend Portal User</option>
-            <option value="admin">Admin User</option>
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+        </select>
+        <select name="group">
+            <option value="">Select Group (Optional)</option>
+            <?php foreach ($groups as $group): ?>
+                <option value="<?= $group['id'] ?>"><?= $group['name'] ?> - <?= $group['description'] ?></option>
+            <?php endforeach; ?>
         </select>
         <button type="submit" class="btn-success">Create User</button>
     </form>
@@ -73,6 +100,7 @@ include __DIR__ . '/includes/header.php';
                     <th style="padding: 10px; border: 1px solid #ddd;">Username</th>
                     <th style="padding: 10px; border: 1px solid #ddd;">Role</th>
                     <th style="padding: 10px; border: 1px solid #ddd;">Created</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">Groups</th>
                     <th style="padding: 10px; border: 1px solid #ddd;">Actions</th>
                 </tr>
             </thead>
@@ -87,6 +115,24 @@ include __DIR__ . '/includes/header.php';
                         </span>
                     </td>
                     <td style="padding: 10px; border: 1px solid #ddd;"><?= date('Y-m-d H:i', strtotime($user['created_at'])) ?></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        <?php 
+                        $userGroups = $groupService->getUserGroups($user['id']);
+                        foreach ($userGroups as $group): ?>
+                            <span class="badge badge-<?= $group['name'] === 'admin' ? 'admin' : 'user' ?>"><?= $group['name'] ?></span>
+                        <?php endforeach; ?>
+                        <br><small>
+                            <form method="POST" style="display: inline; margin-top: 5px;">
+                                <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                <select name="group_id" style="font-size: 11px;">
+                                    <?php foreach ($groups as $group): ?>
+                                        <option value="<?= $group['id'] ?>"><?= $group['name'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="submit" name="add_to_group" style="font-size: 10px; padding: 2px 4px;">Add</button>
+                            </form>
+                        </small>
+                    </td>
                     <td style="padding: 10px; border: 1px solid #ddd;">
                         <form method="POST" style="display: inline;" onsubmit="return confirm('Delete user <?= htmlspecialchars($user['username']) ?>?')">
                             <input type="hidden" name="delete_id" value="<?= $user['id'] ?>">
