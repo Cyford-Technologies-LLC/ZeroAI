@@ -69,7 +69,22 @@ Examples:
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
         <div id="status" style="color: #666; font-size: 12px;"></div>
-        <button onclick="clearChatHistory()" class="btn-danger" style="padding: 4px 8px; font-size: 11px;">Clear History</button>
+        <div>
+            <button onclick="toggleScratchPad()" class="btn-warning" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">📝 Scratch</button>
+            <button onclick="clearChatHistory()" class="btn-danger" style="padding: 4px 8px; font-size: 11px;">Clear History</button>
+        </div>
+    </div>
+    
+    <div id="scratch-pad" style="display: none; margin-top: 15px; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; background: #fff9c4;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4 style="margin: 0; color: #856404;">📝 Scratch Pad</h4>
+            <div>
+                <button onclick="saveScratchPad()" class="btn-success" style="padding: 2px 6px; font-size: 10px; margin-right: 5px;">Save</button>
+                <button onclick="toggleScratchPad()" class="btn-secondary" style="padding: 2px 6px; font-size: 10px;">Close</button>
+            </div>
+        </div>
+        <textarea id="scratch-text" placeholder="Save notes, code snippets, or any text here. It persists across page refreshes..." rows="8" style="width: 100%; border: 1px solid #ffc107; border-radius: 4px; padding: 8px; font-family: monospace; font-size: 12px; background: #fffbf0;"></textarea>
+        <div style="font-size: 10px; color: #856404; margin-top: 5px;">Auto-saves every 10 seconds • Last saved: <span id="scratch-last-saved">Never</span></div>
     </div>
 </div>
 
@@ -403,6 +418,39 @@ function resetSystemPrompt() {
             });
     }
 }
+
+function toggleScratchPad() {
+    const scratchPad = document.getElementById('scratch-pad');
+    if (scratchPad.style.display === 'none') {
+        scratchPad.style.display = 'block';
+        loadScratchPad();
+    } else {
+        scratchPad.style.display = 'none';
+    }
+}
+
+function loadScratchPad() {
+    const savedText = localStorage.getItem('claude_scratch_pad');
+    const lastSaved = localStorage.getItem('claude_scratch_last_saved');
+    if (savedText) document.getElementById('scratch-text').value = savedText;
+    if (lastSaved) document.getElementById('scratch-last-saved').textContent = new Date(lastSaved).toLocaleString();
+}
+
+function saveScratchPad() {
+    const text = document.getElementById('scratch-text').value;
+    const now = new Date().toISOString();
+    localStorage.setItem('claude_scratch_pad', text);
+    localStorage.setItem('claude_scratch_last_saved', now);
+    document.getElementById('scratch-last-saved').textContent = new Date(now).toLocaleString();
+}
+
+setInterval(() => {
+    const scratchPad = document.getElementById('scratch-pad');
+    if (scratchPad && scratchPad.style.display !== 'none') {
+        const text = document.getElementById('scratch-text').value;
+        if (text.trim()) saveScratchPad();
+    }
+}, 10000);
 </script>
 
 <div class="card">
