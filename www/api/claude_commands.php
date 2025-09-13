@@ -199,7 +199,9 @@ function processClaudeCommands(&$message) {
         
         // Check permission
         require_once __DIR__ . '/check_command_permission.php';
-        if (!checkCommandPermission('exec', $currentMode)) {
+        $hasPermission = checkCommandPermission('exec', $currentMode);
+        error_log("PERMISSION CHECK - Command: exec, Mode: $currentMode, Allowed: " . ($hasPermission ? 'YES' : 'NO'));
+        if (!$hasPermission) {
             $message .= "\n\n" . getPermissionError('exec', $currentMode);
         } else {
         foreach ($matches as $match) {
