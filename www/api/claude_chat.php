@@ -248,15 +248,7 @@ try {
             $memoryPdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
                      ->execute(['Claude', $claudeResponse, $selectedModel, $sessionId]);
             
-            // Save user's executed commands
-            if (isset($GLOBALS['executedCommands']) && !empty($GLOBALS['executedCommands'])) {
-                foreach ($GLOBALS['executedCommands'] as $cmdData) {
-                    $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
-                             ->execute([$cmdData['command'], $cmdData['output'], 'success', $selectedModel, $sessionId]);
-                }
-            }
-            
-            // Save Claude's executed commands (after processing her response)
+            // Save executed commands with their outputs
             if (isset($GLOBALS['executedCommands']) && !empty($GLOBALS['executedCommands'])) {
                 foreach ($GLOBALS['executedCommands'] as $cmdData) {
                     $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
