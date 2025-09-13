@@ -3,7 +3,8 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../bootstrap.php';
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$input = json_decode(file_get_contents('php://input'), true);
+$action = $_GET['action'] ?? $input['action'] ?? '';
 
 try {
     $db = new \ZeroAI\Core\DatabaseManager();
@@ -24,7 +25,6 @@ try {
         }
     } 
     elseif ($action === 'save') {
-        $input = json_decode(file_get_contents('php://input'), true);
         $prompt = $input['prompt'] ?? '';
         
         if (!$prompt) {
