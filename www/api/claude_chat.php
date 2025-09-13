@@ -1,4 +1,7 @@
 <?php
+// Set timezone to EST
+date_default_timezone_set('America/New_York');
+
 // Suppress all output until we're ready to send JSON
 ob_start();
 
@@ -99,6 +102,9 @@ if (!$apiKey) {
 require_once __DIR__ . '/claude_integration.php';
 require_once __DIR__ . '/sqlite_manager.php';
 
+// Initialize system prompt early to prevent undefined variable errors
+$systemPrompt = '';
+
 // Initialize memory system with error handling
 try {
     $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
@@ -153,9 +159,6 @@ try {
 
 try {
     $claude = new ClaudeIntegration($apiKey);
-    
-    // Initialize system prompt
-    $systemPrompt = '';
     
     // Get system prompt from claude_prompts table
     if ($memoryPdo) {
