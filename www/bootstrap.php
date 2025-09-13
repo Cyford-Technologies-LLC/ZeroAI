@@ -47,7 +47,7 @@ use ZeroAI\Core\System;
 use ZeroAI\Core\DatabaseManager;
 
 try {
-    $system = new System();
+    $system = System::getInstance();
     $db = new DatabaseManager();
     
     // Ensure data directory exists
