@@ -33,7 +33,6 @@ class ClaudeProvider {
             
             // Convert frontend history format to Claude API format
             $convertedHistory = [];
-            error_log('ClaudeProvider received history: ' . json_encode($history));
             foreach ($history as $msg) {
                 if (isset($msg['sender']) && isset($msg['message'])) {
                     if ($msg['sender'] === 'Claude') {
@@ -43,7 +42,6 @@ class ClaudeProvider {
                     }
                 }
             }
-            error_log('ClaudeProvider converted history: ' . json_encode($convertedHistory));
             
             $response = $this->integration->chatWithClaude(
                 $message . $commandOutputs, 
@@ -81,10 +79,10 @@ class ClaudeProvider {
     }
     
     private function processCommands($message) {
-        $originalMessage = $message;
+        $originalLength = strlen($message);
         $this->commands->processFileCommands($message);
         $this->commands->processClaudeCommands($message);
-        return strlen($message) > strlen($originalMessage) ? substr($message, strlen($originalMessage)) : '';
+        return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
     }
     
     private function getSystemPrompt() {
