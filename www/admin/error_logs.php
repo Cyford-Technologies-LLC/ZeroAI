@@ -12,6 +12,8 @@
         .log-content { background: #000; color: #0f0; font-family: monospace; padding: 15px; border-radius: 3px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
         .refresh-btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
         .refresh-btn:hover { background: #45a049; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
         .error { color: #ff6b6b; }
         .warning { color: #ffa500; }
         .info { color: #87ceeb; }
@@ -22,6 +24,9 @@
         <h1>🚨 Error Logs - ZeroAI Admin</h1>
         
         <button class="refresh-btn" onclick="location.reload()">Refresh Logs</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('nginx')">Clear Nginx Log</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('php')">Clear PHP Log</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('claude')">Clear Claude Log</button>
         
         <div class="log-section">
             <h2>Nginx Error Log (Last 50 lines)</h2>
@@ -103,5 +108,27 @@ if (file_exists($nginxLog)) {
             </div>
         </div>
     </div>
+    
+    <script>
+    function clearLog(logType) {
+        if (!confirm('Are you sure you want to clear the ' + logType + ' log?')) return;
+        
+        fetch('/admin/clear_log.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({log: logType})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Log cleared successfully');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => alert('Error: ' + error));
+    }
+    </script>
 </body>
 </html>
