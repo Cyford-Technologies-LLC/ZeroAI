@@ -10,15 +10,26 @@ try {
     $db = new \ZeroAI\Core\DatabaseManager();
     
     if ($action === 'get') {
+        // Use Claude's own database
+        $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+        if (!is_dir($memoryDir)) {
+            mkdir($memoryDir, 0777, true);
+        }
+        
+        $dbPath = $memoryDir . '/claude_memory.db';
+        $pdo = new \PDO("sqlite:$dbPath");
+        
         // Create table if not exists
-        $db->executeSQL("CREATE TABLE IF NOT EXISTS default_prompts (id INTEGER PRIMARY KEY, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+        $pdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
         
-        $result = $db->executeSQL("SELECT prompt FROM default_prompts WHERE id = 1", 'main');
+        $stmt = $pdo->prepare("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!empty($result[0]['data'])) {
+        if ($result && $result['prompt']) {
             echo json_encode([
                 'success' => true,
-                'prompt' => $result[0]['data'][0]['prompt']
+                'prompt' => $result['prompt']
             ]);
         } else {
             echo json_encode([
@@ -35,10 +46,19 @@ try {
             exit;
         }
         
-        // Create table if not exists
-        $db->executeSQL("CREATE TABLE IF NOT EXISTS default_prompts (id INTEGER PRIMARY KEY, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+        // Use Claude's own database
+        $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+        if (!is_dir($memoryDir)) {
+            mkdir($memoryDir, 0777, true);
+        }
         
-        $db->executeSQL("INSERT OR REPLACE INTO default_prompts (id, prompt, created_at) VALUES (1, ?, datetime('now'))", 'main', [$prompt]);
+        $dbPath = $memoryDir . '/claude_memory.db';
+        $pdo = new \PDO("sqlite:$dbPath");
+        
+        // Create table if not exists
+        $pdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+        
+        $pdo->prepare("INSERT INTO claude_prompts (prompt) VALUES (?)")->execute([$prompt]);
         
         echo json_encode(['success' => true, 'message' => 'System prompt saved successfully']);
     }
