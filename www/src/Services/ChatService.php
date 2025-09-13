@@ -24,7 +24,7 @@ class ChatService {
     }
     
     private function processClaude($message, $model, $autonomous, $history) {
-        $apiKey = $this->system->getEnvVar('ANTHROPIC_API_KEY');
+        $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY');
         
         if (!$apiKey) {
             throw new \Exception('Anthropic API key not configured');
