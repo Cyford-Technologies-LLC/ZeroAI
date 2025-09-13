@@ -198,8 +198,8 @@ Follow ZeroAI patterns and CrewAI best practices.";
      * Check if sender represents user
      */
     private function isUserMessage($sender) {
-        $systemSenders = ['System', 'system', 'Error', 'error'];
-        return !in_array($sender, $systemSenders, true) && !$this->isClaudeMessage($sender);
+        $userSenders = ['You', 'you', 'User', 'user', 'Human', 'human'];
+        return in_array($sender, $userSenders, true);
     }
     
     public function testConnection() {
