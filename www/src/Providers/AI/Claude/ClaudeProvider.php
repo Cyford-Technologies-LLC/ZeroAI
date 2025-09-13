@@ -192,7 +192,13 @@ class ClaudeProvider {
                "- @delete path/to/file.py - Delete file\n" .
                "- @agents - List all agents\n" .
                "- @docker [command] - Execute Docker commands\n" .
-               "- @ps - Show running containers\n";
+               "- @ps - Show running containers\n" .
+               "\n\nIMPORTANT RULES:\n" .
+               "- NEVER fabricate command outputs or results\n" .
+               "- If you don't see actual command results, say 'I cannot see the command response'\n" .
+               "- Only report what you actually observe from tool results\n" .
+               "- When commands fail, report the actual error message\n" .
+               "- Do not assume or guess what commands might return\n";
     }
     
     private function initializeSystemPrompt() {
