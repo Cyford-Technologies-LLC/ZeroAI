@@ -43,6 +43,9 @@ $claudeMode = $input['mode'] ?? 'hybrid';
 $autonomousMode = ($claudeMode === 'autonomous');
 $conversationHistory = $input['history'] ?? [];
 
+// Make mode available globally for permission checks
+$GLOBALS['claudeMode'] = $claudeMode;
+
 if (!$message) {
     echo json_encode(['success' => false, 'error' => 'Message required']);
     exit;

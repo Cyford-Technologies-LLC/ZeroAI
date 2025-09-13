@@ -75,8 +75,18 @@ function processFileCommands(&$message) {
         }
     }
 
-    // @create command - Unrestricted write to Claude's directory, read-only elsewhere
+    // @create command - Check permissions first
     if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+        // Get current mode from global or default to hybrid
+        global $claudeMode;
+        $currentMode = $claudeMode ?? 'hybrid';
+        
+        // Check permission
+        require_once __DIR__ . '/check_command_permission.php';
+        if (!checkCommandPermission('create', $currentMode)) {
+            $message .= "\n\n" . getPermissionError('create', $currentMode);
+            return;
+        }
         $filePath = trim($matches[1]);
         $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
         
@@ -108,8 +118,16 @@ function processFileCommands(&$message) {
         }
     }
 
-    // @edit command - Unrestricted write to Claude's directory only
+    // @edit command - Check permissions first
     if (preg_match('/\@edit\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $matches)) {
+        global $claudeMode;
+        $currentMode = $claudeMode ?? 'hybrid';
+        
+        require_once __DIR__ . '/check_command_permission.php';
+        if (!checkCommandPermission('edit', $currentMode)) {
+            $message .= "\n\n" . getPermissionError('edit', $currentMode);
+            return;
+        }
         $filePath = trim($matches[1]);
         $newContent = isset($matches[2]) ? trim($matches[2]) : "";
         

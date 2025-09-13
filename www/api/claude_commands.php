@@ -191,8 +191,18 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
     }
 
-    // @exec command - Always allowed
+    // @exec command - Check permissions first
     if (preg_match_all('/\@exec\s+([^\s]+)\s+([^\n]+)/m', $message, $matches, PREG_SET_ORDER)) {
+        // Get current mode from global or default to hybrid
+        global $claudeMode;
+        $currentMode = $claudeMode ?? 'hybrid';
+        
+        // Check permission
+        require_once __DIR__ . '/check_command_permission.php';
+        if (!checkCommandPermission('exec', $currentMode)) {
+            $message .= "\n\n" . getPermissionError('exec', $currentMode);
+            return;
+        }
         foreach ($matches as $match) {
             $containerName = trim($match[1]);
             $command = trim($match[2]);

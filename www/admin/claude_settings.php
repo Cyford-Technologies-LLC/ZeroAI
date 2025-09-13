@@ -194,6 +194,132 @@ $hasAnthropicKey = !empty($_ENV['ANTHROPIC_API_KEY']);
 </div>
 
 <div class="card">
+    <h3>🔐 Command Permissions</h3>
+    <p>Control which commands Claude can execute in each mode.</p>
+    
+    <?php
+    // Initialize permissions database
+    $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+    $permPdo = new PDO("sqlite:$dbPath");
+    
+    // Create permissions table
+    $permPdo->exec("CREATE TABLE IF NOT EXISTS command_permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mode TEXT NOT NULL,
+        command TEXT NOT NULL,
+        allowed INTEGER DEFAULT 0,
+        UNIQUE(mode, command)
+    )");
+    
+    // Handle permissions update
+    if ($_POST['action'] ?? '' === 'update_permissions') {
+        $modes = ['chat', 'hybrid', 'autonomous'];
+        $commands = ['exec', 'file', 'list', 'memory', 'agents', 'update_agent', 'search', 'crews', 'logs', 'create', 'edit', 'append', 'delete', 'docker', 'compose', 'ps', 'inspect', 'container_logs'];
+        
+        foreach ($modes as $mode) {
+            foreach ($commands as $command) {
+                $allowed = isset($_POST[$mode][$command]) ? 1 : 0;
+                $permPdo->prepare("INSERT OR REPLACE INTO command_permissions (mode, command, allowed) VALUES (?, ?, ?)")
+                    ->execute([$mode, $command, $allowed]);
+            }
+        }
+        echo '<div class="message">Command permissions updated successfully!</div>';
+    }
+    
+    // Set defaults if table is empty
+    $stmt = $permPdo->prepare("SELECT COUNT(*) FROM command_permissions");
+    $stmt->execute();
+    if ($stmt->fetchColumn() == 0) {
+        $modes = ['chat', 'hybrid', 'autonomous'];
+        $commands = ['exec', 'file', 'list', 'memory', 'agents', 'update_agent', 'search', 'crews', 'logs', 'create', 'edit', 'append', 'delete', 'docker', 'compose', 'ps', 'inspect', 'container_logs'];
+        
+        foreach ($modes as $mode) {
+            foreach ($commands as $command) {
+                $allowed = 0;
+                if ($mode === 'autonomous') {
+                    $allowed = 1; // All commands for autonomous
+                } elseif ($mode === 'hybrid' && in_array($command, ['exec', 'file', 'list', 'memory', 'agents', 'update_agent', 'search', 'crews', 'logs', 'docker', 'compose', 'ps', 'inspect', 'container_logs'])) {
+                    $allowed = 1; // Read-only commands for hybrid
+                }
+                
+                $permPdo->prepare("INSERT OR IGNORE INTO command_permissions (mode, command, allowed) VALUES (?, ?, ?)")
+                    ->execute([$mode, $command, $allowed]);
+            }
+        }
+    }
+    
+    // Get current permissions
+    $permissions = [];
+    $stmt = $permPdo->prepare("SELECT mode, command, allowed FROM command_permissions");
+    $stmt->execute();
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $permissions[$row['mode']][$row['command']] = $row['allowed'];
+    }
+    
+    $modes = ['chat', 'hybrid', 'autonomous'];
+    $commands = ['exec', 'file', 'list', 'memory', 'agents', 'update_agent', 'search', 'crews', 'logs', 'create', 'edit', 'append', 'delete', 'docker', 'compose', 'ps', 'inspect', 'container_logs'];
+    ?>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="update_permissions">
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Command</th>
+                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">💬 Chat</th>
+                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">⚡ Hybrid</th>
+                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">🤖 Autonomous</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($commands as $command): ?>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-family: monospace;">
+                        <strong>@<?= $command ?></strong>
+                        <?php if (in_array($command, ['create', 'edit', 'append', 'delete'])): ?>
+                            <span style="color: #dc3545; font-size: 12px;">(Write)</span>
+                        <?php else: ?>
+                            <span style="color: #28a745; font-size: 12px;">(Read)</span>
+                        <?php endif; ?>
+                    </td>
+                    <?php foreach ($modes as $mode): ?>
+                    <td style="padding: 12px; text-align: center; border: 1px solid #ddd;">
+                        <input type="checkbox" 
+                               name="<?= $mode ?>[<?= $command ?>]" 
+                               <?= ($permissions[$mode][$command] ?? 0) ? 'checked' : '' ?>>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        
+        <button type="submit" class="btn-success">Save Permissions</button>
+        <button type="button" onclick="setDefaults()" class="btn-warning">Reset to Defaults</button>
+    </form>
+    
+    <script>
+    function setDefaults() {
+        // Uncheck all first
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        
+        // Set autonomous mode - all commands
+        <?php foreach ($commands as $command): ?>
+        document.querySelector('input[name="autonomous[<?= $command ?>]"]').checked = true;
+        <?php endforeach; ?>
+        
+        // Set hybrid mode - read-only commands
+        const hybridCommands = ['exec', 'file', 'list', 'memory', 'agents', 'update_agent', 'search', 'crews', 'logs', 'docker', 'compose', 'ps', 'inspect', 'container_logs'];
+        hybridCommands.forEach(cmd => {
+            const checkbox = document.querySelector(`input[name="hybrid[${cmd}]"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+    </script>
+</div>
+
+<div class="card">
     <h3>⚙️ Advanced Settings</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
         <div>
