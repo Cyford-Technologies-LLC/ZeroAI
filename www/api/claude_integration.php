@@ -23,8 +23,8 @@ class ClaudeIntegration {
         
         // Process conversation history with improved validation
         if (is_array($conversationHistory) && !empty($conversationHistory)) {
-            // Limit to last 20 messages to maintain more context
-            $recentHistory = array_slice($conversationHistory, -20);
+            // Use all provided history (frontend already filtered by message limit)
+            $recentHistory = $conversationHistory;
             
             foreach ($recentHistory as $historyItem) {
                 // Validate history item structure

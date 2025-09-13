@@ -47,6 +47,17 @@ include __DIR__ . '/includes/header.php';
             </select>
             <div id="mode-description" style="font-size: 12px; color: #666; margin-top: 5px;">Chat + background autonomous tasks</div>
         </div>
+        <div>
+            <label><strong>Message History:</strong></label>
+            <select id="message-limit" style="width: 120px;">
+                <option value="5">Last 5</option>
+                <option value="10" selected>Last 10</option>
+                <option value="15">Last 15</option>
+                <option value="20">Last 20</option>
+                <option value="0">All Messages</option>
+            </select>
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">Messages sent to Claude</div>
+        </div>
     </div>
     
     <div id="chat-container" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; margin: 15px 0; background: #f8f9fa; border-radius: 8px;">
@@ -103,6 +114,9 @@ async function sendMessage() {
     const sendButton = document.getElementById('send-button');
     const status = document.getElementById('status');
     
+    const filteredHistory = getFilteredHistory();
+    const historyCount = filteredHistory.length;
+    
     // Add user message to chat
     addMessageToChat('You', message, 'user');
     messageInput.value = '';
@@ -110,7 +124,7 @@ async function sendMessage() {
     // Disable send button and show loading
     sendButton.disabled = true;
     sendButton.textContent = 'Sending...';
-    status.textContent = 'Claude is thinking...';
+    status.textContent = `Claude is thinking... (sending ${historyCount} previous messages)`;
     
     try {
         const response = await fetch('/api/claude_chat.php', {
@@ -122,7 +136,7 @@ async function sendMessage() {
                 message: message,
                 model: selectedModel,
                 autonomous: autonomousMode,
-                history: chatHistory.filter(h => h.type !== 'error' && h.sender !== 'System')
+                history: filteredHistory
             })
         });
         
@@ -141,7 +155,9 @@ async function sendMessage() {
         if (result.success) {
             addMessageToChat('Claude', result.response, 'claude');
             const mode = document.getElementById('claude-mode').value;
-            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${mode}`;
+            const messageLimit = document.getElementById('message-limit').value;
+            const limitText = messageLimit === '0' ? 'All' : messageLimit;
+            status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${mode} | History: ${limitText} msgs`;
         } else {
             addMessageToChat('System', 'Error: ' + result.error, 'error');
             status.textContent = 'Error occurred';
@@ -301,6 +317,23 @@ function clearChatHistory() {
     localStorage.removeItem('claude_chat_history');
     document.getElementById('chat-messages').innerHTML = '';
     loadChatHistory();
+}
+
+function getFilteredHistory() {
+    const messageLimit = parseInt(document.getElementById('message-limit').value);
+    const validHistory = chatHistory.filter(h => h.type !== 'error' && h.sender !== 'System');
+    
+    console.log(`Total chat history: ${chatHistory.length}, Valid history: ${validHistory.length}, Limit: ${messageLimit}`);
+    
+    if (messageLimit === 0) {
+        console.log('Sending all messages to Claude');
+        return validHistory; // All messages
+    }
+    
+    // Return last N messages
+    const filtered = validHistory.slice(-messageLimit);
+    console.log(`Sending last ${filtered.length} messages to Claude`);
+    return filtered;
 }
 
 // Load chat history on page load

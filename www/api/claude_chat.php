@@ -39,6 +39,13 @@ $selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
 $autonomousMode = $input['autonomous'] ?? true;
 $conversationHistory = $input['history'] ?? [];
 
+// Debug conversation history
+error_log("Received history count: " . count($conversationHistory));
+if (!empty($conversationHistory)) {
+    error_log("First message: " . json_encode($conversationHistory[0]));
+    error_log("Last message: " . json_encode(end($conversationHistory)));
+}
+
 if (!$message) {
     echo json_encode(['success' => false, 'error' => 'Message required']);
     exit;
