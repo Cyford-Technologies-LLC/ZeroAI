@@ -129,8 +129,10 @@ $systemPrompt = '';
 // Initialize memory system with error handling
 try {
     $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-    if (!mkdir($memoryDir, 0777, true) && !is_dir($memoryDir)) {
-        throw new Exception('Failed to create directory: ' . $memoryDir);
+    if (!is_dir($memoryDir)) {
+        if (!mkdir($memoryDir, 0777, true) && !is_dir($memoryDir)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $memoryDir));
+        }
     }
     
     $dbPath = $memoryDir . '/claude_memory.db';
