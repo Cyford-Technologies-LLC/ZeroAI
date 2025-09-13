@@ -35,6 +35,11 @@ class ClaudeIntegration {
             'content' => $message
         ];
         
+        // Ensure system prompt is not empty
+        if (empty($systemPrompt)) {
+            $systemPrompt = 'You are Claude, integrated into ZeroAI.';
+        }
+        
         $data = [
             'model' => $model,
             'max_tokens' => 4096,
