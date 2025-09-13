@@ -151,6 +151,7 @@ class ClaudeProvider {
             $db = new \ZeroAI\Core\DatabaseManager();
             $db->executeSQL(
                 "INSERT INTO conversations (user_message, claude_response, model, timestamp) VALUES (?, ?, ?, datetime('now'))",
+                'main',
                 [$userMessage, $claudeResponse, $model]
             );
             error_log("[CLAUDE_PROVIDER] Conversation logged to database");
