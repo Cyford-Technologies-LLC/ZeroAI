@@ -29,6 +29,10 @@ class ClaudeCommands {
         error_log("[CLAUDE_COMMANDS] Processing claude commands for user: $user, mode: $mode");
         error_log("[CLAUDE_COMMANDS] Message content: " . substr($message, 0, 200));
         
+        if (strpos($message, '@exec') !== false) {
+            error_log("[CLAUDE_COMMANDS] Found @exec in message");
+        }
+        
         $message = preg_replace_callback('/\@agents/', [$this, 'listAgents'], $message);
         $message = preg_replace_callback('/\@docker\s+(.+)/', [$this, 'dockerCommand'], $message);
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
