@@ -9,6 +9,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
+if (!$input) {
+    echo json_encode(['success' => false, 'error' => 'Invalid JSON input']);
+    exit;
+}
+
 $message = $input['message'] ?? '';
 $selectedModel = $input['model'] ?? 'claude-3-5-sonnet-20241022';
 $conversationHistory = $input['history'] ?? [];
