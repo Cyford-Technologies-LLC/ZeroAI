@@ -11,6 +11,9 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
+        // Simple debug - write history count to a file
+        file_put_contents('/app/claude_memory_debug.txt', "History count: " . count($conversationHistory) . "\n" . json_encode($conversationHistory, JSON_PRETTY_PRINT), LOCK_EX);
+        
         $messages = [];
         
         // Process conversation history - limit to last 20 messages
