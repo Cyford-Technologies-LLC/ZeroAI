@@ -107,7 +107,7 @@ async function sendMessage() {
                 message: message,
                 model: selectedModel,
                 autonomous: autonomousMode,
-                history: chatHistory
+                history: chatHistory.filter(h => h.type !== 'error' && h.sender !== 'System')
             })
         });
         
@@ -173,7 +173,7 @@ function addMessageToChat(sender, message, type) {
     const chatContainer = document.getElementById('chat-container');
     chatContainer.scrollTop = chatContainer.scrollHeight;
     
-    // Store in history
+    // Store in history (exclude system messages from API history)
     chatHistory.push({sender, message, type, timestamp: new Date()});
     
     // Persist to localStorage

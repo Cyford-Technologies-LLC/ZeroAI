@@ -21,10 +21,14 @@ class ClaudeIntegration {
         // Build messages array with conversation history
         $messages = [];
         
+        // Debug: Log conversation history
+        error_log("Claude History Debug: " . json_encode($conversationHistory));
+        
         // Process conversation history with improved validation
         if (is_array($conversationHistory) && !empty($conversationHistory)) {
             // Limit to last 20 messages to maintain more context
             $recentHistory = array_slice($conversationHistory, -20);
+            error_log("Recent History Count: " . count($recentHistory));
             
             foreach ($recentHistory as $historyItem) {
                 // Validate history item structure
@@ -48,10 +52,11 @@ class ClaudeIntegration {
                     ];
                 } elseif ($this->isUserMessage($sender)) {
                     $messages[] = [
-                        'role' => 'user',
+                        'role' => 'user', 
                         'content' => $messageContent
                     ];
                 }
+                error_log("Processed message: $sender -> " . ($this->isClaudeMessage($sender) ? 'assistant' : ($this->isUserMessage($sender) ? 'user' : 'skipped')));
                 // Skip system messages as they don't belong in the messages array
             }
         }
@@ -61,6 +66,9 @@ class ClaudeIntegration {
             'role' => 'user',
             'content' => $message
         ];
+        
+        // Debug: Log final messages array
+        error_log("Final messages to Claude: " . json_encode($messages));
         
         $data = [
             'model' => $model ?: 'claude-3-5-sonnet-20241022',
