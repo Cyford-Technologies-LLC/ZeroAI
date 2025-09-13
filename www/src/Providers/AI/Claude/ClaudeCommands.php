@@ -31,7 +31,7 @@ class ClaudeCommands {
         $message = preg_replace_callback('/\@docker\s+(.+)/', [$this, 'dockerCommand'], $message);
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
-        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/', [$this, 'execContainer'], $message);
+        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/s', [$this, 'execContainer'], $message);
         $message = preg_replace_callback('/\@bash\s+(.+)/', [$this, 'bashCommand'], $message);
     }
     
