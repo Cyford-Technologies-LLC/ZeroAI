@@ -1,82 +1,60 @@
 <?php
-namespace Models;
 
-use Core\System;
+namespace ZeroAI\Models;
 
-class User {
-    private $system;
-    private $db;
+use ZeroAI\Core\DatabaseManager;
+
+class User extends BaseModel {
+    protected $table = 'users';
+    private $lastInsertId;
     
     public function __construct() {
-        $this->system = System::getInstance();
-        $this->db = $this->system->getDatabase();
+        parent::__construct();
+        $this->initTable();
     }
     
-    public function getAll(): array {
-        try {
-            $result = $this->db->executeSQL("SELECT id, username, role, created_at FROM users ORDER BY username");
-            return $result[0]['data'] ?? [];
-        } catch (\Exception $e) {
-            $this->system->getLogger()->error('Failed to get users', ['error' => $e->getMessage()]);
-            return [];
-        }
+    protected function initTable() {
+        $this->db->executeSQL("
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT DEFAULT 'user',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
     }
     
-    public function create(string $username, string $password, string $role = 'user'): bool {
-        try {
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
-            $result = $this->db->executeSQL("INSERT INTO users (username, password, role) VALUES ('$username', '$hashedPassword', '$role')");
-            
-            $this->system->getLogger()->info('User created', ['username' => $username, 'role' => $role]);
-            return !isset($result[0]['error']);
-        } catch (\Exception $e) {
-            $this->system->getLogger()->error('Failed to create user', ['username' => $username, 'error' => $e->getMessage()]);
-            return false;
-        }
+    public function create($data) {
+        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+        
+        $result = $this->db->executeSQL(
+            "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+            [$data['username'], $hashedPassword, $data['role']]
+        );
+        
+        $this->lastInsertId = $result[0]['lastInsertId'] ?? null;
+        return $result;
     }
     
-    public function delete(int $id): bool {
-        try {
-            $result = $this->db->executeSQL("DELETE FROM users WHERE id = $id");
-            $this->system->getLogger()->info('User deleted', ['id' => $id]);
-            return !isset($result[0]['error']);
-        } catch (\Exception $e) {
-            $this->system->getLogger()->error('Failed to delete user', ['id' => $id, 'error' => $e->getMessage()]);
-            return false;
-        }
+    public function getLastInsertId() {
+        return $this->lastInsertId;
     }
     
-    public function authenticate(string $username, string $password): ?array {
-        try {
-            $result = $this->db->executeSQL("SELECT id, username, password, role FROM users WHERE username = '$username'");
-            
-            if (!empty($result[0]['data'])) {
-                $user = $result[0]['data'][0];
-                if (password_verify($password, $user['password'])) {
-                    $this->system->getLogger()->info('User authenticated', ['username' => $username]);
-                    return ['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role']];
-                }
+    public function authenticate($username, $password) {
+        $result = $this->db->executeSQL(
+            "SELECT id, username, password, role FROM users WHERE username = ?",
+            [$username]
+        );
+        
+        if (!empty($result[0]['data'])) {
+            $user = $result[0]['data'][0];
+            if (password_verify($password, $user['password'])) {
+                return ['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role']];
             }
-            
-            $this->system->getLogger()->error('Authentication failed', ['username' => $username]);
-            return null;
-        } catch (\Exception $e) {
-            $this->system->getLogger()->error('Authentication error', ['username' => $username, 'error' => $e->getMessage()]);
-            return null;
         }
+        
+        return null;
     }
     
-    public function updatePassword(int $id, string $newPassword): bool {
-        try {
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $result = $this->db->executeSQL("UPDATE users SET password = '$hashedPassword' WHERE id = $id");
-            
-            $this->system->getLogger()->info('Password updated', ['id' => $id]);
-            return !isset($result[0]['error']);
-        } catch (\Exception $e) {
-            $this->system->getLogger()->error('Failed to update password', ['id' => $id, 'error' => $e->getMessage()]);
-            return false;
-        }
-    }
 }

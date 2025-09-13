@@ -19,7 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = $_POST['password'];
         $role = $_POST['role'] ?? 'user';
         
-        $userData = ['username' => $username, 'password' => $password, 'role' => $role];
+        $userData = [
+            'username' => $username, 
+            'password' => $password, 
+            'role' => $role,
+            'group' => $_POST['group'] ?? null
+        ];
         if ($userService->createUser($userData)) {
             $message = "User '$username' created successfully!";
         } else {

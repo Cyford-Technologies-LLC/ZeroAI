@@ -20,7 +20,17 @@ class UserService {
     }
     
     public function createUser($data) {
-        return $this->user->create($data);
+        $result = $this->user->create($data);
+        
+        // If user created successfully and group specified, add to group
+        if ($result && isset($data['group']) && $data['group']) {
+            require_once __DIR__ . '/../Models/Group.php';
+            $group = new \ZeroAI\Models\Group();
+            $userId = $this->user->getLastInsertId();
+            $group->addUserToGroup($userId, $data['group']);
+        }
+        
+        return $result;
     }
     
     public function deleteUser($id) {
