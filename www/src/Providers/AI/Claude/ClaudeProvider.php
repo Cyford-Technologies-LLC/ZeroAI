@@ -17,7 +17,7 @@ class ClaudeProvider {
         try {
             if ($autonomous) {
                 $message = "[AUTONOMOUS MODE ENABLED] You have full access to analyze, create, edit, and optimize files proactively. " . $message;
-                $message .= $this->autoScan();
+                $message .= $this->autoScan($message);
             }
             
             $commandOutputs = $this->processCommands($message);
@@ -42,8 +42,8 @@ class ClaudeProvider {
         }
     }
     
-    private function autoScan() {
-        if (!preg_match('/\@(file|list|search|create|edit|append|delete)/', func_get_arg(0))) {
+    private function autoScan($message) {
+        if (!preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
             $scan = "\n\nAuto-scanning key directories:\n";
             if (is_dir('/app/src')) {
                 $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
