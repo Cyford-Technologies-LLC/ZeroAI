@@ -192,7 +192,7 @@ function processClaudeCommands(&$message) {
     }
 
     // @exec command - Check permissions first
-    if (preg_match_all('/\@exec\s+([^\s]+)\s+([^\n]+)/m', $message, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all('/^\@exec\s+([^\s]+)\s+(.+)$/m', $message, $matches, PREG_SET_ORDER)) {
         if (isset($GLOBALS['debugMode']) && $GLOBALS['debugMode']) {
             error_log("DEBUG: @exec command detected - Found " . count($matches) . " matches");
         }
@@ -225,6 +225,10 @@ function processClaudeCommands(&$message) {
             error_log("EXEC DEBUG - Command: $command, Output length: " . strlen($output ?: ''));
             error_log("EXEC DEBUG - Raw output: " . ($output ?: 'EMPTY'));
             $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
+            if (isset($GLOBALS['debugMode']) && $GLOBALS['debugMode']) {
+                error_log("DEBUG: Added exec output to message - Output length: " . strlen($output ?: ''));
+                error_log("DEBUG: Message length after adding output: " . strlen($message));
+            }
             
             // Capture for database
             if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];

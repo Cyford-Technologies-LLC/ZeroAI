@@ -17,7 +17,7 @@ include __DIR__ . '/includes/header.php';
         <button class="refresh-btn btn-danger" onclick="clearLog('php')">Clear PHP Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('claude')">Clear Claude Log</button>
         <button class="refresh-btn btn-danger" onclick="clearAllLogs()">Clear All Logs</button>
-        <button id="debug-btn" class="refresh-btn" onclick="toggleDebug()" style="background: #ffc107; color: #000;">Enable Debug Mode</button>
+        <button id="debug-btn" class="refresh-btn" onclick="toggleDebug()" style="background: #dc3545; color: #fff;">Debug Mode OFF</button>
         
         <div class="log-section">
             <h2>Nginx Error Log (Last 50 lines)</h2>
@@ -180,14 +180,14 @@ if (file_exists($nginxLog)) {
         
         const btn = document.getElementById('debug-btn');
         if (debugMode) {
-            btn.textContent = 'Disable Debug Mode';
-            btn.style.background = '#dc3545';
+            btn.textContent = 'Debug Mode ON';
+            btn.style.background = '#28a745';
             btn.style.color = '#fff';
             alert('Debug mode ENABLED. Claude commands will now show detailed logging.');
         } else {
-            btn.textContent = 'Enable Debug Mode';
-            btn.style.background = '#ffc107';
-            btn.style.color = '#000';
+            btn.textContent = 'Debug Mode OFF';
+            btn.style.background = '#dc3545';
+            btn.style.color = '#fff';
             alert('Debug mode DISABLED.');
         }
     }
@@ -195,8 +195,8 @@ if (file_exists($nginxLog)) {
     // Set initial button state
     if (debugMode) {
         const btn = document.getElementById('debug-btn');
-        btn.textContent = 'Disable Debug Mode';
-        btn.style.background = '#dc3545';
+        btn.textContent = 'Debug Mode ON';
+        btn.style.background = '#28a745';
         btn.style.color = '#fff';
     }
     </script>
