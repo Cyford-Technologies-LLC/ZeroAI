@@ -105,7 +105,7 @@ class System {
         return '/app/' . ltrim($path, '/');
     }
     
-    public function getConfig(string $key = null): mixed {
+    public function getConfig(?string $key = null): mixed {
         return $key ? ($this->config[$key] ?? null) : $this->config;
     }
     
