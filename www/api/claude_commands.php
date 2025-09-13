@@ -203,30 +203,13 @@ function processClaudeCommands(&$message) {
             $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
             
             // Capture for database
-            if (isset($GLOBALS['executedCommands'])) {
-                $GLOBALS['executedCommands'][] = [
-                    'command' => "@exec $containerName $command",
-                    'output' => $output ?: "Command executed"
-                ];
-            }
+            if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];
+            $GLOBALS['executedCommands'][] = [
+                'command' => "@exec $containerName $command",
+                'output' => $output ?: "Command executed"
+            ];
         }
-    } elseif (preg_match('/\@exec\s+([^\s]+)\s+(.+)/s', $message, $matches) && strpos($message, '[@exec:') === false) {
-            $containerName = trim($matches[1]);
-            $command = trim($matches[2]);
-            @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
-            // Use base64 encoding to safely pass complex commands
-            $encodedCommand = base64_encode($command);
-            $output = shell_exec("timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash' 2>&1");
-            $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
-            
-            // Capture for database
-            if (isset($GLOBALS['executedCommands'])) {
-                $GLOBALS['executedCommands'][] = [
-                    'command' => "@exec $containerName $command",
-                    'output' => $output ?: "Command executed"
-                ];
-            }
-        }
+    }
 
     // @inspect command
     if (preg_match('/\@inspect\s+([^\s]+)/', $message, $matches)) {
