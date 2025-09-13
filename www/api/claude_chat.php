@@ -42,9 +42,14 @@ $selectedModel = $input['model'] ?? 'claude-sonnet-4-20250514';
 $claudeMode = $input['mode'] ?? 'hybrid';
 $autonomousMode = ($claudeMode === 'autonomous');
 $conversationHistory = $input['history'] ?? [];
+// Check if debug mode is enabled via localStorage (passed from frontend)
+$debugMode = $input['debug'] ?? false;
 
 // Make mode available globally for permission checks
 $GLOBALS['claudeMode'] = $claudeMode;
+$GLOBALS['debugMode'] = $debugMode;
+
+if ($debugMode) error_log("DEBUG: Starting claude_chat.php - Mode: $claudeMode");
 
 if (!$message) {
     echo json_encode(['success' => false, 'error' => 'Message required']);
@@ -84,8 +89,10 @@ $commandOutputs = '';
 // Process commands silently - capture outputs for Claude context only
 $tempMessage = $message;
 $GLOBALS['executedCommands'] = []; // Global to capture commands
+if ($debugMode) error_log("DEBUG: Processing user commands - Message length: " . strlen($tempMessage));
 processFileCommands($tempMessage);
 processClaudeCommands($tempMessage);
+if ($debugMode) error_log("DEBUG: After user command processing - Message length: " . strlen($tempMessage));
 
 // Extract ALL command outputs (file + exec)
 if (strlen($tempMessage) > strlen($originalMessage)) {
@@ -252,8 +259,10 @@ try {
     
     // Process Claude's individual commands
     if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];
+    if ($debugMode) error_log("DEBUG: Processing Claude's commands - Response length: " . strlen($processedResponse));
     processFileCommands($processedResponse);
     processClaudeCommands($processedResponse);
+    if ($debugMode) error_log("DEBUG: After Claude command processing - Response length: " . strlen($processedResponse));
     
     // Save Claude's response to memory
     if ($memoryPdo && $sessionId) {

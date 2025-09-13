@@ -193,6 +193,9 @@ function processClaudeCommands(&$message) {
 
     // @exec command - Check permissions first
     if (preg_match_all('/\@exec\s+([^\s]+)\s+([^\n]+)/m', $message, $matches, PREG_SET_ORDER)) {
+        if (isset($GLOBALS['debugMode']) && $GLOBALS['debugMode']) {
+            error_log("DEBUG: @exec command detected - Found " . count($matches) . " matches");
+        }
         // Get current mode from global or default to hybrid
         global $claudeMode;
         $currentMode = $claudeMode ?? 'hybrid';

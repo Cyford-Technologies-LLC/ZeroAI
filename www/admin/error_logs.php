@@ -17,6 +17,7 @@ include __DIR__ . '/includes/header.php';
         <button class="refresh-btn btn-danger" onclick="clearLog('php')">Clear PHP Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('claude')">Clear Claude Log</button>
         <button class="refresh-btn btn-danger" onclick="clearAllLogs()">Clear All Logs</button>
+        <button id="debug-btn" class="refresh-btn" onclick="toggleDebug()" style="background: #ffc107; color: #000;">Enable Debug Mode</button>
         
         <div class="log-section">
             <h2>Nginx Error Log (Last 50 lines)</h2>
@@ -68,6 +69,40 @@ if (file_exists($claudeLog)) {
     }
 } else {
     echo "Log file not found: $claudeLog";
+}
+?>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <h2>Claude Command History (Last 20)</h2>
+            <div class="log-content">
+<?php
+$claudeDbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+if (file_exists($claudeDbPath)) {
+    try {
+        $claudePdo = new PDO("sqlite:$claudeDbPath");
+        $stmt = $claudePdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history ORDER BY timestamp DESC LIMIT 20");
+        $stmt->execute();
+        $commands = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (!empty($commands)) {
+            foreach (array_reverse($commands) as $cmd) {
+                $time = date('M d H:i:s', strtotime($cmd['timestamp']));
+                echo "<span class='info'>[$time] {$cmd['command']} - Status: {$cmd['status']}</span>\n";
+                if ($cmd['output']) {
+                    echo "<span class='info'>Output: " . htmlspecialchars(substr($cmd['output'], 0, 200)) . "</span>\n";
+                }
+                echo "\n";
+            }
+        } else {
+            echo "<span class='info'>No command history found</span>";
+        }
+    } catch (Exception $e) {
+        echo "<span class='error'>Error reading Claude's database: " . htmlspecialchars($e->getMessage()) . "</span>";
+    }
+} else {
+    echo "<span class='error'>Claude's database not found</span>";
 }
 ?>
             </div>
@@ -135,5 +170,33 @@ if (file_exists($nginxLog)) {
             location.reload();
         })
         .catch(error => alert('Error clearing logs: ' + error));
+    }
+    
+    let debugMode = localStorage.getItem('claude_debug_mode') === 'true';
+    
+    function toggleDebug() {
+        debugMode = !debugMode;
+        localStorage.setItem('claude_debug_mode', debugMode);
+        
+        const btn = document.getElementById('debug-btn');
+        if (debugMode) {
+            btn.textContent = 'Disable Debug Mode';
+            btn.style.background = '#dc3545';
+            btn.style.color = '#fff';
+            alert('Debug mode ENABLED. Claude commands will now show detailed logging.');
+        } else {
+            btn.textContent = 'Enable Debug Mode';
+            btn.style.background = '#ffc107';
+            btn.style.color = '#000';
+            alert('Debug mode DISABLED.');
+        }
+    }
+    
+    // Set initial button state
+    if (debugMode) {
+        const btn = document.getElementById('debug-btn');
+        btn.textContent = 'Disable Debug Mode';
+        btn.style.background = '#dc3545';
+        btn.style.color = '#fff';
     }
     </script>

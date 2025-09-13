@@ -8,9 +8,11 @@ function checkCommandPermission($command, $mode) {
         $stmt->execute([$mode, $command]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        error_log("PERMISSION DB - Command: $command, Mode: $mode, Result: " . ($result ? $result['allowed'] : 'NOT_FOUND'));
+        
         return $result ? (bool)$result['allowed'] : false;
     } catch (Exception $e) {
-        // If permission check fails, default to restricted
+        error_log("PERMISSION ERROR: " . $e->getMessage());
         return false;
     }
 }
