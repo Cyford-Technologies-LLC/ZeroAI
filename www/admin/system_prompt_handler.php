@@ -10,10 +10,7 @@ try {
     $db = new \ZeroAI\Core\DatabaseManager();
     
     if ($action === 'get') {
-        // Use SQLiteManager like backup code
-        require_once __DIR__ . '/../api/sqlite_manager.php';
-        
-        $result = SQLiteManager::executeSQL("SELECT prompt FROM default_prompts WHERE id = 1");
+        $result = $db->executeSQL("SELECT prompt FROM default_prompts WHERE id = 1", 'main');
         
         if (!empty($result[0]['data'])) {
             echo json_encode([
@@ -35,8 +32,7 @@ try {
             exit;
         }
         
-        // Use SQLiteManager like backup code
-        SQLiteManager::executeSQL("INSERT OR REPLACE INTO default_prompts (id, prompt, created_at) VALUES (1, ?, datetime('now'))", [$prompt]);
+        $db->executeSQL("INSERT OR REPLACE INTO default_prompts (id, prompt, created_at) VALUES (1, ?, datetime('now'))", 'main', [$prompt]);
         
         echo json_encode(['success' => true, 'message' => 'System prompt saved successfully']);
     }
