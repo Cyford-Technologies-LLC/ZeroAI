@@ -27,11 +27,19 @@ class ClaudeCommands {
     
     public function processClaudeCommands(&$message, $user = 'claude', $mode = 'hybrid') {
         error_log("[CLAUDE_COMMANDS] Processing claude commands for user: $user, mode: $mode");
+        error_log("[CLAUDE_COMMANDS] Message content: " . substr($message, 0, 200));
+        
         $message = preg_replace_callback('/\@agents/', [$this, 'listAgents'], $message);
         $message = preg_replace_callback('/\@docker\s+(.+)/', [$this, 'dockerCommand'], $message);
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
+        $originalLength = strlen($message);
         $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/s', [$this, 'execContainer'], $message);
+        if (strlen($message) > $originalLength) {
+            error_log("[CLAUDE_COMMANDS] Exec command processed successfully");
+        } else if (strpos($message, '@exec') !== false) {
+            error_log("[CLAUDE_COMMANDS] Exec command found but not processed");
+        }
         $message = preg_replace_callback('/\@bash\s+(.+)/', [$this, 'bashCommand'], $message);
     }
     

@@ -64,6 +64,14 @@ class ClaudeProvider {
                 $convertedHistory
             );
             
+            // Process Claude's own commands in her response
+            $claudeResponse = $response['message'];
+            $claudeCommandOutputs = $this->processCommands($claudeResponse, $mode);
+            if ($claudeCommandOutputs) {
+                $response['message'] = $claudeResponse . $claudeCommandOutputs;
+                error_log("[CLAUDE_PROVIDER] Added Claude's command outputs: " . strlen($claudeCommandOutputs) . " chars");
+            }
+            
             // Log conversation to database
             $this->logConversation($message, $response['message'], $model);
             
