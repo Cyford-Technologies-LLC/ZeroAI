@@ -23,12 +23,28 @@ class ClaudeProvider {
         return getenv('ANTHROPIC_API_KEY');
     }
     
+    private function useUnifiedTools() {
+        // Check setting for which command system to use
+        try {
+            $db = new \ZeroAI\Core\DatabaseManager();
+            $result = $db->executeSQL("SELECT setting_value FROM claude_settings WHERE setting_name = 'unified_tools'", 'main');
+            if (!empty($result[0]['data'])) {
+                return $result[0]['data'][0]['setting_value'] === 'true';
+            }
+        } catch (\Exception $e) {
+            // Default to old system if setting not found
+        }
+        return true; // Default to new unified system
+    }
+    
     public function chat($message, $model = 'claude-3-5-sonnet-20241022', $history = [], $mode = 'hybrid') {
         try {
+            // Set global mode for tool system
+            $GLOBALS['claudeMode'] = $mode;
+            
             // Auto-scan for autonomous mode detection
             $message .= $this->autoScan($message);
             
-            $commandOutputs = $this->processCommands($message, $mode);
             $systemPrompt = $this->getSystemPrompt();
             
             // Convert frontend history format to Claude API format
@@ -43,33 +59,43 @@ class ClaudeProvider {
                 }
             }
             
-            // Add command outputs to message for Claude to see
-            $fullMessage = $message;
-            if ($commandOutputs) {
-                $fullMessage .= "\n\nCommand Results:" . $commandOutputs;
+            if ($this->useUnifiedTools()) {
+                // NEW SYSTEM: Unified tools (Claude sees results before responding)
+                $response = $this->integration->chatWithClaude(
+                    $message, 
+                    $systemPrompt, 
+                    $model, 
+                    $convertedHistory
+                );
+            } else {
+                // OLD SYSTEM: Process commands after Claude responds
+                $commandOutputs = $this->processCommands($message, $mode);
+                
+                // Add command outputs to message for Claude to see
+                $fullMessage = $message;
+                if ($commandOutputs) {
+                    $fullMessage .= "\n\nCommand Results:" . $commandOutputs;
+                }
+                
+                $response = $this->integration->chatWithClaude(
+                    $fullMessage, 
+                    $systemPrompt, 
+                    $model, 
+                    $convertedHistory
+                );
+                
+                // Process Claude's own commands in her response
+                $claudeResponse = $response['message'];
+                $claudeCommandOutputs = $this->processCommands($claudeResponse, $mode);
+                if ($claudeCommandOutputs) {
+                    $response['message'] = $claudeResponse . $claudeCommandOutputs;
+                }
+                
+                $this->saveExecutedCommands();
             }
             
-            $response = $this->integration->chatWithClaude(
-                $fullMessage, 
-                $systemPrompt, 
-                $model, 
-                $convertedHistory
-            );
-            
-            // Process Claude's own commands in her response
-            $claudeResponse = $response['message'];
-            $claudeCommandOutputs = $this->processCommands($claudeResponse, $mode);
-            if ($claudeCommandOutputs) {
-                $response['message'] = $claudeResponse . $claudeCommandOutputs;
-                error_log("[CLAUDE_PROVIDER] Added Claude's command outputs: " . strlen($claudeCommandOutputs) . " chars");
-            }
-            
-            // Save chat and commands to Claude's memory database
+            // Save chat to Claude's memory database
             $this->saveChatToMemory($message, $response['message'], $model);
-            $this->saveExecutedCommands();
-            
-            // Log conversation to database
-            $this->logConversation($message, $response['message'], $model);
             
             return [
                 'success' => true,
@@ -80,6 +106,44 @@ class ClaudeProvider {
             ];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => 'Claude error: ' . $e->getMessage()];
+        }
+    }
+    
+    private function processCommands($message, $mode = 'hybrid') {
+        $originalLength = strlen($message);
+        
+        // Pass actual Claude mode for permission checks
+        $this->commands->processFileCommands($message, 'claude', $mode);
+        $this->commands->processClaudeCommands($message, 'claude', $mode);
+        
+        return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
+    }
+    
+    private function saveExecutedCommands() {
+        if (!isset($GLOBALS['executedCommands']) || empty($GLOBALS['executedCommands'])) {
+            return;
+        }
+        
+        try {
+            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+            if (!is_dir($memoryDir)) {
+                mkdir($memoryDir, 0777, true);
+            }
+            
+            $dbPath = $memoryDir . '/claude_memory.db';
+            $pdo = new \PDO("sqlite:$dbPath");
+            
+            $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+            
+            foreach ($GLOBALS['executedCommands'] as $cmdData) {
+                $pdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
+                    ->execute([$cmdData['command'], $cmdData['output'], 'success', 'claude-old-system', 1]);
+            }
+            
+            $GLOBALS['executedCommands'] = [];
+            
+        } catch (\Exception $e) {
+            error_log("Command save error: " . $e->getMessage());
         }
     }
     
@@ -97,16 +161,6 @@ class ClaudeProvider {
             return $scan;
         }
         return '';
-    }
-    
-    private function processCommands($message, $mode = 'hybrid') {
-        $originalLength = strlen($message);
-        
-        // Pass actual Claude mode for permission checks
-        $this->commands->processFileCommands($message, 'claude', $mode);
-        $this->commands->processClaudeCommands($message, 'claude', $mode);
-        
-        return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
     }
     
     private function getSystemPrompt() {
@@ -156,10 +210,8 @@ class ClaudeProvider {
             $dbPath = $memoryDir . '/claude_memory.db';
             $pdo = new \PDO("sqlite:$dbPath");
             
-            // Create chat_history table like backup
             $pdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
             
-            // Save user and Claude messages
             $pdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
                 ->execute(['User', $userMessage, $model, 1]);
             $pdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
@@ -169,47 +221,5 @@ class ClaudeProvider {
             error_log("Failed to save chat to Claude memory: " . $e->getMessage());
         }
     }
-    
-    private function saveExecutedCommands() {
-        if (!isset($GLOBALS['executedCommands']) || empty($GLOBALS['executedCommands'])) {
-            return;
-        }
-        
-        try {
-            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-            if (!is_dir($memoryDir)) {
-                mkdir($memoryDir, 0777, true);
-            }
-            
-            $dbPath = $memoryDir . '/claude_memory.db';
-            $pdo = new \PDO("sqlite:$dbPath");
-            
-            // Create table matching backup structure
-            $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
-            
-            foreach ($GLOBALS['executedCommands'] as $cmdData) {
-                $pdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
-                    ->execute([$cmdData['command'], $cmdData['output'], 'success', 'claude-sonnet-4-20250514', 1]);
-            }
-            
-            // Clear the commands after saving
-            $GLOBALS['executedCommands'] = [];
-            
-        } catch (\Exception $e) {
-            error_log("Command save error: " . $e->getMessage());
-        }
-    }
-    
-    private function logConversation($userMessage, $claudeResponse, $model) {
-        try {
-            $db = new \ZeroAI\Core\DatabaseManager();
-            $db->executeSQL(
-                "INSERT INTO conversations (user_message, claude_response, model, timestamp) VALUES (?, ?, ?, datetime('now'))",
-                'main',
-                [$userMessage, $claudeResponse, $model]
-            );
-        } catch (\Exception $e) {
-            error_log("Failed to log conversation: " . $e->getMessage());
-        }
-    }
 }
+?>

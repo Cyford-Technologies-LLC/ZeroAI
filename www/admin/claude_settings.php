@@ -15,6 +15,23 @@ $pageTitle = 'Claude AI Settings - ZeroAI';
 $currentPage = 'claude_settings';
 include __DIR__ . '/includes/header.php';
 
+// Handle tool system update
+if ($_POST['action'] ?? '' === 'update_tool_system') {
+    $unifiedTools = $_POST['unified_tools'] ?? 'true';
+    
+    try {
+        require_once __DIR__ . '/includes/autoload.php';
+        $db = new \ZeroAI\Core\DatabaseManager();
+        
+        $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+        $db->executeSQL("INSERT OR REPLACE INTO claude_settings (setting_name, setting_value, updated_at) VALUES (?, ?, datetime('now'))", 'main', ['unified_tools', $unifiedTools]);
+        
+        $toolMessage = "Tool system updated to: " . ($unifiedTools === 'true' ? 'New Unified System' : 'Legacy System');
+    } catch (Exception $e) {
+        $toolError = "Error updating tool system: " . $e->getMessage();
+    }
+}
+
 // Handle Claude configuration update
 if ($_POST['action'] ?? '' === 'update_claude_config') {
     $claudeConfig = [
@@ -113,6 +130,14 @@ $hasAnthropicKey = !empty($_ENV['ANTHROPIC_API_KEY']);
         <div class="message"><?= htmlspecialchars($configMessage) ?></div>
     <?php endif; ?>
     
+    <?php if (isset($toolMessage)): ?>
+        <div class="message"><?= htmlspecialchars($toolMessage) ?></div>
+    <?php endif; ?>
+    
+    <?php if (isset($toolError)): ?>
+        <div class="error"><?= htmlspecialchars($toolError) ?></div>
+    <?php endif; ?>
+    
     <form method="POST">
         <input type="hidden" name="action" value="update_claude_config">
         
@@ -209,13 +234,21 @@ $hasAnthropicKey = !empty($_ENV['ANTHROPIC_API_KEY']);
             <p><strong>File Access:</strong> ✅ Enabled</p>
         </div>
         <div>
-            <h4>Usage Guidelines</h4>
-            <ul style="font-size: 14px;">
-                <li>Claude works best with specific, detailed prompts</li>
-                <li>Use @file commands to share code context</li>
-                <li>Configure supervision level based on your needs</li>
-                <li>Focus areas help Claude prioritize feedback</li>
-            </ul>
+            <h4>Command System</h4>
+            <form method="POST" style="margin: 10px 0;">
+                <input type="hidden" name="action" value="update_tool_system">
+                <label>
+                    <input type="radio" name="unified_tools" value="true" checked> 
+                    <strong>New Unified System</strong> (Default)
+                </label><br>
+                <small>Claude sees command results before responding</small><br><br>
+                <label>
+                    <input type="radio" name="unified_tools" value="false"> 
+                    <strong>Legacy System</strong>
+                </label><br>
+                <small>Commands processed after Claude responds</small><br><br>
+                <button type="submit" class="btn-secondary" style="font-size: 12px;">Update System</button>
+            </form>
         </div>
     </div>
 </div>
