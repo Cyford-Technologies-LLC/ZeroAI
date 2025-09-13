@@ -32,13 +32,18 @@ class ClaudeCommands {
         if (strpos($message, '@exec') !== false) {
             error_log("[CLAUDE_COMMANDS] Found @exec in message");
         }
+        if (strpos($message, 'exec ') !== false) {
+            error_log("[CLAUDE_COMMANDS] Found exec command in message");
+        }
         
         $message = preg_replace_callback('/\@agents/', [$this, 'listAgents'], $message);
         $message = preg_replace_callback('/\@docker\s+(.+)/', [$this, 'dockerCommand'], $message);
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
         $originalLength = strlen($message);
+        // Handle both @exec and exec patterns
         $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/s', [$this, 'execContainer'], $message);
+        $message = preg_replace_callback('/^exec\s+([^\s]+)\s+(.+)/m', [$this, 'execContainer'], $message);
         if (strlen($message) > $originalLength) {
             error_log("[CLAUDE_COMMANDS] Exec command processed successfully");
         } else if (strpos($message, '@exec') !== false) {

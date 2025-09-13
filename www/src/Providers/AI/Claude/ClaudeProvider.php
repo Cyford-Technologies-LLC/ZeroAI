@@ -25,19 +25,11 @@ class ClaudeProvider {
     
     public function chat($message, $model = 'claude-3-5-sonnet-20241022', $history = [], $mode = 'hybrid') {
         try {
-            error_log("[CLAUDE_PROVIDER] Starting chat with mode: $mode");
-            error_log("[CLAUDE_PROVIDER] Original message: " . substr($message, 0, 100));
-            
             // Auto-scan for autonomous mode detection
             $message .= $this->autoScan($message);
-            error_log("[CLAUDE_PROVIDER] After auto-scan: " . substr($message, 0, 100));
             
             $commandOutputs = $this->processCommands($message, $mode);
-            error_log("[CLAUDE_PROVIDER] Command outputs length: " . strlen($commandOutputs));
-            error_log("[CLAUDE_PROVIDER] Command outputs: " . substr($commandOutputs, 0, 200));
-            
             $systemPrompt = $this->getSystemPrompt();
-            error_log("[CLAUDE_PROVIDER] System prompt length: " . strlen($systemPrompt));
             
             // Convert frontend history format to Claude API format
             $convertedHistory = [];
@@ -72,6 +64,9 @@ class ClaudeProvider {
                 error_log("[CLAUDE_PROVIDER] Added Claude's command outputs: " . strlen($claudeCommandOutputs) . " chars");
             }
             
+            // Save executed commands to Claude's database
+            $this->saveExecutedCommands();
+            
             // Log conversation to database
             $this->logConversation($message, $response['message'], $model);
             
@@ -105,16 +100,12 @@ class ClaudeProvider {
     
     private function processCommands($message, $mode = 'hybrid') {
         $originalLength = strlen($message);
-        error_log("[CLAUDE_PROVIDER] Processing commands in mode: $mode");
-        error_log("[CLAUDE_PROVIDER] Message before commands: " . substr($message, 0, 100));
         
         // Pass actual Claude mode for permission checks
         $this->commands->processFileCommands($message, 'claude', $mode);
         $this->commands->processClaudeCommands($message, 'claude', $mode);
         
-        $commandOutput = strlen($message) > $originalLength ? substr($message, $originalLength) : '';
-        error_log("[CLAUDE_PROVIDER] Command output extracted: " . substr($commandOutput, 0, 200));
-        return $commandOutput;
+        return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
     }
     
     private function getSystemPrompt() {
@@ -154,6 +145,36 @@ class ClaudeProvider {
         $promptInit->initialize();
     }
     
+    private function saveExecutedCommands() {
+        if (!isset($GLOBALS['executedCommands']) || empty($GLOBALS['executedCommands'])) {
+            return;
+        }
+        
+        try {
+            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+            if (!is_dir($memoryDir)) {
+                mkdir($memoryDir, 0777, true);
+            }
+            
+            $dbPath = $memoryDir . '/claude_memory.db';
+            $pdo = new \PDO("sqlite:$dbPath");
+            
+            // Create table if not exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+            
+            foreach ($GLOBALS['executedCommands'] as $cmd) {
+                $pdo->prepare("INSERT INTO command_history (command, output, status, model_used) VALUES (?, ?, ?, ?)")
+                    ->execute([$cmd['command'], $cmd['output'], 'success', 'claude']);
+            }
+            
+            // Clear the commands after saving
+            $GLOBALS['executedCommands'] = [];
+            
+        } catch (\Exception $e) {
+            error_log("Failed to save commands to Claude memory: " . $e->getMessage());
+        }
+    }
+    
     private function logConversation($userMessage, $claudeResponse, $model) {
         try {
             $db = new \ZeroAI\Core\DatabaseManager();
@@ -162,9 +183,8 @@ class ClaudeProvider {
                 'main',
                 [$userMessage, $claudeResponse, $model]
             );
-            error_log("[CLAUDE_PROVIDER] Conversation logged to database");
         } catch (\Exception $e) {
-            error_log("[CLAUDE_PROVIDER] Failed to log conversation: " . $e->getMessage());
+            error_log("Failed to log conversation: " . $e->getMessage());
         }
     }
 }

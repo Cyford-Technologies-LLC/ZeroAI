@@ -24,17 +24,9 @@ if (!$message) {
 }
 
 try {
-    error_log("[CHAT_HANDLER] Starting chat request");
-    error_log("[CHAT_HANDLER] Message: " . substr($message, 0, 100));
-    error_log("[CHAT_HANDLER] Model: $selectedModel");
-    error_log("[CHAT_HANDLER] History count: " . count($conversationHistory));
-    
     $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
     $claudeMode = $input['autonomous'] ? 'autonomous' : 'hybrid';
-    error_log("[CHAT_HANDLER] Claude mode: $claudeMode");
-    
     $response = $claudeProvider->chat($message, $selectedModel, $conversationHistory, $claudeMode);
-    error_log("[CHAT_HANDLER] Response received: " . ($response['success'] ? 'SUCCESS' : 'FAILED'));
     
     if ($response['success']) {
         echo json_encode([
