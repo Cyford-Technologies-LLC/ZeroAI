@@ -442,14 +442,20 @@ async function saveSystemPrompt() {
 
 function resetSystemPrompt() {
     if (confirm('Reset to default system prompt? This will overwrite your custom prompt.')) {
-        fetch('/admin/reset_system_prompt.php', {method: 'POST'})
-            .then(r => r.json())
-            .then(result => {
-                if (result.success) {
-                    loadSystemPrompt();
-                    addMessageToChat('System', '✅ System prompt reset to default', 'claude');
-                }
-            });
+        const defaultPrompt = 'You are Claude, integrated into ZeroAI. You are an expert AI assistant specialized in code review, system optimization, and development guidance.';
+        
+        fetch('/admin/system_prompt_handler.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'save', prompt: defaultPrompt})
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                loadSystemPrompt();
+                addMessageToChat('System', '✅ System prompt reset to default', 'claude');
+            }
+        });
     }
 }
 
