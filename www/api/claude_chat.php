@@ -263,15 +263,25 @@ try {
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
     
-    // Execute Claude's commands but hide them from chat
+    // Execute Claude's commands and capture outputs
     $claudeResponse = $response['message'];
     $processedResponse = $claudeResponse;
     
     // Process Claude's individual commands
     if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];
     if ($debugMode) error_log("DEBUG: Processing Claude's commands - Response length: " . strlen($processedResponse));
+    
+    // Store original response length to detect command outputs
+    $originalResponseLength = strlen($processedResponse);
     processFileCommands($processedResponse);
     processClaudeCommands($processedResponse);
+    
+    // Extract Claude's command outputs
+    $claudeCommandOutputs = '';
+    if (strlen($processedResponse) > $originalResponseLength) {
+        $claudeCommandOutputs = substr($processedResponse, $originalResponseLength);
+    }
+    
     if ($debugMode) error_log("DEBUG: After Claude command processing - Response length: " . strlen($processedResponse));
     
     // Save Claude's response to memory
@@ -290,6 +300,11 @@ try {
         } catch (Exception $e) {
             error_log("Command save error: " . $e->getMessage());
         }
+    }
+    
+    // Include command outputs in response for Claude to see
+    if ($claudeCommandOutputs) {
+        $claudeResponse .= $claudeCommandOutputs;
     }
     
     // Show @commands and preserve hyperlinks
