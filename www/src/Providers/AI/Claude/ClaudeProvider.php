@@ -23,13 +23,21 @@ class ClaudeProvider {
         return getenv('ANTHROPIC_API_KEY');
     }
     
-    public function chat($message, $model = 'claude-3-5-sonnet-20241022', $history = []) {
+    public function chat($message, $model = 'claude-3-5-sonnet-20241022', $history = [], $mode = 'hybrid') {
         try {
+            error_log("[CLAUDE_PROVIDER] Starting chat with mode: $mode");
+            error_log("[CLAUDE_PROVIDER] Original message: " . substr($message, 0, 100));
+            
             // Auto-scan for autonomous mode detection
             $message .= $this->autoScan($message);
+            error_log("[CLAUDE_PROVIDER] After auto-scan: " . substr($message, 0, 100));
             
-            $commandOutputs = $this->processCommands($message);
+            $commandOutputs = $this->processCommands($message, $mode);
+            error_log("[CLAUDE_PROVIDER] Command outputs length: " . strlen($commandOutputs));
+            error_log("[CLAUDE_PROVIDER] Command outputs: " . substr($commandOutputs, 0, 200));
+            
             $systemPrompt = $this->getSystemPrompt();
+            error_log("[CLAUDE_PROVIDER] System prompt length: " . strlen($systemPrompt));
             
             // Convert frontend history format to Claude API format
             $convertedHistory = [];
@@ -55,6 +63,9 @@ class ClaudeProvider {
                 $model, 
                 $convertedHistory
             );
+            
+            // Log conversation to database
+            $this->logConversation($message, $response['message'], $model);
             
             return [
                 'success' => true,
@@ -84,13 +95,18 @@ class ClaudeProvider {
         return '';
     }
     
-    private function processCommands($message) {
+    private function processCommands($message, $mode = 'hybrid') {
         $originalLength = strlen($message);
-        // Pass current Claude mode for permission checks
-        $claudeMode = 'hybrid'; // Default mode, should be passed from frontend
-        $this->commands->processFileCommands($message, 'claude', $claudeMode);
-        $this->commands->processClaudeCommands($message, 'claude', $claudeMode);
-        return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
+        error_log("[CLAUDE_PROVIDER] Processing commands in mode: $mode");
+        error_log("[CLAUDE_PROVIDER] Message before commands: " . substr($message, 0, 100));
+        
+        // Pass actual Claude mode for permission checks
+        $this->commands->processFileCommands($message, 'claude', $mode);
+        $this->commands->processClaudeCommands($message, 'claude', $mode);
+        
+        $commandOutput = strlen($message) > $originalLength ? substr($message, $originalLength) : '';
+        error_log("[CLAUDE_PROVIDER] Command output extracted: " . substr($commandOutput, 0, 200));
+        return $commandOutput;
     }
     
     private function getSystemPrompt() {
@@ -128,5 +144,18 @@ class ClaudeProvider {
     private function initializeSystemPrompt() {
         $promptInit = new ClaudePromptInit();
         $promptInit->initialize();
+    }
+    
+    private function logConversation($userMessage, $claudeResponse, $model) {
+        try {
+            $db = new \ZeroAI\Core\DatabaseManager();
+            $db->executeSQL(
+                "INSERT INTO conversations (user_message, claude_response, model, timestamp) VALUES (?, ?, ?, datetime('now'))",
+                [$userMessage, $claudeResponse, $model]
+            );
+            error_log("[CLAUDE_PROVIDER] Conversation logged to database");
+        } catch (\Exception $e) {
+            error_log("[CLAUDE_PROVIDER] Failed to log conversation: " . $e->getMessage());
+        }
     }
 }

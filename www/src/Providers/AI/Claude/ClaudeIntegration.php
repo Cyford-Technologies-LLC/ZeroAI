@@ -65,10 +65,30 @@ class ClaudeIntegration {
             throw new \Exception('Invalid API response format');
         }
         
+        // Log Claude's commands to her database
+        $this->logClaudeCommands($message, $decoded['content'][0]['text']);
+        
         return [
             'message' => $decoded['content'][0]['text'],
             'usage' => $decoded['usage'] ?? [],
             'model' => $decoded['model'] ?? $model
         ];
+    }
+    
+    private function logClaudeCommands($userMessage, $claudeResponse) {
+        try {
+            // Log commands Claude executed
+            if (preg_match_all('/@(\w+)/', $userMessage, $matches)) {
+                foreach ($matches[1] as $command) {
+                    $db = new \ZeroAI\Core\DatabaseManager();
+                    $db->executeSQL(
+                        "INSERT INTO claude_commands (command, input_message, output_message, timestamp) VALUES (?, ?, ?, datetime('now'))",
+                        [$command, $userMessage, $claudeResponse]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to log Claude commands: " . $e->getMessage());
+        }
     }
 }

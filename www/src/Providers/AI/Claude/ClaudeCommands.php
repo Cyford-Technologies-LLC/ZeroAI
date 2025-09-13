@@ -7,9 +7,14 @@ class ClaudeCommands {
     
     public function __construct() {
         $this->security = new \ZeroAI\Core\Security();
+        // Initialize global for command tracking like old system
+        if (!isset($GLOBALS['executedCommands'])) {
+            $GLOBALS['executedCommands'] = [];
+        }
     }
     
     public function processFileCommands(&$message, $user = 'claude', $mode = 'hybrid') {
+        error_log("[CLAUDE_COMMANDS] Processing file commands for user: $user, mode: $mode");
         $message = preg_replace_callback('/\@file\s+([^\s]+)/', [$this, 'readFile'], $message);
         $message = preg_replace_callback('/\@read\s+([^\s]+)/', [$this, 'readFile'], $message);
         $message = preg_replace_callback('/\@list\s+([^\s]+)/', [$this, 'listDirectory'], $message);
@@ -21,6 +26,7 @@ class ClaudeCommands {
     }
     
     public function processClaudeCommands(&$message, $user = 'claude', $mode = 'hybrid') {
+        error_log("[CLAUDE_COMMANDS] Processing claude commands for user: $user, mode: $mode");
         $message = preg_replace_callback('/\@agents/', [$this, 'listAgents'], $message);
         $message = preg_replace_callback('/\@docker\s+(.+)/', [$this, 'dockerCommand'], $message);
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
@@ -39,7 +45,9 @@ class ClaudeCommands {
             $path = '/app/' . $path;
         }
         if (file_exists($path)) {
-            return "\n\n📄 File: {$matches[1]}\n```\n" . file_get_contents($path) . "\n```\n";
+            $result = "\n\n📄 File: {$matches[1]}\n```\n" . file_get_contents($path) . "\n```\n";
+            $GLOBALS['executedCommands'][] = ['command' => "file {$matches[1]}", 'output' => 'File read successfully'];
+            return $result;
         }
         return "\n❌ File not found: {$matches[1]} (tried: $path)\n";
     }
@@ -52,7 +60,9 @@ class ClaudeCommands {
         if (is_dir($path)) {
             $files = scandir($path);
             $list = array_filter($files, function($f) { return $f !== '.' && $f !== '..'; });
-            return "\n\n📁 Directory: {$matches[1]}\n" . implode("\n", $list) . "\n";
+            $result = "\n\n📁 Directory: {$matches[1]}\n" . implode("\n", $list) . "\n";
+            $GLOBALS['executedCommands'][] = ['command' => "list {$matches[1]}", 'output' => count($list) . ' files found'];
+            return $result;
         }
         return "\n❌ Directory not found: {$matches[1]} (tried: $path)\n";
     }
@@ -125,8 +135,10 @@ class ClaudeCommands {
                 foreach ($result[0]['data'] as $a) {
                     $output .= "ID: {$a['id']} | Role: {$a['role']} | Goal: {$a['goal']}\n";
                 }
+                $GLOBALS['executedCommands'][] = ['command' => 'agents', 'output' => count($result[0]['data']) . ' agents listed'];
             } else {
                 $output .= "No agents found\n";
+                $GLOBALS['executedCommands'][] = ['command' => 'agents', 'output' => 'No agents found'];
             }
             return $output;
         } catch (Exception $e) {
@@ -157,8 +169,15 @@ class ClaudeCommands {
         }
         
         $container = escapeshellarg($matches[1]);
-        $cmd = $matches[2]; // Don't escape the full command
+        $cmd = $matches[2];
         $result = shell_exec("docker exec {$container} {$cmd} 2>&1");
+        
+        // Track command like old system
+        $GLOBALS['executedCommands'][] = [
+            'command' => "exec {$matches[1]} {$matches[2]}",
+            'output' => $result ?: "No output"
+        ];
+        
         return "\n\n🐳 Exec {$matches[1]}: {$matches[2]}\n" . ($result ?: "No output") . "\n";
     }
     
@@ -169,6 +188,31 @@ class ClaudeCommands {
         
         $cmd = $matches[1];
         $result = shell_exec($cmd . " 2>&1");
+        
+        // Log to Claude's personal database
+        $this->logToClaudeMemory('bash', $cmd, $result);
+        
         return "\n\n💻 Bash: {$cmd}\n" . ($result ?: "No output") . "\n";
+    }
+    
+    private function logToClaudeMemory($command, $input, $output) {
+        try {
+            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+            if (!is_dir($memoryDir)) {
+                mkdir($memoryDir, 0777, true);
+            }
+            
+            $dbPath = $memoryDir . '/claude_memory.db';
+            $pdo = new \PDO("sqlite:$dbPath");
+            
+            // Create table if not exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+            
+            $pdo->prepare("INSERT INTO command_history (command, output, status, model_used) VALUES (?, ?, ?, ?)")
+                ->execute([$command . ': ' . $input, $output, 'success', 'claude']);
+                
+        } catch (\Exception $e) {
+            error_log("Failed to log to Claude memory: " . $e->getMessage());
+        }
     }
 }
