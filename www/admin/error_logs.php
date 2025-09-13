@@ -27,6 +27,7 @@
         <button class="refresh-btn btn-danger" onclick="clearLog('nginx')">Clear Nginx Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('php')">Clear PHP Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('claude')">Clear Claude Log</button>
+        <button class="refresh-btn btn-danger" onclick="clearAllLogs()">Clear All Logs</button>
         
         <div class="log-section">
             <h2>Nginx Error Log (Last 50 lines)</h2>
@@ -34,7 +35,7 @@
 <?php
 $nginxLog = '/var/log/nginx/error.log';
 if (file_exists($nginxLog)) {
-    $lines = array_slice(file($nginxLog, FILE_IGNORE_NEW_LINES), -50);
+    $lines = array_reverse(array_slice(file($nginxLog, FILE_IGNORE_NEW_LINES), -50));
     foreach ($lines as $line) {
         $class = '';
         if (strpos($line, 'error') !== false) $class = 'error';
@@ -55,7 +56,7 @@ if (file_exists($nginxLog)) {
 <?php
 $phpLog = '/var/log/php8.1-fpm.log';
 if (file_exists($phpLog)) {
-    $lines = array_slice(file($phpLog, FILE_IGNORE_NEW_LINES), -30);
+    $lines = array_reverse(array_slice(file($phpLog, FILE_IGNORE_NEW_LINES), -30));
     foreach ($lines as $line) {
         echo "<span class='error'>" . htmlspecialchars($line) . "</span>\n";
     }
@@ -72,7 +73,7 @@ if (file_exists($phpLog)) {
 <?php
 $claudeLog = '/app/logs/claude_commands.log';
 if (file_exists($claudeLog)) {
-    $lines = array_slice(file($claudeLog, FILE_IGNORE_NEW_LINES), -20);
+    $lines = array_reverse(array_slice(file($claudeLog, FILE_IGNORE_NEW_LINES), -20));
     foreach ($lines as $line) {
         echo "<span class='info'>" . htmlspecialchars($line) . "</span>\n";
     }
@@ -92,7 +93,7 @@ if (file_exists($nginxLog)) {
     $commandErrors = array_filter($lines, function($line) {
         return strpos($line, 'Command save error') !== false;
     });
-    $commandErrors = array_slice($commandErrors, -10);
+    $commandErrors = array_reverse(array_slice($commandErrors, -10));
     
     if (!empty($commandErrors)) {
         foreach ($commandErrors as $line) {
@@ -128,6 +129,21 @@ if (file_exists($nginxLog)) {
             }
         })
         .catch(error => alert('Error: ' + error));
+    }
+    
+    function clearAllLogs() {
+        if (!confirm('Are you sure you want to clear ALL logs? This cannot be undone.')) return;
+        
+        Promise.all([
+            fetch('/admin/clear_log.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({log: 'nginx'})}),
+            fetch('/admin/clear_log.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({log: 'php'})}),
+            fetch('/admin/clear_log.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({log: 'claude'})})
+        ])
+        .then(() => {
+            alert('All logs cleared successfully');
+            location.reload();
+        })
+        .catch(error => alert('Error clearing logs: ' + error));
     }
     </script>
 </body>
