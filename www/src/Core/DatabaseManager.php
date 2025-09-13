@@ -32,6 +32,15 @@ class DatabaseManager {
     
     public function getConnection(string $dbName = 'main'): \SQLite3 {
         try {
+            // Special case for Claude's database
+            if ($dbName === 'claude') {
+                $claudePath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+                if (!is_dir(dirname($claudePath))) {
+                    mkdir(dirname($claudePath), 0777, true);
+                }
+                return new \SQLite3($claudePath);
+            }
+            
             if (!isset($this->databases[$dbName])) {
                 throw new \Exception("Database not found: $dbName");
             }
