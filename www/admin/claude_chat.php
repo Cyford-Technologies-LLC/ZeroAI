@@ -409,7 +409,7 @@ function togglePromptEditor() {
 
 async function loadSystemPrompt() {
     try {
-        const response = await fetch('/admin/get_system_prompt.php');
+        const response = await fetch('/admin/system_prompt_handler.php?action=get');
         const result = await response.json();
         if (result.success) {
             currentSystemPrompt = result.prompt;
@@ -423,10 +423,10 @@ async function loadSystemPrompt() {
 async function saveSystemPrompt() {
     const prompt = document.getElementById('system-prompt').value;
     try {
-        const response = await fetch('/admin/save_system_prompt.php', {
+        const response = await fetch('/admin/system_prompt_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt: prompt})
+            body: JSON.stringify({action: 'save', prompt: prompt})
         });
         const result = await response.json();
         if (result.success) {

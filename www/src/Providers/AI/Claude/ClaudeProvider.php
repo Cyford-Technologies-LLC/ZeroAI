@@ -27,12 +27,16 @@ class ClaudeProvider {
         // Check setting for which command system to use
         try {
             $db = new \ZeroAI\Core\DatabaseManager();
+            
+            // Create table if not exists
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+            
             $result = $db->executeSQL("SELECT setting_value FROM claude_settings WHERE setting_name = 'unified_tools'", 'main');
             if (!empty($result[0]['data'])) {
                 return $result[0]['data'][0]['setting_value'] === 'true';
             }
         } catch (\Exception $e) {
-            // Default to old system if setting not found
+            // Default to new system if setting not found
         }
         return true; // Default to new unified system
     }
