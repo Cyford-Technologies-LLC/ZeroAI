@@ -154,8 +154,10 @@ try {
 try {
     $claude = new ClaudeIntegration($apiKey);
     
-    // Get system prompt from claude_prompts table
+    // Initialize system prompt
     $systemPrompt = '';
+    
+    // Get system prompt from claude_prompts table
     if ($memoryPdo) {
         try {
             $stmt = $memoryPdo->prepare("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
