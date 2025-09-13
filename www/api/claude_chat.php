@@ -235,12 +235,13 @@ try {
     
     // Execute Claude's commands but hide them from chat
     $claudeResponse = $response['message'];
-    $processedResponse = $claudeResponse;
     
-    // Process Claude's individual commands
+    // Process Claude's individual commands BEFORE filtering
     $GLOBALS['executedCommands'] = []; // Reset for Claude's commands
-    processFileCommands($processedResponse);
-    processClaudeCommands($processedResponse);
+    processFileCommands($claudeResponse);
+    processClaudeCommands($claudeResponse);
+    
+    $processedResponse = $claudeResponse;
     
     // Save Claude's response to memory
     if ($memoryPdo && $sessionId) {
