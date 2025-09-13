@@ -25,7 +25,7 @@ class User extends BaseModel {
         ");
     }
     
-    public function create($data) {
+    public function create(array $data): bool {
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
         
         $result = $this->db->executeSQL(
@@ -34,7 +34,7 @@ class User extends BaseModel {
         );
         
         $this->lastInsertId = $result[0]['lastInsertId'] ?? null;
-        return $result;
+        return !isset($result[0]['error']);
     }
     
     public function getLastInsertId() {
