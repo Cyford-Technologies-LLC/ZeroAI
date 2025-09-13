@@ -129,19 +129,13 @@ class ClaudeProvider {
         }
         
         try {
-            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-            if (!is_dir($memoryDir)) {
-                mkdir($memoryDir, 0777, true);
-            }
+            $db = new \ZeroAI\Core\DatabaseManager();
             
-            $dbPath = $memoryDir . '/claude_memory.db';
-            $pdo = new \PDO("sqlite:$dbPath");
-            
-            $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+            // Create table if not exists
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
             
             foreach ($GLOBALS['executedCommands'] as $cmdData) {
-                $pdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
-                    ->execute([$cmdData['command'], $cmdData['output'], 'success', 'claude-old-system', 1]);
+                $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", 'claude', [$cmdData['command'], $cmdData['output'], 'success', 'claude-unified-system', 1]);
             }
             
             $GLOBALS['executedCommands'] = [];
@@ -213,20 +207,14 @@ class ClaudeProvider {
     
     private function saveChatToMemory($userMessage, $claudeResponse, $model) {
         try {
-            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-            if (!is_dir($memoryDir)) {
-                mkdir($memoryDir, 0777, true);
-            }
+            $db = new \ZeroAI\Core\DatabaseManager();
             
-            $dbPath = $memoryDir . '/claude_memory.db';
-            $pdo = new \PDO("sqlite:$dbPath");
+            // Create table if not exists
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
             
-            $pdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
-            
-            $pdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
-                ->execute(['User', $userMessage, $model, 1]);
-            $pdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
-                ->execute(['Claude', $claudeResponse, $model, 1]);
+            // Save user and Claude messages
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', ['User', $userMessage, $model, 1]);
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', ['Claude', $claudeResponse, $model, 1]);
                 
         } catch (\Exception $e) {
             error_log("Failed to save chat to Claude memory: " . $e->getMessage());

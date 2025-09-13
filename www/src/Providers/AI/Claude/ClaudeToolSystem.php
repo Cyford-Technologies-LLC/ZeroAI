@@ -25,12 +25,26 @@ class ClaudeToolSystem {
                 return $this->listDirectory($args[0]);
             case 'agents':
                 return $this->listAgents();
+            case 'update_agent':
+                return $this->updateAgent($args[0], $args[1]);
+            case 'crews':
+                return $this->listCrews();
+            case 'analyze_crew':
+                return $this->analyzeCrew($args[0]);
+            case 'logs':
+                return $this->getCrewLogs($args[0] ?? 7, $args[1] ?? null);
+            case 'optimize_agents':
+                return $this->optimizeAgents();
+            case 'train_agents':
+                return $this->trainAgents();
             case 'docker':
                 return $this->dockerCommand($args[0]);
             case 'ps':
                 return $this->showContainers();
             case 'memory':
                 return $this->memoryCommand($args[0], $args[1] ?? null);
+            case 'context':
+                return $this->contextCommand($args[0]);
             default:
                 return ['error' => "Unknown command: $command"];
         }
