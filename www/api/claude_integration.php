@@ -63,7 +63,7 @@ class ClaudeIntegration {
         ];
         
         // Debug: Log what we're sending to Claude
-        file_put_contents('/tmp/claude_debug.log', date('Y-m-d H:i:s') . " - Messages to Claude: " . json_encode($messages, JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+        file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " - Messages to Claude: " . json_encode($messages, JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
         
         $data = [
             'model' => $model ?: 'claude-3-5-sonnet-20241022',
