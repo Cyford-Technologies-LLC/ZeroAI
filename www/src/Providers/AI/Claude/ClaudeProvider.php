@@ -33,6 +33,7 @@ class ClaudeProvider {
             
             // Convert frontend history format to Claude API format
             $convertedHistory = [];
+            error_log('ClaudeProvider received history: ' . json_encode($history));
             foreach ($history as $msg) {
                 if (isset($msg['sender']) && isset($msg['message'])) {
                     if ($msg['sender'] === 'Claude') {
@@ -42,6 +43,7 @@ class ClaudeProvider {
                     }
                 }
             }
+            error_log('ClaudeProvider converted history: ' . json_encode($convertedHistory));
             
             $response = $this->integration->chatWithClaude(
                 $message . $commandOutputs, 
