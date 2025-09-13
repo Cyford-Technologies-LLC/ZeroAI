@@ -24,21 +24,27 @@ class ClaudeCommands {
     }
     
     private function readFile($matches) {
-        $path = '/app/' . ltrim($matches[1], '/');
+        $path = $matches[1];
+        if (!str_starts_with($path, '/')) {
+            $path = '/app/' . $path;
+        }
         if (file_exists($path)) {
             return "\n\n📄 File: {$matches[1]}\n```\n" . file_get_contents($path) . "\n```\n";
         }
-        return "\n❌ File not found: {$matches[1]}\n";
+        return "\n❌ File not found: {$matches[1]} (tried: $path)\n";
     }
     
     private function listDirectory($matches) {
-        $path = '/app/' . ltrim($matches[1], '/');
+        $path = $matches[1];
+        if (!str_starts_with($path, '/')) {
+            $path = '/app/' . $path;
+        }
         if (is_dir($path)) {
             $files = scandir($path);
             $list = array_filter($files, function($f) { return $f !== '.' && $f !== '..'; });
             return "\n\n📁 Directory: {$matches[1]}\n" . implode("\n", $list) . "\n";
         }
-        return "\n❌ Directory not found: {$matches[1]}\n";
+        return "\n❌ Directory not found: {$matches[1]} (tried: $path)\n";
     }
     
     private function searchFiles($matches) {

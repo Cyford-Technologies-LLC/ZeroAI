@@ -8,12 +8,12 @@ try {
     $commands = new \ZeroAI\Providers\AI\Claude\ClaudeCommands();
     
     echo "<h2>Testing @file command</h2>";
-    $message = "@file /app/.env";
+    $message = "@file .env";
     $commands->processFileCommands($message);
     echo "<pre>" . htmlspecialchars($message) . "</pre>";
     
     echo "<h2>Testing @list command</h2>";
-    $message = "@list /app/config";
+    $message = "@list config";
     $commands->processFileCommands($message);
     echo "<pre>" . htmlspecialchars($message) . "</pre>";
     
