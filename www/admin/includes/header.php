@@ -63,7 +63,7 @@ require_once __DIR__ . '/../auth_check.php';
                 <a href="/admin/dashboard.php" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
                 <a href="/admin/crewai.php" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
                 <a href="/admin/claude_chat.php" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
-                <a href="/admin/tools.php" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics']) ? 'class="active"' : '' ?>>Tools</a>
+                <a href="/admin/tools.php" <?= in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics']) ? 'class="active"' : '' ?>>Tools</a>
                 <a href="/admin/system.php" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
                 <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
@@ -81,7 +81,7 @@ require_once __DIR__ . '/../auth_check.php';
                 $currentSection = 'crewai';
             } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
                 $currentSection = 'chat';
-            } elseif (in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics'])) {
+            } elseif (in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics'])) {
                 $currentSection = 'tools';
             } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
                 $currentSection = 'system';
@@ -130,7 +130,7 @@ require_once __DIR__ . '/../auth_check.php';
                 <div class="sidebar-group">
                     <h3>System Tools</h3>
                     <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>📊 Monitoring</a>
-                    <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>📋 Logs</a>
+                    <a href="/admin/error_logs.php" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>📋 Logs</a>
                     <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>⚡ Performance</a>
                 </div>
                 <div class="sidebar-group">
