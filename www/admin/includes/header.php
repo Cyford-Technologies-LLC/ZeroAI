@@ -60,12 +60,12 @@ require_once __DIR__ . '/../auth_check.php';
         <div class="header-content">
             <div class="logo">ZeroAI Admin</div>
             <nav class="nav">
-                <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
-                <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
-                <a href="/admin/chat" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
-                <a href="/admin/tools" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics']) ? 'class="active"' : '' ?>>Tools</a>
-                <a href="/admin/system" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
-                <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
+                <a href="/admin/dashboard.php" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
+                <a href="/admin/agents.php" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
+                <a href="/admin/claude_chat.php" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
+                <a href="/admin/logs.php" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics']) ? 'class="active"' : '' ?>>Tools</a>
+                <a href="/admin/localhost.php" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
+                <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= $_SESSION['admin_user'] ?? 'Admin' ?>!</span>
@@ -93,30 +93,30 @@ require_once __DIR__ . '/../auth_check.php';
             <?php if ($currentSection === 'crewai'): ?>
                 <div class="sidebar-group">
                     <h3>Crew Management</h3>
-                    <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
-                    <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
-                    <a href="/admin/test_dynamic_agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>🧪 Test Dynamic Agents</a>
-                    <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
+                    <a href="/admin/crews.php" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
+                    <a href="/admin/agents.php" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
+                    <a href="/admin/test_dynamic_agents.php" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>🧪 Test Dynamic Agents</a>
+                    <a href="/admin/tasks.php" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>AI Models</h3>
-                    <a href="/admin/ollama" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
+                    <a href="/admin/ollama.php" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Resources</h3>
-                    <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge Base</a>
-                    <a href="/admin/examples" <?= ($currentPage ?? '') === 'examples' ? 'class="active"' : '' ?>>Examples</a>
+                    <a href="/admin/knowledge.php" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge Base</a>
+                    <a href="/admin/examples.php" <?= ($currentPage ?? '') === 'examples' ? 'class="active"' : '' ?>>Examples</a>
                 </div>
             <?php elseif ($currentSection === 'chat'): ?>
                 <div class="sidebar-group">
                     <h3>AI Assistants</h3>
-                    <a href="/admin/claude_chat" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>💬 Claude Direct Chat</a>
-                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>👥 Crew Chat</a>
-                    <a href="/admin/chat" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>🤖 Agent Chat</a>
+                    <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>💬 Claude Direct Chat</a>
+                    <a href="/admin/crew_chat.php" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>👥 Crew Chat</a>
+                    <a href="/admin/chat.php" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>🤖 Agent Chat</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Settings</h3>
-                    <a href="/admin/claude_settings">⚙️ Configure Claude</a>
+                    <a href="/admin/claude_settings.php">⚙️ Configure Claude</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Individual Agents</h3>
