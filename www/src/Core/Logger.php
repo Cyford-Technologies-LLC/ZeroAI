@@ -1,5 +1,5 @@
 <?php
-namespace Core;
+namespace ZeroAI\Core;
 
 class Logger {
     private static $instance = null;

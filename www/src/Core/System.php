@@ -1,5 +1,5 @@
 <?php
-namespace Core;
+namespace ZeroAI\Core;
 
 class System {
     private static $instance = null;
@@ -10,9 +10,9 @@ class System {
     
     private function __construct() {
         $this->loadEnvironment();
-        $this->logger = Logger::getInstance();
-        $this->security = new Security();
-        $this->database = new DatabaseManager();
+        $this->logger = \ZeroAI\Core\Logger::getInstance();
+        $this->security = new \ZeroAI\Core\Security();
+        $this->database = new \ZeroAI\Core\DatabaseManager();
         $this->logger->info('System initialized');
     }
     
@@ -113,7 +113,7 @@ class System {
         $this->config[$key] = $value;
     }
     
-    public function getDatabase(): DatabaseManager { return $this->database; }
-    public function getLogger(): Logger { return $this->logger; }
-    public function getSecurity(): Security { return $this->security; }
+    public function getDatabase(): \ZeroAI\Core\DatabaseManager { return $this->database; }
+    public function getLogger(): \ZeroAI\Core\Logger { return $this->logger; }
+    public function getSecurity(): \ZeroAI\Core\Security { return $this->security; }
 }

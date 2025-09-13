@@ -1,5 +1,5 @@
 <?php
-namespace Core;
+namespace ZeroAI\Core;
 
 class Security {
     private $permissions = [
@@ -35,7 +35,7 @@ class Security {
             
             return false;
         } catch (\Exception $e) {
-            Logger::getInstance()->error('Permission check failed', [
+            \ZeroAI\Core\Logger::getInstance()->error('Permission check failed', [
                 'user' => $user,
                 'command' => $command,
                 'error' => $e->getMessage()
@@ -63,7 +63,7 @@ class Security {
             
             return true;
         } catch (\Exception $e) {
-            Logger::getInstance()->error('Access check failed', [
+            \ZeroAI\Core\Logger::getInstance()->error('Access check failed', [
                 'user' => $user,
                 'resource' => $resource,
                 'action' => $action,

@@ -1,5 +1,5 @@
 <?php
-namespace Core;
+namespace ZeroAI\Core;
 
 class DatabaseManager {
     private $databases = [];
@@ -26,7 +26,7 @@ class DatabaseManager {
                 $this->createDatabase('main');
             }
         } catch (\Exception $e) {
-            Logger::getInstance()->error('Database scan failed', ['error' => $e->getMessage()]);
+            \ZeroAI\Core\Logger::getInstance()->error('Database scan failed', ['error' => $e->getMessage()]);
         }
     }
     
@@ -38,7 +38,7 @@ class DatabaseManager {
             
             return new \SQLite3($this->databases[$dbName]);
         } catch (\Exception $e) {
-            Logger::getInstance()->error('Database connection failed', [
+            \ZeroAI\Core\Logger::getInstance()->error('Database connection failed', [
                 'database' => $dbName,
                 'error' => $e->getMessage()
             ]);
@@ -73,7 +73,7 @@ class DatabaseManager {
             $db->close();
             return $results;
         } catch (\Exception $e) {
-            Logger::getInstance()->error('SQL execution failed', [
+            \ZeroAI\Core\Logger::getInstance()->error('SQL execution failed', [
                 'database' => $dbName,
                 'sql' => $sql,
                 'error' => $e->getMessage()
@@ -103,10 +103,10 @@ class DatabaseManager {
             $db->close();
             $this->databases[$name] = $dbPath;
             
-            Logger::getInstance()->info("Database created: $name");
+            \ZeroAI\Core\Logger::getInstance()->info("Database created: $name");
             return true;
         } catch (\Exception $e) {
-            Logger::getInstance()->error('Database creation failed', [
+            \ZeroAI\Core\Logger::getInstance()->error('Database creation failed', [
                 'name' => $name,
                 'error' => $e->getMessage()
             ]);
@@ -146,12 +146,12 @@ class DatabaseManager {
             $result = copy($sourcePath, $backupPath);
             
             if ($result) {
-                Logger::getInstance()->info("Database backed up: $dbName", ['backup_path' => $backupPath]);
+                \ZeroAI\Core\Logger::getInstance()->info("Database backed up: $dbName", ['backup_path' => $backupPath]);
             }
             
             return $result;
         } catch (\Exception $e) {
-            Logger::getInstance()->error('Database backup failed', [
+            \ZeroAI\Core\Logger::getInstance()->error('Database backup failed', [
                 'database' => $dbName,
                 'error' => $e->getMessage()
             ]);
