@@ -23,11 +23,23 @@ class ClaudeProvider {
             $commandOutputs = $this->processCommands($message);
             $systemPrompt = $this->getSystemPrompt();
             
+            // Convert frontend history format to Claude API format
+            $convertedHistory = [];
+            foreach ($history as $msg) {
+                if (isset($msg['sender']) && isset($msg['message'])) {
+                    if ($msg['sender'] === 'Claude') {
+                        $convertedHistory[] = ['role' => 'assistant', 'content' => $msg['message']];
+                    } elseif ($msg['sender'] === 'You' || $msg['sender'] === 'User') {
+                        $convertedHistory[] = ['role' => 'user', 'content' => $msg['message']];
+                    }
+                }
+            }
+            
             $response = $this->integration->chatWithClaude(
                 $message . $commandOutputs, 
                 $systemPrompt, 
                 $model, 
-                $history
+                $convertedHistory
             );
             
             return [

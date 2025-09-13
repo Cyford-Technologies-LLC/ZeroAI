@@ -13,18 +13,32 @@ class ClaudeIntegration {
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
         $messages = [];
         
-        foreach ($conversationHistory as $msg) {
-            if (isset($msg['sender']) && isset($msg['message']) && !empty(trim($msg['message']))) {
-                $sender = $msg['sender'];
-                if ($sender === 'Claude') {
+        // Process conversation history - limit to last 20 messages
+        if (is_array($conversationHistory) && !empty($conversationHistory)) {
+            $recentHistory = array_slice($conversationHistory, -20);
+            
+            foreach ($recentHistory as $historyItem) {
+                if (!is_array($historyItem) || !isset($historyItem['sender']) || !isset($historyItem['message'])) {
+                    continue;
+                }
+                
+                $sender = trim($historyItem['sender']);
+                $messageContent = trim($historyItem['message']);
+                
+                if (empty($messageContent)) {
+                    continue;
+                }
+                
+                // Map sender names to Claude API roles
+                if (in_array($sender, ['Claude', 'claude', 'Assistant', 'assistant', 'Claude (Auto)', 'AI'], true)) {
                     $messages[] = [
                         'role' => 'assistant',
-                        'content' => trim($msg['message'])
+                        'content' => $messageContent
                     ];
-                } elseif ($sender === 'You' || $sender === 'User') {
+                } elseif (!in_array($sender, ['System', 'system', 'Error', 'error'], true)) {
                     $messages[] = [
                         'role' => 'user',
-                        'content' => trim($msg['message'])
+                        'content' => $messageContent
                     ];
                 }
             }
