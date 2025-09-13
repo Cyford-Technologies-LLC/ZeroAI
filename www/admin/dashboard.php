@@ -2,26 +2,19 @@
 require_once 'includes/autoload.php';
 
 use ZeroAI\Core\System;
-use ZeroAI\Models\User;
-use ZeroAI\Models\Agent;
-use ZeroAI\Models\Logs;
-use ZeroAI\Services\UserService;
-use ZeroAI\Services\AgentService;
+use ZeroAI\Core\DatabaseManager;
 
 $system = System::getInstance();
-$userService = new UserService();
-$agentService = new AgentService();
-$logsModel = new Logs();
+$db = new DatabaseManager();
 
 $pageTitle = 'Admin Dashboard - ZeroAI';
 $currentPage = 'dashboard';
 
-// Get system stats
-$users = $userService->getAllUsers();
-$agents = $agentService->getAllAgents();
-$recentLogs = $logsModel->getRecentLogs('ai', 5);
-$userStats = $userService->getUserStats();
-$agentStats = $agentService->getAgentStats();
+// Get basic stats
+$userResult = $db->executeSQL("SELECT COUNT(*) as total FROM users");
+$userStats = ['total' => $userResult[0]['data'][0]['total'] ?? 0, 'admin' => 1];
+$agentStats = ['total' => 0, 'active' => 0];
+$recentLogs = [];
 
 include __DIR__ . '/includes/header.php'; 
 ?>

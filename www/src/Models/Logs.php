@@ -1,64 +1,33 @@
 <?php
-namespace Models;
+namespace ZeroAI\Models;
 
-use Core\System;
-
-class Logs {
-    private $system;
-    private $logger;
+class Logs extends BaseModel {
+    protected $table = 'logs';
     
     public function __construct() {
-        $this->system = System::getInstance();
-        $this->logger = $this->system->getLogger();
+        parent::__construct();
+        $this->initTable();
     }
     
-    public function getRecentLogs(string $type = 'ai', int $lines = 100): array {
-        return $this->logger->getRecentLogs($type, $lines);
+    protected function initTable() {
+        $this->executeSQL("
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL,
+                message TEXT NOT NULL,
+                context TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
     }
     
-    public function searchLogs(string $query, string $type = 'ai', int $days = 7): array {
-        return $this->logger->searchLogs($query, $type, $days);
-    }
-    
-    public function getErrorLogs(int $lines = 100): array {
-        return $this->logger->getRecentLogs('error', $lines);
-    }
-    
-    public function getAILogs(int $lines = 100): array {
-        return $this->logger->getRecentLogs('ai', $lines);
-    }
-    
-    public function getDebugLogs(int $lines = 100): array {
-        return $this->logger->getRecentLogs('debug', $lines);
-    }
-    
-    public function clearOldLogs(int $daysToKeep = 30): int {
-        return $this->logger->clearOldLogs($daysToKeep);
-    }
-    
-    public function getSystemLogs(): array {
-        try {
-            // Get system logs from various sources
-            $logs = [];
-            
-            // Docker logs
-            $dockerLogs = shell_exec('docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>&1');
-            if ($dockerLogs) {
-                $logs['docker'] = explode("\n", trim($dockerLogs));
-            }
-            
-            // System status
-            $logs['system_status'] = [
-                'timestamp' => date('Y-m-d H:i:s'),
-                'memory_usage' => memory_get_usage(true),
-                'disk_free' => disk_free_space('/app'),
-                'load_average' => sys_getloadavg()
-            ];
-            
-            return $logs;
-        } catch (\Exception $e) {
-            $this->system->getLogger()->error('Failed to get system logs', ['error' => $e->getMessage()]);
-            return [];
-        }
+    public function getRecentLogs(string $type = 'ai', int $limit = 10): array {
+        $result = $this->executeSQL("SELECT * FROM logs WHERE type = '$type' ORDER BY created_at DESC LIMIT $limit");
+        $logs = $result[0]['data'] ?? [];
+        
+        // Format logs as strings
+        return array_map(function($log) {
+            return "[{$log['created_at']}] {$log['message']}";
+        }, $logs);
     }
 }
