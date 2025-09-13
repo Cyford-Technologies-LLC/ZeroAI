@@ -14,12 +14,17 @@ class ClaudeIntegration {
         $messages = [];
         
         foreach ($conversationHistory as $msg) {
-            if (isset($msg['role']) && isset($msg['content']) && !empty(trim($msg['content']))) {
-                $role = $msg['role'];
-                if ($role === 'user' || $role === 'assistant') {
+            if (isset($msg['sender']) && isset($msg['message']) && !empty(trim($msg['message']))) {
+                $sender = $msg['sender'];
+                if ($sender === 'Claude') {
                     $messages[] = [
-                        'role' => $role,
-                        'content' => trim($msg['content'])
+                        'role' => 'assistant',
+                        'content' => trim($msg['message'])
+                    ];
+                } elseif ($sender === 'You' || $sender === 'User') {
+                    $messages[] = [
+                        'role' => 'user',
+                        'content' => trim($msg['message'])
                     ];
                 }
             }
