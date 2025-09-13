@@ -6,7 +6,7 @@ abstract class BaseModel {
     protected $table;
     
     public function __construct() {
-        $this->db = \ZeroAI\Core\DatabaseManager::class;
+        $this->db = new \ZeroAI\Core\DatabaseManager();
     }
     
     protected function executeSQL(string $sql, string $dbName = 'main'): array {
