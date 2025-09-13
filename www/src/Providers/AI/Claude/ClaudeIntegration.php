@@ -38,7 +38,12 @@ class ClaudeIntegration {
         $data = [
             'model' => $model,
             'max_tokens' => 4096,
-            'system' => $systemPrompt,
+            'system' => [
+                [
+                    'type' => 'text',
+                    'text' => $systemPrompt
+                ]
+            ],
             'messages' => $messages
         ];
         
