@@ -169,21 +169,11 @@ class ClaudeProvider {
     
     private function getSystemPrompt() {
         try {
-            // Use Claude's own database
-            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-            if (!is_dir($memoryDir)) {
-                mkdir($memoryDir, 0777, true);
-            }
+            $db = new \ZeroAI\Core\DatabaseManager();
+            $result = $db->executeSQL("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1", 'claude');
             
-            $dbPath = $memoryDir . '/claude_memory.db';
-            $pdo = new \PDO("sqlite:$dbPath");
-            
-            $stmt = $pdo->prepare("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($result && $result['prompt']) {
-                $prompt = $result['prompt'];
+            if (!empty($result[0]['data'])) {
+                $prompt = $result[0]['data'][0]['prompt'];
                 if ($prompt && strpos($prompt, '@file') === false) {
                     $prompt .= $this->getCommandsHelp();
                 }
