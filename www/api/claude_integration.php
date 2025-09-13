@@ -21,23 +21,38 @@ class ClaudeIntegration {
         // Build messages array with conversation history
         $messages = [];
         
-        // Add conversation history (limit to last 10 messages to avoid token limits)
-        $recentHistory = array_slice($conversationHistory, -10);
-        foreach ($recentHistory as $historyItem) {
-            if (isset($historyItem['sender']) && isset($historyItem['message']) && !empty(trim($historyItem['message']))) {
-                $sender = $historyItem['sender'];
-                // Only add user and assistant messages, skip system messages
-                if ($sender === 'Claude') {
+        // Process conversation history with improved validation
+        if (is_array($conversationHistory) && !empty($conversationHistory)) {
+            // Limit to last 20 messages to maintain more context
+            $recentHistory = array_slice($conversationHistory, -20);
+            
+            foreach ($recentHistory as $historyItem) {
+                // Validate history item structure
+                if (!is_array($historyItem) || !isset($historyItem['sender']) || !isset($historyItem['message'])) {
+                    continue;
+                }
+                
+                $sender = trim($historyItem['sender']);
+                $messageContent = trim($historyItem['message']);
+                
+                // Skip empty messages
+                if (empty($messageContent)) {
+                    continue;
+                }
+                
+                // Map sender names to Claude API roles
+                if ($this->isClaudeMessage($sender)) {
                     $messages[] = [
                         'role' => 'assistant',
-                        'content' => trim($historyItem['message'])
+                        'content' => $messageContent
                     ];
-                } elseif ($sender !== 'System' && $sender !== 'system') {
+                } elseif ($this->isUserMessage($sender)) {
                     $messages[] = [
                         'role' => 'user',
-                        'content' => trim($historyItem['message'])
+                        'content' => $messageContent
                     ];
                 }
+                // Skip system messages as they don't belong in the messages array
             }
         }
         
@@ -169,6 +184,22 @@ Please provide:
 Follow ZeroAI patterns and CrewAI best practices.";
 
         return $this->chatWithClaude($prompt);
+    }
+    
+    /**
+     * Check if sender represents Claude/assistant
+     */
+    private function isClaudeMessage($sender) {
+        $claudeSenders = ['Claude', 'claude', 'Assistant', 'assistant', 'Claude (Auto)', 'AI'];
+        return in_array($sender, $claudeSenders, true);
+    }
+    
+    /**
+     * Check if sender represents user
+     */
+    private function isUserMessage($sender) {
+        $systemSenders = ['System', 'system', 'Error', 'error'];
+        return !in_array($sender, $systemSenders, true) && !$this->isClaudeMessage($sender);
     }
     
     public function testConnection() {
