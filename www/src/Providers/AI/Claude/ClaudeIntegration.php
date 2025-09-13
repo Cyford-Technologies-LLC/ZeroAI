@@ -14,10 +14,15 @@ class ClaudeIntegration {
         $messages = [];
         
         foreach ($conversationHistory as $msg) {
-            $messages[] = [
-                'role' => $msg['role'],
-                'content' => $msg['content']
-            ];
+            if (isset($msg['role']) && isset($msg['content']) && !empty(trim($msg['content']))) {
+                $role = $msg['role'];
+                if ($role === 'user' || $role === 'assistant') {
+                    $messages[] = [
+                        'role' => $role,
+                        'content' => trim($msg['content'])
+                    ];
+                }
+            }
         }
         
         $messages[] = [

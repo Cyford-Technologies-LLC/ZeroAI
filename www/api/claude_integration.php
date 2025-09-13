@@ -24,12 +24,18 @@ class ClaudeIntegration {
         // Add conversation history (limit to last 10 messages to avoid token limits)
         $recentHistory = array_slice($conversationHistory, -10);
         foreach ($recentHistory as $historyItem) {
-            if (isset($historyItem['sender']) && isset($historyItem['message'])) {
-                $role = ($historyItem['sender'] === 'Claude') ? 'assistant' : 'user';
-                if ($historyItem['sender'] !== 'System') { // Skip system messages
+            if (isset($historyItem['sender']) && isset($historyItem['message']) && !empty(trim($historyItem['message']))) {
+                $sender = $historyItem['sender'];
+                // Only add user and assistant messages, skip system messages
+                if ($sender === 'Claude') {
                     $messages[] = [
-                        'role' => $role,
-                        'content' => $historyItem['message']
+                        'role' => 'assistant',
+                        'content' => trim($historyItem['message'])
+                    ];
+                } elseif ($sender !== 'System' && $sender !== 'system') {
+                    $messages[] = [
+                        'role' => 'user',
+                        'content' => trim($historyItem['message'])
                     ];
                 }
             }
