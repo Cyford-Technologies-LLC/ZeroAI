@@ -1,26 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Logs - ZeroAI Admin</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { color: #4CAF50; }
-        .log-section { margin-bottom: 30px; background: #2a2a2a; padding: 20px; border-radius: 5px; }
-        .log-content { background: #000; color: #0f0; font-family: monospace; padding: 15px; border-radius: 3px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
-        .refresh-btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
-        .refresh-btn:hover { background: #45a049; }
-        .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #c82333; }
-        .error { color: #ff6b6b; }
-        .warning { color: #ffa500; }
-        .info { color: #87ceeb; }
-    </style>
-</head>
-<body>
-    <div class="container">
+<?php 
+$pageTitle = 'Error Logs - ZeroAI Admin';
+$currentPage = 'error_logs';
+include __DIR__ . '/includes/header.php';
+?>
+<style>
+.log-section { margin-bottom: 30px; }
+.log-content { background: #000; color: #0f0; font-family: monospace; padding: 15px; border-radius: 3px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+.error { color: #ff6b6b; }
+.warning { color: #ffa500; }
+.info { color: #87ceeb; }
+</style>
         <h1>🚨 Error Logs - ZeroAI Admin</h1>
         
         <button class="refresh-btn" onclick="location.reload()">Refresh Logs</button>
@@ -109,6 +98,8 @@ if (file_exists($nginxLog)) {
             </div>
         </div>
     </div>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
     
     <script>
     function clearLog(logType) {
@@ -146,5 +137,3 @@ if (file_exists($nginxLog)) {
         .catch(error => alert('Error clearing logs: ' + error));
     }
     </script>
-</body>
-</html>

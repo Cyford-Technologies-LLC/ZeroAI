@@ -201,8 +201,7 @@ function processClaudeCommands(&$message) {
         require_once __DIR__ . '/check_command_permission.php';
         if (!checkCommandPermission('exec', $currentMode)) {
             $message .= "\n\n" . getPermissionError('exec', $currentMode);
-            return;
-        }
+        } else {
         foreach ($matches as $match) {
             $containerName = trim($match[1]);
             $command = trim($match[2]);
@@ -218,6 +217,8 @@ function processClaudeCommands(&$message) {
             // Use base64 encoding to safely pass complex commands
             $encodedCommand = base64_encode($command);
             $output = shell_exec("timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash' 2>&1");
+            error_log("EXEC DEBUG - Command: $command, Output length: " . strlen($output ?: ''));
+            error_log("EXEC DEBUG - Raw output: " . ($output ?: 'EMPTY'));
             $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
             
             // Capture for database
@@ -226,6 +227,7 @@ function processClaudeCommands(&$message) {
                 'command' => "@exec $containerName $command",
                 'output' => $output ?: "Command executed"
             ];
+        }
         }
     }
 

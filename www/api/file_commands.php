@@ -85,8 +85,7 @@ function processFileCommands(&$message) {
         require_once __DIR__ . '/check_command_permission.php';
         if (!checkCommandPermission('create', $currentMode)) {
             $message .= "\n\n" . getPermissionError('create', $currentMode);
-            return;
-        }
+        } else {
         $filePath = trim($matches[1]);
         $fileContent = isset($matches[2]) ? trim($matches[2]) : "";
         
@@ -116,6 +115,7 @@ function processFileCommands(&$message) {
             // Read-only mode for other directories
             $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only write to: knowledge/internal_crew/agent_learning/self/claude/";
         }
+        }
     }
 
     // @edit command - Check permissions first
@@ -126,8 +126,7 @@ function processFileCommands(&$message) {
         require_once __DIR__ . '/check_command_permission.php';
         if (!checkCommandPermission('edit', $currentMode)) {
             $message .= "\n\n" . getPermissionError('edit', $currentMode);
-            return;
-        }
+        } else {
         $filePath = trim($matches[1]);
         $newContent = isset($matches[2]) ? trim($matches[2]) : "";
         
@@ -155,6 +154,7 @@ function processFileCommands(&$message) {
             }
         } else {
             $message .= "\n\n[RESTRICTED] Write access restricted. Claude can only edit files in: knowledge/internal_crew/agent_learning/self/claude/";
+        }
         }
     }
 
