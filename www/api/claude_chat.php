@@ -237,6 +237,8 @@ try {
     $claudeResponse = $response['message'];
     $processedResponse = $claudeResponse;
     
+    // Process Claude's individual commands
+    $GLOBALS['executedCommands'] = []; // Reset for Claude's commands
     processFileCommands($processedResponse);
     processClaudeCommands($processedResponse);
     
@@ -246,7 +248,15 @@ try {
             $memoryPdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
                      ->execute(['Claude', $claudeResponse, $selectedModel, $sessionId]);
             
-            // Save executed commands with their outputs
+            // Save user's executed commands
+            if (isset($GLOBALS['executedCommands']) && !empty($GLOBALS['executedCommands'])) {
+                foreach ($GLOBALS['executedCommands'] as $cmdData) {
+                    $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
+                             ->execute([$cmdData['command'], $cmdData['output'], 'success', $selectedModel, $sessionId]);
+                }
+            }
+            
+            // Save Claude's executed commands (after processing her response)
             if (isset($GLOBALS['executedCommands']) && !empty($GLOBALS['executedCommands'])) {
                 foreach ($GLOBALS['executedCommands'] as $cmdData) {
                     $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
@@ -262,7 +272,7 @@ try {
     
     foreach ($lines as $line) {
         if (preg_match('/^\@(\w+)\s+(.*)/', $line, $matches)) {
-            $result[] = "[@{$matches[1]}: {$matches[2]}]";
+            $result[] = "[@{$matches[1]}: {$matches[2]}]"
         } elseif (preg_match('/\[View.*File\]/', $line) || preg_match('/🧠 Memory:/', $line)) {
             $result[] = $line; // Keep memory results and hyperlinks
         } elseif (preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker|Directory listing|\[SUCCESS\]|\[ERROR\]|\[RESTRICTED\])/', $line)) {
