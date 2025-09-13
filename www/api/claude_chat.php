@@ -23,7 +23,7 @@ header('Content-Type: application/json');
 if (file_exists('/app/.env')) {
     $lines = file('/app/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && !str_starts_with($line, '#')) {
+        if (str_contains($line, '=') && !str_starts_with($line, '#')) {
             list($key, $value) = explode('=', $line, 2);
             $_ENV[trim($key)] = trim($value);
             putenv(trim($key) . '=' . trim($value));
@@ -49,7 +49,9 @@ $debugMode = $input['debug'] ?? false;
 $GLOBALS['claudeMode'] = $claudeMode;
 $GLOBALS['debugMode'] = $debugMode;
 
-if ($debugMode) error_log("DEBUG: Starting claude_chat.php - Mode: $claudeMode");
+if ($debugMode) {
+    error_log("DEBUG: Starting claude_chat.php - Mode: $claudeMode");
+}
 
 if (!$message) {
     echo json_encode(['success' => false, 'error' => 'Message required']);
@@ -66,7 +68,7 @@ if ($autonomousMode) {
 }
 
 // Auto-scan for autonomous mode only
-if ($autonomousMode && !preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
+if ($autonomousMode && !preg_match('/@(file|list|search|create|edit|append|delete)/u', $message)) {
     $autoScan = "\n\nAuto-scanning key directories:\n";
     if (is_dir('/app/src')) {
         $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
@@ -89,10 +91,14 @@ $commandOutputs = '';
 // Process commands silently - capture outputs for Claude context only
 $tempMessage = $message;
 $GLOBALS['executedCommands'] = []; // Global to capture commands
-if ($debugMode) error_log("DEBUG: Processing user commands - Message length: " . strlen($tempMessage));
+if ($debugMode) {
+    error_log("DEBUG: Processing user commands - Message length: " . strlen($tempMessage));
+}
 processFileCommands($tempMessage);
 processClaudeCommands($tempMessage);
-if ($debugMode) error_log("DEBUG: After user command processing - Message length: " . strlen($tempMessage));
+if ($debugMode) {
+    error_log("DEBUG: After user command processing - Message length: " . strlen($tempMessage));
+}
 
 // Extract ALL command outputs (file + exec)
 if (strlen($tempMessage) > strlen($originalMessage)) {
@@ -106,7 +112,7 @@ $message = $originalMessage;
 
 // Only use Claude API for complex queries or when explicitly needed
 $envContent = file_get_contents('/app/.env');
-preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
+preg_match('/ANTHROPIC_API_KEY=(.+)/u', $envContent, $matches);
 $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
 
 if (!$apiKey) {
@@ -123,28 +129,31 @@ $systemPrompt = '';
 // Initialize memory system with error handling
 try {
     $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-    if (!is_dir($memoryDir)) mkdir($memoryDir, 0777, true);
+    if (!mkdir($memoryDir, 0777, true) && !is_dir($memoryDir)) {
+        throw new Exception('Failed to create directory: ' . $memoryDir);
+    }
     
     $dbPath = $memoryDir . '/claude_memory.db';
     $memoryPdo = new PDO("sqlite:$dbPath");
     
     // Create tables if they don't exist
-    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, primary_model TEXT, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
-    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
-    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTO_INCREMENT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, primary_model TEXT, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTO_INCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTO_INCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_config (id INTEGER PRIMARY KEY, system_prompt TEXT, goals TEXT, personality TEXT, capabilities TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, model_used TEXT, mode TEXT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
-    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS system_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_sessions (id INTEGER PRIMARY KEY AUTO_INCREMENT, model_used TEXT, mode TEXT, start_time DATETIME DEFAULT CURRENT_TIMESTAMP, end_time DATETIME, message_count INTEGER DEFAULT 0, command_count INTEGER DEFAULT 0)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS system_prompts (id INTEGER PRIMARY KEY AUTO_INCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $memoryPdo->exec("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTO_INCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
     // Start session
-    $memoryPdo->prepare("INSERT INTO sessions (start_time, primary_model) VALUES (datetime('now'), ?)") ->execute([$selectedModel]);
+    $now = date('Y-m-d H:i:s');
+    $memoryPdo->prepare("INSERT INTO sessions (start_time, primary_model) VALUES (?, ?)")->execute([$now, $selectedModel]);
     $sessionId = $memoryPdo->lastInsertId();
     
     // Save session info to claude_sessions
-    $memoryPdo->prepare("INSERT INTO claude_sessions (model_used, mode, start_time) VALUES (?, ?, datetime('now'))")
-             ->execute([$selectedModel, $claudeMode]);
+    $memoryPdo->prepare("INSERT INTO claude_sessions (model_used, mode, start_time) VALUES (?, ?, ?)")
+             ->execute([$selectedModel, $claudeMode, $now]);
     
     // Migrate prompt from old database to new memory database if not exists
     $stmt = $memoryPdo->prepare("SELECT COUNT(*) FROM system_prompts");
@@ -164,8 +173,9 @@ try {
     }
     
     // Save/update system prompt to claude_config
-    $memoryPdo->prepare("INSERT OR REPLACE INTO claude_config (id, system_prompt, updated_at) VALUES (1, ?, datetime('now'))")
-             ->execute([$systemPrompt]);
+    $memoryPdo->prepare("DELETE FROM claude_config WHERE id = 1")->execute();
+    $memoryPdo->prepare("INSERT INTO claude_config (id, system_prompt, updated_at) VALUES (1, ?, ?)")
+             ->execute([$systemPrompt, date('Y-m-d H:i:s')]);
 } catch (Exception $e) {
     // Memory system failed, continue without it
     $memoryPdo = null;
@@ -189,7 +199,7 @@ try {
     
     if ($systemPrompt) {
         // Ensure commands are always included
-        if (strpos($systemPrompt, '@file') === false) {
+        if (!str_contains($systemPrompt, '@file')) {
             $systemPrompt .= "\n\nCOMMANDS:\n";
             $systemPrompt .= "- @file path/to/file.py - Read file contents\n";
             $systemPrompt .= "- @read path/to/file.py - Read file contents (alias)\n";
@@ -288,11 +298,11 @@ try {
     $result = [];
     
     foreach ($lines as $line) {
-        if (preg_match('/^\@(\w+)\s+(.*)/', $line, $matches)) {
+        if (preg_match('/^\@(\w+)\s+(.*)/u', $line, $matches)) {
             $result[] = "[@{$matches[1]}: {$matches[2]}]";
-        } elseif (preg_match('/\[View.*File\]/', $line) || preg_match('/🧠 Memory:/', $line)) {
+        } elseif (preg_match('/\[View.*File\]/u', $line) || preg_match('/🧠 Memory:/u', $line)) {
             $result[] = $line; // Keep memory results and hyperlinks
-        } elseif (preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker|Directory listing|\[SUCCESS\]|\[ERROR\]|\[RESTRICTED\]|🧠 Memory:|\[|\{)/', $line)) {
+        } elseif (preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker|Directory listing|\[SUCCESS\]|\[ERROR\]|\[RESTRICTED\]|🧠 Memory:|\[|\{)/u', $line)) {
             $result[] = $line; // Keep command outputs
         } else {
             $result[] = $line; // Keep other content
@@ -318,5 +328,3 @@ try {
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => 'Claude error: ' . $e->getMessage()]);
 }
-
-?>
