@@ -257,6 +257,52 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📜 Container Logs [$containerName] (last $lines lines):\n" . ($output ?: "No logs available");
     }
     
+    // @context command - Execute commands via context API
+    if (preg_match('/\@context\s+(.+)/', $message, $matches)) {
+        $commandsStr = trim($matches[1]);
+        // Extract individual commands from [@cmd1] [@cmd2] format
+        preg_match_all('/\[([^\]]+)\]/', $commandsStr, $cmdMatches);
+        $commands = $cmdMatches[1] ?? [];
+        
+        if (!empty($commands)) {
+            $contextData = [
+                'commands' => $commands,
+                'mode' => $GLOBALS['claudeMode'] ?? 'hybrid'
+            ];
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, 'http://localhost/api/claude_context_api.php');
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($contextData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($response && $httpCode === 200) {
+                $result = json_decode($response, true);
+                if ($result && $result['success']) {
+                    $message .= "\n\n📡 Context API Results:\n";
+                    foreach ($result['results'] as $cmdResult) {
+                        $message .= "- {$cmdResult['command']}: " . ($cmdResult['executed'] ? 'executed' : 'failed') . "\n";
+                    }
+                    if (!empty($result['context'])) {
+                        $message .= "\nContext Data:\n" . $result['context'];
+                    }
+                } else {
+                    $message .= "\n\nContext API error: " . ($result['error'] ?? 'Unknown error');
+                }
+            } else {
+                $message .= "\n\nContext API request failed (HTTP $httpCode)";
+            }
+        } else {
+            $message .= "\n\nNo commands found in @context. Use format: @context [@file path] [@list dir]";
+        }
+    }
+    
     // @memory command - Query database and create file with hyperlink
     if (preg_match('/\@memory\s+(chat|commands|search|config|sessions)\s*(.*)/', $message, $matches)) {
         $action = $matches[1];

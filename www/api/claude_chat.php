@@ -228,6 +228,17 @@ try {
             $systemPrompt .= "- @memory config - View your system prompt and configuration\n";
             $systemPrompt .= "- @memory sessions - View your recent session history\n";
             $systemPrompt .= "- @memory search \"keyword\" - Search memory for keyword\n";
+            $systemPrompt .= "\n\nCONTEXT API:\n";
+            $systemPrompt .= "For background tasks or when you need data without chat clutter, use:\n";
+            $systemPrompt .= "fetch('/api/claude_context_api.php', {\n";
+            $systemPrompt .= "  method: 'POST',\n";
+            $systemPrompt .= "  headers: {'Content-Type': 'application/json'},\n";
+            $systemPrompt .= "  body: JSON.stringify({\n";
+            $systemPrompt .= "    commands: ['@file src/main.py', '@list config/', '@agents'],\n";
+            $systemPrompt .= "    mode: 'hybrid'\n";
+            $systemPrompt .= "  })\n";
+            $systemPrompt .= "}).then(r => r.json()).then(data => console.log(data.results));\n";
+            $systemPrompt .= "This API uses same functions, permissions, and logging as chat commands.\n";
         }
     } else {
         // Use default prompt as fallback
