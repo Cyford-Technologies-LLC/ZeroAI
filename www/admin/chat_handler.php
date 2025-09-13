@@ -27,12 +27,16 @@ try {
     $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
     $response = $claudeProvider->chat($message, $selectedModel, $conversationHistory);
     
-    echo json_encode([
-        'success' => true,
-        'response' => $response['message'],
-        'tokens' => $response['tokens'] ?? 0,
-        'model' => $response['model'] ?? $selectedModel
-    ]);
+    if ($response['success']) {
+        echo json_encode([
+            'success' => true,
+            'response' => $response['response'],
+            'tokens' => $response['tokens'] ?? 0,
+            'model' => $response['model'] ?? $selectedModel
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'error' => $response['error']]);
+    }
     
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
