@@ -1,7 +1,7 @@
 <?php
 function processClaudeCommands(&$message) {
     // @read command (alias for @file)
-    if (preg_match('/\@read\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@read\s+([^\]\n]+)/', $message, $matches)) {
         $filePath = trim($matches[1]);
         $cleanPath = ltrim($filePath, '/');
         if (strpos($cleanPath, 'app/') === 0) $cleanPath = substr($cleanPath, 4);
@@ -15,7 +15,7 @@ function processClaudeCommands(&$message) {
     }
 
     // @search command
-    if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@search\s+([^\]\n]+)/', $message, $matches)) {
         $pattern = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @search: $pattern\n", FILE_APPEND);
         $output = shell_exec("find /app -name '*" . escapeshellarg($pattern) . "*' 2>/dev/null | head -20");
@@ -77,7 +77,7 @@ function processClaudeCommands(&$message) {
     }
 
     // @analyze_crew command
-    if (preg_match('/\@analyze_crew\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@analyze_crew\s+([^\]\n]+)/', $message, $matches)) {
         $taskId = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @analyze_crew: $taskId\n", FILE_APPEND);
         require_once __DIR__ . '/crew_context.php';
@@ -169,7 +169,7 @@ function processClaudeCommands(&$message) {
     }
 
     // @docker command
-    if (preg_match('/\@docker\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@docker\s+([^\]\n]+)/', $message, $matches)) {
         $dockerCmd = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @docker: $dockerCmd\n", FILE_APPEND);
         $output = shell_exec("docker $dockerCmd 2>&1");
@@ -177,7 +177,7 @@ function processClaudeCommands(&$message) {
     }
 
     // @compose command
-    if (preg_match('/\@compose\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@compose\s+([^\]\n]+)/', $message, $matches)) {
         $composeCmd = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @compose: $composeCmd\n", FILE_APPEND);
         $output = shell_exec("cd /app && docker-compose $composeCmd 2>&1");

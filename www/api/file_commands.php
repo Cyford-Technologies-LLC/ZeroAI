@@ -1,7 +1,7 @@
 <?php
 function processFileCommands(&$message) {
     // @file command - Unrestricted read access
-    if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@file\s+([^\]\n]+)/', $message, $matches)) {
         $filePath = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @file: $filePath\n", FILE_APPEND);
         
@@ -28,7 +28,7 @@ function processFileCommands(&$message) {
     }
 
     // @read command (alias for @file)
-    if (preg_match('/\@read\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@read\s+([^\]\n]+)/', $message, $matches)) {
         $filePath = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @read: $filePath\n", FILE_APPEND);
         
@@ -54,7 +54,7 @@ function processFileCommands(&$message) {
     }
 
     // @list command
-    if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@list\s+([^\]\n]+)/', $message, $matches)) {
         $dirPath = trim($matches[1]);
         @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @list: $dirPath\n", FILE_APPEND);
         
@@ -187,7 +187,7 @@ function processFileCommands(&$message) {
     }
 
     // @delete command - Unrestricted delete in Claude's directory only
-    if (preg_match('/\@delete\s+(.+)/', $message, $matches)) {
+    if (preg_match('/\@delete\s+([^\]\n]+)/', $message, $matches)) {
         $filePath = trim($matches[1]);
         
         if (strpos($filePath, '/app/') === 0) {
