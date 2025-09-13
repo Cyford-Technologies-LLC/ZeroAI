@@ -16,33 +16,11 @@ class ClaudeIntegration {
         
         $messages = [];
         
-        // Process conversation history - limit to last 20 messages
+        // Use pre-converted history from ClaudeProvider
         if (is_array($conversationHistory) && !empty($conversationHistory)) {
-            $recentHistory = array_slice($conversationHistory, -20);
-            
-            foreach ($recentHistory as $historyItem) {
-                if (!is_array($historyItem) || !isset($historyItem['sender']) || !isset($historyItem['message'])) {
-                    continue;
-                }
-                
-                $sender = trim($historyItem['sender']);
-                $messageContent = trim($historyItem['message']);
-                
-                if (empty($messageContent)) {
-                    continue;
-                }
-                
-                // Map sender names to Claude API roles
-                if (in_array($sender, ['Claude', 'claude', 'Assistant', 'assistant', 'Claude (Auto)', 'AI'], true)) {
-                    $messages[] = [
-                        'role' => 'assistant',
-                        'content' => $messageContent
-                    ];
-                } elseif (!in_array($sender, ['System', 'system', 'Error', 'error'], true)) {
-                    $messages[] = [
-                        'role' => 'user',
-                        'content' => $messageContent
-                    ];
+            foreach ($conversationHistory as $msg) {
+                if (isset($msg['role']) && isset($msg['content'])) {
+                    $messages[] = $msg;
                 }
             }
         }
