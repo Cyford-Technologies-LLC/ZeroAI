@@ -159,19 +159,19 @@ class ClaudeProvider {
             $dbPath = $memoryDir . '/claude_memory.db';
             $pdo = new \PDO("sqlite:$dbPath");
             
-            // Create table if not exists
+            // Create table matching backup structure
             $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
             
-            foreach ($GLOBALS['executedCommands'] as $cmd) {
-                $pdo->prepare("INSERT INTO command_history (command, output, status, model_used) VALUES (?, ?, ?, ?)")
-                    ->execute([$cmd['command'], $cmd['output'], 'success', 'claude']);
+            foreach ($GLOBALS['executedCommands'] as $cmdData) {
+                $pdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
+                    ->execute([$cmdData['command'], $cmdData['output'], 'success', 'claude-sonnet-4-20250514', 1]);
             }
             
             // Clear the commands after saving
             $GLOBALS['executedCommands'] = [];
             
         } catch (\Exception $e) {
-            error_log("Failed to save commands to Claude memory: " . $e->getMessage());
+            error_log("Command save error: " . $e->getMessage());
         }
     }
     
