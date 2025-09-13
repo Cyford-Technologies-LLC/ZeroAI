@@ -1,5 +1,5 @@
 <?php 
-require_once __DIR__ . '/../api/agent_chat.php';
+require_once __DIR__ . '/includes/autoload.php';
 
 $chat = new AgentChat();
 $agentId = $_GET['agent'] ?? null;
@@ -28,7 +28,7 @@ if ($agentId && !$sessionId) {
         // If Claude not found, create it
         if (!$claudeFound) {
             error_log("DEBUG: Creating Claude agent");
-            require_once __DIR__ . '/../api/agent_db.php';
+            $agentService = new \ZeroAI\Services\AgentService();
             $agentDB = new AgentDB();
             $agentId = $agentDB->createAgent([
                 'name' => 'Claude AI Assistant',
@@ -63,7 +63,7 @@ if ($_POST['action'] ?? '' === 'send_message' && $sessionId) {
     // Check if this is Claude and if message contains file commands
     $session = $chat->getSession($sessionId);
     if ($session && $session['agent_name'] === 'Claude AI Assistant') {
-        require_once __DIR__ . '/../api/claude_tools.php';
+        $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
         
         // Process file commands
         if (preg_match('/\@file\s+(.+)/', $message, $matches)) {

@@ -25,7 +25,7 @@ if ($_POST['action'] ?? '' === 'create_backup') {
     ];
     
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'http://localhost/api/backup.php');
+    curl_setopt($ch, CURLOPT_URL, 'http://localhost/admin/backup_handler.php');
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($backup_data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -77,7 +77,7 @@ if ($_POST['action'] ?? '' === 'create_backup') {
 <script>
 async function loadBackupList() {
     try {
-        const response = await fetch('/api/backup.php?action=list');
+        const response = await fetch('/admin/backup_handler.php?action=list');
         const data = await response.json();
         
         if (data.success && data.backups) {
@@ -107,14 +107,14 @@ async function loadBackupList() {
 }
 
 function downloadBackup(name) {
-    window.location.href = `/api/backup.php?action=download&name=${encodeURIComponent(name)}`;
+    window.location.href = `/admin/backup_handler.php?action=download&name=${encodeURIComponent(name)}`;
 }
 
 async function deleteBackup(name) {
     if (!confirm(`Are you sure you want to delete backup: ${name}?`)) return;
     
     try {
-        const response = await fetch('/api/backup.php', {
+        const response = await fetch('/admin/backup_handler.php', {
             method: 'DELETE',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({name: name})

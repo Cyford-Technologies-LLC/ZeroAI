@@ -60,7 +60,7 @@ include __DIR__ . '/includes/header.php';
 
 <script>
 function updateStats() {
-    fetch('/api/system_stats.php')
+    fetch('/admin/system_stats.php')
         .then(r => r.json())
         .then(data => {
             document.getElementById('cpu').textContent = data.cpu + '%';
