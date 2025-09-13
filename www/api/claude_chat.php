@@ -276,6 +276,10 @@ try {
     
     $response['message'] = implode("\n", $result);
     
+    // Log response length for debugging
+    error_log("Claude response length: " . strlen($response['message']));
+    error_log("Filtered response length: " . strlen($response['message']));
+    
     echo json_encode([
         'success' => true,
         'response' => $response['message'],
