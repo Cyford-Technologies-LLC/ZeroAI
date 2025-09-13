@@ -43,8 +43,14 @@ class ClaudeProvider {
                 }
             }
             
+            // Add command outputs to message for Claude to see
+            $fullMessage = $message;
+            if ($commandOutputs) {
+                $fullMessage .= "\n\nCommand Results:" . $commandOutputs;
+            }
+            
             $response = $this->integration->chatWithClaude(
-                $message . $commandOutputs, 
+                $fullMessage, 
                 $systemPrompt, 
                 $model, 
                 $convertedHistory

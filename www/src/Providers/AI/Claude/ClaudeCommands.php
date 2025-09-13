@@ -98,15 +98,22 @@ class ClaudeCommands {
     }
     
     private function listAgents() {
-        require_once __DIR__ . '/../../../Models/Agent.php';
-        $agent = new \ZeroAI\Models\Agent();
-        $agents = $agent->getAll();
-        
-        $output = "\n\n🤖 Agents:\n";
-        foreach ($agents as $a) {
-            $output .= "ID: {$a['id']} | Role: {$a['role']} | Goal: {$a['goal']}\n";
+        try {
+            $db = new \ZeroAI\Core\DatabaseManager();
+            $result = $db->executeSQL("SELECT * FROM agents ORDER BY id");
+            
+            $output = "\n\n🤖 Agents:\n";
+            if (!empty($result[0]['data'])) {
+                foreach ($result[0]['data'] as $a) {
+                    $output .= "ID: {$a['id']} | Role: {$a['role']} | Goal: {$a['goal']}\n";
+                }
+            } else {
+                $output .= "No agents found\n";
+            }
+            return $output;
+        } catch (Exception $e) {
+            return "\n\n❌ Error loading agents: " . $e->getMessage() . "\n";
         }
-        return $output;
     }
     
     private function dockerCommand($matches) {
