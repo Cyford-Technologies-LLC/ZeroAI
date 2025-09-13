@@ -261,6 +261,9 @@ try {
     // Add command outputs to message for Claude to see
     if ($commandOutputs) {
         $message .= $commandOutputs;
+        if ($debugMode) {
+            error_log("DEBUG: Added user command outputs to message - Length: " . strlen($commandOutputs));
+        }
     }
     
     $response = $claude->chatWithClaude($message, $systemPrompt, $selectedModel, $conversationHistory);
@@ -271,7 +274,18 @@ try {
     
     // Process Claude's individual commands
     if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];
+    
+    // Make memory PDO and session ID available globally for command functions
+    $GLOBALS['memoryPdo'] = $memoryPdo;
+    $GLOBALS['sessionId'] = $sessionId;
+    
     if ($debugMode) error_log("DEBUG: Processing Claude's commands - Response length: " . strlen($processedResponse));
+    
+    // Check if Claude's response contains commands
+    $hasCommands = preg_match('/@(file|list|exec|search|memory|agents|crews|logs|docker|compose|ps|inspect|container_logs)/', $claudeResponse);
+    if ($debugMode && $hasCommands) {
+        error_log("DEBUG: Claude's response contains commands");
+    }
     
     // Store original response length to detect command outputs
     $originalResponseLength = strlen($processedResponse);
@@ -284,7 +298,12 @@ try {
         $claudeCommandOutputs = substr($processedResponse, $originalResponseLength);
     }
     
-    if ($debugMode) error_log("DEBUG: After Claude command processing - Response length: " . strlen($processedResponse));
+    if ($debugMode) {
+        error_log("DEBUG: After Claude command processing - Response length: " . strlen($processedResponse));
+        if ($hasCommands && !$claudeCommandOutputs) {
+            error_log("DEBUG: WARNING - Claude had commands but no outputs detected!");
+        }
+    }
     
     // Save Claude's response to memory
     if ($memoryPdo && $sessionId) {
@@ -294,9 +313,19 @@ try {
             
             // Save executed commands with their outputs
             if (isset($GLOBALS['executedCommands']) && !empty($GLOBALS['executedCommands'])) {
+                if ($debugMode) {
+                    error_log("DEBUG: Saving " . count($GLOBALS['executedCommands']) . " commands to database");
+                }
                 foreach ($GLOBALS['executedCommands'] as $cmdData) {
                     $memoryPdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
                              ->execute([$cmdData['command'], $cmdData['output'], 'success', $selectedModel, $sessionId]);
+                    if ($debugMode) {
+                        error_log("DEBUG: Saved command: " . $cmdData['command']);
+                    }
+                }
+            } else {
+                if ($debugMode) {
+                    error_log("DEBUG: No commands to save to database");
                 }
             }
         } catch (Exception $e) {
@@ -307,6 +336,13 @@ try {
     // Include command outputs in response for Claude to see
     if ($claudeCommandOutputs) {
         $claudeResponse .= $claudeCommandOutputs;
+        if ($debugMode) {
+            error_log("DEBUG: Added Claude command outputs to response - Length: " . strlen($claudeCommandOutputs));
+        }
+    } else {
+        if ($debugMode) {
+            error_log("DEBUG: No Claude command outputs detected");
+        }
     }
     
     // Show @commands and preserve hyperlinks
