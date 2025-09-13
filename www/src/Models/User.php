@@ -14,7 +14,7 @@ class User extends BaseModel {
     }
     
     protected function initTable() {
-        $this->db->executeSQL("
+        $this->executeSQL("
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
@@ -27,10 +27,11 @@ class User extends BaseModel {
     
     public function create(array $data): bool {
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+        $username = $data['username'];
+        $role = $data['role'] ?? 'user';
         
-        $result = $this->db->executeSQL(
-            "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-            [$data['username'], $hashedPassword, $data['role']]
+        $result = $this->executeSQL(
+            "INSERT INTO users (username, password, role) VALUES ('$username', '$hashedPassword', '$role')"
         );
         
         $this->lastInsertId = $result[0]['lastInsertId'] ?? null;
@@ -42,9 +43,8 @@ class User extends BaseModel {
     }
     
     public function authenticate($username, $password) {
-        $result = $this->db->executeSQL(
-            "SELECT id, username, password, role FROM users WHERE username = ?",
-            [$username]
+        $result = $this->executeSQL(
+            "SELECT id, username, password, role FROM users WHERE username = '$username'"
         );
         
         if (!empty($result[0]['data'])) {
