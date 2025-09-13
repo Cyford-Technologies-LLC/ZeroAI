@@ -96,8 +96,8 @@ async function sendTestMessage() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 message: message,
-                model: 'claude-3-5-sonnet-20241022',
-                autonomous: false,
+                model: document.getElementById('claude-model') ? document.getElementById('claude-model').value : 'claude-sonnet-4-20250514',
+                autonomous: document.getElementById('claude-mode') ? document.getElementById('claude-mode').value === 'autonomous' : true,
                 history: history
             })
         });
