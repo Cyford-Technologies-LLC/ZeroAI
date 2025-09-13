@@ -134,7 +134,7 @@ class DatabaseManager {
         return $this->databases[$name] ?? null;
     }
     
-    public function backupDatabase(string $dbName, string $backupPath = null): bool {
+    public function backupDatabase(string $dbName, ?string $backupPath = null): bool {
         try {
             if (!isset($this->databases[$dbName])) {
                 throw new \Exception("Database not found: $dbName");

@@ -16,7 +16,7 @@ class Security {
         'chat' => ['file_read', 'file_list', 'cmd_file', 'cmd_list', 'cmd_agents', 'cmd_crews', 'cmd_logs']
     ];
     
-    public function hasPermission(string $user, string $command, string $mode = null): bool {
+    public function hasPermission(string $user, string $command, ?string $mode = null): bool {
         try {
             // Check user permissions
             $userPerms = $this->permissions[$user] ?? [];
@@ -73,7 +73,7 @@ class Security {
         }
     }
     
-    public function getPermissionError(string $command, string $user, string $mode = null): string {
+    public function getPermissionError(string $command, string $user, ?string $mode = null): string {
         $modeText = $mode ? " in $mode mode" : "";
         return "[PERMISSION DENIED] Command '$command' not allowed for user '$user'$modeText";
     }
