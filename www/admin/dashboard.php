@@ -1,4 +1,6 @@
 <?php 
+require_once 'includes/autoload.php';
+
 use ZeroAI\Core\System;
 use ZeroAI\Models\User;
 use ZeroAI\Models\Agent;
