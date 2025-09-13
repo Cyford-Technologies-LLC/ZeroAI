@@ -282,8 +282,9 @@ try {
         }
     }
     
-    // Show @commands and preserve hyperlinks
-    $lines = explode("\n", $claudeResponse);
+    // Show @commands and preserve hyperlinks - use processedResponse to include command outputs
+    if ($debugMode) error_log("DEBUG: Filtering response - Original length: " . strlen($claudeResponse) . ", Processed length: " . strlen($processedResponse));
+    $lines = explode("\n", $processedResponse);
     $result = [];
     
     foreach ($lines as $line) {
