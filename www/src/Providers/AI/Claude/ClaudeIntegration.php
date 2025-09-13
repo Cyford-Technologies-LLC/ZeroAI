@@ -5,13 +5,19 @@ namespace ZeroAI\Providers\AI\Claude;
 class ClaudeIntegration {
     private $apiKey;
     private $baseUrl = 'https://api.anthropic.com/v1/messages';
+    private $toolSystem;
     
     public function __construct($apiKey) {
         $this->apiKey = $apiKey;
+        $this->toolSystem = new ClaudeToolSystem();
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
-
+        // Check if Claude needs to use tools before generating response
+        $toolResults = $this->processTools($message);
+        if ($toolResults) {
+            $message .= "\n\nTool Results:\n" . $toolResults;
+        }
         
         $messages = [];
         
@@ -71,4 +77,82 @@ class ClaudeIntegration {
             'model' => $decoded['model'] ?? $model
         ];
     }
+    
+    private function processTools($message) {
+        $results = '';
+        $mode = $GLOBALS['claudeMode'] ?? 'hybrid';
+        // Convert autonomous to agentic for tool permissions
+        if ($mode === 'autonomous') $mode = 'agentic';
+        
+        // Process @exec commands
+        if (preg_match_all('/@exec\s+([^\s]+)\s+(.+)/m', $message, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $result = $this->toolSystem->execute('exec', [$match[1], $match[2]], $mode);
+                if (isset($result['success'])) {
+                    $results .= $result['formatted'] . "\n\n";
+                } else {
+                    $results .= "❌ " . $result['error'] . "\n\n";
+                }
+            }
+        }
+        
+        // Process @file commands
+        if (preg_match_all('/@file\s+([^\s]+)/m', $message, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $result = $this->toolSystem->execute('file', [$match[1]], $mode);
+                if (isset($result['success'])) {
+                    $results .= $result['formatted'] . "\n\n";
+                } else {
+                    $results .= "❌ " . $result['error'] . "\n\n";
+                }
+            }
+        }
+        
+        // Process @list commands
+        if (preg_match_all('/@list\s+([^\s]+)/m', $message, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $result = $this->toolSystem->execute('list', [$match[1]], $mode);
+                if (isset($result['success'])) {
+                    $results .= $result['formatted'] . "\n\n";
+                } else {
+                    $results .= "❌ " . $result['error'] . "\n\n";
+                }
+            }
+        }
+        
+        // Process @agents commands
+        if (preg_match('/@agents/', $message)) {
+            $result = $this->toolSystem->execute('agents', [], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        // Process @docker commands
+        if (preg_match_all('/@docker\s+(.+)/m', $message, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $result = $this->toolSystem->execute('docker', [$match[1]], $mode);
+                if (isset($result['success'])) {
+                    $results .= $result['formatted'] . "\n\n";
+                } else {
+                    $results .= "❌ " . $result['error'] . "\n\n";
+                }
+            }
+        }
+        
+        // Process @ps commands
+        if (preg_match('/@ps/', $message)) {
+            $result = $this->toolSystem->execute('ps', [], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        return $results;
+    }
 }
+?>
