@@ -98,7 +98,7 @@ async function sendMessage() {
     status.textContent = 'Claude is thinking...';
     
     try {
-        const response = await fetch('/api/claude_chat.php', {
+        const response = await fetch('chat_handler.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

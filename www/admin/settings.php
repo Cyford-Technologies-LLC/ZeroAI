@@ -1,6 +1,25 @@
 <?php 
 $pageTitle = 'Settings - ZeroAI';
 $currentPage = 'settings';
+
+use ZeroAI\Services\SettingsService;
+
+$settingsService = new SettingsService();
+
+if ($_POST) {
+    $settings = [
+        'display_errors' => isset($_POST['display_errors'])
+    ];
+    
+    $settingsService->saveSettings($settings);
+    $_SESSION['settings_message'] = 'Settings saved successfully!';
+    header('Location: /admin/settings.php');
+    exit;
+}
+
+$systemInfo = $settingsService->getSystemInfo();
+$debugSettings = $settingsService->getDebugSettings();
+
 include __DIR__ . '/includes/header.php';
 ?>
 
@@ -15,7 +34,7 @@ include __DIR__ . '/includes/header.php';
         <h3>Debug Settings</h3>
         <form method="POST">
             <label>
-                <input type="checkbox" name="display_errors" value="1" <?= isset($_SESSION['display_errors']) && $_SESSION['display_errors'] ? 'checked' : '' ?>>
+                <input type="checkbox" name="display_errors" value="1" <?= $debugSettings['display_errors'] ? 'checked' : '' ?>>
                 Display PHP Errors (for debugging)
             </label>
             <button type="submit">Save Settings</button>
@@ -24,9 +43,12 @@ include __DIR__ . '/includes/header.php';
     
     <div class="card">
         <h3>System Information</h3>
-        <p><strong>PHP Version:</strong> <?= phpversion() ?></p>
-        <p><strong>Server:</strong> <?= $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown' ?></p>
-        <p><strong>Document Root:</strong> <?= $_SERVER['DOCUMENT_ROOT'] ?></p>
-        <p><strong>Error Display:</strong> <?= isset($_SESSION['display_errors']) && $_SESSION['display_errors'] ? 'Enabled' : 'Disabled' ?></p>
+        <p><strong>PHP Version:</strong> <?= $systemInfo['php_version'] ?></p>
+        <p><strong>Server:</strong> <?= $systemInfo['server'] ?></p>
+        <p><strong>Document Root:</strong> <?= $systemInfo['document_root'] ?></p>
+        <p><strong>Memory Limit:</strong> <?= $systemInfo['memory_limit'] ?></p>
+        <p><strong>Max Execution Time:</strong> <?= $systemInfo['max_execution_time'] ?>s</p>
+        <p><strong>Upload Max Filesize:</strong> <?= $systemInfo['upload_max_filesize'] ?></p>
+        <p><strong>Error Display:</strong> <?= $systemInfo['error_display'] ?></p>
     </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>

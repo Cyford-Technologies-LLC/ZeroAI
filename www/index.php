@@ -1,28 +1,15 @@
 <?php
-// Enable error reporting if setting is on
-if (isset($_SESSION['display_errors']) && $_SESSION['display_errors']) {
-    error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-}
-
-session_start();
+require_once __DIR__ . '/bootstrap.php';
 
 $request = $_SERVER['REQUEST_URI'];
 $path = parse_url($request, PHP_URL_PATH);
-
-// Remove query parameters for routing
 $path = strtok($path, '?');
 
 switch ($path) {
     case '/':
     case '/admin':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            handleAdminLogin();
-        } else {
-            $error = $_SESSION['login_error'] ?? null;
-            unset($_SESSION['login_error']);
-            include __DIR__ . '/admin/login.php';
-        }
+        header('Location: /admin/login.php');
+        exit;
         break;
         
     case '/admin/dashboard':

@@ -1,6 +1,26 @@
 <?php 
+use ZeroAI\Core\System;
+use ZeroAI\Models\User;
+use ZeroAI\Models\Agent;
+use ZeroAI\Models\Logs;
+use ZeroAI\Services\UserService;
+use ZeroAI\Services\AgentService;
+
+$system = new System();
+$userService = new UserService();
+$agentService = new AgentService();
+$logsModel = new Logs();
+
 $pageTitle = 'Admin Dashboard - ZeroAI';
 $currentPage = 'dashboard';
+
+// Get system stats
+$users = $userService->getAllUsers();
+$agents = $agentService->getAllAgents();
+$recentLogs = $logsModel->getRecentLogs('ai', 5);
+$userStats = $userService->getUserStats();
+$agentStats = $agentService->getAgentStats();
+
 include __DIR__ . '/includes/header.php'; 
 ?>
 
@@ -24,8 +44,23 @@ include __DIR__ . '/includes/header.php';
 <div class="card">
     <h3>System Status</h3>
     <p>🟢 Database: Connected</p>
-    <p>🟢 Portal: Active</p>
+    <p>🟢 Portal: Active (OOP System)</p>
     <p>👤 User: <?= $_SESSION['admin_user'] ?></p>
+    <p>👥 Total Users: <?= $userStats['total'] ?> (<?= $userStats['admin'] ?> admins)</p>
+    <p>🤖 Total Agents: <?= $agentStats['total'] ?> (<?= $agentStats['active'] ?> active)</p>
+    <p>💾 Memory: <?= ini_get('memory_limit') ?></p>
+    <p>💿 PHP Version: <?= phpversion() ?></p>
+</div>
+
+<div class="card">
+    <h3>Recent Activity</h3>
+    <?php if (!empty($recentLogs)): ?>
+        <?php foreach (array_slice($recentLogs, 0, 5) as $log): ?>
+            <p style="font-size: 12px; color: #666; margin: 5px 0;"><?= htmlspecialchars($log) ?></p>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p>No recent activity</p>
+    <?php endif; ?>
 </div>
 
 <script>

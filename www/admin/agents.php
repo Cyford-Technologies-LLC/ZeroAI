@@ -1,64 +1,81 @@
 <?php 
 $pageTitle = 'Agent Management - ZeroAI';
 $currentPage = 'agents';
-include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/agent_db.php';
 
-$agentDB = new AgentDB();
+use ZeroAI\Services\AgentService;
+
+$agentService = new AgentService();
+
+include __DIR__ . '/includes/header.php';
+
+$message = '';
+$error = '';
 
 // Handle actions
-if ($_POST['action'] ?? '' === 'import_agents') {
-    $imported = $agentDB->importExistingAgents();
-    $message = count($imported) . ' agents imported successfully';
-} elseif ($_POST['action'] ?? '' === 'update_agent') {
-    $updates = [
-        'name' => $_POST['name'],
-        'role' => $_POST['role'],
-        'goal' => $_POST['goal'],
-        'backstory' => $_POST['backstory'],
-        'status' => $_POST['status'] ?? 'active',
-        'llm_model' => $_POST['llm_model'] ?? 'local',
-        'verbose' => isset($_POST['verbose']) ? 1 : 0,
-        'allow_delegation' => isset($_POST['allow_delegation']) ? 1 : 0,
-        'max_iter' => (int)($_POST['max_iter'] ?? 25),
-        'max_rpm' => !empty($_POST['max_rpm']) ? (int)$_POST['max_rpm'] : null,
-        'max_execution_time' => !empty($_POST['max_execution_time']) ? (int)$_POST['max_execution_time'] : null,
-        'allow_code_execution' => isset($_POST['allow_code_execution']) ? 1 : 0,
-        'max_retry_limit' => (int)($_POST['max_retry_limit'] ?? 2),
-        'memory' => isset($_POST['memory']) ? 1 : 0,
-        'learning_enabled' => isset($_POST['learning_enabled']) ? 1 : 0,
-        'learning_rate' => (float)($_POST['learning_rate'] ?? 0.05),
-        'feedback_incorporation' => $_POST['feedback_incorporation'] ?? 'immediate',
-        'adaptation_strategy' => $_POST['adaptation_strategy'] ?? 'progressive',
-        'personality_traits' => $_POST['personality_traits'] ?? null,
-        'personality_quirks' => $_POST['personality_quirks'] ?? null,
-        'communication_preferences' => $_POST['communication_preferences'] ?? null,
-        'communication_formality' => $_POST['communication_formality'] ?? 'professional',
-        'communication_verbosity' => $_POST['communication_verbosity'] ?? 'concise',
-        'communication_tone' => $_POST['communication_tone'] ?? 'confident',
-        'communication_technical_level' => $_POST['communication_technical_level'] ?? 'intermediate',
-        'tools' => $_POST['tools'] ?? null,
-        'knowledge' => $_POST['knowledge'] ?? null,
-        'coworkers' => $_POST['coworkers'] ?? null
-    ];
-    $agentDB->updateAgent($_POST['agent_id'], $updates);
-    $message = 'Agent updated successfully';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (($_POST['action'] ?? '') === 'create_agent') {
+        $name = trim($_POST['name'] ?? '');
+        $role = trim($_POST['role'] ?? '');
+        $goal = trim($_POST['goal'] ?? '');
+        $backstory = trim($_POST['backstory'] ?? '');
+        
+        if ($name && $role && $goal) {
+            $agentData = ['name' => $name, 'role' => $role, 'goal' => $goal, 'backstory' => $backstory];
+            if ($agentService->createAgent($agentData)) {
+                $message = "Agent '$name' created successfully!";
+            } else {
+                $error = "Failed to create agent. Name may already exist.";
+            }
+        } else {
+            $error = "Name, role, and goal are required.";
+        }
+    } elseif (($_POST['action'] ?? '') === 'update_agent') {
+        $agentId = (int)($_POST['agent_id'] ?? 0);
+        $updates = [
+            'name' => $_POST['name'] ?? '',
+            'role' => $_POST['role'] ?? '',
+            'goal' => $_POST['goal'] ?? '',
+            'backstory' => $_POST['backstory'] ?? '',
+            'status' => $_POST['status'] ?? 'active'
+        ];
+        
+        if ($agentService->updateAgent($agentId, $updates)) {
+            $message = 'Agent updated successfully!';
+        } else {
+            $error = 'Failed to update agent.';
+        }
+    } elseif (($_POST['action'] ?? '') === 'delete_agent') {
+        $agentId = (int)($_POST['agent_id'] ?? 0);
+        if ($agentService->deleteAgent($agentId)) {
+            $message = 'Agent deleted successfully!';
+        } else {
+            $error = 'Failed to delete agent. Core agents cannot be deleted.';
+        }
+    }
 }
 
-$agents = $agentDB->getActiveAgents();
+$agents = $agentService->getAllAgents();
 ?>
 
 <h1>Agent Management</h1>
 
-<?php if (isset($message)): ?>
-    <div class="message"><?= htmlspecialchars($message) ?></div>
+<?php if ($message): ?>
+    <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
+<?php endif; ?>
+
+<?php if ($error): ?>
+    <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
 <?php endif; ?>
     
 <div class="card">
-    <h3>Import Existing Agents</h3>
-    <p>Import agents from your existing ZeroAI internal crews and Python files.</p>
+    <h3>Create New Agent</h3>
     <form method="POST">
-        <button type="submit" name="action" value="import_agents" class="btn-success">Import All Existing Agents</button>
+        <input type="hidden" name="action" value="create_agent">
+        <input type="text" name="name" placeholder="Agent Name" required style="width: 100%; margin-bottom: 10px;">
+        <input type="text" name="role" placeholder="Agent Role" required style="width: 100%; margin-bottom: 10px;">
+        <textarea name="goal" placeholder="Agent Goal" rows="2" required style="width: 100%; margin-bottom: 10px;"></textarea>
+        <textarea name="backstory" placeholder="Agent Backstory" rows="3" style="width: 100%; margin-bottom: 10px;"></textarea>
+        <button type="submit" class="btn-success">Create Agent</button>
     </form>
 </div>
 
