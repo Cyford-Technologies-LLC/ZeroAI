@@ -255,7 +255,9 @@ try {
                              ->execute([$cmdData['command'], $cmdData['output'], 'success', $selectedModel, $sessionId]);
                 }
             }
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            error_log("Command save error: " . $e->getMessage());
+        }
     }
     
     // Show @commands and preserve hyperlinks
