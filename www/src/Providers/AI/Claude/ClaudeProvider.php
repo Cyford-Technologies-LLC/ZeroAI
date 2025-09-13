@@ -64,7 +64,8 @@ class ClaudeProvider {
                 error_log("[CLAUDE_PROVIDER] Added Claude's command outputs: " . strlen($claudeCommandOutputs) . " chars");
             }
             
-            // Save executed commands to Claude's database
+            // Save chat and commands to Claude's memory database
+            $this->saveChatToMemory($message, $response['message'], $model);
             $this->saveExecutedCommands();
             
             // Log conversation to database
@@ -143,6 +144,30 @@ class ClaudeProvider {
     private function initializeSystemPrompt() {
         $promptInit = new ClaudePromptInit();
         $promptInit->initialize();
+    }
+    
+    private function saveChatToMemory($userMessage, $claudeResponse, $model) {
+        try {
+            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
+            if (!is_dir($memoryDir)) {
+                mkdir($memoryDir, 0777, true);
+            }
+            
+            $dbPath = $memoryDir . '/claude_memory.db';
+            $pdo = new \PDO("sqlite:$dbPath");
+            
+            // Create chat_history table like backup
+            $pdo->exec("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
+            
+            // Save user and Claude messages
+            $pdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
+                ->execute(['User', $userMessage, $model, 1]);
+            $pdo->prepare("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)")
+                ->execute(['Claude', $claudeResponse, $model, 1]);
+                
+        } catch (\Exception $e) {
+            error_log("Failed to save chat to Claude memory: " . $e->getMessage());
+        }
     }
     
     private function saveExecutedCommands() {
