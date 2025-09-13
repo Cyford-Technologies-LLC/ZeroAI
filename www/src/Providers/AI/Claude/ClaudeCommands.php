@@ -26,6 +26,7 @@ class ClaudeCommands {
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
         $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/', [$this, 'execContainer'], $message);
+        $message = preg_replace_callback('/\@bash\s+(.+)/', [$this, 'bashCommand'], $message);
     }
     
     private function readFile($matches) {
@@ -63,6 +64,10 @@ class ClaudeCommands {
     }
     
     private function createFile($matches) {
+        if (!$this->security->hasPermission('claude', 'file_write', 'autonomous')) {
+            return "\n❌ Permission denied: file creation requires autonomous mode\n";
+        }
+        
         $path = '/app/' . ltrim($matches[1], '/');
         $content = trim($matches[2]);
         
@@ -78,6 +83,10 @@ class ClaudeCommands {
     }
     
     private function editFile($matches) {
+        if (!$this->security->hasPermission('claude', 'file_write', 'autonomous')) {
+            return "\n❌ Permission denied: file editing requires autonomous mode\n";
+        }
+        
         $path = '/app/' . ltrim($matches[1], '/');
         $content = trim($matches[2]);
         
@@ -143,9 +152,23 @@ class ClaudeCommands {
     }
     
     private function execContainer($matches) {
+        if (!$this->security->hasPermission('claude', 'docker_exec', 'hybrid')) {
+            return "\n❌ Permission denied: docker exec\n";
+        }
+        
         $container = escapeshellarg($matches[1]);
-        $cmd = escapeshellcmd($matches[2]);
+        $cmd = $matches[2]; // Don't escape the full command
         $result = shell_exec("docker exec {$container} {$cmd} 2>&1");
         return "\n\n🐳 Exec {$matches[1]}: {$matches[2]}\n" . ($result ?: "No output") . "\n";
+    }
+    
+    private function bashCommand($matches) {
+        if (!$this->security->hasPermission('claude', 'cmd_exec', 'hybrid')) {
+            return "\n❌ Permission denied: bash command\n";
+        }
+        
+        $cmd = $matches[1];
+        $result = shell_exec($cmd . " 2>&1");
+        return "\n\n💻 Bash: {$cmd}\n" . ($result ?: "No output") . "\n";
     }
 }

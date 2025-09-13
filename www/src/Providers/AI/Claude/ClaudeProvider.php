@@ -86,9 +86,10 @@ class ClaudeProvider {
     
     private function processCommands($message) {
         $originalLength = strlen($message);
-        // Claude always has permissions in all modes
-        $this->commands->processFileCommands($message, 'claude', 'autonomous');
-        $this->commands->processClaudeCommands($message, 'claude', 'autonomous');
+        // Pass current Claude mode for permission checks
+        $claudeMode = 'hybrid'; // Default mode, should be passed from frontend
+        $this->commands->processFileCommands($message, 'claude', $claudeMode);
+        $this->commands->processClaudeCommands($message, 'claude', $claudeMode);
         return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
     }
     
