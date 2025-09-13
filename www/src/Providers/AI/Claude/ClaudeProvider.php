@@ -175,7 +175,7 @@ class ClaudeProvider {
         
         if (!empty($result[0]['data'])) {
             $prompt = $result[0]['data'][0]['prompt'];
-            if (strpos($prompt, '@file') === false) {
+            if ($prompt && strpos($prompt, '@file') === false) {
                 $prompt .= $this->getCommandsHelp();
             }
             return $prompt;
