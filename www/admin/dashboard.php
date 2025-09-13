@@ -1,4 +1,6 @@
 <?php 
+require_once 'includes/autoload.php';
+
 use ZeroAI\Core\System;
 use ZeroAI\Models\User;
 use ZeroAI\Models\Agent;
@@ -6,7 +8,7 @@ use ZeroAI\Models\Logs;
 use ZeroAI\Services\UserService;
 use ZeroAI\Services\AgentService;
 
-$system = new System();
+$system = System::getInstance();
 $userService = new UserService();
 $agentService = new AgentService();
 $logsModel = new Logs();
