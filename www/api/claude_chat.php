@@ -264,7 +264,7 @@ try {
     
     foreach ($lines as $line) {
         if (preg_match('/^\@(\w+)\s+(.*)/', $line, $matches)) {
-            $result[] = "[@{$matches[1]}: {$matches[2]}]"
+            $result[] = "[@{$matches[1]}: {$matches[2]}]";
         } elseif (preg_match('/\[View.*File\]/', $line) || preg_match('/🧠 Memory:/', $line)) {
             $result[] = $line; // Keep memory results and hyperlinks
         } elseif (preg_match('/^(File content|Search results|Current Agents|💻 Exec|🐳 Docker|Directory listing|\[SUCCESS\]|\[ERROR\]|\[RESTRICTED\])/', $line)) {
