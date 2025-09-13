@@ -87,8 +87,8 @@ if (file_exists($claudeDbPath)) {
         $commands = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         if (!empty($commands)) {
-            foreach (array_reverse($commands) as $cmd) {
-                $time = date('M d H:i:s', strtotime($cmd['timestamp']));
+            foreach ($commands as $cmd) {
+                $time = date('M d H:i:s T', strtotime($cmd['timestamp'] . ' UTC'));
                 echo "<span class='info'>[$time] {$cmd['command']} - Status: {$cmd['status']}</span>\n";
                 if ($cmd['output']) {
                     echo "<span class='info'>Output: " . htmlspecialchars(substr($cmd['output'], 0, 200)) . "</span>\n";
