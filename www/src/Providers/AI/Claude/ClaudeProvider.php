@@ -86,8 +86,9 @@ class ClaudeProvider {
     
     private function processCommands($message) {
         $originalLength = strlen($message);
-        $this->commands->processFileCommands($message);
-        $this->commands->processClaudeCommands($message);
+        // Claude always has permissions in all modes
+        $this->commands->processFileCommands($message, 'claude', 'autonomous');
+        $this->commands->processClaudeCommands($message, 'claude', 'autonomous');
         return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
     }
     

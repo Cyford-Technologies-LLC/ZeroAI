@@ -3,8 +3,13 @@
 namespace ZeroAI\Providers\AI\Claude;
 
 class ClaudeCommands {
+    private $security;
     
-    public function processFileCommands(&$message) {
+    public function __construct() {
+        $this->security = new \ZeroAI\Core\Security();
+    }
+    
+    public function processFileCommands(&$message, $user = 'claude', $mode = 'hybrid') {
         $message = preg_replace_callback('/\@file\s+([^\s]+)/', [$this, 'readFile'], $message);
         $message = preg_replace_callback('/\@read\s+([^\s]+)/', [$this, 'readFile'], $message);
         $message = preg_replace_callback('/\@list\s+([^\s]+)/', [$this, 'listDirectory'], $message);
@@ -15,7 +20,7 @@ class ClaudeCommands {
         $message = preg_replace_callback('/\@delete\s+([^\s]+)/', [$this, 'deleteFile'], $message);
     }
     
-    public function processClaudeCommands(&$message) {
+    public function processClaudeCommands(&$message, $user = 'claude', $mode = 'hybrid') {
         $message = preg_replace_callback('/\@agents/', [$this, 'listAgents'], $message);
         $message = preg_replace_callback('/\@docker\s+(.+)/', [$this, 'dockerCommand'], $message);
         $message = preg_replace_callback('/\@compose\s+(.+)/', [$this, 'composeCommand'], $message);
@@ -24,6 +29,10 @@ class ClaudeCommands {
     }
     
     private function readFile($matches) {
+        if (!$this->security->hasPermission('claude', 'cmd_file', 'hybrid')) {
+            return "\n❌ Permission denied: file read\n";
+        }
+        
         $path = $matches[1];
         if (!str_starts_with($path, '/')) {
             $path = '/app/' . $path;
