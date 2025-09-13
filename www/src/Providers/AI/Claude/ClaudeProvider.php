@@ -7,18 +7,26 @@ class ClaudeProvider {
     private $commands;
     private $integration;
     
-    public function __construct($apiKey) {
-        $this->apiKey = $apiKey;
+    public function __construct($apiKey = null) {
+        $this->apiKey = $apiKey ?: $this->getApiKey();
         $this->commands = new ClaudeCommands();
-        $this->integration = new ClaudeIntegration($apiKey);
+        $this->integration = new ClaudeIntegration($this->apiKey);
     }
     
-    public function chat($message, $model = 'claude-sonnet-4-20250514', $autonomous = true, $history = []) {
-        try {
-            if ($autonomous) {
-                $message = "[AUTONOMOUS MODE ENABLED] You have full access to analyze, create, edit, and optimize files proactively. " . $message;
-                $message .= $this->autoScan($message);
+    private function getApiKey() {
+        if (file_exists('/app/.env')) {
+            $envContent = file_get_contents('/app/.env');
+            if (preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches)) {
+                return trim($matches[1]);
             }
+        }
+        return getenv('ANTHROPIC_API_KEY');
+    }
+    
+    public function chat($message, $model = 'claude-3-5-sonnet-20241022', $history = []) {
+        try {
+            // Auto-scan for autonomous mode detection
+            $message .= $this->autoScan($message);
             
             $commandOutputs = $this->processCommands($message);
             $systemPrompt = $this->getSystemPrompt();

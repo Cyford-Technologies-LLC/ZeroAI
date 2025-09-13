@@ -1,42 +1,35 @@
 <?php
+require_once __DIR__ . '/includes/autoload.php';
+
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/includes/autoload.php';
-require_once __DIR__ . '/../src/Services/ChatService.php';
-require_once __DIR__ . '/../src/Providers/AI/Claude/ClaudeProvider.php';
-require_once __DIR__ . '/../src/Providers/AI/Claude/ClaudeIntegration.php';
-require_once __DIR__ . '/../src/Providers/AI/Claude/ClaudeCommands.php';
-require_once __DIR__ . '/../src/Providers/AI/Claude/ClaudePromptInit.php';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
+}
 
-use ZeroAI\Services\ChatService;
+$input = json_decode(file_get_contents('php://input'), true);
+$message = $input['message'] ?? '';
+$selectedModel = $input['model'] ?? 'claude-3-5-sonnet-20241022';
+$conversationHistory = $input['history'] ?? [];
+
+if (!$message) {
+    echo json_encode(['success' => false, 'error' => 'Message required']);
+    exit;
+}
 
 try {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new \Exception('Method not allowed');
-    }
+    $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
+    $response = $claudeProvider->chat($message, $selectedModel, $conversationHistory);
     
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!$input) {
-        throw new \Exception('Invalid JSON input');
-    }
-    
-    $message = $input['message'] ?? '';
-    $model = $input['model'] ?? 'claude-sonnet-4-20250514';
-    $autonomous = $input['autonomous'] ?? true;
-    $history = $input['history'] ?? [];
-    
-    if (!$message) {
-        throw new \Exception('Message required');
-    }
-    
-    $chatService = new ChatService();
-    $response = $chatService->processChat($message, 'claude', $model, $autonomous, $history);
-    
-    echo json_encode($response);
-    
-} catch (\Exception $e) {
     echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
+        'success' => true,
+        'response' => $response['message'],
+        'tokens' => $response['tokens'] ?? 0,
+        'model' => $response['model'] ?? $selectedModel
     ]);
+    
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>

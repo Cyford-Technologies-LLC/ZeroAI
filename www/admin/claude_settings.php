@@ -27,11 +27,11 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     ];
     
     // Save to database
-    require_once __DIR__ . '/../api/agent_db.php';
-    $agentDB = new AgentDB();
+    require_once __DIR__ . '/includes/autoload.php';
+    $agentService = new \ZeroAI\Services\AgentService();
     
     // Update Claude agent in database
-    $agents = $agentDB->getAllAgents();
+    $agents = $agentService->getAllAgents();
     $claudeAgent = null;
     foreach ($agents as $agent) {
         if ($agent['name'] === 'Claude AI Assistant') {
@@ -41,7 +41,7 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     }
     
     if ($claudeAgent) {
-        $agentDB->updateAgent($claudeAgent['id'], [
+        $agentService->updateAgent($claudeAgent['id'], [
             'name' => 'Claude AI Assistant',
             'role' => $claudeConfig['role'],
             'goal' => $claudeConfig['goal'],
@@ -52,7 +52,7 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
         $configMessage = 'Claude configuration updated successfully!';
     } else {
         // Create Claude agent if it doesn't exist
-        $agentDB->createAgent([
+        $agentService->createAgent([
             'name' => 'Claude AI Assistant',
             'role' => $claudeConfig['role'],
             'goal' => $claudeConfig['goal'],

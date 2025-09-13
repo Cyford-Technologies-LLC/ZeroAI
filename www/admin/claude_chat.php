@@ -127,7 +127,7 @@ async function sendMessage() {
     status.textContent = `Claude is thinking... (sending ${historyCount} previous messages)`;
     
     try {
-        const response = await fetch('/api/claude_chat.php', {
+        const response = await fetch('/admin/chat_handler.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -324,6 +324,7 @@ function getFilteredHistory() {
     const validHistory = chatHistory.filter(h => h.type !== 'error' && h.sender !== 'System');
     
     console.log(`Total chat history: ${chatHistory.length}, Valid history: ${validHistory.length}, Limit: ${messageLimit}`);
+    console.log('Valid history:', validHistory);
     
     if (messageLimit === 0) {
         console.log('Sending all messages to Claude');
@@ -332,7 +333,7 @@ function getFilteredHistory() {
     
     // Return last N messages
     const filtered = validHistory.slice(-messageLimit);
-    console.log(`Sending last ${filtered.length} messages to Claude`);
+    console.log(`Sending last ${filtered.length} messages to Claude:`, filtered);
     return filtered;
 }
 
@@ -341,7 +342,7 @@ loadChatHistory();
 
 function startAutonomousMode() {
     // Start autonomous worker
-    fetch('/api/claude_autonomous_start.php', {method: 'POST'})
+    fetch('/admin/autonomous_start.php', {method: 'POST'})
         .then(r => r.json())
         .then(result => {
             if (result.success) {
@@ -353,7 +354,7 @@ function startAutonomousMode() {
 
 function startHybridMode() {
     // Start background tasks but keep chat active
-    fetch('/api/claude_hybrid_start.php', {method: 'POST'})
+    fetch('/admin/hybrid_start.php', {method: 'POST'})
         .then(r => r.json())
         .then(result => {
             if (result.success) {
@@ -367,7 +368,7 @@ function pollAutonomousUpdates() {
     const mode = document.getElementById('claude-mode').value;
     if (mode !== 'autonomous') return;
     
-    fetch('/api/claude_autonomous_status.php')
+    fetch('/admin/autonomous_status.php')
         .then(r => r.json())
         .then(result => {
             if (result.updates && result.updates.length > 0) {
@@ -383,7 +384,7 @@ function pollHybridUpdates() {
     const mode = document.getElementById('claude-mode').value;
     if (mode !== 'hybrid') return;
     
-    fetch('/api/claude_hybrid_status.php')
+    fetch('/admin/hybrid_status.php')
         .then(r => r.json())
         .then(result => {
             if (result.background_tasks) {
@@ -408,7 +409,7 @@ function togglePromptEditor() {
 
 async function loadSystemPrompt() {
     try {
-        const response = await fetch('/api/get_system_prompt.php');
+        const response = await fetch('/admin/get_system_prompt.php');
         const result = await response.json();
         if (result.success) {
             currentSystemPrompt = result.prompt;
@@ -422,7 +423,7 @@ async function loadSystemPrompt() {
 async function saveSystemPrompt() {
     const prompt = document.getElementById('system-prompt').value;
     try {
-        const response = await fetch('/api/save_system_prompt.php', {
+        const response = await fetch('/admin/save_system_prompt.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({prompt: prompt})
@@ -441,7 +442,7 @@ async function saveSystemPrompt() {
 
 function resetSystemPrompt() {
     if (confirm('Reset to default system prompt? This will overwrite your custom prompt.')) {
-        fetch('/api/reset_system_prompt.php', {method: 'POST'})
+        fetch('/admin/reset_system_prompt.php', {method: 'POST'})
             .then(r => r.json())
             .then(result => {
                 if (result.success) {

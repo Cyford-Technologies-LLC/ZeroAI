@@ -41,6 +41,7 @@ $conversationHistory = $input['history'] ?? [];
 
 // Debug conversation history
 error_log("Received history count: " . count($conversationHistory));
+error_log("Full conversation history: " . json_encode($conversationHistory));
 if (!empty($conversationHistory)) {
     error_log("First message: " . json_encode($conversationHistory[0]));
     error_log("Last message: " . json_encode(end($conversationHistory)));
