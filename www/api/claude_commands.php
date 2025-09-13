@@ -191,11 +191,19 @@ function processClaudeCommands(&$message) {
         $message .= "\n\n📋 Containers:\n" . ($output ?: "No containers");
     }
 
-    // @exec command - Always allowed (ignore if already in brackets)
-    if (preg_match_all('/^\@exec\s+([^\s]+)\s+(.+)$/m', $message, $matches, PREG_SET_ORDER) && strpos($message, '[@exec:') === false) {
+    // @exec command - Always allowed
+    if (preg_match_all('/\@exec\s+([^\s]+)\s+([^\n]+)/m', $message, $matches, PREG_SET_ORDER)) {
         foreach ($matches as $match) {
             $containerName = trim($match[1]);
             $command = trim($match[2]);
+            // Log directly to Claude's database instead of file
+            try {
+                $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+                $logPdo = new PDO("sqlite:$dbPath");
+                $logPdo->prepare("INSERT INTO command_history (command, output, status, model_used, timestamp) VALUES (?, ?, ?, ?, datetime('now'))")
+                       ->execute(["@exec $containerName $command", 'Executing...', 'running', 'claude', time()]);
+            } catch (Exception $e) {}
+            
             @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
             // Use base64 encoding to safely pass complex commands
             $encodedCommand = base64_encode($command);

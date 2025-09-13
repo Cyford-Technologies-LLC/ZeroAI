@@ -48,22 +48,27 @@ if (!$message) {
     exit;
 }
 
-// In autonomous mode, Claude can proactively analyze and modify files
+// All modes get read-only commands, autonomous gets write commands too
 if ($autonomousMode) {
-    $message = "[AUTONOMOUS MODE ENABLED] You have full access to analyze, create, edit, and optimize files proactively. " . $message;
-    
-    if (!preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
-        $autoScan = "\n\nAuto-scanning key directories:\n";
-        if (is_dir('/app/src')) {
-            $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
-            $autoScan .= "\nSrc files:\n" . ($srcFiles ?: "No Python files found");
-        }
-        if (is_dir('/app/config')) {
-            $configFiles = scandir('/app/config');
-            $autoScan .= "\nConfig files: " . implode(", ", array_filter($configFiles, function($f) { return $f !== '.' && $f !== '..'; }));
-        }
-        $message .= $autoScan;
+    $message = "[AUTONOMOUS MODE] You have FULL access including write commands: @create, @edit, @append, @delete. " . $message;
+} elseif ($claudeMode === 'hybrid') {
+    $message = "[HYBRID MODE] You have read-only access: @exec, @file, @list, @memory, @agents, @update_agent, @search, @crews, @logs. " . $message;
+} elseif ($claudeMode === 'chat') {
+    $message = "[CHAT MODE] You have read-only access: @exec, @file, @list, @memory, @agents, @update_agent, @search, @crews, @logs. " . $message;
+}
+
+// Auto-scan for autonomous mode only
+if ($autonomousMode && !preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
+    $autoScan = "\n\nAuto-scanning key directories:\n";
+    if (is_dir('/app/src')) {
+        $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
+        $autoScan .= "\nSrc files:\n" . ($srcFiles ?: "No Python files found");
     }
+    if (is_dir('/app/config')) {
+        $configFiles = scandir('/app/config');
+        $autoScan .= "\nConfig files: " . implode(", ", array_filter($configFiles, function($f) { return $f !== '.' && $f !== '..'; }));
+    }
+    $message .= $autoScan;
 }
 
 // Capture command outputs separately from chat
@@ -243,7 +248,7 @@ try {
     $processedResponse = $claudeResponse;
     
     // Process Claude's individual commands
-    $GLOBALS['executedCommands'] = []; // Reset for Claude's commands
+    if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];
     processFileCommands($processedResponse);
     processClaudeCommands($processedResponse);
     
