@@ -10,6 +10,9 @@ try {
     $db = new \ZeroAI\Core\DatabaseManager();
     
     if ($action === 'get') {
+        // Create table if not exists
+        $db->executeSQL("CREATE TABLE IF NOT EXISTS default_prompts (id INTEGER PRIMARY KEY, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+        
         $result = $db->executeSQL("SELECT prompt FROM default_prompts WHERE id = 1", 'main');
         
         if (!empty($result[0]['data'])) {
@@ -31,6 +34,9 @@ try {
             echo json_encode(['success' => false, 'error' => 'Prompt required']);
             exit;
         }
+        
+        // Create table if not exists
+        $db->executeSQL("CREATE TABLE IF NOT EXISTS default_prompts (id INTEGER PRIMARY KEY, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
         
         $db->executeSQL("INSERT OR REPLACE INTO default_prompts (id, prompt, created_at) VALUES (1, ?, datetime('now'))", 'main', [$prompt]);
         
