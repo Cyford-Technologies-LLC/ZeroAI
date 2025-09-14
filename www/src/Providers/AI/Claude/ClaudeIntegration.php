@@ -261,13 +261,20 @@ class ClaudeIntegration {
     }
     
     private function executeBackgroundCommands($systemPrompt) {
+        // Get main container name dynamically
+        $containerName = $this->getMainContainer();
+        
         // Auto-execute common status commands for Claude
         $backgroundCommands = [
             ['ps', []],
-            ['agents', []],
-            ['exec', ['zeroai_api-test', 'git status']],
-            ['exec', ['zeroai_api-test', 'git branch']]
+            ['agents', []]
         ];
+        
+        // Add git commands if container found
+        if ($containerName) {
+            $backgroundCommands[] = ['exec', [$containerName, 'git status']];
+            $backgroundCommands[] = ['exec', [$containerName, 'git branch']];
+        }
         
         $results = '';
         foreach ($backgroundCommands as $cmd) {
@@ -278,6 +285,24 @@ class ClaudeIntegration {
         }
         
         return $results;
+    }
+    
+    private function getMainContainer() {
+        // Get container list and find main app container
+        $result = $this->toolSystem->execute('ps', [], 'hybrid');
+        if (isset($result['success']) && $result['output']) {
+            // Look for container with 'app' or 'zeroai' in name
+            $lines = explode("\n", $result['output']);
+            foreach ($lines as $line) {
+                if (preg_match('/(\S+)\s+/', $line, $matches)) {
+                    $containerName = $matches[1];
+                    if (strpos($containerName, 'app') !== false || strpos($containerName, 'zeroai') !== false) {
+                        return $containerName;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
 ?>
