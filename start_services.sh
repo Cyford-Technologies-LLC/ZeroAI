@@ -6,15 +6,26 @@ echo "Starting ZeroAI services..."
 chmod +x /app/git
 cp /app/git /usr/local/bin/git
 chmod +x /usr/local/bin/git
-mkdir -p /app/data && chown -R www-data:www-data /app/data /app/www /app/logs && chmod -R 775 /app/data /app/logs
+
+# Create directories and fix ownership
+mkdir -p /app/data /app/logs /app/knowledge/internal_crew/agent_learning/self/claude/sessions_data
+chown -R www-data:www-data /app/data /app/www /app/logs /app/knowledge
+chmod -R 775 /app/data /app/logs /app/knowledge
 
 # Start Redis
 echo "Starting Redis..."
-redis-server --daemonize yes --logfile /var/log/redis.log
-sleep 2
+redis-server --daemonize yes --logfile /var/log/redis.log --bind 127.0.0.1 --port 6379
+sleep 3
 if ! redis-cli ping > /dev/null 2>&1; then
-    echo "ERROR: Redis failed to start"
-    exit 1
+    echo "WARNING: Redis not responding, attempting restart..."
+    pkill redis-server || true
+    sleep 1
+    redis-server --daemonize yes --logfile /var/log/redis.log --bind 127.0.0.1 --port 6379
+    sleep 2
+    if ! redis-cli ping > /dev/null 2>&1; then
+        echo "ERROR: Redis failed to start after retry"
+        exit 1
+    fi
 fi
 echo "Redis started successfully"
 
