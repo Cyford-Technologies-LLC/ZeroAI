@@ -2,14 +2,54 @@
 
 namespace ZeroAI\Providers\AI\Claude;
 
-class ClaudeIntegration {
-    private $apiKey;
+use ZeroAI\Providers\AI\BaseAIProvider;
+
+class ClaudeIntegration extends BaseAIProvider {
     private $baseUrl = 'https://api.anthropic.com/v1/messages';
     private $toolSystem;
     
-    public function __construct($apiKey) {
-        $this->apiKey = $apiKey;
+    public function __construct($apiKey, array $config = []) {
+        parent::__construct('Claude', $apiKey, $config);
         $this->toolSystem = new ClaudeToolSystem();
+        $this->models = [
+            'claude-3-5-sonnet-20241022' => ['input' => 3.00, 'output' => 15.00],
+            'claude-3-5-haiku-20241022' => ['input' => 0.25, 'output' => 1.25],
+            'claude-3-opus-20240229' => ['input' => 15.00, 'output' => 75.00]
+        ];
+    }
+    
+    public function chat(string $message, array $options = []): array {
+        $systemPrompt = $options['system'] ?? 'You are Claude, integrated into ZeroAI.';
+        $model = $options['model'] ?? 'claude-3-5-sonnet-20241022';
+        $conversationHistory = $options['history'] ?? [];
+        
+        return $this->chatWithClaude($message, $systemPrompt, $model, $conversationHistory);
+    }
+    
+    public function getModels(): array {
+        return array_keys($this->models);
+    }
+    
+    public function validateApiKey(): bool {
+        try {
+            $response = $this->chatWithClaude('test', 'Test system', 'claude-3-5-haiku-20241022');
+            return isset($response['message']);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+    
+    public function calculateCost(array $usage): float {
+        $model = $usage['model'] ?? 'claude-3-5-sonnet-20241022';
+        $inputTokens = $usage['input_tokens'] ?? 0;
+        $outputTokens = $usage['output_tokens'] ?? 0;
+        
+        $modelPricing = $this->models[$model] ?? ['input' => 3.00, 'output' => 15.00];
+        
+        $inputCost = ($inputTokens / 1000000) * $modelPricing['input'];
+        $outputCost = ($outputTokens / 1000000) * $modelPricing['output'];
+        
+        return $inputCost + $outputCost;
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
