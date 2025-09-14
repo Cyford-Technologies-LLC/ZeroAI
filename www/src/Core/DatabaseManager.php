@@ -104,6 +104,16 @@ class DatabaseManager {
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
                 
+                CREATE TABLE IF NOT EXISTS claude_token_usage (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    model TEXT NOT NULL,
+                    input_tokens INTEGER DEFAULT 0,
+                    output_tokens INTEGER DEFAULT 0,
+                    total_tokens INTEGER DEFAULT 0,
+                    cost REAL DEFAULT 0.0,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                
                 INSERT OR REPLACE INTO system_info (key, value) VALUES 
                 ('created_at', datetime('now')),
                 ('version', '1.0');
