@@ -69,7 +69,7 @@ require_once __DIR__ . '/../auth_check.php';
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= $_SESSION['admin_user'] ?? 'Admin' ?>!</span>
-                <a href="/admin/logout" style="background: #dc3545; padding: 6px 12px; border-radius: 4px;">Logout</a>
+                <a href="/admin/logout.php" style="background: #dc3545; padding: 6px 12px; border-radius: 4px;">Logout</a>
             </div>
         </div>
     </div>
@@ -131,14 +131,14 @@ require_once __DIR__ . '/../auth_check.php';
             <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
                     <h3>System Tools</h3>
-                    <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>📊 Monitoring</a>
+                    <a href="/admin/monitoring.php" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>📊 Monitoring</a>
                     <a href="/admin/error_logs.php" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>📋 Logs</a>
-                    <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>⚡ Performance</a>
+                    <a href="/admin/system_stats.php" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>⚡ Performance</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Data Management</h3>
-                    <a href="/admin/backup" <?= ($currentPage ?? '') === 'backup' ? 'class="active"' : '' ?>>💾 Backup</a>
-                    <a href="/admin/restore" <?= ($currentPage ?? '') === 'restore' ? 'class="active"' : '' ?>>🔄 Restore</a>
+                    <a href="/admin/backup.php" <?= ($currentPage ?? '') === 'backup' ? 'class="active"' : '' ?>>💾 Backup</a>
+                    <a href="/admin/restore.php" <?= ($currentPage ?? '') === 'restore' ? 'class="active"' : '' ?>>🔄 Restore</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Diagnostics</h3>
@@ -155,8 +155,8 @@ require_once __DIR__ . '/../auth_check.php';
             <?php elseif ($currentSection === 'settings'): ?>
                 <div class="sidebar-group">
                     <h3>Configuration</h3>
-                    <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>General Settings</a>
-                    <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
+                    <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>General Settings</a>
+                    <a href="/admin/config.php" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
                     <a href="/admin/api" <?= ($currentPage ?? '') === 'api' ? 'class="active"' : '' ?>>API Settings</a>
                 </div>
                 <?php if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'demo'): ?>
@@ -177,8 +177,8 @@ require_once __DIR__ . '/../auth_check.php';
             <?php elseif ($currentSection === 'system'): ?>
                 <div class="sidebar-group">
                     <h3>System Resources</h3>
-                    <a href="/admin/localhost" <?= ($currentPage ?? '') === 'localhost' ? 'class="active"' : '' ?>>🖥️ Local Host</a>
-                    <a href="/admin/peers" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>🌐 Peers</a>
+                    <a href="/admin/localhost.php" <?= ($currentPage ?? '') === 'localhost' ? 'class="active"' : '' ?>>🖥️ Local Host</a>
+                    <a href="/admin/peers.php" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>🌐 Peers</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>System Info</h3>
