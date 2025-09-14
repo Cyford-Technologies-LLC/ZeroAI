@@ -1,54 +1,42 @@
 <?php
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
-try {
-    // Try to get cached peer status first
-    $cacheFile = '/app/data/peer_status_cache.json';
-    
-    if (file_exists($cacheFile)) {
-        $peersData = json_decode(file_get_contents($cacheFile), true);
-        if ($peersData && isset($peersData['peers'])) {
-            echo json_encode(['success' => true, 'peers' => $peersData['peers']]);
-            exit;
-        }
-    }
-    
-    // Fallback to direct check if cache not available
-    $peersFile = '/app/config/peers.json';
-    
-    if (!file_exists($peersFile)) {
-        echo json_encode(['success' => false, 'error' => 'Peers config file not found']);
-        exit;
-    }
-    
-    $peersData = json_decode(file_get_contents($peersFile), true);
-    
-    if (!$peersData || !isset($peersData['peers'])) {
-        echo json_encode(['success' => false, 'error' => 'Invalid peers config']);
-        exit;
-    }
-    
-    // Quick status check with very short timeout
-    foreach ($peersData['peers'] as &$peer) {
-        $peer['status'] = checkPeerStatus($peer['ip'], $peer['port']);
-        $peer['last_check'] = date('Y-m-d H:i:s');
-    }
-    
-    echo json_encode(['success' => true, 'peers' => $peersData['peers']]);
-    
-} catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
 }
 
-function checkPeerStatus($ip, $port) {
-    $timeout = 1;
-    $connection = @fsockopen($ip, $port, $errno, $errstr, $timeout);
+// Get peer data from Python API
+$python_api_url = 'http://localhost:3939/peers';
+
+try {
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 2,
+            'method' => 'GET'
+        ]
+    ]);
     
-    if ($connection) {
-        fclose($connection);
-        return 'online';
+    $response = file_get_contents($python_api_url, false, $context);
+    
+    if ($response !== false) {
+        $data = json_decode($response, true);
+        echo json_encode([
+            'success' => true,
+            'peers' => $data['peers'] ?? [],
+            'timestamp' => time()
+        ]);
     } else {
-        return 'offline';
+        throw new Exception('Failed to fetch from Python API');
     }
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'peers' => [],
+        'error' => 'Python API unavailable',
+        'timestamp' => time()
+    ]);
 }
 ?>

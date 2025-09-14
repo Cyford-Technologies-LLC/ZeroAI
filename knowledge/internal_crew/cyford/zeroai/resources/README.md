@@ -6,6 +6,22 @@ This directory contains Cyford-specific test containers and resources for ZeroAI
 
 ### Starting Test Environment
 
+#### Quick Start (Windows)
+```cmd
+# From test resources directory
+quick_test.bat
+```
+
+#### Interactive Menu
+```cmd
+# Windows
+test_runner.bat
+
+# Linux/Mac
+./test_runner.sh
+```
+
+#### Manual Commands
 ```bash
 # From ZeroAI root directory
 cd knowledge/internal_crew/cyford/zeroai/resources
