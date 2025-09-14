@@ -73,31 +73,37 @@ class ClaudeIntegration {
             CURLOPT_SSL_VERIFYPEER => false
         ]);
         
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $maxRetries = 20;
+        $retryCount = 0;
         
-        // Retry on overload (529) or rate limit (429)
-        if ($httpCode === 529 || $httpCode === 429) {
-            sleep(2); // Wait 2 seconds
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->baseUrl,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($data),
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json',
-                    'x-api-key: ' . $this->apiKey,
-                    'anthropic-version: 2023-06-01'
-                ],
-                CURLOPT_TIMEOUT => 420,
-                CURLOPT_SSL_VERIFYPEER => false
-            ]);
+        do {
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-        }
+            
+            if ($httpCode === 529 || $httpCode === 429) {
+                $retryCount++;
+                if ($retryCount < $maxRetries) {
+                    sleep(2 + $retryCount); // Exponential backoff
+                    $ch = curl_init();
+                    curl_setopt_array($ch, [
+                        CURLOPT_URL => $this->baseUrl,
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => json_encode($data),
+                        CURLOPT_HTTPHEADER => [
+                            'Content-Type: application/json',
+                            'x-api-key: ' . $this->apiKey,
+                            'anthropic-version: 2023-06-01'
+                        ],
+                        CURLOPT_TIMEOUT => 420,
+                        CURLOPT_SSL_VERIFYPEER => false
+                    ]);
+                }
+            } else {
+                break;
+            }
+        } while ($retryCount < $maxRetries && ($httpCode === 529 || $httpCode === 429));
         
         if ($httpCode !== 200) {
             throw new \Exception("API request failed with status $httpCode: $response");
