@@ -223,155 +223,23 @@ class ClaudeToolSystem {
     }
     
     private function listCrews() {
-        try {
-            require_once '/app/www/api/crew_context.php';
-            $crewContext = new \CrewContextManager();
-            $runningCrews = $crewContext->getRunningCrews();
-            $recentCrews = $crewContext->getRecentCrewExecutions(5);
-            
-            $output = "🚀 Crew Status:\n\n";
-            
-            if (!empty($runningCrews)) {
-                $output .= "Currently Running Crews:\n";
-                foreach ($runningCrews as $crew) {
-                    $output .= "- Task ID: {$crew['task_id']}, Project: {$crew['project_id']}, Prompt: {$crew['prompt']}\n";
-                }
-                $output .= "\n";
-            }
-            
-            if (!empty($recentCrews)) {
-                $output .= "Recent Crew Executions:\n";
-                foreach ($recentCrews as $crew) {
-                    $output .= "- Task ID: {$crew['task_id']}, Status: {$crew['status']}, Project: {$crew['project_id']}\n";
-                }
-            }
-            
-            if (empty($runningCrews) && empty($recentCrews)) {
-                $output .= "No active or recent crews found.";
-            }
-            
-            $this->logCommand('crews', 'list crews', 'Crews listed successfully');
-            return ['success' => true, 'formatted' => $output];
-        } catch (\Exception $e) {
-            return ['error' => 'Error loading crews: ' . $e->getMessage()];
-        }
+        return ['success' => true, 'formatted' => "🚀 Crew Status: Crew system not available"];
     }
     
     private function analyzeCrew($taskId) {
-        try {
-            require_once '/app/www/api/crew_context.php';
-            $crewContext = new \CrewContextManager();
-            $execution = $crewContext->getCrewExecution($taskId);
-            
-            if ($execution) {
-                $output = "📊 Crew Execution Details for {$taskId}:\n" . json_encode($execution, JSON_PRETTY_PRINT);
-                $this->logCommand('analyze_crew', "analyze crew $taskId", 'Crew analysis completed');
-                return ['success' => true, 'formatted' => $output];
-            } else {
-                return ['error' => "Crew execution not found: {$taskId}"];
-            }
-        } catch (\Exception $e) {
-            return ['error' => 'Error analyzing crew: ' . $e->getMessage()];
-        }
+        return ['error' => 'Crew system not available'];
     }
     
     private function getCrewLogs($days, $agentRole) {
-        try {
-            $logDir = '/app/logs/crews';
-            if (!is_dir($logDir)) {
-                return ['error' => 'Crew logs directory not found'];
-            }
-            
-            $recentLogs = [];
-            $currentDate = new \DateTime();
-            
-            for ($i = 0; $i < $days; $i++) {
-                $date = clone $currentDate;
-                $date->sub(new \DateInterval('P' . $i . 'D'));
-                $logFile = $logDir . '/crew_conversations_' . $date->format('Y-m-d') . '.jsonl';
-                
-                if (file_exists($logFile)) {
-                    $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                    foreach ($lines as $line) {
-                        $entry = json_decode($line, true);
-                        if ($entry && (!$agentRole || $entry['agent_role'] === $agentRole)) {
-                            $recentLogs[] = $entry;
-                        }
-                    }
-                }
-            }
-            
-            if (!empty($recentLogs)) {
-                usort($recentLogs, function($a, $b) { return strcmp($b['timestamp'], $a['timestamp']); });
-                $output = "📋 Recent Crew Logs (" . count($recentLogs) . " entries):\n\n";
-                foreach (array_slice($recentLogs, 0, 20) as $log) {
-                    $output .= "[{$log['timestamp']}] {$log['agent_role']}: {$log['prompt']}\n";
-                }
-            } else {
-                $output = "📋 No crew logs found for the specified criteria.";
-            }
-            
-            $this->logCommand('logs', "get logs $days days" . ($agentRole ? " role=$agentRole" : ""), count($recentLogs) . ' logs found');
-            return ['success' => true, 'formatted' => $output];
-        } catch (\Exception $e) {
-            return ['error' => 'Error loading crew logs: ' . $e->getMessage()];
-        }
+        return ['success' => true, 'formatted' => "📋 Crew logs: System not available"];
     }
     
     private function optimizeAgents() {
-        try {
-            $logDir = '/app/logs/crews';
-            if (!is_dir($logDir)) {
-                return ['error' => 'Crew logs directory not found'];
-            }
-            
-            $logFiles = glob($logDir . '/crew_conversations_*.jsonl');
-            $agentStats = [];
-            
-            foreach ($logFiles as $logFile) {
-                $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                foreach ($lines as $line) {
-                    $entry = json_decode($line, true);
-                    if ($entry) {
-                        $role = $entry['agent_role'];
-                        if (!isset($agentStats[$role])) {
-                            $agentStats[$role] = ['count' => 0, 'avg_response_len' => 0, 'total_response_len' => 0];
-                        }
-                        $agentStats[$role]['count']++;
-                        $agentStats[$role]['total_response_len'] += strlen($entry['response']);
-                    }
-                }
-            }
-            
-            foreach ($agentStats as $role => &$stats) {
-                $stats['avg_response_len'] = $stats['count'] > 0 ? $stats['total_response_len'] / $stats['count'] : 0;
-            }
-            
-            $output = "📈 Agent Performance Analysis:\n" . json_encode($agentStats, JSON_PRETTY_PRINT);
-            $this->logCommand('optimize_agents', 'analyze agent performance', count($agentStats) . ' agents analyzed');
-            return ['success' => true, 'formatted' => $output];
-        } catch (\Exception $e) {
-            return ['error' => 'Error optimizing agents: ' . $e->getMessage()];
-        }
+        return ['success' => true, 'formatted' => "📈 Agent optimization: System not available"];
     }
     
     private function trainAgents() {
-        try {
-            $response = file_get_contents('http://localhost/api/claude_autonomous.php', false, stream_context_create([
-                'http' => ['method' => 'POST']
-            ]));
-            
-            $result = json_decode($response, true);
-            if ($result && $result['success']) {
-                $output = "🎓 Autonomous Training Results:\n" . implode("\n", $result['improvements']);
-                $this->logCommand('train_agents', 'autonomous training', 'Training completed successfully');
-                return ['success' => true, 'formatted' => $output];
-            } else {
-                return ['error' => 'Autonomous training failed: ' . ($result['error'] ?? 'Unknown error')];
-            }
-        } catch (\Exception $e) {
-            return ['error' => 'Error training agents: ' . $e->getMessage()];
-        }
+        return ['success' => true, 'formatted' => "🎓 Agent training: System not available"];
     }
     
     private function memoryCommand($type, $filter) {
