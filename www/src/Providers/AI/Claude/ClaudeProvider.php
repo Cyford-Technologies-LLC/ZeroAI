@@ -246,8 +246,13 @@ class ClaudeProvider {
             $safeClaudeResponse = $claudeResponse ?: '';
             $safeModel = $model ?: 'unknown';
             
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', [$userSender, $safeUserMessage, $safeModel, 1]);
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', [$claudeSender, $safeClaudeResponse, $safeModel, 1]);
+            // Use raw SQL since DatabaseManager parameter handling is broken
+            $escapedUserMessage = str_replace("'", "''", $safeUserMessage);
+            $escapedClaudeResponse = str_replace("'", "''", $safeClaudeResponse);
+            $escapedModel = str_replace("'", "''", $safeModel);
+            
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES ('$userSender', '$escapedUserMessage', '$escapedModel', 1)", 'claude');
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES ('$claudeSender', '$escapedClaudeResponse', '$escapedModel', 1)", 'claude');
                 
         } catch (\Exception $e) {
             error_log("Failed to save chat to Claude memory: " . $e->getMessage());
