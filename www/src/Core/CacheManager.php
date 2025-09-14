@@ -77,4 +77,14 @@ class CacheManager {
         
         return true;
     }
+    
+    public function clearPattern($pattern) {
+        if ($this->redis) {
+            $keys = $this->redis->keys($pattern);
+            if ($keys) {
+                $this->redis->del($keys);
+            }
+        }
+        return true;
+    }
 }

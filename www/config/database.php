@@ -67,10 +67,6 @@ class Database {
         
         // Try Redis first (2 second timeout)
         try {
-            // Set Redis timeout to 2 seconds
-            if ($this->cache->redis) {
-                $this->cache->redis->setOption(Redis::OPT_READ_TIMEOUT, 2);
-            }
             $result = $this->cache->get($cacheKey);
             if ($result !== false) {
                 return $result;
