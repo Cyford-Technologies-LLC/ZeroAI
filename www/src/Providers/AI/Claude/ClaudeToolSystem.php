@@ -271,8 +271,18 @@ class ClaudeToolSystem {
             file_put_contents($memoryFile, json_encode($memoryData, JSON_PRETTY_PRINT));
             
             $output = "🧠 Memory: Found " . count($memoryData) . " $type records\n";
-            $output .= "File content of sessions/memory.json:\n" . json_encode($memoryData, JSON_PRETTY_PRINT) . "\n";
-            $output .= "[View Memory File](../knowledge/internal_crew/agent_learning/self/claude/sessions/memory.json)";
+            if (!empty($memoryData)) {
+                $output .= "Recent entries:\n";
+                foreach (array_slice($memoryData, 0, 5) as $item) {
+                    if ($type === 'chat') {
+                        $output .= "[{$item['timestamp']}] {$item['sender']}: " . substr($item['message'], 0, 100) . "...\n";
+                    } elseif ($type === 'commands') {
+                        $output .= "[{$item['timestamp']}] {$item['command']}\n";
+                    }
+                }
+            } else {
+                $output .= "No records found.\n";
+            }
             
             $this->logCommand('memory', "memory $type $filter", count($memoryData) . ' records found');
             return ['success' => true, 'formatted' => $output];

@@ -252,8 +252,12 @@ class ClaudeProvider {
             $escapedModel = str_replace("'", "''", $safeModel);
             
             // Get current timestamp in proper timezone
-            $timezone = \ZeroAI\Core\TimezoneManager::getInstance();
-            $timestamp = $timezone->getCurrentTime();
+            try {
+                $timezone = \ZeroAI\Core\TimezoneManager::getInstance();
+                $timestamp = $timezone->getCurrentTime();
+            } catch (\Exception $e) {
+                $timestamp = date('Y-m-d H:i:s T');
+            }
             
             $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES ('$userSender', '$escapedUserMessage', '$escapedModel', 1, '$timestamp')", 'claude');
             $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES ('$claudeSender', '$escapedClaudeResponse', '$escapedModel', 1, '$timestamp')", 'claude');
