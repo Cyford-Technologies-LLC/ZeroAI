@@ -239,9 +239,15 @@ class ClaudeProvider {
             // Create table if not exists
             $db->executeSQL("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
             
-            // Save user and Claude messages
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', ['User', $userMessage, $model, 1]);
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', ['Claude', $claudeResponse, $model, 1]);
+            // Save user and Claude messages with null checks
+            $userSender = 'User';
+            $claudeSender = 'Claude';
+            $safeUserMessage = $userMessage ?: '';
+            $safeClaudeResponse = $claudeResponse ?: '';
+            $safeModel = $model ?: 'unknown';
+            
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', [$userSender, $safeUserMessage, $safeModel, 1]);
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES (?, ?, ?, ?)", 'claude', [$claudeSender, $safeClaudeResponse, $safeModel, 1]);
                 
         } catch (\Exception $e) {
             error_log("Failed to save chat to Claude memory: " . $e->getMessage());

@@ -26,6 +26,9 @@ class ClaudeBackgroundWorker {
     
     public function getContext($key = null) {
         try {
+            // Create table first
+            $this->db->executeSQL("CREATE TABLE IF NOT EXISTS claude_context (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'claude');
+            
             if ($key) {
                 $result = $this->db->executeSQL("SELECT value FROM claude_context WHERE key = ?", 'claude', [$key]);
                 return $result[0]['data'][0]['value'] ?? null;
