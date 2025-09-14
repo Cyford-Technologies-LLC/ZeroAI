@@ -1,189 +1,58 @@
-<?php 
-require_once __DIR__ . '/includes/autoload.php';
+<?php
+session_start();
 
-$chat = new AgentChat();
-$agentId = $_GET['agent'] ?? null;
-$sessionId = $_GET['session'] ?? null;
-
-// Debug output
-if ($agentId === 'claude') {
-    error_log("DEBUG: Claude agent requested");
-}
-
-// Handle new chat session
-if ($agentId && !$sessionId) {
-    error_log("DEBUG: New chat session for agent: " . $agentId);
-    // Handle special case for Claude
-    if ($agentId === 'claude') {
-        $agents = $chat->getAvailableAgents();
-        $claudeFound = false;
-        foreach ($agents as $agent) {
-            if ($agent['name'] === 'Claude AI Assistant') {
-                $agentId = $agent['id'];
-                $claudeFound = true;
-                break;
-            }
-        }
-        
-        // If Claude not found, create it
-        if (!$claudeFound) {
-            error_log("DEBUG: Creating Claude agent");
-            $agentService = new \ZeroAI\Services\AgentService();
-            $agentDB = new AgentDB();
-            $agentId = $agentDB->createAgent([
-                'name' => 'Claude AI Assistant',
-                'role' => 'Senior AI Architect & Code Review Specialist',
-                'goal' => 'Provide expert code review, architectural guidance, and strategic optimization recommendations to enhance ZeroAI system performance and development quality.',
-                'backstory' => 'I am Claude, an advanced AI assistant created by Anthropic. I specialize in software architecture, code optimization, and strategic technical guidance. I work alongside your ZeroAI development team to ensure high-quality deliverables, identify potential issues early, and provide insights that enhance overall project success.',
-                'status' => 'active',
-                'llm_model' => 'claude',
-                'is_core' => 1
-            ]);
-            error_log("DEBUG: Claude agent created with ID: " . $agentId);
-        } else {
-            error_log("DEBUG: Claude agent found with ID: " . $agentId);
-        }
-    }
-    
-    error_log("DEBUG: Starting chat session for agent ID: " . $agentId);
-    $sessionId = $chat->startChatSession($agentId, $_SESSION['admin_user']);
-    error_log("DEBUG: Created session ID: " . $sessionId);
-    header("Location: /admin/chat?session=$sessionId");
+if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
+    header('Location: /admin/login.php');
     exit;
 }
 
 $pageTitle = 'Agent Chat - ZeroAI';
 $currentPage = 'chat';
 include __DIR__ . '/includes/header.php';
-
-// Handle message sending
-if ($_POST['action'] ?? '' === 'send_message' && $sessionId) {
-    $message = $_POST['message'];
-    
-    // Check if this is Claude and if message contains file commands
-    $session = $chat->getSession($sessionId);
-    if ($session && $session['agent_name'] === 'Claude AI Assistant') {
-        $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
-        
-        // Process file commands
-        if (preg_match('/\@file\s+(.+)/', $message, $matches)) {
-            $filePath = trim($matches[1]);
-            $fileContent = ClaudeFileTools::getFileContent('/app/' . $filePath);
-            $message .= "\n\n" . $fileContent;
-        }
-        
-        if (preg_match('/\@list\s+(.+)/', $message, $matches)) {
-            $dirPath = trim($matches[1]);
-            $listing = ClaudeFileTools::listDirectory('/app/' . $dirPath);
-            $message .= "\n\n" . $listing;
-        }
-        
-        if (preg_match('/\@search\s+(.+)/', $message, $matches)) {
-            $pattern = trim($matches[1]);
-            $results = ClaudeFileTools::searchFiles($pattern);
-            $message .= "\n\n" . $results;
-        }
-    }
-    
-    $response = $chat->sendMessage($sessionId, $message);
-    header("Location: /admin/chat?session=$sessionId");
-    exit;
-}
-
-$agents = $chat->getAvailableAgents();
-$sessions = $chat->getUserSessions($_SESSION['admin_user']);
-$messages = $sessionId ? $chat->getChatHistory($sessionId) : [];
 ?>
 
-<style>
-.chat-container { display: grid; grid-template-columns: 250px 1fr; gap: 20px; height: 70vh; }
-.chat-sidebar { background: white; border-radius: 8px; padding: 15px; overflow-y: auto; }
-.chat-main { background: white; border-radius: 8px; display: flex; flex-direction: column; }
-.chat-header { padding: 15px; border-bottom: 1px solid #eee; }
-.chat-messages { flex: 1; padding: 15px; overflow-y: auto; }
-.chat-input { padding: 15px; border-top: 1px solid #eee; }
-.message { margin: 10px 0; padding: 10px; border-radius: 8px; }
-.user-message { background: #007bff; color: white; margin-left: 20%; }
-.agent-message { background: #f8f9fa; margin-right: 20%; }
-.session-item { padding: 8px; margin: 5px 0; border-radius: 4px; cursor: pointer; }
-.session-item:hover { background: #f8f9fa; }
-.session-item.active { background: #007bff; color: white; }
-</style>
+<h1>🤖 Agent Chat</h1>
 
-<h1>Agent Chat</h1>
-
-<div class="chat-container">
-    <div class="chat-sidebar">
-        <h4>Available Agents</h4>
-        <?php foreach ($agents as $agent): ?>
-            <div class="session-item" onclick="startChat(<?= $agent['id'] ?>)">
-                <strong><?= htmlspecialchars($agent['name']) ?></strong><br>
-                <small><?= htmlspecialchars($agent['role']) ?></small>
-            </div>
-        <?php endforeach; ?>
-        
-        <h4 style="margin-top: 20px;">Recent Chats</h4>
-        <?php foreach ($sessions as $session): ?>
-            <div class="session-item <?= $session['id'] == $sessionId ? 'active' : '' ?>" 
-                 onclick="openSession(<?= $session['id'] ?>)">
-                <strong><?= htmlspecialchars($session['agent_name']) ?></strong><br>
-                <small><?= $session['message_count'] ?> messages</small>
-            </div>
-        <?php endforeach; ?>
-    </div>
+<div class="card">
+    <h3>Chat Interface</h3>
+    <p>Select a chat option from the sidebar to start chatting with AI agents.</p>
     
-    <div class="chat-main">
-        <?php if ($sessionId): ?>
-            <div class="chat-header">
-                <h3>Chat with <?= htmlspecialchars($messages[0]['agent_name'] ?? 'Agent') ?></h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
+        <a href="/admin/crew_chat.php" style="text-decoration: none;">
+            <div style="border: 2px solid #28a745; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
+                <h4 style="margin: 0 0 10px 0; color: #28a745;">👥 Crew Chat</h4>
+                <p style="margin: 0; color: #666;">Chat with your AI crew teams</p>
             </div>
-            
-            <div class="chat-messages" id="chatMessages">
-                <?php foreach ($messages as $msg): ?>
-                    <div class="message user-message">
-                        <strong>You:</strong> <?= htmlspecialchars($msg['message']) ?>
-                    </div>
-                    <?php if ($msg['response']): ?>
-                        <div class="message agent-message">
-                            <strong>Agent:</strong> <?= htmlspecialchars($msg['response']) ?>
-                            <small style="opacity: 0.7;">(<?= $msg['tokens_used'] ?> tokens)</small>
-                        </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
+        </a>
+        
+        <a href="/admin/claude_chat.php" style="text-decoration: none;">
+            <div style="border: 2px solid #9c27b0; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
+                <h4 style="margin: 0 0 10px 0; color: #9c27b0;">🔮 Claude Chat</h4>
+                <p style="margin: 0; color: #666;">Direct chat with Claude AI</p>
             </div>
-            
-            <div class="chat-input">
-                <form method="POST" style="display: flex; gap: 10px;">
-                    <input type="hidden" name="action" value="send_message">
-                    <input type="text" name="message" placeholder="Type your message..." 
-                           style="flex: 1;" required autofocus>
-                    <button type="submit" class="btn-success">Send</button>
-                </form>
-            </div>
-        <?php else: ?>
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
-                Select an agent to start chatting
-            </div>
-        <?php endif; ?>
+        </a>
+        
+        <div style="border: 2px solid #6c757d; border-radius: 8px; padding: 20px; text-align: center; opacity: 0.6;">
+            <h4 style="margin: 0 0 10px 0; color: #6c757d;">🤖 Individual Agents</h4>
+            <p style="margin: 0; color: #666;">Coming soon - Chat with specific agents</p>
+        </div>
     </div>
 </div>
 
-<script>
-function startChat(agentId) {
-    window.location.href = '/admin/chat?agent=' + agentId;
-}
+<div class="card">
+    <h3>Quick Actions</h3>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/admin/crew_chat.php" class="btn-success">Start Crew Chat</a>
+        <a href="/admin/claude_chat.php" class="btn-secondary">Chat with Claude</a>
+        <a href="/admin/agents.php" class="btn-secondary">Manage Agents</a>
+        <a href="/admin/crews.php" class="btn-secondary">View Crews</a>
+    </div>
+</div>
 
-function openSession(sessionId) {
-    window.location.href = '/admin/chat?session=' + sessionId;
+<style>
+a div:hover {
+    background: #f8f9fa;
 }
-
-// Auto-scroll to bottom of messages
-document.addEventListener('DOMContentLoaded', function() {
-    const messages = document.getElementById('chatMessages');
-    if (messages) {
-        messages.scrollTop = messages.scrollHeight;
-    }
-});
-</script>
+</style>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
