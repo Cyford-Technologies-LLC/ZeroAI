@@ -13,8 +13,11 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
-        // Skip background commands to prevent timeout - Claude can request manually
-        // $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
+        // Execute lightweight background commands
+        $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
+        if ($backgroundResults) {
+            $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
+        }
         
         // Check if Claude needs to use tools before generating response
         $toolResults = $this->processTools($message);
