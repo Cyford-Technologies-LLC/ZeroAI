@@ -37,6 +37,28 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <div class="card">
+    <h3>🌐 Peer Network Status</h3>
+    <div id="peers-loading">Loading peer information...</div>
+    <div id="peers-table" style="display: none;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Peer Name</th>
+                    <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Address</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Status</th>
+                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Models</th>
+                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Memory</th>
+                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">GPU</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Last Check</th>
+                </tr>
+            </thead>
+            <tbody id="peers-tbody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
     <h3>System Status</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
         <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">🟢 <strong>Database:</strong> Connected</div>
