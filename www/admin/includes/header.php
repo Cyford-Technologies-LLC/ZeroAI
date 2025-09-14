@@ -123,7 +123,6 @@ require_once __DIR__ . '/../auth_check.php';
                 <div class="sidebar-group">
                     <h3>Cloud AI</h3>
                     <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>🔮 Claude</a>
-                    <a href="/admin/claude_settings.php">⚙️ Claude Settings</a>
                 </div>
             <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
@@ -158,8 +157,8 @@ require_once __DIR__ . '/../auth_check.php';
                 </div>
                 <div class="sidebar-group">
                     <h3>Cloud AI Settings</h3>
-                    <a href="/admin/cloud_settings" <?= ($currentPage ?? '') === 'cloud_settings' ? 'class="active"' : '' ?>>Cloud Providers</a>
-                    <a href="/admin/claude_settings" <?= ($currentPage ?? '') === 'claude_settings' ? 'class="active"' : '' ?>>Claude AI</a>
+                    <a href="/admin/cloud_settings.php" <?= ($currentPage ?? '') === 'cloud_settings' ? 'class="active"' : '' ?>>Cloud Providers</a>
+                    <a href="/admin/claude_settings.php" <?= ($currentPage ?? '') === 'claude_settings' ? 'class="active"' : '' ?>>Claude AI</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>User Management</h3>

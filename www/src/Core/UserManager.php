@@ -34,6 +34,9 @@ class UserManager {
         
         // Create demo user if not exists
         $this->createUserIfNotExists('demo', 'demo123', 'demo', []);
+        
+        // Create frontend user if not exists
+        $this->createUserIfNotExists('frontend', 'frontend123', 'frontend', ['view_public']);
     }
     
     private function createUserIfNotExists($username, $password, $role, $permissions) {

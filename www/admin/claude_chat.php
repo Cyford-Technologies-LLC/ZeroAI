@@ -22,6 +22,7 @@ include __DIR__ . '/includes/header.php';
                 <option value="autonomous">Autonomous Mode</option>
                 <option value="hybrid">Hybrid Mode</option>
             </select>
+            <a href="/admin/claude_settings.php" class="btn-secondary" style="margin-left: 10px;">⚙️ Settings</a>
             <button onclick="clearChat()" class="btn-warning" style="margin-left: 10px;">Clear Chat</button>
         </div>
     </div>

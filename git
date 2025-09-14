@@ -1,0 +1,30 @@
+#!/bin/bash
+# Git wrapper that fixes permissions after operations
+
+# Run the actual git command
+/usr/bin/git "$@"
+GIT_EXIT_CODE=$?
+
+# Fix permissions after git operations that might affect files
+case "$1" in
+    pull|checkout|reset|merge|rebase|clone)
+        echo "Fixing permissions after git $1..."
+        
+        # Fix data directory permissions
+        if [ -d "/app/data" ]; then
+            chown -R www-data:www-data /app/data 2>/dev/null || true
+            chmod 775 /app/data 2>/dev/null || true
+            chmod 664 /app/data/*.db 2>/dev/null || true
+        fi
+        
+        # Fix log permissions
+        if [ -d "/app/logs" ]; then
+            chown -R www-data:www-data /app/logs 2>/dev/null || true
+            chmod 775 /app/logs 2>/dev/null || true
+        fi
+        
+        echo "Permissions fixed."
+        ;;
+esac
+
+exit $GIT_EXIT_CODE

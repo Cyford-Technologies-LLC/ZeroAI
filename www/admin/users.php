@@ -95,6 +95,7 @@ include __DIR__ . '/includes/header.php';
             <option value="user">User</option>
             <option value="admin">Admin</option>
             <option value="demo">Demo (View Only)</option>
+            <option value="frontend">Frontend User</option>
         </select>
         
         <label>Permissions:</label>
