@@ -70,6 +70,28 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <div class="card">
+    <h3>🌐 Peer Network Status</h3>
+    <div id="peers-loading">Loading peer information...</div>
+    <div id="peers-table" style="display: none;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Peer Name</th>
+                    <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Address</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Status</th>
+                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Models</th>
+                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Memory</th>
+                    <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">GPU</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Last Check</th>
+                </tr>
+            </thead>
+            <tbody id="peers-tbody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
     <h3>Recent Activity</h3>
     <?php if (!empty($recentLogs)): ?>
         <?php foreach (array_slice($recentLogs, 0, 5) as $log): ?>
@@ -148,10 +170,50 @@ function updateTokenStats() {
         });
 }
 
+function updatePeerStats() {
+    fetch('/admin/peers_api.php')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const tbody = document.getElementById('peers-tbody');
+                let html = '';
+                
+                data.peers.forEach(peer => {
+                    const statusColor = peer.status === 'online' ? '#4caf50' : '#f44336';
+                    const statusIcon = peer.status === 'online' ? '🟢' : '🔴';
+                    const gpuText = peer.gpu_available ? `🟢 ${peer.gpu_memory_gb}GB` : '🔴 No GPU';
+                    
+                    html += `
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${peer.name}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${peer.ip}:${peer.port}</td>
+                            <td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: ${statusColor};">
+                                ${statusIcon} ${peer.status.toUpperCase()}
+                            </td>
+                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${peer.models.length}</td>
+                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${peer.memory_gb}GB</td>
+                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd;">${gpuText}</td>
+                            <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-size: 11px;">${peer.last_check || 'Never'}</td>
+                        </tr>
+                    `;
+                });
+                
+                tbody.innerHTML = html;
+                document.getElementById('peers-loading').style.display = 'none';
+                document.getElementById('peers-table').style.display = 'block';
+            }
+        })
+        .catch(() => {
+            document.getElementById('peers-loading').textContent = 'Failed to load peer information';
+        });
+}
+
 setInterval(updateStats, 2000);
 setInterval(updateTokenStats, 30000);
+setInterval(updatePeerStats, 15000);
 updateStats();
 updateTokenStats();
+updatePeerStats();
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

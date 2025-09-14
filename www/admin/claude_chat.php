@@ -23,6 +23,12 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
     
+    <!-- Status Display -->
+    <div id="claude-status" style="display: none; background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 15px; margin-bottom: 15px; text-align: center;">
+        <div style="font-size: 16px; font-weight: bold; color: #1976d2;">🤔 Claude is thinking...</div>
+        <div id="status-details" style="font-size: 14px; color: #666; margin-top: 5px;"></div>
+    </div>
+    
     <div style="display: flex; gap: 20px; margin-bottom: 10px; align-items: center;">
         <div>
             <label><strong>Claude Model:</strong></label>
@@ -127,6 +133,13 @@ async function sendMessage() {
     // Disable send button and show loading
     sendButton.disabled = true;
     sendButton.textContent = 'Sending...';
+    
+    // Show prominent status display
+    const statusDisplay = document.getElementById('claude-status');
+    const statusDetails = document.getElementById('status-details');
+    statusDisplay.style.display = 'block';
+    statusDetails.textContent = `Sending ${historyCount} previous messages to ${selectedModel}`;
+    
     status.textContent = `Claude is thinking... (sending ${historyCount} previous messages)`;
     
     try {
@@ -174,9 +187,10 @@ async function sendMessage() {
         status.textContent = 'Connection failed';
     }
     
-    // Re-enable send button
+    // Re-enable send button and hide status
     sendButton.disabled = false;
     sendButton.textContent = 'Send';
+    document.getElementById('claude-status').style.display = 'none';
 }
 
 function addMessageToChat(sender, message, type) {
