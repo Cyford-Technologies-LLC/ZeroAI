@@ -2,7 +2,7 @@
 session_start();
 if (!isset($_SESSION['admin_user'])) {
     header('Location: /admin/login');
-    exit;
+    return;
 }
 
 $pageTitle = 'System Backup';

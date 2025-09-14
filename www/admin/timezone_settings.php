@@ -5,13 +5,18 @@ $db = new \ZeroAI\Core\DatabaseManager();
 
 // Handle form submission
 if ($_POST) {
-    $timezone = $_POST['timezone'] ?? 'America/New_York';
+    $timezone = \ZeroAI\Core\InputValidator::sanitize($_POST['timezone'] ?? 'America/New_York');
+    
+    // Validate timezone
+    if (!in_array($timezone, timezone_identifiers_list())) {
+        $timezone = 'America/New_York';
+    }
     
     // Create settings table if not exists
-    $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+    $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
-    // Save timezone setting
-    $db->executeSQL("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', '$timezone')", 'main');
+    // Save timezone setting using prepared statement
+    $db->executeSQL("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', ?)", [$timezone]);
     
     // Apply timezone immediately
     date_default_timezone_set($timezone);
@@ -51,8 +56,8 @@ date_default_timezone_set($currentTimezone);
     <?php endif; ?>
     
     <div class="current-time">
-        <strong>Current Time:</strong> <?= date('Y-m-d H:i:s T') ?><br>
-        <strong>Current Timezone:</strong> <?= $currentTimezone ?>
+        <strong>Current Time:</strong> <?= htmlspecialchars(date('Y-m-d H:i:s T')) ?><br>
+        <strong>Current Timezone:</strong> <?= htmlspecialchars($currentTimezone) ?>
     </div>
     
     <form method="POST">
@@ -73,7 +78,7 @@ date_default_timezone_set($currentTimezone);
     <h3>System Status</h3>
     <div>
         <strong>PHP Timezone:</strong> <?= date_default_timezone_get() ?><br>
-        <strong>Docker TZ File:</strong> <?= file_exists('/app/.env.timezone') ? file_get_contents('/app/.env.timezone') : 'Not set' ?>
+        <strong>Docker TZ File:</strong> <?= file_exists('/app/.env.timezone') ? htmlspecialchars(file_get_contents('/app/.env.timezone')) : 'Not set' ?>
     </div>
     
     <p><a href="index.php">← Back to Admin</a></p>

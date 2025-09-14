@@ -2,12 +2,13 @@
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
-    exit;
+    return;
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
-$logType = $input['log'] ?? '';
+$logType = \ZeroAI\Core\InputValidator::sanitize($input['log'] ?? '');
 
 $logFiles = [
     'nginx' => '/var/log/nginx/error.log',
@@ -16,11 +17,19 @@ $logFiles = [
 ];
 
 if (!isset($logFiles[$logType])) {
+    http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Invalid log type']);
-    exit;
+    return;
 }
 
 $logFile = $logFiles[$logType];
+
+// Validate file path
+if (!\ZeroAI\Core\InputValidator::validatePath($logFile)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Invalid file path']);
+    return;
+}
 
 try {
     if (file_exists($logFile)) {

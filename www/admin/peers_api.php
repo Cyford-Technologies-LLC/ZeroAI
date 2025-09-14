@@ -2,7 +2,14 @@
 header('Content-Type: application/json');
 
 try {
-    $response = @file_get_contents('http://localhost:3939/peers', false, stream_context_create([
+    // Validate URL to prevent SSRF
+    $url = 'http://localhost:3939/peers';
+    $parsedUrl = parse_url($url);
+    if ($parsedUrl['host'] !== 'localhost' || $parsedUrl['port'] != 3939) {
+        throw new Exception('Invalid URL');
+    }
+    
+    $response = @file_get_contents($url, false, stream_context_create([
         'http' => ['timeout' => 1, 'method' => 'GET']
     ]));
     

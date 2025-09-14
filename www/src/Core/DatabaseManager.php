@@ -25,9 +25,14 @@ class DatabaseManager {
         return $this->db->delete($table, $where);
     }
     
-    public function executeSQL($sql) {
+    public function executeSQL($sql, $params = []) {
         $pdo = $this->db->getConnection();
-        $stmt = $pdo->query($sql);
+        if (empty($params)) {
+            $stmt = $pdo->query($sql);
+        } else {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+        }
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return [['data' => $result]];
     }

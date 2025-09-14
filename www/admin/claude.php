@@ -20,19 +20,21 @@ if ($_POST['action'] ?? '' === 'setup_provider') {
         try {
             // Direct .env update
             $envFile = '/app/.env';
+            if (!\ZeroAI\Core\InputValidator::validatePath($envFile)) {
+                throw new Exception('Invalid file path');
+            }
             $envContent = file_get_contents($envFile);
             
+            $provider = \ZeroAI\Core\InputValidator::sanitize($provider);
+            $apiKey = \ZeroAI\Core\InputValidator::sanitize($apiKey);
             $keyName = strtoupper($provider) . '_API_KEY';
-            error_log("DEBUG: Key name: $keyName");
             
             if (strpos($envContent, $keyName) !== false) {
                 // Update existing
-                $envContent = preg_replace('/^' . $keyName . '=.*/m', $keyName . '=' . $apiKey, $envContent);
-                error_log("DEBUG: Updated existing key");
+                $envContent = preg_replace('/^' . preg_quote($keyName) . '=.*/m', $keyName . '=' . $apiKey, $envContent);
             } else {
                 // Add new
                 $envContent .= "\n# Cloud AI Configuration\n" . $keyName . '=' . $apiKey . "\n";
-                error_log("DEBUG: Added new key");
             }
             
             $writeResult = file_put_contents($envFile, $envContent);
@@ -133,16 +135,29 @@ if ($_POST['action'] ?? '' === 'chat_cloud') {
         $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
         
         if ($apiKey) {
-            $escapedMessage = escapeshellarg($message);
-            $pythonCmd = 'export HOME=/tmp && export ANTHROPIC_API_KEY=' . escapeshellarg($apiKey) . ' && /app/venv/bin/python -c "'
-                . 'import sys; sys.path.append(\"/app\"); '
-                . 'from crewai import LLM; '
-                . 'llm = LLM(model=\"anthropic/claude-sonnet-4-20250514\"); '
-                . 'response = llm.call(\"You are Claude integrated into ZeroAI. Help with: \" + ' . $escapedMessage . '); '
-                . 'print(response)'
-                . '"';
+            $escapedMessage = \ZeroAI\Core\InputValidator::sanitize($message);
+            $safeApiKey = \ZeroAI\Core\InputValidator::sanitize($apiKey);
             
-            $output = shell_exec($pythonCmd . ' 2>&1');
+            // Use proc_open for safer command execution
+            $descriptorspec = [
+                0 => ["pipe", "r"],
+                1 => ["pipe", "w"],
+                2 => ["pipe", "w"]
+            ];
+            
+            $pythonScript = "import sys; sys.path.append('/app'); from crewai import LLM; llm = LLM(model='anthropic/claude-sonnet-4-20250514'); response = llm.call('You are Claude integrated into ZeroAI. Help with: ' + \"$escapedMessage\"); print(response)";
+            
+            $process = proc_open('/app/venv/bin/python -c "' . $pythonScript . '"', $descriptorspec, $pipes, '/app', ['ANTHROPIC_API_KEY' => $safeApiKey]);
+            
+            if (is_resource($process)) {
+                fclose($pipes[0]);
+                $output = stream_get_contents($pipes[1]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                proc_close($process);
+            } else {
+                $output = 'Failed to execute command';
+            }
             
             if ($output && !strpos($output, 'Error') && !strpos($output, 'Traceback')) {
                 $cloudResponse = trim($output);
@@ -169,14 +184,27 @@ if ($_POST['action'] ?? '' === 'test_connection') {
     $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
     
     if ($apiKey) {
-        $pythonCmd = 'export HOME=/tmp && export ANTHROPIC_API_KEY=' . escapeshellarg($apiKey) . ' && /app/venv/bin/python -c "'
-            . 'from crewai import LLM; '
-            . 'llm = LLM(model=\"anthropic/claude-sonnet-4-20250514\"); '
-            . 'response = llm.call(\"Test connection - respond with: Connection successful\"); '
-            . 'print(response)'
-            . '"';
+        $safeApiKey = \ZeroAI\Core\InputValidator::sanitize($apiKey);
         
-        $output = shell_exec($pythonCmd . ' 2>&1');
+        $descriptorspec = [
+            0 => ["pipe", "r"],
+            1 => ["pipe", "w"],
+            2 => ["pipe", "w"]
+        ];
+        
+        $pythonScript = "from crewai import LLM; llm = LLM(model='anthropic/claude-sonnet-4-20250514'); response = llm.call('Test connection - respond with: Connection successful'); print(response)";
+        
+        $process = proc_open('/app/venv/bin/python -c "' . $pythonScript . '"', $descriptorspec, $pipes, '/app', ['ANTHROPIC_API_KEY' => $safeApiKey]);
+        
+        if (is_resource($process)) {
+            fclose($pipes[0]);
+            $output = stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            proc_close($process);
+        } else {
+            $output = 'Failed to execute command';
+        }
         
         if ($output && !strpos($output, 'Error') && !strpos($output, 'Traceback')) {
             $testResult = [

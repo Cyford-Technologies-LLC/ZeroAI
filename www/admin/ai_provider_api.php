@@ -25,14 +25,22 @@ try {
             
         case 'save':
             $configFile = '/app/data/ai_providers.json';
+            if (!\ZeroAI\Core\InputValidator::validatePath($configFile)) {
+                throw new Exception('Invalid file path');
+            }
             $configs = file_exists($configFile) ? json_decode(file_get_contents($configFile), true) : [];
-            $configs[$input['provider']] = $input['config'];
+            $provider = \ZeroAI\Core\InputValidator::sanitize($input['provider']);
+            $config = array_map([\ZeroAI\Core\InputValidator::class, 'sanitize'], $input['config']);
+            $configs[$provider] = $config;
             file_put_contents($configFile, json_encode($configs, JSON_PRETTY_PRINT));
             echo json_encode(['success' => true]);
             break;
             
         case 'load':
             $configFile = '/app/data/ai_providers.json';
+            if (!\ZeroAI\Core\InputValidator::validatePath($configFile)) {
+                throw new Exception('Invalid file path');
+            }
             $configs = file_exists($configFile) ? json_decode(file_get_contents($configFile), true) : [];
             echo json_encode(['success' => true, 'providers' => $configs]);
             break;
