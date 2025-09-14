@@ -37,8 +37,14 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <div class="card">
-    <h3>🌐 Peer Network Status</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>🌐 Peer Network Status</h3>
+        <label style="font-size: 12px;">
+            <input type="checkbox" id="enable-peer-monitoring" checked onchange="togglePeerMonitoring()"> Enable Monitoring
+        </label>
+    </div>
     <div id="peers-loading">Loading peer information...</div>
+    <div id="peers-disabled" style="display: none; color: #666; font-style: italic;">Peer monitoring disabled for better performance</div>
     <div id="peers-table" style="display: none;">
         <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
             <thead>
@@ -172,7 +178,28 @@ function updateTokenStats() {
         });
 }
 
+let peerMonitoringEnabled = true;
+let peerUpdateInterval;
+
+function togglePeerMonitoring() {
+    peerMonitoringEnabled = document.getElementById('enable-peer-monitoring').checked;
+    
+    if (peerMonitoringEnabled) {
+        document.getElementById('peers-disabled').style.display = 'none';
+        document.getElementById('peers-loading').style.display = 'block';
+        updatePeerStats();
+        peerUpdateInterval = setInterval(updatePeerStats, 30000);
+    } else {
+        clearInterval(peerUpdateInterval);
+        document.getElementById('peers-loading').style.display = 'none';
+        document.getElementById('peers-table').style.display = 'none';
+        document.getElementById('peers-disabled').style.display = 'block';
+    }
+}
+
 function updatePeerStats() {
+    if (!peerMonitoringEnabled) return;
+    
     fetch('/admin/peers_api.php')
         .then(r => r.json())
         .then(data => {
@@ -210,12 +237,13 @@ function updatePeerStats() {
         });
 }
 
-setInterval(updateStats, 2000);
-setInterval(updateTokenStats, 30000);
-setInterval(updatePeerStats, 15000);
+setInterval(updateStats, 5000);
+setInterval(updateTokenStats, 60000);
 updateStats();
 updateTokenStats();
-updatePeerStats();
+
+// Initialize peer monitoring
+togglePeerMonitoring();
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

@@ -2,6 +2,18 @@
 header('Content-Type: application/json');
 
 try {
+    // Try to get cached peer status first
+    $cacheFile = '/app/data/peer_status_cache.json';
+    
+    if (file_exists($cacheFile)) {
+        $peersData = json_decode(file_get_contents($cacheFile), true);
+        if ($peersData && isset($peersData['peers'])) {
+            echo json_encode(['success' => true, 'peers' => $peersData['peers']]);
+            exit;
+        }
+    }
+    
+    // Fallback to direct check if cache not available
     $peersFile = '/app/config/peers.json';
     
     if (!file_exists($peersFile)) {
@@ -16,7 +28,7 @@ try {
         exit;
     }
     
-    // Check peer status by attempting connection
+    // Quick status check with very short timeout
     foreach ($peersData['peers'] as &$peer) {
         $peer['status'] = checkPeerStatus($peer['ip'], $peer['port']);
         $peer['last_check'] = date('Y-m-d H:i:s');
@@ -29,7 +41,7 @@ try {
 }
 
 function checkPeerStatus($ip, $port) {
-    $timeout = 3;
+    $timeout = 1;
     $connection = @fsockopen($ip, $port, $errno, $errstr, $timeout);
     
     if ($connection) {

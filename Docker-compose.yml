@@ -29,6 +29,13 @@ services:
       depends_on:
         - ollama
       restart: unless-stopped
+      command: >
+        bash -c "apt-get update && apt-get install -y redis-server && 
+        redis-server --daemonize yes && 
+        service php8.4-fpm start && 
+        nginx && 
+        python3 /app/src/agents/peer_monitor_agent.py & 
+        /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
 
   peer:
     build: .
