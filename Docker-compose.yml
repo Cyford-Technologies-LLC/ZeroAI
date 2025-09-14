@@ -19,8 +19,6 @@ services:
         - /etc/cyford/zeroai/backup:/app/backup
         - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
-        - ./nginx.conf:/app/nginx.conf:ro
-        - ./default-site:/app/default-site:ro
       environment:
         - PYTHONPATH=/app
         - OLLAMA_HOST=http://ollama:11434
@@ -31,12 +29,6 @@ services:
       depends_on:
         - ollama
       restart: unless-stopped
-      command: >
-        bash -c "cp /app/nginx.conf /etc/nginx/nginx.conf && 
-        cp -r /app/default-site /etc/nginx/sites-enabled/default && 
-        service php8.4-fpm start && 
-        nginx && 
-        /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
 
   peer:
     build: .

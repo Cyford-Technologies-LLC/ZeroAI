@@ -53,7 +53,6 @@ RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 php-curl php-
     && rm -rf /var/lib/apt/lists/*
 
 # Copy nginx config
-RUN  mkdir -p /etc/nginx/sites-available/
 COPY nginx.conf /etc/nginx/sites-available/zeroai
 RUN ln -sf /etc/nginx/sites-available/zeroai /etc/nginx/sites-enabled/default
 
