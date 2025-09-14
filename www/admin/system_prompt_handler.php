@@ -32,7 +32,12 @@ try {
             exit;
         }
         
-        $db->executeSQL("INSERT INTO claude_prompts (prompt) VALUES (?)", 'claude', [$prompt]);
+        // Create table if not exists
+        $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'claude');
+        
+        // Use raw SQL since DatabaseManager parameter binding is broken
+        $escapedPrompt = str_replace("'", "''", $prompt);
+        $db->executeSQL("INSERT INTO claude_prompts (prompt) VALUES ('$escapedPrompt')", 'claude');
         
         echo json_encode(['success' => true, 'message' => 'System prompt saved successfully']);
     }
