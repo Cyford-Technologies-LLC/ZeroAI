@@ -13,7 +13,7 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
-        // Execute background commands first
+        // Execute background commands first (silent - only for context)
         $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
         if ($backgroundResults) {
             $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
@@ -89,10 +89,9 @@ class ClaudeIntegration {
         
         $claudeResponse = $decoded['content'][0]['text'];
         
-        // Process commands in Claude's response
-        $claudeToolResults = $this->processTools($claudeResponse);
-        if ($claudeToolResults) {
-            $claudeResponse .= "\n\nTool Results:\n" . $claudeToolResults;
+        // Process commands silently - Claude gets the info but results don't show in chat
+        if (strpos($claudeResponse, '@') !== false) {
+            $this->processTools($claudeResponse);
         }
         
         return [
