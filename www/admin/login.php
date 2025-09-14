@@ -9,6 +9,7 @@ use ZeroAI\Services\AuthService;
 $auth = new AuthService();
 
 if ($_POST) {
+<<<<<<< HEAD
     $username = $_POST['username'];
     $password = $_POST['password'];
     
@@ -17,6 +18,35 @@ if ($_POST) {
         exit;
     } else {
         $error = "Invalid credentials";
+=======
+    try {
+        require_once '../src/Core/UserManager.php';
+        $userManager = new \ZeroAI\Core\UserManager();
+        
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($username) || empty($password)) {
+            throw new Exception('Username and password are required');
+        }
+        
+        $user = $userManager->authenticate($username, $password);
+        
+        if ($user) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['username'];
+            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['admin_logged_in'] = true;
+            $_SESSION['admin_user'] = $username;
+            
+            header('Location: /admin/dashboard');
+            exit;
+        } else {
+            $error = "Invalid credentials";
+        }
+    } catch (Exception $e) {
+        $error = "Login failed: " . $e->getMessage();
+>>>>>>> bd72799 (Added  better user management)
     }
 }
 ?>
