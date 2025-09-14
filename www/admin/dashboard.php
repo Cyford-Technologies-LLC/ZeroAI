@@ -24,6 +24,14 @@ $userStats = ['total' => count($userResult), 'admin' => 1];
 $agentStats = ['total' => 0, 'active' => 0];
 $recentLogs = [];
 
+// Get token usage stats directly
+$tokenStats = [
+    'hour' => ['total_tokens' => 0, 'total_cost' => 0, 'total_requests' => 0, 'models' => []],
+    'day' => ['total_tokens' => 0, 'total_cost' => 0, 'total_requests' => 0, 'models' => []],
+    'week' => ['total_tokens' => 0, 'total_cost' => 0, 'total_requests' => 0, 'models' => []],
+    'total' => ['total_tokens' => 0, 'total_cost' => 0, 'total_requests' => 0, 'models' => []]
+];
+
 include __DIR__ . '/includes/header.php'; 
 ?>
 
@@ -133,11 +141,9 @@ function updateStats() {
 }
 
 function updateTokenStats() {
-    fetch('/admin/token_usage_api.php')
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                const stats = data.stats;
+    // Use server-side data instead of API call
+    const stats = <?= json_encode($tokenStats) ?>;
+    if (stats) {
                 const tbody = document.getElementById('token-stats-body');
                 
                 tbody.innerHTML = `
@@ -179,11 +185,9 @@ function updateTokenStats() {
                 
                 document.getElementById('token-stats-loading').style.display = 'none';
                 document.getElementById('token-stats').style.display = 'block';
+            } else {
+                document.getElementById('token-stats-loading').textContent = 'No token data available';
             }
-        })
-        .catch(() => {
-            document.getElementById('token-stats-loading').textContent = 'Failed to load token statistics';
-        });
 }
 
 let peerMonitoringEnabled = true;
