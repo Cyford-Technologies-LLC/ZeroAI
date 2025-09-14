@@ -153,12 +153,7 @@ class Database {
     private function invalidateTableCache($table) {
         // Clear all cache entries for this table
         try {
-            if ($this->cache->redis) {
-                $keys = $this->cache->redis->keys("db:{$table}*");
-                if ($keys) {
-                    $this->cache->redis->del($keys);
-                }
-            }
+            $this->cache->clearPattern("db:{$table}*");
         } catch (Exception $e) {
             // Redis error, log but continue
             error_log("Redis cache invalidation failed: " . $e->getMessage());

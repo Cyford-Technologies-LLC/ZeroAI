@@ -34,14 +34,14 @@ if ($agentId && !$sessionId) {
     
     $sessionId = $chat->startChatSession($agentId, $_SESSION['admin_user']);
     header("Location: /admin/zeroai_chat.php?session=$sessionId");
-    exit;
+    return;
 }
 
 if ($_POST['action'] ?? '' === 'send_message' && $sessionId) {
-    $message = $_POST['message'];
+    $message = \ZeroAI\Core\InputValidator::sanitize($_POST['message']);
     $response = $chat->sendMessage($sessionId, $message);
     header("Location: /admin/zeroai_chat.php?session=$sessionId");
-    exit;
+    return;
 }
 
 $pageTitle = 'ZeroAI Chat';

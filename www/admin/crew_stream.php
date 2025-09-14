@@ -4,12 +4,12 @@ header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('Connection: keep-alive');
 
-$message = $_GET['message'] ?? '';
-$project = $_GET['project'] ?? 'zeroai';
+$message = \ZeroAI\Core\InputValidator::sanitize($_GET['message'] ?? '');
+$project = \ZeroAI\Core\InputValidator::sanitize($_GET['project'] ?? 'zeroai');
 
 if (!$message) {
     echo "data: {\"error\": \"No message provided\"}\n\n";
-    exit;
+    return;
 }
 
 // Start crew execution with streaming
@@ -42,7 +42,7 @@ if ($process) {
         }
         
         // Small delay to prevent overwhelming
-        usleep(100000); // 0.1 second
+        usleep(10000); // 0.01 second
     }
     
     pclose($process);
