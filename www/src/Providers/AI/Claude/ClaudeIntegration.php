@@ -66,7 +66,7 @@ class ClaudeIntegration {
                 'x-api-key: ' . $this->apiKey,
                 'anthropic-version: 2023-06-01'
             ],
-            CURLOPT_TIMEOUT => 300,
+            CURLOPT_TIMEOUT => 420,
             CURLOPT_SSL_VERIFYPEER => false
         ]);
         
