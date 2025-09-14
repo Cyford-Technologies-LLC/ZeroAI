@@ -140,6 +140,95 @@ class ClaudeIntegration {
             }
         }
         
+        // Process @update_agent commands
+        if (preg_match_all('/@update_agent\s+(\d+)\s+(.+)/m', $message, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $result = $this->toolSystem->execute('update_agent', [$match[1], $match[2]], $mode);
+                if (isset($result['success'])) {
+                    $results .= $result['formatted'] . "\n\n";
+                } else {
+                    $results .= "❌ " . $result['error'] . "\n\n";
+                }
+            }
+        }
+        
+        // Process @crews commands
+        if (preg_match('/@crews/', $message)) {
+            $result = $this->toolSystem->execute('crews', [], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        // Process @analyze_crew commands
+        if (preg_match_all('/@analyze_crew\s+([^\s]+)/m', $message, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $result = $this->toolSystem->execute('analyze_crew', [$match[1]], $mode);
+                if (isset($result['success'])) {
+                    $results .= $result['formatted'] . "\n\n";
+                } else {
+                    $results .= "❌ " . $result['error'] . "\n\n";
+                }
+            }
+        }
+        
+        // Process @logs commands
+        if (preg_match('/@logs(?:\s+(\d+))?(?:\s+(\w+))?/', $message, $matches)) {
+            $days = isset($matches[1]) ? (int)$matches[1] : 7;
+            $agentRole = isset($matches[2]) ? $matches[2] : null;
+            $result = $this->toolSystem->execute('logs', [$days, $agentRole], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        // Process @optimize_agents commands
+        if (preg_match('/@optimize_agents/', $message)) {
+            $result = $this->toolSystem->execute('optimize_agents', [], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        // Process @train_agents commands
+        if (preg_match('/@train_agents/', $message)) {
+            $result = $this->toolSystem->execute('train_agents', [], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        // Process @memory commands
+        if (preg_match('/@memory\s+(chat|commands|search|config|sessions)\s*(.*)/', $message, $matches)) {
+            $action = $matches[1];
+            $params = trim($matches[2]);
+            $result = $this->toolSystem->execute('memory', [$action, $params], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        // Process @context commands
+        if (preg_match('/@context\s+(.+)/', $message, $matches)) {
+            $commandsStr = trim($matches[1]);
+            $result = $this->toolSystem->execute('context', [$commandsStr], $mode);
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
+            } else {
+                $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
         // Process @docker commands
         if (preg_match_all('/@docker\s+(.+)/m', $message, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {

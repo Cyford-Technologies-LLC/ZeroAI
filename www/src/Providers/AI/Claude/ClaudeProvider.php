@@ -6,11 +6,13 @@ class ClaudeProvider {
     private $apiKey;
     private $commands;
     private $integration;
+    private $backgroundWorker;
     
     public function __construct($apiKey = null) {
         $this->apiKey = $apiKey ?: $this->getApiKey();
         $this->commands = new ClaudeCommands();
         $this->integration = new ClaudeIntegration($this->apiKey);
+        $this->backgroundWorker = new ClaudeBackgroundWorker();
     }
     
     private function getApiKey() {
@@ -50,6 +52,12 @@ class ClaudeProvider {
             $message .= $this->autoScan($message);
             
             $systemPrompt = $this->getSystemPrompt();
+            
+            // Add background context to system prompt
+            $backgroundContext = $this->getBackgroundContext();
+            if ($backgroundContext) {
+                $systemPrompt .= "\n\nBACKGROUND CONTEXT:\n" . $backgroundContext;
+            }
             
             // Convert frontend history format to Claude API format
             $convertedHistory = [];
@@ -178,6 +186,25 @@ class ClaudeProvider {
         }
         
         return 'You are Claude, integrated into ZeroAI.' . $this->getCommandsHelp();
+    }
+    
+    private function getBackgroundContext() {
+        try {
+            $context = $this->backgroundWorker->getContext();
+            if (empty($context)) return '';
+            
+            $contextStr = '';
+            foreach ($context as $item) {
+                $contextStr .= "- {$item['key']}: {$item['value']}\n";
+            }
+            return $contextStr;
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+    
+    public function executeBackgroundCommand($command, $args = []) {
+        return $this->backgroundWorker->executeCommand($command, $args);
     }
     
     private function getCommandsHelp() {
