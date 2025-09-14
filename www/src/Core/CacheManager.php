@@ -1,46 +1,80 @@
 <?php
-
 namespace ZeroAI\Core;
 
 class CacheManager {
-    private $redis;
-    private $enabled = false;
+    private static $instance = null;
+    private $redis = null;
     
-    public function __construct() {
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+    
+    private function __construct() {
         if (extension_loaded('redis')) {
+            $this->redis = new \Redis();
             try {
-                $this->redis = new \Redis();
                 $this->redis->connect('127.0.0.1', 6379);
-                $this->enabled = true;
-            } catch (\Exception $e) {
-                error_log("Redis connection failed: " . $e->getMessage());
+            } catch (Exception $e) {
+                $this->redis = null;
             }
         }
     }
     
-    public function set($key, $value, $ttl = 3600) {
-        if (!$this->enabled) return false;
-        return $this->redis->setex($key, $ttl, serialize($value));
+    public function get($key) {
+        // Try APCu first
+        if (extension_loaded('apcu') && apcu_exists($key)) {
+            return apcu_fetch($key);
+        }
+        
+        // Try Redis
+        if ($this->redis) {
+            $value = $this->redis->get($key);
+            if ($value !== false) {
+                return unserialize($value);
+            }
+        }
+        
+        return false;
     }
     
-    public function get($key) {
-        if (!$this->enabled) return null;
-        $value = $this->redis->get($key);
-        return $value ? unserialize($value) : null;
+    public function set($key, $value, $ttl = 3600) {
+        // Store in APCu for fast access
+        if (extension_loaded('apcu')) {
+            apcu_store($key, $value, $ttl);
+        }
+        
+        // Store in Redis for persistence
+        if ($this->redis) {
+            $this->redis->setex($key, $ttl, serialize($value));
+        }
+        
+        return true;
     }
     
     public function delete($key) {
-        if (!$this->enabled) return false;
-        return $this->redis->del($key);
+        if (extension_loaded('apcu')) {
+            apcu_delete($key);
+        }
+        
+        if ($this->redis) {
+            $this->redis->del($key);
+        }
+        
+        return true;
     }
     
-    public function exists($key) {
-        if (!$this->enabled) return false;
-        return $this->redis->exists($key);
-    }
-    
-    public function isEnabled() {
-        return $this->enabled;
+    public function flush() {
+        if (extension_loaded('apcu')) {
+            apcu_clear_cache();
+        }
+        
+        if ($this->redis) {
+            $this->redis->flushAll();
+        }
+        
+        return true;
     }
 }
-?>

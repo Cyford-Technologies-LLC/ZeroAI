@@ -1,94 +1,111 @@
-# Stage 1: Build dependencies as root
-FROM python:3.11-slim as builder
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg gosu git nano \
-    && rm -rf /var/lib/apt/lists/*
-
-# Use a virtual environment to isolate dependencies
-WORKDIR /app
-COPY requirements.txt .
-RUN python -m venv /app/venv && \
-    /app/venv/bin/pip install --no-cache-dir -r requirements.txt
-COPY . .
-
-
-# --- Stage 2: Final image ---
 FROM python:3.11-slim
 
-# Install system dependencies (gosu and docker) needed in the final image
+# Install ALL system dependencies in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg gosu git nano sudo \
+    curl gnupg git nano sudo cron \
+    nginx php-fpm php-sqlite3 php-curl php-json php-mbstring php-xml php-zip php-gd php-intl \
+    php-apcu php-opcache php-redis \
+    redis-server \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Docker CLI
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
-    && chmod a+r /etc/apt/keyrings/docker.gpg
-RUN echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-    trixie stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-RUN apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && chmod a+r /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian trixie stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
-
-
-# Copy everything from builder stage
-COPY --from=builder /app /app
-
-# Copy entrypoint script and make it executable
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Add virtual environment's bin to PATH
-ENV PATH="/app/venv/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
-# All setup done. The container MUST start as root for the entrypoint script
-# to be able to create the user and group based on host UID/GID.
-USER root
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN python -m venv /app/venv && \
+    /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Install Nginx and PHP-FPM with essential extensions
-RUN apt-get update && apt-get install -y nginx php-fpm php-sqlite3 php-curl php-json php-mbstring php-xml php-zip php-gd php-intl \
-    && rm -rf /var/lib/apt/lists/*
+# Copy application code
+COPY . .
+
+# Configure PHP-FPM and PHP optimizations
+RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/*/fpm/pool.d/www.conf \
+    && echo 'opcache.enable=1' >> /etc/php/*/fpm/php.ini \
+    && echo 'opcache.memory_consumption=128' >> /etc/php/*/fpm/php.ini \
+    && echo 'opcache.max_accelerated_files=4000' >> /etc/php/*/fpm/php.ini \
+    && echo 'opcache.revalidate_freq=2' >> /etc/php/*/fpm/php.ini \
+    && echo 'apc.enabled=1' >> /etc/php/*/fpm/php.ini \
+    && echo 'apc.shm_size=64M' >> /etc/php/*/fpm/php.ini \
+    && echo 'redis.session.save_handler=redis' >> /etc/php/*/fpm/php.ini \
+    && echo 'redis.session.save_path="tcp://127.0.0.1:6379"' >> /etc/php/*/fpm/php.ini
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/sites-available/zeroai
 RUN ln -sf /etc/nginx/sites-available/zeroai /etc/nginx/sites-enabled/default
 
-# Configure PHP-FPM
-RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/*/fpm/pool.d/www.conf
-
-# Create nginx directories and set permissions
+# Create necessary directories and set permissions
 RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi \
-    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx
+    && mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
+    && mkdir -p /app/data /app/logs \
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run /tmp/nginx /app/data /app/logs \
+    && chmod -R 775 /app/data /app/logs
 
-# Skip chown on /app since it will be mounted volumes
+# Configure git
+RUN git config --global --add safe.directory /app \
+    && git config --global user.name "www-data" \
+    && git config --global user.email "www-data@zeroai.local"
 
-# Create /var/www directory for www-data user
-RUN mkdir -p /var/www && chown www-data:www-data /var/www
+# Install git wrapper
+RUN chmod +x /app/git && ln -sf /app/git /usr/local/bin/git
 
-# Configure git using direct binary to avoid wrapper issues
-RUN /usr/bin/git config --global --add safe.directory /app \
-    && /usr/bin/git config --global user.name "www-data" \
-    && /usr/bin/git config --global user.email "www-data@zeroai.local"
+# Add virtual environment to PATH
+ENV PATH="/app/venv/bin:$PATH"
 
-# Configure nginx directories and permissions
-RUN mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
-    && chown -R www-data:www-data /var/log/nginx /var/lib/nginx /run /tmp/nginx
+# Create comprehensive startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Starting ZeroAI services..."\n\
+\n\
+# Ensure data directory permissions\n\
+mkdir -p /app/data && chown -R www-data:www-data /app/data /app/www && chmod -R 775 /app/data\n\
+\n\
+# Start Redis\n\
+echo "Starting Redis..."\n\
+redis-server --daemonize yes --logfile /var/log/redis.log\n\
+sleep 2\n\
+if ! redis-cli ping > /dev/null 2>&1; then\n\
+    echo "ERROR: Redis failed to start"\n\
+    exit 1\n\
+fi\n\
+echo "Redis started successfully"\n\
+\n\
+# Setup queue processing cron\n\
+echo "Setting up queue processing..."\n\
+echo "* * * * * /usr/bin/php /app/scripts/process_queue.php >> /app/logs/queue.log 2>&1" | crontab -\n\
+service cron start\n\
+echo "Queue processing enabled"\n\
+\n\
+# Start PHP-FPM\n\
+echo "Starting PHP-FPM..."\n\
+service php8.4-fpm start\n\
+if ! pgrep php-fpm > /dev/null; then\n\
+    echo "ERROR: PHP-FPM failed to start"\n\
+    exit 1\n\
+fi\n\
+echo "PHP-FPM started successfully"\n\
+\n\
+# Start background services\n\
+echo "Starting background services..."\n\
+python3 /app/src/agents/peer_monitor_agent.py &\n\
+python3 /app/scripts/cron_runner.py &\n\
+\n\
+# Start Gunicorn API\n\
+echo "Starting API server..."\n\
+/app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload &\n\
+\n\
+# Start Nginx (foreground)\n\
+echo "Starting Nginx..."\n\
+echo "All services started successfully"\n\
+nginx -g "daemon off;"\n\
+' > /app/start.sh && chmod +x /app/start.sh
 
-# Create startup script with write permissions fix
-RUN echo '#!/bin/bash' > /app/start_portal.sh \
-    && echo 'set +e' >> /app/start_portal.sh \
-    && echo 'mkdir -p /app/data && chmod 777 /app/data' >> /app/start_portal.sh \
-    && echo '# Fix write permissions for PHP' >> /app/start_portal.sh \
-    && echo 'chmod -R 755 /app/src /app/config /app/examples /app/knowledge 2>/dev/null || true' >> /app/start_portal.sh \
-    && echo 'chmod -R 777 /app/logs /app/knowledge 2>/dev/null || true' >> /app/start_portal.sh \
-    && echo '# Make Python scripts executable' >> /app/start_portal.sh \
-    && echo 'chmod +x /app/run/internal/*.py 2>/dev/null || true' >> /app/start_portal.sh \
-    && echo 'service php8.4-fpm start' >> /app/start_portal.sh \
-    && echo 'nginx -g "daemon off;"' >> /app/start_portal.sh \
-    && chmod +x /app/start_portal.sh
-
-# Run directly as root to avoid permission issues
-CMD ["/app/start_portal.sh"]
+CMD ["/app/start.sh"]

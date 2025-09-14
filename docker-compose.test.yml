@@ -1,0 +1,64 @@
+services:
+  zeroai-test:
+    build: .
+    container_name: zeroai_api-test
+    ports:
+      - "3940:3939"
+      - "334:333"
+    volumes:
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
+      - ./logs:/app/logs
+      - ./www:/app/www
+      - ./data:/app/data
+      - ./scripts:/app/scripts
+    environment:
+      - PYTHONPATH=/app
+      - OLLAMA_HOST=http://ollama-test:11434
+    env_file:
+      - .env
+    depends_on:
+      - ollama-test
+    restart: unless-stopped
+
+  peer-test:
+    build: .
+    container_name: zeroai_peer-test
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
+      - ./logs:/app/logs
+      - ./scripts:/app/scripts
+    environment:
+      - PYTHONPATH=/app
+      - OLLAMA_HOST=http://ollama-test:11434
+    env_file:
+      - .env
+    command: >
+      bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
+      redis-server --daemonize yes && 
+      python3 /app/scripts/cron_runner.py & 
+      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+    depends_on:
+      - ollama-test
+    restart: unless-stopped
+
+  ollama-test:
+    image: ollama/ollama:latest
+    container_name: zeroai_ollama-test
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_test_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_test_data:

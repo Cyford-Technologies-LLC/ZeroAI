@@ -3,10 +3,12 @@ namespace ZeroAI\Core;
 
 class UserManager {
     private $db;
+    private $cache;
     
     public function __construct() {
         require_once __DIR__ . '/../../config/database.php';
         $this->db = new \Database();
+        $this->cache = \ZeroAI\Core\CacheManager::getInstance();
         $this->initializeUserSchema();
     }
     
@@ -85,9 +87,17 @@ class UserManager {
     }
     
     public function getAllUsers() {
-        $pdo = $this->db->getConnection();
-        $stmt = $pdo->query("SELECT id, username, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $cacheKey = 'users_all';
+        $users = $this->cache->get($cacheKey);
+        
+        if ($users === false) {
+            $pdo = $this->db->getConnection();
+            $stmt = $pdo->query("SELECT id, username, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
+            $users = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $this->cache->set($cacheKey, $users, 300); // Cache for 5 minutes
+        }
+        
+        return $users;
     }
     
     public function updateUser($id, $data) {
@@ -107,7 +117,14 @@ class UserManager {
         
         $values[] = $id;
         $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?";
-        return $pdo->prepare($sql)->execute($values);
+        $result = $pdo->prepare($sql)->execute($values);
+        
+        if ($result) {
+            $this->cache->delete('users_all');
+            $this->cache->delete('user_' . $id);
+        }
+        
+        return $result;
     }
     
     public function changePassword($userId, $newPassword, $currentPassword = null) {

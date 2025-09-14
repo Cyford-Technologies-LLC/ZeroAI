@@ -2,7 +2,6 @@ services:
   zeroai:
       build: .
       container_name: zeroai_api-prod
-      privileged: true
       ports:
         - "0.0.0.0:3939:3939"
         - "0.0.0.0:333:333"
@@ -23,23 +22,22 @@ services:
       environment:
         - PYTHONPATH=/app
         - OLLAMA_HOST=http://ollama:11434
-        - LOCAL_UID=${LOCAL_UID}
-        - LOCAL_GID=${LOCAL_GID}
+        - PHP_OPCACHE_ENABLE=1
+        - PHP_OPCACHE_MEMORY=128
+        - REDIS_HOST=127.0.0.1
+        - REDIS_PORT=6379
       env_file:
         - .env
       depends_on:
         - ollama
       restart: unless-stopped
-      command: >
-        bash -c "apt-get update && apt-get install -y redis-server && 
-        chmod +x /app/git && ln -sf /app/git /usr/local/bin/git && 
-        redis-server --daemonize yes && 
-        mkdir -p /app/data && chown -R www-data:www-data /app/data /app/www && chmod -R 775 /app/data && 
-        service php8.4-fpm start && 
-        nginx && 
-        python3 /app/src/agents/peer_monitor_agent.py & 
-        python3 /app/scripts/cron_runner.py & 
-        /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+      deploy:
+        resources:
+          limits:
+            memory: 2G
+          reservations:
+            memory: 1G
+
 
   peer:
     build: .
@@ -59,18 +57,24 @@ services:
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
-      - LOCAL_UID=${LOCAL_UID}
-      - LOCAL_GID=${LOCAL_GID}
+      - REDIS_HOST=127.0.0.1
+      - REDIS_PORT=6379
     env_file:
       - .env
     command: >
-      bash -c "apt-get update && apt-get install -y redis-server && 
+      bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
       redis-server --daemonize yes && 
       python3 /app/scripts/cron_runner.py & 
-      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 4 --preload"
     depends_on:
       - ollama
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
   ollama:
     image: ollama/ollama:latest
@@ -80,6 +84,12 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
 
 volumes:
   ollama_data:
