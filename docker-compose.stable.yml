@@ -1,0 +1,74 @@
+services:
+  zeroai:
+    build:
+      context: .
+      dockerfile: Dockerfile.stable
+    container_name: zeroai_api-prod
+    ports:
+      - "3939:3939"
+      - "333:333"
+    volumes:
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
+      - /etc/cyford/zeroai/knowledge:/app/knowledge
+      - ./logs:/app/logs
+      - ./www:/app/www
+      - /etc/cyford/zeroai/data:/app/data
+      - /etc/cyford/zeroai/backup:/app/backup
+      - /etc/cyford/zeroai/.env:/app/.env:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./scripts:/app/scripts
+    environment:
+      - PYTHONPATH=/app
+      - OLLAMA_HOST=http://ollama:11434
+    env_file:
+      - .env
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  peer:
+    build:
+      context: .
+      dockerfile: Dockerfile.stable
+    container_name: zeroai_peer-prod
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
+      - /etc/cyford/zeroai/knowledge:/app/knowledge
+      - ./logs:/app/logs
+      - /etc/cyford/zeroai/.env:/app/.env:ro
+      - ./scripts:/app/scripts
+    environment:
+      - PYTHONPATH=/app
+      - OLLAMA_HOST=http://ollama:11434
+    env_file:
+      - .env
+    command: >
+      bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
+      redis-server --daemonize yes && 
+      python3 /app/scripts/cron_runner.py & 
+      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: zeroai_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

@@ -22,7 +22,7 @@ if ($_POST) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_user'] = $username;
             
-            header('Location: /admin/dashboard');
+            header('Location: /admin/dashboard.php');
             exit;
         } else {
             $error = "Invalid credentials";
