@@ -334,15 +334,23 @@ class ClaudeToolSystem {
     
     private function logCommand($command, $input, $output) {
         try {
+            // Debug what we're getting
+            error_log("DEBUG logCommand: command=" . var_export($command, true) . ", input=" . var_export($input, true));
+            
             $db = new \ZeroAI\Core\DatabaseManager();
             
             // Create table if not exists
             $db->executeSQL("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
             
             // Log the command with null checks
+            $safeCommand = $command ?: 'unknown';
             $safeInput = $input ?: 'unknown_command';
             $safeOutput = $output ?: '';
-            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", 'claude', [$safeInput, $safeOutput, 'success', 'claude-unified', 1]);
+            
+            // Use command + input for the command field
+            $fullCommand = $safeCommand . ': ' . $safeInput;
+            
+            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", 'claude', [$fullCommand, $safeOutput, 'success', 'claude-unified', 1]);
                 
         } catch (\Exception $e) {
             error_log("Failed to log Claude command: " . $e->getMessage());

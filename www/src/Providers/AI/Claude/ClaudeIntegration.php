@@ -292,21 +292,19 @@ class ClaudeIntegration {
     }
     
     private function getMainContainer() {
-        // Get container list and find main app container
-        $result = $this->toolSystem->execute('ps', [], 'hybrid');
-        if (isset($result['success']) && $result['output']) {
-            // Look for container with 'app' or 'zeroai' in name
-            $lines = explode("\n", $result['output']);
-            foreach ($lines as $line) {
-                if (preg_match('/(\S+)\s+/', $line, $matches)) {
-                    $containerName = $matches[1];
-                    if (strpos($containerName, 'app') !== false || strpos($containerName, 'zeroai') !== false) {
-                        return $containerName;
-                    }
+        // Use docker ps --format to get just container names
+        $result = shell_exec("docker ps --format '{{.Names}}' 2>&1");
+        
+        if ($result) {
+            $lines = explode("\n", trim($result));
+            foreach ($lines as $containerName) {
+                $containerName = trim($containerName);
+                if ($containerName && strpos($containerName, 'zeroai') !== false && strpos($containerName, 'api') !== false) {
+                    return $containerName;
                 }
             }
         }
-        return null;
+        return 'zeroai_api-test'; // Fallback to known container
     }
 }
 ?>
