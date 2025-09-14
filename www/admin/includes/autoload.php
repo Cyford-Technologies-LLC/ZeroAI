@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../src/Core/System.php';
 require_once __DIR__ . '/../../src/Core/DatabaseManager.php';
 require_once __DIR__ . '/../../src/Core/QueueManager.php';
 require_once __DIR__ . '/../../src/Core/InputValidator.php';
+require_once __DIR__ . '/../../src/Models/User.php';
 
 // Initialize core systems
 $cache = \ZeroAI\Core\CacheManager::getInstance();
