@@ -122,7 +122,11 @@ require_once __DIR__ . '/../auth_check.php';
                 </div>
                 <div class="sidebar-group">
                     <h3>Cloud AI</h3>
-                    <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>🔮 Claude</a>
+                    <?php if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'demo'): ?>
+                        <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>🔮 Claude</a>
+                    <?php else: ?>
+                        <span style="color: #999; padding: 10px 20px; display: block;">🔒 Claude (Demo Restricted)</span>
+                    <?php endif; ?>
                 </div>
             <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
@@ -155,17 +159,21 @@ require_once __DIR__ . '/../auth_check.php';
                     <a href="/admin/config" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
                     <a href="/admin/api" <?= ($currentPage ?? '') === 'api' ? 'class="active"' : '' ?>>API Settings</a>
                 </div>
+                <?php if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'demo'): ?>
                 <div class="sidebar-group">
                     <h3>Cloud AI Settings</h3>
                     <a href="/admin/cloud_settings.php" <?= ($currentPage ?? '') === 'cloud_settings' ? 'class="active"' : '' ?>>Cloud Providers</a>
                     <a href="/admin/claude_settings.php" <?= ($currentPage ?? '') === 'claude_settings' ? 'class="active"' : '' ?>>Claude AI</a>
                 </div>
+                <?php endif; ?>
+                <?php if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'demo'): ?>
                 <div class="sidebar-group">
                     <h3>User Management</h3>
                     <a href="/admin/users.php" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
                     <a href="/admin/roles.php" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
                     <a href="/admin/sessions.php" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
                 </div>
+                <?php endif; ?>
             <?php elseif ($currentSection === 'system'): ?>
                 <div class="sidebar-group">
                     <h3>System Resources</h3>

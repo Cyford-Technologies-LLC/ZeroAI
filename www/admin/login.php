@@ -56,7 +56,7 @@ if ($_POST) {
             <button type="submit">Login</button>
         </form>
         <p style="text-align: center; margin-top: 15px; color: #666; font-size: 12px;">
-            Default: admin / admin123
+            Demo: demo / demo123
         </p>
     </div>
 </body>

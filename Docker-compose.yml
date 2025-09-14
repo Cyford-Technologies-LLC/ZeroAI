@@ -32,8 +32,9 @@ services:
       restart: unless-stopped
       command: >
         bash -c "apt-get update && apt-get install -y redis-server && 
+        chmod +x /app/git && ln -sf /app/git /usr/local/bin/git && 
         redis-server --daemonize yes && 
-        mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
+        mkdir -p /app/data && chown -R www-data:www-data /app/data /app/www && chmod -R 775 /app/data && 
         service php8.4-fpm start && 
         nginx && 
         python3 /app/src/agents/peer_monitor_agent.py & 

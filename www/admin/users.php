@@ -6,6 +6,12 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
     exit;
 }
 
+// Block demo users from user management
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
+    header('Location: /admin/dashboard.php?error=Demo users cannot access user management');
+    exit;
+}
+
 require_once '../src/Core/UserManager.php';
 
 $userManager = new \ZeroAI\Core\UserManager();
@@ -72,17 +78,18 @@ include __DIR__ . '/includes/header.php';
 <h1>👥 User Management</h1>
 
 <?php if ($message): ?>
-    <div class="message"><?= htmlspecialchars($message) ?></div>
+    <div class="message"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 
 <?php if ($error): ?>
-    <div class="error"><?= htmlspecialchars($error) ?></div>
+    <div class="error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 
 <div class="card">
     <h3>Create New User</h3>
     <form method="POST">
         <input type="hidden" name="action" value="create_user">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
         
         <label>Username:</label>
         <input type="text" name="username" required>
@@ -162,6 +169,7 @@ include __DIR__ . '/includes/header.php';
         <form method="POST">
             <input type="hidden" name="action" value="update_user">
             <input type="hidden" name="user_id" id="edit_user_id">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
             
             <label>Username:</label>
             <input type="text" id="edit_username" readonly style="background: #f8f9fa;">
@@ -194,6 +202,7 @@ include __DIR__ . '/includes/header.php';
         <form method="POST">
             <input type="hidden" name="action" value="change_password">
             <input type="hidden" name="user_id" id="password_user_id">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
             
             <label>Username:</label>
             <input type="text" id="password_username" readonly style="background: #f8f9fa;">

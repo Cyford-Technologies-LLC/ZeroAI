@@ -44,6 +44,13 @@ class AuthMiddleware {
         return !$this->isDemo();
     }
     
+    public function requireNotDemo($message = 'Demo users cannot perform this action') {
+        if ($this->isDemo()) {
+            http_response_code(403);
+            die('<div style="padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px; margin: 20px;">' . $message . '</div>');
+        }
+    }
+    
     public function getCurrentUser() {
         if (!isset($_SESSION['user_id'])) {
             return null;

@@ -6,6 +6,12 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
     exit;
 }
 
+// Block demo users from Claude chat
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
+    header('Location: /admin/dashboard.php?error=Demo users cannot access Claude chat');
+    exit;
+}
+
 $pageTitle = 'Claude Chat - ZeroAI';
 $currentPage = 'claude_chat';
 include __DIR__ . '/includes/header.php';

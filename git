@@ -23,6 +23,11 @@ case "$1" in
             chmod 775 /app/logs 2>/dev/null || true
         fi
         
+        # Fix www permissions
+        if [ -d "/app/www" ]; then
+            chown -R www-data:www-data /app/www 2>/dev/null || true
+        fi
+        
         echo "Permissions fixed."
         ;;
 esac
