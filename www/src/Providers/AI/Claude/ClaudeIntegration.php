@@ -276,17 +276,29 @@ class ClaudeIntegration {
         // Get main container name dynamically
         $containerName = $this->getMainContainer();
         
-        // Auto-execute common status commands for Claude
+        // Auto-execute comprehensive status commands for Claude
         $backgroundCommands = [
             ['ps', []],
-            ['agents', []]
+            ['agents', []],
+            ['memory', ['chat', '30min']],
+            ['memory', ['commands', '30min']],
+            ['crews', []],
+            ['logs', [7]],
+            ['optimize_agents', []],
+            ['train_agents', []]
         ];
         
-        // Add git commands if container found
+        // Add git and docker commands if container found
         if ($containerName) {
             $backgroundCommands[] = ['exec', [$containerName, 'git status']];
             $backgroundCommands[] = ['exec', [$containerName, 'git branch']];
+            $backgroundCommands[] = ['exec', [$containerName, 'pwd']];
+            $backgroundCommands[] = ['docker', 'stats --no-stream'];
         }
+        
+        // Add file system commands
+        $backgroundCommands[] = ['list', '/app/src'];
+        $backgroundCommands[] = ['list', '/app/config'];
         
         $results = '';
         foreach ($backgroundCommands as $cmd) {
