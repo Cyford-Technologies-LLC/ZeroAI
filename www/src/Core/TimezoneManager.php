@@ -21,6 +21,7 @@ class TimezoneManager {
     private function loadTimezone() {
         try {
             $db = new DatabaseManager();
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
             $result = $db->executeSQL("SELECT value FROM system_settings WHERE key = 'timezone'", 'main');
             
             if (!empty($result[0]['data'])) {

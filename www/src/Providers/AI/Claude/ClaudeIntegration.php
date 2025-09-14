@@ -89,9 +89,10 @@ class ClaudeIntegration {
         
         $claudeResponse = $decoded['content'][0]['text'];
         
-        // Process commands silently - Claude gets the info but results don't show in chat
-        if (strpos($claudeResponse, '@') !== false) {
-            $this->processTools($claudeResponse);
+        // Process Claude's commands and show results
+        $claudeToolResults = $this->processTools($claudeResponse);
+        if ($claudeToolResults) {
+            $claudeResponse .= "\n\nTool Results:\n" . $claudeToolResults;
         }
         
         return [
