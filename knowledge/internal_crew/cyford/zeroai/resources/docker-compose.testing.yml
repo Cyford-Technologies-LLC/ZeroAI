@@ -1,40 +1,42 @@
 services:
   zeroai-test:
-      build: .
+      build: ../../../../../
       container_name: zeroai_api-test
       ports:
         - "0.0.0.0:4949:3939"  # Different port to avoid conflict  : api
-        - "0.0.0.0:444:333"    # Different port to avoid conflict :   web enterface
+        - "0.0.0.0:444:333"    # Different port to avoid conflict :   web interface
       volumes:
-        - ./src:/app/src
-        - ./API:/app/API
-        - ./run:/app/run
-        - ./config:/app/config
-        - ./examples:/app/examples
+        - ../../../../../src:/app/src
+        - ../../../../../API:/app/API
+        - ../../../../../run:/app/run
+        - ../../../../../config:/app/config
+        - ../../../../../examples:/app/examples
         - /etc/cyford/zeroai/knowledge:/app/knowledge
-        - ./logs:/app/logs
-        - ./www:/app/www
+        - ../../../../../logs:/app/logs
+        - ../../../../../www:/app/www
         - /etc/cyford/zeroai/data:/app/data
         - /etc/cyford/zeroai/backup:/app/backup
-        - ./tmp:/app/tmp
+        - ../../../../../tmp:/app/tmp
         - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
-        - ./nginx.conf:/app/nginx.conf:ro
+        - ../../../../../nginx.conf:/app/nginx.conf:ro
+        - ../../../../../scripts:/app/scripts
       environment:
         - PYTHONPATH=/app
         - OLLAMA_HOST=http://ollama-test:11434
         - LOCAL_UID=${LOCAL_UID}
         - LOCAL_GID=${LOCAL_GID}
       command: >
-        bash -c "apt-get update && apt-get install -y docker.io && 
+        bash -c "apt-get update && apt-get install -y docker.io redis-server && 
+        redis-server --daemonize yes && 
         mkdir -p /app/tmp && 
         cp /app/nginx.conf /etc/nginx/nginx.conf && 
         service php8.4-fpm start && 
         nginx && 
+        python3 /app/src/agents/peer_monitor_agent.py & 
+        python3 /app/scripts/cron_runner.py & 
         /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
       privileged: true
-      # env_file:
-      #   - .env
       depends_on:
         - ollama-test
       restart: unless-stopped
@@ -42,33 +44,34 @@ services:
         - zeroai-test-network
 
   peer-test:
-    build: .
+    build: ../../../../../
     container_name: zeroai_peer-test
     ports:
       - "0.0.0.0:9090:8080"  # Different port to avoid conflict
     volumes:
-      - ./src:/app/src
-      - ./API:/app/API
-      - ./run:/app/run
-      - ./config:/app/config
-      - ./examples:/app/examples
+      - ../../../../../src:/app/src
+      - ../../../../../API:/app/API
+      - ../../../../../run:/app/run
+      - ../../../../../config:/app/config
+      - ../../../../../examples:/app/examples
       - /etc/cyford/zeroai/knowledge:/app/knowledge
-      - ./logs:/app/logs
-      - ./www:/app/www
+      - ../../../../../logs:/app/logs
+      - ../../../../../www:/app/www
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
-      - ./tmp:/app/tmp
+      - ../../../../../tmp:/app/tmp
       - /etc/cyford/zeroai/.env:/app/.env:ro
+      - ../../../../../scripts:/app/scripts
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama-test:11434
       - LOCAL_UID=${LOCAL_UID}
       - LOCAL_GID=${LOCAL_GID}
-    # env_file:
-    #   - .env
     command: >
-      bash -c "apt-get update && apt-get install -y docker.io && 
+      bash -c "apt-get update && apt-get install -y docker.io redis-server && 
+      redis-server --daemonize yes && 
       mkdir -p /app/tmp && 
+      python3 /app/scripts/cron_runner.py & 
       /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
     privileged: true
     depends_on:
