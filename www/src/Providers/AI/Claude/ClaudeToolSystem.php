@@ -351,8 +351,8 @@ class ClaudeToolSystem {
             $fullCommand = $safeCommand . ': ' . $safeInput;
             
             // Use raw SQL since DatabaseManager has parameter issues
-            $escapedCommand = SQLite3::escapeString($fullCommand);
-            $escapedOutput = SQLite3::escapeString($safeOutput);
+            $escapedCommand = str_replace("'", "''", $fullCommand);
+            $escapedOutput = str_replace("'", "''", $safeOutput);
             
             $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1)", 'claude');
                 
