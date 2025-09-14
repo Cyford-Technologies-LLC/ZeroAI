@@ -412,8 +412,11 @@ async function loadSystemPrompt() {
         const response = await fetch('/admin/system_prompt_handler.php?action=get');
         const result = await response.json();
         if (result.success) {
-            currentSystemPrompt = result.prompt;
-            document.getElementById('system-prompt').value = result.prompt;
+            // Only update if we don't have a cached version or if textarea is empty
+            if (!currentSystemPrompt || document.getElementById('system-prompt').value === '') {
+                currentSystemPrompt = result.prompt;
+                document.getElementById('system-prompt').value = result.prompt;
+            }
         }
     } catch (error) {
         console.error('Failed to load system prompt:', error);
@@ -430,8 +433,9 @@ async function saveSystemPrompt() {
         });
         const result = await response.json();
         if (result.success) {
+            currentSystemPrompt = prompt; // Update cached prompt
             addMessageToChat('System', '✅ System prompt updated successfully', 'claude');
-            togglePromptEditor();
+            // Don't close editor so user can see their changes
         } else {
             addMessageToChat('System', '❌ Failed to save prompt: ' + result.error, 'error');
         }
