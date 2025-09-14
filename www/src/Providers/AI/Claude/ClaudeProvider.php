@@ -251,8 +251,12 @@ class ClaudeProvider {
             $escapedClaudeResponse = str_replace("'", "''", $safeClaudeResponse);
             $escapedModel = str_replace("'", "''", $safeModel);
             
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES ('$userSender', '$escapedUserMessage', '$escapedModel', 1)", 'claude');
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id) VALUES ('$claudeSender', '$escapedClaudeResponse', '$escapedModel', 1)", 'claude');
+            // Get current timestamp in proper timezone
+            $timezone = \ZeroAI\Core\TimezoneManager::getInstance();
+            $timestamp = $timezone->getCurrentTime();
+            
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES ('$userSender', '$escapedUserMessage', '$escapedModel', 1, '$timestamp')", 'claude');
+            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES ('$claudeSender', '$escapedClaudeResponse', '$escapedModel', 1, '$timestamp')", 'claude');
                 
         } catch (\Exception $e) {
             error_log("Failed to save chat to Claude memory: " . $e->getMessage());

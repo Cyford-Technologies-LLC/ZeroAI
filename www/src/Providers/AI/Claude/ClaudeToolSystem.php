@@ -351,7 +351,11 @@ class ClaudeToolSystem {
             $escapedCommand = str_replace("'", "''", $fullCommand);
             $escapedOutput = str_replace("'", "''", $safeOutput);
             
-            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1)", 'claude');
+            // Get current timestamp in proper timezone
+            $timezone = \ZeroAI\Core\TimezoneManager::getInstance();
+            $timestamp = $timezone->getCurrentTime();
+            
+            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id, timestamp) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1, '$timestamp')", 'claude');
                 
         } catch (\Exception $e) {
             error_log("Failed to log Claude command: " . $e->getMessage());

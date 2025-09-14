@@ -87,8 +87,16 @@ class ClaudeIntegration {
             throw new \Exception('Invalid API response format');
         }
         
+        $claudeResponse = $decoded['content'][0]['text'];
+        
+        // Process commands in Claude's response
+        $claudeToolResults = $this->processTools($claudeResponse);
+        if ($claudeToolResults) {
+            $claudeResponse .= "\n\nTool Results:\n" . $claudeToolResults;
+        }
+        
         return [
-            'message' => $decoded['content'][0]['text'],
+            'message' => $claudeResponse,
             'usage' => $decoded['usage'] ?? [],
             'model' => $decoded['model'] ?? $model
         ];
