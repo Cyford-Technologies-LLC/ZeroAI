@@ -249,11 +249,11 @@ class ClaudeToolSystem {
             
             if ($type === 'chat' && preg_match('/(\d+)min/', $filter, $timeMatch)) {
                 $minutes = (int)$timeMatch[1];
-                $result = $db->executeSQL("SELECT sender, message, model_used, timestamp FROM chat_history WHERE timestamp >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC", 'claude');
+                $result = $db->executeSQL("SELECT sender, message, model_used, timestamp FROM chat_history ORDER BY timestamp DESC LIMIT 50", 'claude');
                 $memoryData = $result[0]['data'] ?? [];
             } elseif ($type === 'commands' && preg_match('/(\d+)min/', $filter, $timeMatch)) {
                 $minutes = (int)$timeMatch[1];
-                $result = $db->executeSQL("SELECT command, output, status, model_used, timestamp FROM command_history WHERE datetime(timestamp) >= datetime('now', '-{$minutes} minutes') ORDER BY timestamp DESC", 'claude');
+                $result = $db->executeSQL("SELECT command, output, status, model_used, timestamp FROM command_history ORDER BY timestamp DESC LIMIT 50", 'claude');
                 $memoryData = $result[0]['data'] ?? [];
             } elseif ($type === 'config') {
                 $result = $db->executeSQL("SELECT system_prompt, goals, personality, capabilities, updated_at FROM claude_config WHERE id = 1", 'claude');
@@ -334,9 +334,6 @@ class ClaudeToolSystem {
     
     private function logCommand($command, $input, $output) {
         try {
-            // Debug what we're getting
-            error_log("DEBUG logCommand: command=" . var_export($command, true) . ", input=" . var_export($input, true));
-            
             $db = new \ZeroAI\Core\DatabaseManager();
             
             // Create table if not exists
@@ -354,8 +351,7 @@ class ClaudeToolSystem {
             $escapedCommand = str_replace("'", "''", $fullCommand);
             $escapedOutput = str_replace("'", "''", $safeOutput);
             
-            $result = $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1)", 'claude');
-            error_log("DEBUG logCommand result: " . var_export($result, true));
+            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1)", 'claude');
                 
         } catch (\Exception $e) {
             error_log("Failed to log Claude command: " . $e->getMessage());
