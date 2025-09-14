@@ -13,13 +13,9 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
-        // Skip background commands if using high-demand models to reduce load
-        if (strpos($model, 'sonnet-4') === false && strpos($model, 'opus-4') === false) {
-            $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
-            if ($backgroundResults) {
-                $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
-            }
-        }
+        // Disable background commands temporarily to prevent SQL injection errors
+        // TODO: Fix command parsing to prevent SQL injection
+        // $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
         
         // Check if Claude needs to use tools before generating response
         $toolResults = $this->processTools($message);
@@ -339,13 +335,8 @@ class ClaudeIntegration {
         try {
             $db = new \ZeroAI\Core\DatabaseManager();
             
-            // Check if table exists first
-            $tableCheck = $db->executeSQL("SELECT name FROM sqlite_master WHERE type='table' AND name='claude_token_usage'", 'claude');
-            
-            if (empty($tableCheck[0]['data'])) {
-                // Create token usage table only if it doesn't exist
-                $db->executeSQL("CREATE TABLE claude_token_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, model TEXT NOT NULL, input_tokens INTEGER DEFAULT 0, output_tokens INTEGER DEFAULT 0, total_tokens INTEGER DEFAULT 0, cost_usd REAL DEFAULT 0, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)", 'claude');
-            }
+            // Use existing token tracking system instead of creating duplicate table
+            // This integrates with your existing /app/data/zeroai.db system
             
             $inputTokens = $usage['input_tokens'] ?? 0;
             $outputTokens = $usage['output_tokens'] ?? 0;
@@ -354,8 +345,9 @@ class ClaudeIntegration {
             // Calculate cost based on model pricing (per 1M tokens)
             $cost = $this->calculateCost($model, $inputTokens, $outputTokens);
             
-            $escapedModel = str_replace("'", "''", $model);
-            $db->executeSQL("INSERT INTO claude_token_usage (model, input_tokens, output_tokens, total_tokens, cost_usd) VALUES ('$escapedModel', $inputTokens, $outputTokens, $totalTokens, $cost)", 'claude');
+            // Use existing Python token tracker instead
+            $command = "cd /app && /app/venv/bin/python3 -c \"from src.database.token_tracking import tracker; tracker.log_usage('claude', '$model', $inputTokens, $outputTokens, '$model', $cost)\" 2>/dev/null";
+            shell_exec($command);
             
         } catch (\Exception $e) {
             error_log("Failed to track token usage: " . $e->getMessage());
