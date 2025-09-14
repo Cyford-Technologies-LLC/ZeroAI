@@ -101,13 +101,17 @@ class ClaudeIntegration {
         if ($mode === 'autonomous') $mode = 'agentic';
         
         // Process @exec commands
-        if (preg_match_all('/@exec\s+([^\s]+)\s+(.+)/m', $message, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('/@exec\s+([^\s]+)\s+(.+?)(?=\n@|\n\n|$)/ms', $message, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
-                $result = $this->toolSystem->execute('exec', [$match[1], $match[2]], $mode);
-                if (isset($result['success'])) {
-                    $results .= $result['formatted'] . "\n\n";
-                } else {
-                    $results .= "❌ " . $result['error'] . "\n\n";
+                $container = trim($match[1]);
+                $command = trim($match[2]);
+                if ($container && $command) {
+                    $result = $this->toolSystem->execute('exec', [$container, $command], $mode);
+                    if (isset($result['success'])) {
+                        $results .= $result['formatted'] . "\n\n";
+                    } else {
+                        $results .= "❌ " . $result['error'] . "\n\n";
+                    }
                 }
             }
         }
