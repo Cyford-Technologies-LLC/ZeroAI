@@ -1,28 +1,40 @@
 <?php
-namespace Models;
+namespace ZeroAI\Models;
 
 class Agent extends BaseModel {
+    protected $table = 'agents';
     
-    public function create($name, $role, $goal, $backstory) {
-        $stmt = $this->db->prepare("INSERT INTO agents (name, role, goal, backstory, config, is_core) VALUES (?, ?, ?, ?, ?, 0)");
-        return $stmt->execute([$name, $role, $goal, $backstory, '{}']);
+    public function __construct() {
+        parent::__construct();
+        $this->initTable();
     }
     
-    public function getAll() {
-        $stmt = $this->db->query("SELECT * FROM agents ORDER BY is_core DESC, name");
-        return $stmt->fetchAll();
+    protected function initTable() {
+        $this->executeSQL("
+            CREATE TABLE IF NOT EXISTS agents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                goal TEXT,
+                backstory TEXT,
+                status TEXT DEFAULT 'active',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
     }
     
-    public function delete($id) {
-        $stmt = $this->db->prepare("SELECT is_core FROM agents WHERE id = ?");
-        $stmt->execute([$id]);
-        $agent = $stmt->fetch();
+    public function getActiveAgents(): array {
+        $result = $this->executeSQL("SELECT * FROM agents WHERE status = 'active'");
+        return $result[0]['data'] ?? [];
+    }
+    
+    public function getAgentStats(): array {
+        $total = $this->executeSQL("SELECT COUNT(*) as count FROM agents");
+        $active = $this->executeSQL("SELECT COUNT(*) as count FROM agents WHERE status = 'active'");
         
-        if ($agent && !$agent['is_core']) {
-            $stmt = $this->db->prepare("DELETE FROM agents WHERE id = ?");
-            return $stmt->execute([$id]);
-        }
-        return false;
+        return [
+            'total' => $total[0]['data'][0]['count'] ?? 0,
+            'active' => $active[0]['data'][0]['count'] ?? 0
+        ];
     }
 }
-?>

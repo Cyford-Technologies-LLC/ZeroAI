@@ -2,7 +2,8 @@
 $pageTitle = 'Claude Models - ZeroAI';
 $currentPage = 'claude_models';
 include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/sqlite_manager.php';
+require_once __DIR__ . '/includes/autoload.php';
+$db = new \ZeroAI\Core\DatabaseManager();
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

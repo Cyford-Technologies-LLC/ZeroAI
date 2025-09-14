@@ -14,10 +14,10 @@ if (file_exists('/app/.env')) {
 $pageTitle = 'Cloud AI Settings - ZeroAI';
 $currentPage = 'cloud_settings';
 include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/python_cloud_bridge.php';
+require_once __DIR__ . '/includes/autoload.php';
 
-$cloudBridge = new PythonCloudBridge();
-$currentConfig = $cloudBridge->getCurrentCloudConfig();
+$settingsService = new \ZeroAI\Services\SettingsService();
+$currentConfig = $settingsService->getCloudConfig();
 
 // Handle provider setup
 if ($_POST['action'] ?? '' === 'setup_provider') {
@@ -53,7 +53,7 @@ if ($_POST['action'] ?? '' === 'setup_provider') {
         $setupResult = ['success' => false, 'error' => 'API key required'];
     }
     
-    $currentConfig = $cloudBridge->getCurrentCloudConfig();
+    $currentConfig = $settingsService->getCloudConfig();
 }
 
 // Test connection

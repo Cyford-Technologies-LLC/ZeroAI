@@ -1,40 +1,60 @@
 <?php
-namespace Models;
 
-use Core\Database;
+namespace ZeroAI\Models;
+
+use ZeroAI\Core\DatabaseManager;
 
 class User extends BaseModel {
+    protected $table = 'users';
+    private $lastInsertId;
     
-    public function authenticate($username, $password, $role = null) {
-        $sql = "SELECT * FROM users WHERE username = ?";
-        $params = [$username];
+    public function __construct() {
+        parent::__construct();
+        $this->initTable();
+    }
+    
+    protected function initTable() {
+        $this->executeSQL("
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT DEFAULT 'user',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+    }
+    
+    public function create(array $data): bool {
+        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+        $username = $data['username'];
+        $role = $data['role'] ?? 'user';
         
-        if ($role) {
-            $sql .= " AND role = ?";
-            $params[] = $role;
+        $result = $this->executeSQL(
+            "INSERT INTO users (username, password, role) VALUES ('$username', '$hashedPassword', '$role')"
+        );
+        
+        $this->lastInsertId = $result[0]['lastInsertId'] ?? null;
+        return !isset($result[0]['error']);
+    }
+    
+    public function getLastInsertId() {
+        return $this->lastInsertId;
+    }
+    
+    public function authenticate($username, $password) {
+        $result = $this->executeSQL(
+            "SELECT id, username, password, role FROM users WHERE username = '$username'"
+        );
+        
+        if (!empty($result[0]['data'])) {
+            $user = $result[0]['data'][0];
+            if (password_verify($password, $user['password'])) {
+                return ['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role']];
+            }
         }
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        $user = $stmt->fetch();
-        
-        return $user && password_verify($password, $user['password']);
+        return null;
     }
     
-    public function create($username, $password, $role = 'user') {
-        $stmt = $this->db->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
-        return $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT), $role]);
-    }
-    
-    public function getAll() {
-        $stmt = $this->db->query("SELECT * FROM users ORDER BY role DESC, username");
-        return $stmt->fetchAll();
-    }
-    
-    public function delete($username) {
-        if ($username === 'admin') return false;
-        $stmt = $this->db->prepare("DELETE FROM users WHERE username = ?");
-        return $stmt->execute([$username]);
-    }
 }
-?>

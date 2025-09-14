@@ -93,6 +93,7 @@
                     <h3>Quick Actions</h3>
                     <a href="/admin/crew_chat">💬 Start Crew Chat</a>
                     <a href="/admin/agents">🤖 View Agents</a>
+                    <a href="/admin/peer_manager">🌐 Peer Manager</a>
                     <a href="/admin/monitoring">📊 System Status</a>
                 </div>
             <?php endif; ?>

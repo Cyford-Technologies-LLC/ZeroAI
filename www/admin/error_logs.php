@@ -1,193 +1,202 @@
-<?php
-session_start();
-if (!isset($_SESSION['admin_user'])) {
-    header('Location: /admin/login');
-    exit;
-}
-
-$pageTitle = 'Error Logs - Real-time';
+<?php 
+$pageTitle = 'Error Logs - ZeroAI Admin';
 $currentPage = 'error_logs';
-require_once 'includes/header.php';
+include __DIR__ . '/includes/header.php';
 ?>
+<style>
+.log-section { margin-bottom: 30px; }
+.log-content { background: #000; color: #0f0; font-family: monospace; padding: 15px; border-radius: 3px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+.error { color: #ff6b6b; }
+.warning { color: #ffa500; }
+.info { color: #87ceeb; }
+</style>
+        <h1>🚨 Error Logs - ZeroAI Admin</h1>
+        
+        <button class="refresh-btn" onclick="location.reload()">Refresh Logs</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('nginx')">Clear Nginx Log</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('php')">Clear PHP Log</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('claude')">Clear Claude Log</button>
+        <button class="refresh-btn btn-danger" onclick="clearAllLogs()">Clear All Logs</button>
+        <button id="debug-btn" class="refresh-btn" onclick="toggleDebug()" style="background: #dc3545; color: #fff;">Debug Mode OFF</button>
+        
+        <div class="log-section">
+            <h2>Nginx Error Log (Last 50 lines)</h2>
+            <div class="log-content">
+<?php
+$nginxLog = '/var/log/nginx/error.log';
+if (file_exists($nginxLog)) {
+    $lines = array_reverse(array_slice(file($nginxLog, FILE_IGNORE_NEW_LINES), -50));
+    foreach ($lines as $line) {
+        $class = '';
+        if (strpos($line, 'error') !== false) $class = 'error';
+        elseif (strpos($line, 'warn') !== false) $class = 'warning';
+        else $class = 'info';
+        echo "<span class='$class'>" . htmlspecialchars($line) . "</span>\n";
+    }
+} else {
+    echo "Log file not found: $nginxLog";
+}
+?>
+            </div>
+        </div>
 
-<div class="card">
-    <h2>🚨 Real-time Error Logs</h2>
-    <p>Live monitoring of ZeroAI system errors and warnings</p>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button onclick="toggleAutoRefresh()" id="auto-refresh-btn" class="btn-success">▶️ Start Auto-refresh</button>
-        <button onclick="clearLogs()" class="btn-warning">🗑️ Clear Display</button>
-        <button onclick="downloadLogs()" class="btn-primary">💾 Download Logs</button>
-        <select id="log-level" onchange="filterLogs()" style="padding: 8px;">
-            <option value="all">All Levels</option>
-            <option value="error">Errors Only</option>
-            <option value="warning">Warnings Only</option>
-            <option value="info">Info Only</option>
-        </select>
-    </div>
-    
-    <div id="log-status" style="padding: 10px; background: #f8f9fa; border-radius: 4px; margin-bottom: 15px;">
-        <span id="status-text">Ready to monitor logs</span> | 
-        <span id="log-count">0 entries</span> | 
-        <span id="last-update">Never updated</span>
-    </div>
-</div>
+        <div class="log-section">
+            <h2>PHP-FPM Error Log (Last 30 lines)</h2>
+            <div class="log-content">
+<?php
+$phpLog = '/var/log/php8.1-fpm.log';
+if (file_exists($phpLog)) {
+    $lines = array_reverse(array_slice(file($phpLog, FILE_IGNORE_NEW_LINES), -30));
+    foreach ($lines as $line) {
+        echo "<span class='error'>" . htmlspecialchars($line) . "</span>\n";
+    }
+} else {
+    echo "Log file not found: $phpLog";
+}
+?>
+            </div>
+        </div>
 
-<div class="card">
-    <div id="log-container" style="height: 600px; overflow-y: auto; background: #1a1a1a; color: #00ff00; font-family: 'Courier New', monospace; padding: 15px; border-radius: 8px; font-size: 12px; line-height: 1.4;">
-        <div id="log-content">
-            <div style="color: #888;">Waiting for log data...</div>
+        <div class="log-section">
+            <h2>Claude Commands Log (Last 20 lines)</h2>
+            <div class="log-content">
+<?php
+$claudeLog = '/app/logs/claude_commands.log';
+if (file_exists($claudeLog)) {
+    $lines = array_reverse(array_slice(file($claudeLog, FILE_IGNORE_NEW_LINES), -20));
+    foreach ($lines as $line) {
+        echo "<span class='info'>" . htmlspecialchars($line) . "</span>\n";
+    }
+} else {
+    echo "Log file not found: $claudeLog";
+}
+?>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <h2>Claude Command History (Last 20)</h2>
+            <div class="log-content">
+<?php
+$claudeDbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+if (file_exists($claudeDbPath)) {
+    try {
+        $claudePdo = new PDO("sqlite:$claudeDbPath");
+        $stmt = $claudePdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history ORDER BY timestamp DESC LIMIT 20");
+        $stmt->execute();
+        $commands = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (!empty($commands)) {
+            foreach ($commands as $cmd) {
+                $time = date('M d H:i:s T', strtotime($cmd['timestamp'] . ' UTC'));
+                echo "<span class='info'>[$time] {$cmd['command']} - Status: {$cmd['status']}</span>\n";
+                if ($cmd['output']) {
+                    echo "<span class='info'>Output: " . htmlspecialchars(substr($cmd['output'], 0, 200)) . "</span>\n";
+                }
+                echo "\n";
+            }
+        } else {
+            echo "<span class='info'>No command history found</span>";
+        }
+    } catch (Exception $e) {
+        echo "<span class='error'>Error reading Claude's database: " . htmlspecialchars($e->getMessage()) . "</span>";
+    }
+} else {
+    echo "<span class='error'>Claude's database not found</span>";
+}
+?>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <h2>Recent Command Save Errors</h2>
+            <div class="log-content">
+<?php
+if (file_exists($nginxLog)) {
+    $lines = file($nginxLog, FILE_IGNORE_NEW_LINES);
+    $commandErrors = array_filter($lines, function($line) {
+        return strpos($line, 'Command save error') !== false;
+    });
+    $commandErrors = array_reverse(array_slice($commandErrors, -10));
+    
+    if (!empty($commandErrors)) {
+        foreach ($commandErrors as $line) {
+            echo "<span class='error'>" . htmlspecialchars($line) . "</span>\n";
+        }
+    } else {
+        echo "<span class='info'>No command save errors found</span>";
+    }
+} else {
+    echo "Cannot check for command errors";
+}
+?>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-let autoRefreshInterval = null;
-let isAutoRefreshing = false;
-let logEntries = [];
-let currentFilter = 'all';
-
-async function fetchLogs() {
-    try {
-        const response = await fetch('/api/logs.php?type=error&format=json');
-        const data = await response.json();
+<?php include __DIR__ . '/includes/footer.php'; ?>
+    
+    <script>
+    function clearLog(logType) {
+        if (!confirm('Are you sure you want to clear the ' + logType + ' log?')) return;
         
-        if (data.success) {
-            logEntries = data.logs;
-            displayLogs();
-            updateStatus(data.logs.length);
+        fetch('/admin/clear_log.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({log: logType})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Log cleared successfully');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => alert('Error: ' + error));
+    }
+    
+    function clearAllLogs() {
+        if (!confirm('Are you sure you want to clear ALL logs? This cannot be undone.')) return;
+        
+        Promise.all([
+            fetch('/admin/clear_log.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({log: 'nginx'})}),
+            fetch('/admin/clear_log.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({log: 'php'})}),
+            fetch('/admin/clear_log.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({log: 'claude'})})
+        ])
+        .then(() => {
+            alert('All logs cleared successfully');
+            location.reload();
+        })
+        .catch(error => alert('Error clearing logs: ' + error));
+    }
+    
+    let debugMode = localStorage.getItem('claude_debug_mode') === 'true';
+    
+    function toggleDebug() {
+        debugMode = !debugMode;
+        localStorage.setItem('claude_debug_mode', debugMode);
+        
+        const btn = document.getElementById('debug-btn');
+        if (debugMode) {
+            btn.textContent = 'Debug Mode ON';
+            btn.style.background = '#28a745';
+            btn.style.color = '#fff';
+            alert('Debug mode ENABLED. Claude commands will now show detailed logging.');
         } else {
-            addLogEntry('SYSTEM', 'ERROR', 'Failed to fetch logs: ' + data.error);
+            btn.textContent = 'Debug Mode OFF';
+            btn.style.background = '#dc3545';
+            btn.style.color = '#fff';
+            alert('Debug mode DISABLED.');
         }
-    } catch (error) {
-        addLogEntry('SYSTEM', 'ERROR', 'Connection error: ' + error.message);
-    }
-}
-
-function displayLogs() {
-    const logContent = document.getElementById('log-content');
-    const filteredLogs = filterLogsByLevel(logEntries);
-    
-    if (filteredLogs.length === 0) {
-        logContent.innerHTML = '<div style="color: #888;">No logs match current filter</div>';
-        return;
     }
     
-    let html = '';
-    filteredLogs.forEach(log => {
-        const color = getLogColor(log.level);
-        const timestamp = new Date(log.timestamp).toLocaleString();
-        
-        html += `<div style="margin-bottom: 8px; border-left: 3px solid ${color}; padding-left: 10px;">
-            <span style="color: #666;">[${timestamp}]</span> 
-            <span style="color: ${color}; font-weight: bold;">${log.level.toUpperCase()}</span> 
-            <span style="color: #ccc;">${log.source}:</span> 
-            <span style="color: #fff;">${escapeHtml(log.message)}</span>
-        </div>`;
-    });
-    
-    logContent.innerHTML = html;
-    
-    // Auto-scroll to bottom
-    const container = document.getElementById('log-container');
-    container.scrollTop = container.scrollHeight;
-}
-
-function filterLogsByLevel(logs) {
-    if (currentFilter === 'all') return logs;
-    return logs.filter(log => log.level.toLowerCase() === currentFilter);
-}
-
-function getLogColor(level) {
-    switch (level.toLowerCase()) {
-        case 'error': return '#ff4444';
-        case 'warning': return '#ffaa00';
-        case 'info': return '#44aaff';
-        case 'debug': return '#888888';
-        default: return '#00ff00';
+    // Set initial button state
+    if (debugMode) {
+        const btn = document.getElementById('debug-btn');
+        btn.textContent = 'Debug Mode ON';
+        btn.style.background = '#28a745';
+        btn.style.color = '#fff';
     }
-}
-
-function addLogEntry(source, level, message) {
-    const entry = {
-        timestamp: new Date().toISOString(),
-        source: source,
-        level: level,
-        message: message
-    };
-    
-    logEntries.unshift(entry);
-    if (logEntries.length > 1000) {
-        logEntries = logEntries.slice(0, 1000); // Keep only last 1000 entries
-    }
-    
-    displayLogs();
-    updateStatus(logEntries.length);
-}
-
-function toggleAutoRefresh() {
-    const btn = document.getElementById('auto-refresh-btn');
-    
-    if (isAutoRefreshing) {
-        clearInterval(autoRefreshInterval);
-        btn.textContent = '▶️ Start Auto-refresh';
-        btn.className = 'btn-success';
-        isAutoRefreshing = false;
-        updateStatusText('Auto-refresh stopped');
-    } else {
-        autoRefreshInterval = setInterval(fetchLogs, 2000); // Refresh every 2 seconds
-        btn.textContent = '⏸️ Stop Auto-refresh';
-        btn.className = 'btn-danger';
-        isAutoRefreshing = true;
-        updateStatusText('Auto-refreshing every 2 seconds');
-        fetchLogs(); // Immediate fetch
-    }
-}
-
-function clearLogs() {
-    logEntries = [];
-    document.getElementById('log-content').innerHTML = '<div style="color: #888;">Logs cleared</div>';
-    updateStatus(0);
-}
-
-function downloadLogs() {
-    const logText = logEntries.map(log => 
-        `[${log.timestamp}] ${log.level.toUpperCase()} ${log.source}: ${log.message}`
-    ).join('\n');
-    
-    const blob = new Blob([logText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `zeroai_error_logs_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function filterLogs() {
-    currentFilter = document.getElementById('log-level').value;
-    displayLogs();
-}
-
-function updateStatus(count) {
-    document.getElementById('log-count').textContent = `${count} entries`;
-    document.getElementById('last-update').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-}
-
-function updateStatusText(text) {
-    document.getElementById('status-text').textContent = text;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Initial load
-fetchLogs();
-</script>
-
-<?php require_once 'includes/footer.php'; ?>
+    </script>

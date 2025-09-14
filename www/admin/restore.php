@@ -25,7 +25,7 @@ if ($_POST['action'] ?? '' === 'restore_backup') {
         ];
         
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://localhost/api/restore.php');
+        curl_setopt($ch, CURLOPT_URL, 'http://localhost/admin/restore_handler.php');
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($restore_data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -97,7 +97,7 @@ if ($_POST['action'] ?? '' === 'restore_backup') {
 <script>
 async function loadBackupOptions() {
     try {
-        const response = await fetch('/api/backup.php?action=list');
+        const response = await fetch('/admin/backup_handler.php?action=list');
         const data = await response.json();
         
         const select = document.querySelector('select[name="backup_name"]');
@@ -138,7 +138,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
     statusDiv.innerHTML = '<p>Uploading backup file...</p>';
     
     try {
-        const response = await fetch('/api/backup.php?action=upload', {
+        const response = await fetch('/admin/backup_handler.php?action=upload', {
             method: 'POST',
             body: formData
         });
