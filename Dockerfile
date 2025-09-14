@@ -28,15 +28,16 @@ RUN python -m venv /app/venv && \
 COPY . .
 
 # Configure PHP-FPM and PHP optimizations
-RUN sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/*/fpm/pool.d/www.conf \
-    && echo 'opcache.enable=1' >> /etc/php/*/fpm/php.ini \
-    && echo 'opcache.memory_consumption=128' >> /etc/php/*/fpm/php.ini \
-    && echo 'opcache.max_accelerated_files=4000' >> /etc/php/*/fpm/php.ini \
-    && echo 'opcache.revalidate_freq=2' >> /etc/php/*/fpm/php.ini \
-    && echo 'apc.enabled=1' >> /etc/php/*/fpm/php.ini \
-    && echo 'apc.shm_size=64M' >> /etc/php/*/fpm/php.ini \
-    && echo 'redis.session.save_handler=redis' >> /etc/php/*/fpm/php.ini \
-    && echo 'redis.session.save_path="tcp://127.0.0.1:6379"' >> /etc/php/*/fpm/php.ini
+RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;") \
+    && sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/$PHP_VERSION/fpm/pool.d/www.conf \
+    && echo 'opcache.enable=1' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'opcache.memory_consumption=128' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'opcache.max_accelerated_files=4000' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'opcache.revalidate_freq=2' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'apc.enabled=1' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'apc.shm_size=64M' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'session.save_handler=redis' >> /etc/php/$PHP_VERSION/fpm/php.ini \
+    && echo 'session.save_path="tcp://127.0.0.1:6379"' >> /etc/php/$PHP_VERSION/fpm/php.ini
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/sites-available/zeroai
