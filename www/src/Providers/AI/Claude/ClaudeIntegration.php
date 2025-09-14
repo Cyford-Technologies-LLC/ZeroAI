@@ -265,8 +265,8 @@ class ClaudeIntegration {
         $backgroundCommands = [
             ['ps', []],
             ['agents', []],
-            ['exec', ['zeroai-app', 'git status']],
-            ['exec', ['zeroai-app', 'git branch']]
+            ['exec', ['zeroai_api-test', 'git status']],
+            ['exec', ['zeroai_api-test', 'git branch']]
         ];
         
         $results = '';
