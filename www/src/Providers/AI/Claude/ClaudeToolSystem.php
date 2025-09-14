@@ -334,18 +334,13 @@ class ClaudeToolSystem {
     
     private function logCommand($command, $input, $output) {
         try {
-            $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
-            if (!is_dir($memoryDir)) {
-                mkdir($memoryDir, 0777, true);
-            }
+            $db = new \ZeroAI\Core\DatabaseManager();
             
-            $dbPath = $memoryDir . '/claude_memory.db';
-            $pdo = new \PDO("sqlite:$dbPath");
+            // Create table if not exists
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
             
-            $pdo->exec("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
-            
-            $pdo->prepare("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)")
-                ->execute([$input, $output, 'success', 'claude-unified', 1]);
+            // Log the command
+            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", 'claude', [$input, $output ?: '', 'success', 'claude-unified', 1]);
                 
         } catch (\Exception $e) {
             error_log("Failed to log Claude command: " . $e->getMessage());
