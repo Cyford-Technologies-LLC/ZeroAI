@@ -164,9 +164,9 @@ require_once __DIR__ . '/../auth_check.php';
                 </div>
                 <div class="sidebar-group">
                     <h3>User Management</h3>
-                    <a href="/admin/users" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
-                    <a href="/admin/roles" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
-                    <a href="/admin/sessions" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
+                    <a href="/admin/users.php" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
+                    <a href="/admin/roles.php" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
+                    <a href="/admin/sessions.php" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
                 </div>
             <?php elseif ($currentSection === 'system'): ?>
                 <div class="sidebar-group">
