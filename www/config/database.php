@@ -1,12 +1,19 @@
 <?php
+require_once __DIR__ . '/../src/Core/CacheManager.php';
+require_once __DIR__ . '/../src/Core/QueueManager.php';
+
 class Database {
     private $db_path = '/app/data/zeroai.db';
     private $pdo;
+    private $cache;
+    private $queue;
     
     public function __construct() {
         try {
             $this->pdo = new PDO("sqlite:" . $this->db_path);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->cache = \ZeroAI\Core\CacheManager::getInstance();
+            $this->queue = \ZeroAI\Core\QueueManager::getInstance();
             $this->initTables();
         } catch (PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
@@ -52,6 +59,110 @@ class Database {
     
     public function getConnection() {
         return $this->pdo;
+    }
+    
+    // Enhanced read with Redis cache
+    public function select($table, $where = [], $limit = null) {
+        $cacheKey = $this->buildCacheKey($table, $where, $limit);
+        
+        // Try Redis first (2 second timeout)
+        try {
+            // Set Redis timeout to 2 seconds
+            if ($this->cache->redis) {
+                $this->cache->redis->setOption(Redis::OPT_READ_TIMEOUT, 2);
+            }
+            $result = $this->cache->get($cacheKey);
+            if ($result !== false) {
+                return $result;
+            }
+        } catch (Exception $e) {
+            // Redis timeout, continue to database
+            error_log("Redis timeout: " . $e->getMessage());
+        }
+        
+        // Fallback to database
+        $sql = "SELECT * FROM {$table}";
+        $params = [];
+        
+        if (!empty($where)) {
+            $conditions = [];
+            foreach ($where as $key => $value) {
+                $conditions[] = "{$key} = ?";
+                $params[] = $value;
+            }
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+        
+        if ($limit) {
+            $sql .= " LIMIT {$limit}";
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Cache result for 5 minutes
+        $this->cache->set($cacheKey, $result, 300);
+        
+        return $result;
+    }
+    
+    // Enhanced write with Redis + Queue
+    public function insert($table, $data) {
+        // Immediate Redis cache update
+        $this->invalidateTableCache($table);
+        
+        // Queue for background database write
+        $this->queue->push($table, $data, 'INSERT');
+        
+        return true;
+    }
+    
+    public function update($table, $data, $where) {
+        // Immediate Redis cache update
+        $this->invalidateTableCache($table);
+        
+        // Queue for background database write
+        $queueData = array_merge($data, $where);
+        $this->queue->push($table, $queueData, 'UPDATE');
+        
+        return true;
+    }
+    
+    public function delete($table, $where) {
+        // Immediate Redis cache update
+        $this->invalidateTableCache($table);
+        
+        // Queue for background database write
+        $this->queue->push($table, $where, 'DELETE');
+        
+        return true;
+    }
+    
+    private function buildCacheKey($table, $where = [], $limit = null) {
+        $key = "db:{$table}";
+        if (!empty($where)) {
+            $key .= ':' . md5(serialize($where));
+        }
+        if ($limit) {
+            $key .= ":limit:{$limit}";
+        }
+        return $key;
+    }
+    
+    private function invalidateTableCache($table) {
+        // Clear all cache entries for this table
+        try {
+            if ($this->cache->redis) {
+                $keys = $this->cache->redis->keys("db:{$table}*");
+                if ($keys) {
+                    $this->cache->redis->del($keys);
+                }
+            }
+        } catch (Exception $e) {
+            // Redis error, log but continue
+            error_log("Redis cache invalidation failed: " . $e->getMessage());
+        }
     }
 }
 ?>
