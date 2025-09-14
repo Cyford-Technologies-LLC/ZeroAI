@@ -18,11 +18,21 @@ services:
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama-test:11434
+      - PHP_OPCACHE_ENABLE=1
+      - PHP_OPCACHE_MEMORY=128
+      - REDIS_HOST=127.0.0.1
+      - REDIS_PORT=6379
     env_file:
       - .env
     depends_on:
       - ollama-test
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
   peer-test:
     build: .
@@ -40,6 +50,8 @@ services:
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama-test:11434
+      - REDIS_HOST=127.0.0.1
+      - REDIS_PORT=6379
     env_file:
       - .env
     command: >
@@ -50,6 +62,12 @@ services:
     depends_on:
       - ollama-test
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   ollama-test:
     image: ollama/ollama:latest
@@ -59,6 +77,12 @@ services:
     volumes:
       - ollama_test_data:/root/.ollama
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
 
 volumes:
   ollama_test_data:
