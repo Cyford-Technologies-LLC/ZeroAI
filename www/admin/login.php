@@ -1,24 +1,7 @@
 <?php
 session_start();
 
-require_once __DIR__ . '/includes/autoload.php';
-require_once __DIR__ . '/../src/Services/AuthService.php';
-
-use ZeroAI\Services\AuthService;
-
-$auth = new AuthService();
-
 if ($_POST) {
-<<<<<<< HEAD
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    
-    if ($auth->login($username, $password)) {
-        header('Location: /admin/dashboard.php');
-        exit;
-    } else {
-        $error = "Invalid credentials";
-=======
     try {
         require_once '../src/Core/UserManager.php';
         $userManager = new \ZeroAI\Core\UserManager();
@@ -46,7 +29,6 @@ if ($_POST) {
         }
     } catch (Exception $e) {
         $error = "Login failed: " . $e->getMessage();
->>>>>>> bd72799 (Added  better user management)
     }
 }
 ?>
