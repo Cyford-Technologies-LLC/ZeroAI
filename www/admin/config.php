@@ -8,16 +8,21 @@ if ($_POST['action'] ?? '' === 'update_config') {
     $configFile = '/app/config/settings.yaml';
     $envFile = '/app/.env';
     
-    // Update YAML config
-    if (isset($_POST['yaml_config'])) {
-        file_put_contents($configFile, $_POST['yaml_config']);
-        $message = 'Configuration updated successfully';
-    }
-    
-    // Update .env file
-    if (isset($_POST['env_config'])) {
-        file_put_contents($envFile, $_POST['env_config']);
-        $message = 'Environment variables updated successfully';
+    // Validate paths
+    if (!\ZeroAI\Core\InputValidator::validatePath($configFile) || !\ZeroAI\Core\InputValidator::validatePath($envFile)) {
+        $error = 'Invalid file path';
+    } else {
+        // Update YAML config
+        if (isset($_POST['yaml_config'])) {
+            file_put_contents($configFile, \ZeroAI\Core\InputValidator::sanitize($_POST['yaml_config']));
+            $message = 'Configuration updated successfully';
+        }
+        
+        // Update .env file
+        if (isset($_POST['env_config'])) {
+            file_put_contents($envFile, \ZeroAI\Core\InputValidator::sanitize($_POST['env_config']));
+            $message = 'Environment variables updated successfully';
+        }
     }
 }
 
@@ -28,8 +33,9 @@ if ($_POST['action'] ?? '' === 'setup_claude') {
     
     // Add Claude API key
     if (!strpos($envContent, 'ANTHROPIC_API_KEY')) {
+        $apiKey = \ZeroAI\Core\InputValidator::sanitize($_POST['claude_api_key']);
         $envContent .= "\n# Claude/Anthropic Configuration\n";
-        $envContent .= "ANTHROPIC_API_KEY=" . $_POST['claude_api_key'] . "\n";
+        $envContent .= "ANTHROPIC_API_KEY=" . $apiKey . "\n";
         $envContent .= "ANTHROPIC_MODEL=claude-3-5-sonnet-20241022\n";
         file_put_contents($envFile, $envContent);
     }

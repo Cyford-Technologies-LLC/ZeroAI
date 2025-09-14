@@ -77,7 +77,7 @@ include __DIR__ . '/includes/header.php';
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
         <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">🟢 <strong>Database:</strong> Connected</div>
         <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">🟢 <strong>Portal:</strong> Active (OOP System)</div>
-        <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">👤 <strong>User:</strong> <?= $_SESSION['admin_user'] ?></div>
+        <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">👤 <strong>User:</strong> <?= htmlspecialchars($_SESSION['admin_user']) ?></div>
         <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">👥 <strong>Total Users:</strong> <?= $userStats['total'] ?> (<?= $userStats['admin'] ?> admins)</div>
         <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">🤖 <strong>Total Agents:</strong> <?= $agentStats['total'] ?> (<?= $agentStats['active'] ?> active)</div>
         <div style="padding: 8px; background: #f8f9fa; border-radius: 4px;">💾 <strong>Memory:</strong> <?= ini_get('memory_limit') ?></div>

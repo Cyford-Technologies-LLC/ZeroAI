@@ -79,7 +79,7 @@ if (file_exists($claudeLog)) {
             <div class="log-content">
 <?php
 $claudeDbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
-if (file_exists($claudeDbPath)) {
+if (\ZeroAI\Core\InputValidator::validatePath($claudeDbPath) && file_exists($claudeDbPath)) {
     try {
         $claudePdo = new PDO("sqlite:$claudeDbPath");
         $stmt = $claudePdo->prepare("SELECT command, output, status, model_used, timestamp FROM command_history ORDER BY timestamp DESC LIMIT 20");

@@ -28,36 +28,50 @@ $cache = \ZeroAI\Core\CacheManager::getInstance();
 <?php if (extension_loaded('opcache')): ?>
 <div class="card">
     <h3>OPcache Status</h3>
-    <?php $opcache = opcache_get_status(); ?>
+    <?php 
+    $opcache = opcache_get_status();
+    if ($opcache && isset($opcache['opcache_statistics'], $opcache['memory_usage'])): 
+    ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
         <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Hit Rate:</strong> <?= round($opcache['opcache_statistics']['opcache_hit_rate'], 2) ?>%
+            <strong>Hit Rate:</strong> <?= round($opcache['opcache_statistics']['opcache_hit_rate'] ?? 0, 2) ?>%
         </div>
         <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Memory Used:</strong> <?= round($opcache['memory_usage']['used_memory'] / 1024 / 1024, 2) ?>MB
+            <strong>Memory Used:</strong> <?= round(($opcache['memory_usage']['used_memory'] ?? 0) / 1024 / 1024, 2) ?>MB
         </div>
         <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Cached Files:</strong> <?= $opcache['opcache_statistics']['num_cached_scripts'] ?>
+            <strong>Cached Files:</strong> <?= $opcache['opcache_statistics']['num_cached_scripts'] ?? 0 ?>
         </div>
     </div>
+    <?php else: ?>
+    <p>OPcache status unavailable</p>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 
 <?php if (extension_loaded('apcu')): ?>
 <div class="card">
     <h3>APCu Status</h3>
-    <?php $apcu = apcu_cache_info(); ?>
+    <?php 
+    $apcu = apcu_cache_info();
+    if ($apcu && isset($apcu['num_hits'], $apcu['num_misses'])): 
+    $totalRequests = $apcu['num_hits'] + $apcu['num_misses'];
+    $hitRate = $totalRequests > 0 ? ($apcu['num_hits'] / $totalRequests) * 100 : 0;
+    ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
         <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Hit Rate:</strong> <?= round(($apcu['num_hits'] / ($apcu['num_hits'] + $apcu['num_misses'])) * 100, 2) ?>%
+            <strong>Hit Rate:</strong> <?= round($hitRate, 2) ?>%
         </div>
         <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Memory Used:</strong> <?= round($apcu['mem_size'] / 1024 / 1024, 2) ?>MB
+            <strong>Memory Used:</strong> <?= round(($apcu['mem_size'] ?? 0) / 1024 / 1024, 2) ?>MB
         </div>
         <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Cached Entries:</strong> <?= $apcu['num_entries'] ?>
+            <strong>Cached Entries:</strong> <?= $apcu['num_entries'] ?? 0 ?>
         </div>
     </div>
+    <?php else: ?>
+    <p>APCu status unavailable</p>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 

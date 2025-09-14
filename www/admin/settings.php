@@ -12,7 +12,7 @@ if ($_POST) {
     // Handle form submission
     $_SESSION['settings_message'] = 'Settings saved successfully!';
     header('Location: /admin/settings.php');
-    exit;
+    return;
 }
 
 // Get system info
