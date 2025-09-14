@@ -22,4 +22,11 @@ class DatabaseManager {
         // Log token usage
         return true;
     }
+    
+    public function executeSQL($sql) {
+        $pdo = $this->db->getConnection();
+        $stmt = $pdo->query($sql);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return [['data' => $result]];
+    }
 }

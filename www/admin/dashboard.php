@@ -19,8 +19,8 @@ $pageTitle = 'Admin Dashboard - ZeroAI';
 $currentPage = 'dashboard';
 
 // Get basic stats
-$userResult = $db->executeSQL("SELECT COUNT(*) as total FROM users");
-$userStats = ['total' => $userResult[0]['data'][0]['total'] ?? 0, 'admin' => 1];
+$userResult = $db->select('users');
+$userStats = ['total' => count($userResult), 'admin' => 1];
 $agentStats = ['total' => 0, 'active' => 0];
 $recentLogs = [];
 
