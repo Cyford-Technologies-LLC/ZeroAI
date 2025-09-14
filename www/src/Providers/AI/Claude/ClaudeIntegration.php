@@ -13,11 +13,8 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
-        // Execute background commands first (silent - only for context)
-        $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
-        if ($backgroundResults) {
-            $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
-        }
+        // Skip background commands to prevent timeout - Claude can request manually
+        // $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
         
         // Check if Claude needs to use tools before generating response
         $toolResults = $this->processTools($message);
@@ -69,7 +66,7 @@ class ClaudeIntegration {
                 'x-api-key: ' . $this->apiKey,
                 'anthropic-version: 2023-06-01'
             ],
-            CURLOPT_TIMEOUT => 300,
+            CURLOPT_TIMEOUT => 45,
             CURLOPT_SSL_VERIFYPEER => false
         ]);
         
@@ -276,29 +273,17 @@ class ClaudeIntegration {
         // Get main container name dynamically
         $containerName = $this->getMainContainer();
         
-        // Auto-execute comprehensive status commands for Claude
+        // Auto-execute essential status commands for Claude (reduced for performance)
         $backgroundCommands = [
             ['ps', []],
-            ['agents', []],
-            ['memory', ['chat', '30min']],
-            ['memory', ['commands', '30min']],
-            ['crews', []],
-            ['logs', [7]],
-            ['optimize_agents', []],
-            ['train_agents', []]
+            ['agents', []]
         ];
         
-        // Add git and docker commands if container found
+        // Add git commands if container found
         if ($containerName) {
             $backgroundCommands[] = ['exec', [$containerName, 'git status']];
             $backgroundCommands[] = ['exec', [$containerName, 'git branch']];
-            $backgroundCommands[] = ['exec', [$containerName, 'pwd']];
-            $backgroundCommands[] = ['docker', 'stats --no-stream'];
         }
-        
-        // Add file system commands
-        $backgroundCommands[] = ['list', '/app/src'];
-        $backgroundCommands[] = ['list', '/app/config'];
         
         $results = '';
         foreach ($backgroundCommands as $cmd) {

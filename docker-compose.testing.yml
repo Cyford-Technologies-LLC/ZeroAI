@@ -19,6 +19,7 @@ services:
         - ./tmp:/app/tmp
         - /etc/cyford/zeroai/.env:/app/.env:ro
         - /var/run/docker.sock:/var/run/docker.sock
+        - ./nginx.conf:/app/nginx.conf:ro
       environment:
         - PYTHONPATH=/app
         - OLLAMA_HOST=http://ollama-test:11434
@@ -27,6 +28,7 @@ services:
       command: >
         bash -c "apt-get update && apt-get install -y docker.io && 
         mkdir -p /app/tmp && 
+        cp /app/nginx.conf /etc/nginx/nginx.conf && 
         service php8.4-fpm start && 
         nginx && 
         /app/venv/bin/gunicorn API.api:app --bind 0.0.0.0:3939 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
