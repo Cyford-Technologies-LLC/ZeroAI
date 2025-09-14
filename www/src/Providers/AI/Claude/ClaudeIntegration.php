@@ -383,7 +383,7 @@ class ClaudeIntegration extends BaseAIProvider {
             $totalTokens = $inputTokens + $outputTokens;
             
             // Calculate cost based on model pricing (per 1M tokens)
-            $cost = $this->calculateCost($model, $inputTokens, $outputTokens);
+            $cost = $this->calculateCost(['model' => $model, 'input_tokens' => $inputTokens, 'output_tokens' => $outputTokens]);
             
             // Use existing Python token tracker instead
             $command = "cd /app && /app/venv/bin/python3 -c \"from src.database.token_tracking import tracker; tracker.log_usage('claude', '$model', $inputTokens, $outputTokens, '$model', $cost)\" 2>/dev/null";
@@ -394,27 +394,7 @@ class ClaudeIntegration extends BaseAIProvider {
         }
     }
     
-    private function calculateCost($model, $inputTokens, $outputTokens) {
-        // Claude pricing per 1M tokens (as of 2024)
-        $pricing = [
-            'claude-sonnet-4-20250514' => ['input' => 3.00, 'output' => 15.00],
-            'claude-opus-4-1-20250805' => ['input' => 15.00, 'output' => 75.00],
-            'claude-opus-4-20250514' => ['input' => 15.00, 'output' => 75.00],
-            'claude-sonnet-3.7-20250514' => ['input' => 3.00, 'output' => 15.00],
-            'claude-haiku-3.5-20250514' => ['input' => 0.25, 'output' => 1.25],
-            'claude-3-opus-20240229' => ['input' => 15.00, 'output' => 75.00],
-            'claude-3-5-sonnet-20240620' => ['input' => 3.00, 'output' => 15.00],
-            'claude-3-sonnet-20240229' => ['input' => 3.00, 'output' => 15.00],
-            'claude-haiku-3-20240307' => ['input' => 0.25, 'output' => 1.25]
-        ];
-        
-        $modelPricing = $pricing[$model] ?? ['input' => 3.00, 'output' => 15.00]; // Default to Sonnet pricing
-        
-        $inputCost = ($inputTokens / 1000000) * $modelPricing['input'];
-        $outputCost = ($outputTokens / 1000000) * $modelPricing['output'];
-        
-        return $inputCost + $outputCost;
-    }
+
     
     private function getMainContainer() {
         // Use docker ps --format to get just container names
