@@ -13,6 +13,12 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
+        // Execute background commands first
+        $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
+        if ($backgroundResults) {
+            $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
+        }
+        
         // Check if Claude needs to use tools before generating response
         $toolResults = $this->processTools($message);
         if ($toolResults) {
@@ -248,6 +254,26 @@ class ClaudeIntegration {
                 $results .= $result['formatted'] . "\n\n";
             } else {
                 $results .= "❌ " . $result['error'] . "\n\n";
+            }
+        }
+        
+        return $results;
+    }
+    
+    private function executeBackgroundCommands($systemPrompt) {
+        // Auto-execute common status commands for Claude
+        $backgroundCommands = [
+            ['ps', []],
+            ['agents', []],
+            ['exec', ['zeroai-app', 'git status']],
+            ['exec', ['zeroai-app', 'git branch']]
+        ];
+        
+        $results = '';
+        foreach ($backgroundCommands as $cmd) {
+            $result = $this->toolSystem->execute($cmd[0], $cmd[1], 'hybrid');
+            if (isset($result['success'])) {
+                $results .= $result['formatted'] . "\n\n";
             }
         }
         
