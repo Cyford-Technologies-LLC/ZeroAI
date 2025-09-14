@@ -27,6 +27,11 @@ RUN python -m venv /app/venv && \
 # Copy application code
 COPY . .
 
+# Fix ownership and git wrapper after copying code
+RUN chown -R www-data:www-data /app/www /app/data /app/logs /app/scripts \
+    && chmod -R 775 /app/www /app/data /app/logs \
+    && chmod +x /app/git
+
 # Configure PHP-FPM and PHP optimizations
 RUN PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;") \
     && sed -i 's/listen = \/run\/php\/php.*-fpm.sock/listen = 127.0.0.1:9000/' /etc/php/$PHP_VERSION/fpm/pool.d/www.conf \
@@ -47,16 +52,15 @@ RUN ln -sf /etc/nginx/sites-available/zeroai /etc/nginx/sites-enabled/default
 RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi \
     && mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
     && mkdir -p /app/data /app/logs \
-    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run /tmp/nginx /app/data /app/logs \
-    && chmod -R 775 /app/data /app/logs
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run /tmp/nginx /app/data /app/logs /app/www \
+    && chmod -R 775 /app/data /app/logs /app/www
 
 # Configure git
 RUN git config --global --add safe.directory /app \
     && git config --global user.name "www-data" \
     && git config --global user.email "www-data@zeroai.local"
 
-# Install git wrapper
-RUN chmod +x /app/git && ln -sf /app/git /usr/local/bin/git
+# Git wrapper will be installed after code copy
 
 # Add virtual environment to PATH
 ENV PATH="/app/venv/bin:$PATH"
@@ -66,8 +70,10 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "Starting ZeroAI services..."\n\
 \n\
-# Ensure data directory permissions\n\
-mkdir -p /app/data && chown -R www-data:www-data /app/data /app/www && chmod -R 775 /app/data\n\
+# Install git wrapper and fix permissions\n\
+cp /app/git /usr/local/bin/git\n\
+chmod +x /usr/local/bin/git\n\
+mkdir -p /app/data && chown -R www-data:www-data /app/data /app/www /app/logs && chmod -R 775 /app/data /app/logs\n\
 \n\
 # Start Redis\n\
 echo "Starting Redis..."\n\

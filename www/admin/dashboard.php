@@ -12,7 +12,7 @@ require_once 'includes/autoload.php';
 use ZeroAI\Core\System;
 use ZeroAI\Core\DatabaseManager;
 
-$system = System::getInstance();
+$systemInfo = System::getSystemInfo();
 $db = new DatabaseManager();
 
 $pageTitle = 'Admin Dashboard - ZeroAI';
