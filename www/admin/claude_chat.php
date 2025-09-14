@@ -79,7 +79,10 @@ Examples:
     </div>
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-        <div id="status" style="color: #666; font-size: 12px;"></div>
+        <div>
+            <div id="status" style="color: #666; font-size: 12px;"></div>
+            <div id="token-usage" style="color: #666; font-size: 11px; margin-top: 2px;">Loading token usage...</div>
+        </div>
         <div>
             <button onclick="toggleScratchPad()" class="btn-warning" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">📝 Scratch</button>
             <button onclick="clearChatHistory()" class="btn-danger" style="padding: 4px 8px; font-size: 11px;">Clear History</button>
@@ -157,6 +160,10 @@ async function sendMessage() {
             const mode = document.getElementById('claude-mode').value;
             const messageLimit = document.getElementById('message-limit').value;
             const limitText = messageLimit === '0' ? 'All' : messageLimit;
+            
+            // Get token usage stats and display
+            updateTokenUsageDisplay();
+            
             status.textContent = `Tokens: ${result.tokens} | Model: ${result.model} | Mode: ${mode} | History: ${limitText} msgs`;
         } else {
             addMessageToChat('System', 'Error: ' + result.error, 'error');
@@ -495,6 +502,33 @@ setInterval(() => {
         if (text.trim()) saveScratchPad();
     }
 }, 10000);
+
+// Token usage functions
+async function updateTokenUsageDisplay() {
+    try {
+        const response = await fetch('/admin/token_usage_api.php');
+        const result = await response.json();
+        if (result.success) {
+            const dayStats = result.stats.day;
+            const totalStats = result.stats.total;
+            
+            const dayTokens = dayStats.total_tokens.toLocaleString();
+            const dayCost = dayStats.total_cost.toFixed(4);
+            const totalTokens = totalStats.total_tokens.toLocaleString();
+            const totalCost = totalStats.total_cost.toFixed(2);
+            
+            document.getElementById('token-usage').textContent = `Today: ${dayTokens} tokens ($${dayCost}) | Total: ${totalTokens} tokens ($${totalCost})`;
+        }
+    } catch (error) {
+        document.getElementById('token-usage').textContent = 'Token usage unavailable';
+    }
+}
+
+// Load token usage on page load
+updateTokenUsageDisplay();
+
+// Update token usage every 30 seconds
+setInterval(updateTokenUsageDisplay, 30000);
 </script>
 
 <div class="card">

@@ -13,10 +13,12 @@ class ClaudeIntegration {
     }
     
     public function chatWithClaude($message, $systemPrompt, $model, $conversationHistory = []) {
-        // Execute lightweight background commands
-        $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
-        if ($backgroundResults) {
-            $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
+        // Skip background commands if using high-demand models to reduce load
+        if (strpos($model, 'sonnet-4') === false && strpos($model, 'opus-4') === false) {
+            $backgroundResults = $this->executeBackgroundCommands($systemPrompt);
+            if ($backgroundResults) {
+                $systemPrompt .= "\n\nBACKGROUND RESULTS:\n" . $backgroundResults;
+            }
         }
         
         // Check if Claude needs to use tools before generating response
@@ -106,6 +108,9 @@ class ClaudeIntegration {
         } while ($retryCount < $maxRetries && ($httpCode === 529 || $httpCode === 429));
         
         if ($httpCode !== 200) {
+            if ($httpCode === 529) {
+                throw new \Exception("Claude API is overloaded. Try again in a few minutes or switch to a different model like Haiku 3.5 which may be less congested.");
+            }
             throw new \Exception("API request failed with status $httpCode: $response");
         }
         
@@ -122,6 +127,9 @@ class ClaudeIntegration {
         if ($claudeToolResults) {
             $claudeResponse .= "\n\nTool Results:\n" . $claudeToolResults;
         }
+        
+        // Track token usage by model
+        $this->trackTokenUsage($model, $decoded['usage'] ?? []);
         
         return [
             'message' => $claudeResponse,
@@ -325,6 +333,55 @@ class ClaudeIntegration {
         }
         
         return $results;
+    }
+    
+    private function trackTokenUsage($model, $usage) {
+        try {
+            $db = new \ZeroAI\Core\DatabaseManager();
+            
+            // Check if table exists first
+            $tableCheck = $db->executeSQL("SELECT name FROM sqlite_master WHERE type='table' AND name='claude_token_usage'", 'claude');
+            
+            if (empty($tableCheck[0]['data'])) {
+                // Create token usage table only if it doesn't exist
+                $db->executeSQL("CREATE TABLE claude_token_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, model TEXT NOT NULL, input_tokens INTEGER DEFAULT 0, output_tokens INTEGER DEFAULT 0, total_tokens INTEGER DEFAULT 0, cost_usd REAL DEFAULT 0, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)", 'claude');
+            }
+            
+            $inputTokens = $usage['input_tokens'] ?? 0;
+            $outputTokens = $usage['output_tokens'] ?? 0;
+            $totalTokens = $inputTokens + $outputTokens;
+            
+            // Calculate cost based on model pricing (per 1M tokens)
+            $cost = $this->calculateCost($model, $inputTokens, $outputTokens);
+            
+            $escapedModel = str_replace("'", "''", $model);
+            $db->executeSQL("INSERT INTO claude_token_usage (model, input_tokens, output_tokens, total_tokens, cost_usd) VALUES ('$escapedModel', $inputTokens, $outputTokens, $totalTokens, $cost)", 'claude');
+            
+        } catch (\Exception $e) {
+            error_log("Failed to track token usage: " . $e->getMessage());
+        }
+    }
+    
+    private function calculateCost($model, $inputTokens, $outputTokens) {
+        // Claude pricing per 1M tokens (as of 2024)
+        $pricing = [
+            'claude-sonnet-4-20250514' => ['input' => 3.00, 'output' => 15.00],
+            'claude-opus-4-1-20250805' => ['input' => 15.00, 'output' => 75.00],
+            'claude-opus-4-20250514' => ['input' => 15.00, 'output' => 75.00],
+            'claude-sonnet-3.7-20250514' => ['input' => 3.00, 'output' => 15.00],
+            'claude-haiku-3.5-20250514' => ['input' => 0.25, 'output' => 1.25],
+            'claude-3-opus-20240229' => ['input' => 15.00, 'output' => 75.00],
+            'claude-3-5-sonnet-20240620' => ['input' => 3.00, 'output' => 15.00],
+            'claude-3-sonnet-20240229' => ['input' => 3.00, 'output' => 15.00],
+            'claude-haiku-3-20240307' => ['input' => 0.25, 'output' => 1.25]
+        ];
+        
+        $modelPricing = $pricing[$model] ?? ['input' => 3.00, 'output' => 15.00]; // Default to Sonnet pricing
+        
+        $inputCost = ($inputTokens / 1000000) * $modelPricing['input'];
+        $outputCost = ($outputTokens / 1000000) * $modelPricing['output'];
+        
+        return $inputCost + $outputCost;
     }
     
     private function getMainContainer() {
