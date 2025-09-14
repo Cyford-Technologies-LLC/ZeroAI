@@ -350,11 +350,12 @@ class ClaudeToolSystem {
             // Use command + input for the command field
             $fullCommand = $safeCommand . ': ' . $safeInput;
             
-            // Use raw SQL since DatabaseManager has parameter issues
+            // Use raw SQL - DatabaseManager doesn't support parameters
             $escapedCommand = str_replace("'", "''", $fullCommand);
             $escapedOutput = str_replace("'", "''", $safeOutput);
             
-            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1)", 'claude');
+            $result = $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1)", 'claude');
+            error_log("DEBUG logCommand result: " . var_export($result, true));
                 
         } catch (\Exception $e) {
             error_log("Failed to log Claude command: " . $e->getMessage());
