@@ -62,7 +62,7 @@ require_once __DIR__ . '/../auth_check.php';
             <nav class="nav">
                 <a href="/admin/dashboard.php" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
                 <a href="/admin/crewai.php" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
-                <a href="/admin/claude_chat.php" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
+                <a href="/admin/chat.php" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
                 <a href="/admin/tools.php" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics', 'tools']) ? 'class="active"' : '' ?>>Tools</a>
                 <a href="/admin/system.php" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
                 <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
@@ -109,14 +109,8 @@ require_once __DIR__ . '/../auth_check.php';
                 </div>
             <?php elseif ($currentSection === 'chat'): ?>
                 <div class="sidebar-group">
-                    <h3>AI Assistants</h3>
-                    <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>💬 Claude Direct Chat</a>
+                    <h3>Team Chat</h3>
                     <a href="/admin/crew_chat.php" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>👥 Crew Chat</a>
-                    <a href="/admin/chat.php" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>🤖 Agent Chat</a>
-                </div>
-                <div class="sidebar-group">
-                    <h3>Settings</h3>
-                    <a href="/admin/claude_settings.php">⚙️ Configure Claude</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Individual Agents</h3>
@@ -125,6 +119,11 @@ require_once __DIR__ . '/../auth_check.php';
                     <a href="/admin/chat?agent=senior_dev">Senior Developer</a>
                     <a href="/admin/chat?agent=junior_dev">Junior Developer</a>
                     <a href="/admin/chat?agent=code_researcher">Code Researcher</a>
+                </div>
+                <div class="sidebar-group">
+                    <h3>Cloud AI</h3>
+                    <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>🔮 Claude</a>
+                    <a href="/admin/claude_settings.php">⚙️ Claude Settings</a>
                 </div>
             <?php elseif ($currentSection === 'tools'): ?>
                 <div class="sidebar-group">
