@@ -11,6 +11,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $logType = \ZeroAI\Core\InputValidator::sanitize($input['log'] ?? '');
 
 $logFiles = [
+    'zeroai' => '/app/logs/errors.log',
     'nginx' => '/var/log/nginx/error.log',
     'php' => '/var/log/php8.1-fpm.log', 
     'claude' => '/app/logs/claude_commands.log'

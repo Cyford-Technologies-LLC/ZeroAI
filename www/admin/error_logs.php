@@ -13,6 +13,7 @@ include __DIR__ . '/includes/header.php';
         <h1>🚨 Error Logs - ZeroAI Admin</h1>
         
         <button class="refresh-btn" onclick="location.reload()">Refresh Logs</button>
+        <button class="refresh-btn btn-danger" onclick="clearLog('zeroai')">Clear ZeroAI Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('nginx')">Clear Nginx Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('php')">Clear PHP Log</button>
         <button class="refresh-btn btn-danger" onclick="clearLog('claude')">Clear Claude Log</button>
@@ -20,12 +21,33 @@ include __DIR__ . '/includes/header.php';
         <button id="debug-btn" class="refresh-btn" onclick="toggleDebug()" style="background: #dc3545; color: #fff;">Debug Mode OFF</button>
         
         <div class="log-section">
-            <h2>Nginx Error Log (Last 50 lines)</h2>
+            <h2>ZeroAI Application Errors (Last 50 lines)</h2>
+            <div class="log-content">
+<?php
+$logger = \ZeroAI\Core\Logger::getInstance();
+$logs = $logger->getRecentLogs(50);
+if (!empty($logs)) {
+    foreach ($logs as $line) {
+        $class = '';
+        if (strpos($line, 'ERROR') !== false) $class = 'error';
+        elseif (strpos($line, 'WARNING') !== false) $class = 'warning';
+        else $class = 'info';
+        echo "<span class='$class'>" . htmlspecialchars($line) . "</span>\n";
+    }
+} else {
+    echo "No application errors found";
+}
+?>
+            </div>
+        </div>
+        
+        <div class="log-section">
+            <h2>Nginx Error Log (Last 30 lines)</h2>
             <div class="log-content">
 <?php
 $nginxLog = '/var/log/nginx/error.log';
 if (file_exists($nginxLog)) {
-    $lines = array_reverse(array_slice(file($nginxLog, FILE_IGNORE_NEW_LINES), -50));
+    $lines = array_reverse(array_slice(file($nginxLog, FILE_IGNORE_NEW_LINES), -30));
     foreach ($lines as $line) {
         $class = '';
         if (strpos($line, 'error') !== false) $class = 'error';
