@@ -1,7 +1,13 @@
+<?php
+require_once __DIR__ . '/autoload.php';
+require_once __DIR__ . '/../auth_check.php';
+?>
 <!DOCTYPE html>
 <html>
 <head>
     <title><?= $pageTitle ?? 'ZeroAI Admin' ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
         .header { background: #007bff; color: white; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -54,12 +60,12 @@
         <div class="header-content">
             <div class="logo">ZeroAI Admin</div>
             <nav class="nav">
-                <a href="/admin/dashboard" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
-                <a href="/admin/crewai" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
-                <a href="/admin/chat" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
-                <a href="/admin/tools" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics']) ? 'class="active"' : '' ?>>Tools</a>
-                <a href="/admin/system" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
-                <a href="/admin/settings" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
+                <a href="/admin/dashboard.php" <?= ($currentPage ?? '') === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
+                <a href="/admin/crewai.php" <?= in_array($currentPage ?? '', ['crews', 'agents', 'knowledge', 'tasks']) ? 'class="active"' : '' ?>>CrewAI</a>
+                <a href="/admin/claude_chat.php" <?= in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat']) ? 'class="active"' : '' ?>>Chat</a>
+                <a href="/admin/tools.php" <?= in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics']) ? 'class="active"' : '' ?>>Tools</a>
+                <a href="/admin/system.php" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
+                <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= $_SESSION['admin_user'] ?? 'Admin' ?>!</span>
@@ -75,7 +81,7 @@
                 $currentSection = 'crewai';
             } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
                 $currentSection = 'chat';
-            } elseif (in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics'])) {
+            } elseif (in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics'])) {
                 $currentSection = 'tools';
             } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
                 $currentSection = 'system';
@@ -87,30 +93,30 @@
             <?php if ($currentSection === 'crewai'): ?>
                 <div class="sidebar-group">
                     <h3>Crew Management</h3>
-                    <a href="/admin/crews" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
-                    <a href="/admin/agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
-                    <a href="/admin/test_dynamic_agents" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>🧪 Test Dynamic Agents</a>
-                    <a href="/admin/tasks" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
+                    <a href="/admin/crews.php" <?= ($currentPage ?? '') === 'crews' ? 'class="active"' : '' ?>>Crews</a>
+                    <a href="/admin/agents.php" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>Agents</a>
+                    <a href="/admin/test_dynamic_agents.php" <?= ($currentPage ?? '') === 'agents' ? 'class="active"' : '' ?>>🧪 Test Dynamic Agents</a>
+                    <a href="/admin/tasks.php" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>AI Models</h3>
-                    <a href="/admin/ollama" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
+                    <a href="/admin/ollama.php" <?= ($currentPage ?? '') === 'ollama' ? 'class="active"' : '' ?>>Ollama</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Resources</h3>
-                    <a href="/admin/knowledge" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge Base</a>
-                    <a href="/admin/examples" <?= ($currentPage ?? '') === 'examples' ? 'class="active"' : '' ?>>Examples</a>
+                    <a href="/admin/knowledge.php" <?= ($currentPage ?? '') === 'knowledge' ? 'class="active"' : '' ?>>Knowledge Base</a>
+                    <a href="/admin/examples.php" <?= ($currentPage ?? '') === 'examples' ? 'class="active"' : '' ?>>Examples</a>
                 </div>
             <?php elseif ($currentSection === 'chat'): ?>
                 <div class="sidebar-group">
                     <h3>AI Assistants</h3>
-                    <a href="/admin/claude_chat" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>💬 Claude Direct Chat</a>
-                    <a href="/admin/crew_chat" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>👥 Crew Chat</a>
-                    <a href="/admin/chat" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>🤖 Agent Chat</a>
+                    <a href="/admin/claude_chat.php" <?= ($currentPage ?? '') === 'claude_chat' ? 'class="active"' : '' ?>>💬 Claude Direct Chat</a>
+                    <a href="/admin/crew_chat.php" <?= ($currentPage ?? '') === 'crew_chat' ? 'class="active"' : '' ?>>👥 Crew Chat</a>
+                    <a href="/admin/chat.php" <?= ($currentPage ?? '') === 'chat' ? 'class="active"' : '' ?>>🤖 Agent Chat</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Settings</h3>
-                    <a href="/admin/claude_settings">⚙️ Configure Claude</a>
+                    <a href="/admin/claude_settings.php">⚙️ Configure Claude</a>
                 </div>
                 <div class="sidebar-group">
                     <h3>Individual Agents</h3>
@@ -124,7 +130,7 @@
                 <div class="sidebar-group">
                     <h3>System Tools</h3>
                     <a href="/admin/monitoring" <?= ($currentPage ?? '') === 'monitoring' ? 'class="active"' : '' ?>>📊 Monitoring</a>
-                    <a href="/admin/logs" <?= ($currentPage ?? '') === 'logs' ? 'class="active"' : '' ?>>📋 Logs</a>
+                    <a href="/admin/error_logs.php" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>📋 Logs</a>
                     <a href="/admin/performance" <?= ($currentPage ?? '') === 'performance' ? 'class="active"' : '' ?>>⚡ Performance</a>
                 </div>
                 <div class="sidebar-group">
@@ -134,7 +140,7 @@
                 </div>
                 <div class="sidebar-group">
                     <h3>Diagnostics</h3>
-                    <a href="/admin/error_logs" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>🚨 Error Logs</a>
+                    <a href="/admin/error_logs.php" <?= ($currentPage ?? '') === 'error_logs' ? 'class="active"' : '' ?>>🚨 Error Logs</a>
                     <a href="/admin/diagnostics" <?= ($currentPage ?? '') === 'diagnostics' ? 'class="active"' : '' ?>>🔍 System Diagnostics</a>
                 </div>
                 <div class="sidebar-group">

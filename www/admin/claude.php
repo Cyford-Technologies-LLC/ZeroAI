@@ -67,7 +67,8 @@ if ($_POST['action'] ?? '' === 'update_claude_config') {
     ];
     
     // Save to database
-    require_once __DIR__ . '/../api/agent_db.php';
+    require_once __DIR__ . '/includes/autoload.php';
+    $agentService = new \ZeroAI\Services\AgentService();
     $agentDB = new AgentDB();
     
     // Update Claude agent in database

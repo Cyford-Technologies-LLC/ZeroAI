@@ -1,8 +1,8 @@
 # src/learning/adaptive_router.py
 
 from typing import Optional, List, Tuple, Dict, Any
-from src.distributed_router import DistributedRouter
-from peer_discovery import PeerDiscovery
+# from src.distributed_router import DistributedRouter
+# from peer_discovery import PeerDiscovery
 from learning.feedback_loop import FeedbackLoop
 import logging
 from rich.console import Console
@@ -10,11 +10,11 @@ from rich.console import Console
 console = Console()
 logger = logging.getLogger(__name__)
 
-class AdaptiveRouter(DistributedRouter):
+class AdaptiveRouter:
     """Router that learns from past interactions and adapts its routing decisions."""
     
-    def __init__(self, peer_discovery_instance: PeerDiscovery):
-        super().__init__(peer_discovery_instance)
+    def __init__(self, peer_discovery_instance=None):
+        # super().__init__(peer_discovery_instance)
         self.feedback_loop = FeedbackLoop()
         self.learned_category_mapping = {}
         self.refresh_learned_mappings()

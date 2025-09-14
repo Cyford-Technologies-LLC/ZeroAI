@@ -18,7 +18,7 @@ include __DIR__ . '/includes/header.php';
             </div>
         </a>
         
-        <a href="/admin/logs" style="text-decoration: none; color: inherit;">
+        <a href="/admin/error_logs.php" style="text-decoration: none; color: inherit;">
             <div style="border: 2px solid #007bff; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
                 <h4 style="margin: 0 0 10px 0; color: #007bff;">📋 Logs</h4>
                 <p style="margin: 0; color: #666;">View and analyze system logs and error reports</p>

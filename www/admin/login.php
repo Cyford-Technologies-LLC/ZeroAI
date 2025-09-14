@@ -1,22 +1,19 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/includes/autoload.php';
+require_once __DIR__ . '/../src/Services/AuthService.php';
+
+use ZeroAI\Services\AuthService;
+
+$auth = new AuthService();
+
 if ($_POST) {
-    require_once '../config/database.php';
-    $db = new Database();
-    $pdo = $db->getConnection();
-    
     $username = $_POST['username'];
     $password = $_POST['password'];
     
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND role = 'admin'");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
-    
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['admin_logged_in'] = true;
-        $_SESSION['admin_user'] = $username;
-        header('Location: /admin/dashboard');
+    if ($auth->login($username, $password)) {
+        header('Location: /admin/dashboard.php');
         exit;
     } else {
         $error = "Invalid credentials";

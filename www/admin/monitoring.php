@@ -40,17 +40,17 @@ require_once 'includes/header.php';
 async function loadMonitoringData() {
     try {
         // Load AI service status
-        const aiResponse = await fetch('/api/system_status.php?type=ai');
+        const aiResponse = await fetch('/admin/system_status.php?type=ai');
         const aiData = await aiResponse.json();
         document.getElementById('ai-status').innerHTML = formatAIStatus(aiData);
 
         // Load active crews
-        const crewResponse = await fetch('/api/system_status.php?type=crews');
+        const crewResponse = await fetch('/admin/system_status.php?type=crews');
         const crewData = await crewResponse.json();
         document.getElementById('active-crews').innerHTML = formatActiveCrews(crewData);
 
         // Load system resources
-        const resourceResponse = await fetch('/api/system_status.php?type=resources');
+        const resourceResponse = await fetch('/admin/system_status.php?type=resources');
         const resourceData = await resourceResponse.json();
         document.getElementById('system-resources').innerHTML = formatSystemResources(resourceData);
     } catch (error) {
