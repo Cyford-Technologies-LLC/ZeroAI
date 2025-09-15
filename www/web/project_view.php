@@ -1,7 +1,5 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
+include __DIR__ . '/../admin/includes/header.php';
 use ZeroAI\Core\{Project, DatabaseManager};
 
 $projectId = $_GET['id'] ?? 0;
@@ -20,7 +18,7 @@ $bugs = $db->query("SELECT * FROM bugs WHERE project_id = ? ORDER BY created_at 
 $milestones = $db->query("SELECT * FROM milestones WHERE project_id = ? ORDER BY due_date ASC", [$projectId]);
 
 $pageTitle = 'Project: ' . $projectData['name'];
-include __DIR__ . '/../admin/includes/header.php';
+
 ?>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
