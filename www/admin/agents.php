@@ -15,28 +15,19 @@ include __DIR__ . '/includes/header.php';
 $message = '';
 $error = '';
 
-// Initialize agents table
+// Initialize agents table with proper structure
 $db->query("CREATE TABLE IF NOT EXISTS agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     role TEXT NOT NULL,
     goal TEXT,
     backstory TEXT,
+    tools TEXT,
+    config TEXT,
     status TEXT DEFAULT 'active',
     is_core BOOLEAN DEFAULT 0,
-    llm_model TEXT DEFAULT 'local',
-    verbose BOOLEAN DEFAULT 0,
-    allow_delegation BOOLEAN DEFAULT 1,
-    allow_code_execution BOOLEAN DEFAULT 0,
-    memory BOOLEAN DEFAULT 0,
-    max_iter INTEGER DEFAULT 25,
-    max_rpm INTEGER,
-    max_execution_time INTEGER,
-    max_retry_limit INTEGER DEFAULT 2,
-    learning_enabled BOOLEAN DEFAULT 0,
-    learning_rate REAL DEFAULT 0.05,
-    feedback_incorporation TEXT DEFAULT 'immediate',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
 // Handle actions
@@ -100,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>🤖 Agent Management</h1>
     <div>
         <a href="/web/ai_center.php" class="btn btn-primary">AI Community Center</a>
+        <a href="import_agents.php" class="btn btn-warning">Import Default Agents</a>
         <button onclick="showCreateForm()" class="btn btn-success">+ Create Agent</button>
     </div>
 </div>
@@ -184,9 +176,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span style="background: <?= $agent['status'] === 'active' ? '#28a745' : '#6c757d' ?>; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
                             <?= strtoupper($agent['status']) ?>
                         </span>
-                        <span style="font-size: 11px; color: #999;">
-                            Model: <?= htmlspecialchars($agent['llm_model'] ?? 'local') ?>
+                        <?php if (!empty($agent['tools'])): ?>
+                        <span style="font-size: 11px; color: #007cba;">
+                            🛠️ <?= count(json_decode($agent['tools'], true) ?: []) ?> tools
                         </span>
+                        <?php endif; ?>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
