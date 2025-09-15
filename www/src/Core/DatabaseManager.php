@@ -47,7 +47,7 @@ class DatabaseManager {
         
         $pdo = $this->db->getConnection();
         if (empty($params)) {
-            $stmt = $pdo->query($sql);
+            $stmt = $pdo->executeSQL($sql);
         } else {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
@@ -60,6 +60,11 @@ class DatabaseManager {
         }
         
         return $result;
+    }
+    
+    public function executeSQL($sql, $dbName = 'main', $params = []) {
+        // Compatibility method - ignore dbName for now
+        return $this->executeSQL($sql, $params);
     }
     
     public function getTokenUsage() {

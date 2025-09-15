@@ -9,7 +9,7 @@ use ZeroAI\Core\DatabaseManager;
 $db = DatabaseManager::getInstance();
 
 // Initialize roles and permissions tables
-$db->query("CREATE TABLE IF NOT EXISTS roles (
+$db->executeSQL("CREATE TABLE IF NOT EXISTS roles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
@@ -18,7 +18,7 @@ $db->query("CREATE TABLE IF NOT EXISTS roles (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
-$db->query("CREATE TABLE IF NOT EXISTS permissions (
+$db->executeSQL("CREATE TABLE IF NOT EXISTS permissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
@@ -27,7 +27,7 @@ $db->query("CREATE TABLE IF NOT EXISTS permissions (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
-$db->query("CREATE TABLE IF NOT EXISTS role_permissions (
+$db->executeSQL("CREATE TABLE IF NOT EXISTS role_permissions (
     role_id INTEGER,
     permission_id INTEGER,
     PRIMARY KEY (role_id, permission_id),

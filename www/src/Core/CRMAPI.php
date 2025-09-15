@@ -9,7 +9,7 @@ class CRMAPI {
     
     private function initializeAITables() {
         $db = DatabaseManager::getInstance();
-        $db->query("CREATE TABLE IF NOT EXISTS company_agents (
+        $db->executeSQL("CREATE TABLE IF NOT EXISTS company_agents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             company_id INTEGER NOT NULL,
             agent_id INTEGER NOT NULL,
@@ -316,7 +316,7 @@ class CRMAPI {
                 
             case 'time-summary':
                 $projectId = $_GET['project_id'] ?? null;
-                $entries = $db->query("SELECT SUM(hours) as total_hours, COUNT(*) as entries FROM time_entries WHERE project_id = ?", [$projectId]);
+                $entries = $db->executeSQL("SELECT SUM(hours) as total_hours, COUNT(*) as entries FROM time_entries WHERE project_id = ?", [$projectId]);
                 return ['success' => true, 'report' => $entries[0] ?? []];
                 
             default:
@@ -348,7 +348,7 @@ class CRMAPI {
         $companyId = $_GET['company_id'] ?? null;
         $db = DatabaseManager::getInstance();
         
-        $agents = $db->query(
+        $agents = $db->executeSQL(
             "SELECT a.*, ca.assigned_at FROM agents a 
              JOIN company_agents ca ON a.id = ca.agent_id 
              WHERE ca.company_id = ? AND a.status = 'active'",

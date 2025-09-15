@@ -108,12 +108,12 @@ try {
             try {
                 $content = $input['content'] ?? '';
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
-                $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-                $existing = $db->query("SELECT id FROM claude_scratch_pad LIMIT 1");
+                $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $existing = $db->executeSQL("SELECT id FROM claude_scratch_pad LIMIT 1");
                 if ($existing && count($existing) > 0) {
-                    $db->query("UPDATE claude_scratch_pad SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+                    $db->executeSQL("UPDATE claude_scratch_pad SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
                 } else {
-                    $db->query("INSERT INTO claude_scratch_pad (content) VALUES (?)", [$content]);
+                    $db->executeSQL("INSERT INTO claude_scratch_pad (content) VALUES (?)", [$content]);
                 }
                 echo json_encode(['success' => true]);
             } catch (\Exception $e) {
@@ -126,8 +126,8 @@ try {
             $logger->logClaude('Get scratch action started');
             try {
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
-                $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-                $result = $db->query("SELECT content FROM claude_scratch_pad ORDER BY updated_at DESC LIMIT 1");
+                $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $result = $db->executeSQL("SELECT content FROM claude_scratch_pad ORDER BY updated_at DESC LIMIT 1");
                 $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
                 echo json_encode(['success' => true, 'content' => $content]);
             } catch (\Exception $e) {
@@ -145,22 +145,22 @@ try {
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
                 $logger->debug('Database instance obtained');
                 
-                $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
                 $logger->debug('Table created/verified');
                 
-                $existing = $db->query("SELECT id FROM claude_system_prompt LIMIT 1");
+                $existing = $db->executeSQL("SELECT id FROM claude_system_prompt LIMIT 1");
                 $logger->debug('Existing check completed', ['existing_count' => count($existing)]);
                 
                 if ($existing && count($existing) > 0) {
-                    $result = $db->query("UPDATE claude_system_prompt SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+                    $result = $db->executeSQL("UPDATE claude_system_prompt SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
                     $logger->debug('UPDATE executed', ['result' => $result]);
                 } else {
-                    $result = $db->query("INSERT INTO claude_system_prompt (content) VALUES (?)", [$content]);
+                    $result = $db->executeSQL("INSERT INTO claude_system_prompt (content) VALUES (?)", [$content]);
                     $logger->debug('INSERT executed', ['result' => $result]);
                 }
                 
                 // Verify save
-                $verify = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
+                $verify = $db->executeSQL("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
                 $saved = ($verify[0]['content'] ?? '') === $content;
                 $logger->info('System prompt saved', ['saved_length' => strlen($verify[0]['content'] ?? ''), 'matches' => $saved]);
                 
@@ -177,10 +177,10 @@ try {
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
                 $logger->debug('Database instance obtained for GET');
                 
-                $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
                 $logger->debug('Table verified for GET');
                 
-                $result = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
+                $result = $db->executeSQL("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
                 $logger->debug('Query executed for GET', ['result_count' => count($result)]);
                 
                 $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
@@ -232,7 +232,7 @@ try {
             $logger->logClaude('Reset system prompt action started');
             try {
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
-                $db->query("DELETE FROM claude_system_prompt");
+                $db->executeSQL("DELETE FROM claude_system_prompt");
                 echo json_encode(['success' => true]);
             } catch (\Exception $e) {
                 $logger->logClaude('Reset system prompt error: ' . $e->getMessage(), ['error' => $e->getMessage()]);

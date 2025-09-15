@@ -20,14 +20,14 @@ try {
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     // Create table if not exists
-    $db->query("CREATE TABLE IF NOT EXISTS system_prompts (
+    $db->executeSQL("CREATE TABLE IF NOT EXISTS system_prompts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         prompt TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
     
     // Insert new prompt
-    $db->query("INSERT INTO system_prompts (prompt) VALUES (?)", [$prompt]);
+    $db->executeSQL("INSERT INTO system_prompts (prompt) VALUES (?)", [$prompt]);
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

@@ -8,7 +8,7 @@ try {
     
     switch ($action) {
         case 'summary':
-            $result = $db->query('
+            $result = $db->executeSQL('
                 SELECT 
                     provider,
                     model,
@@ -33,7 +33,7 @@ try {
             break;
             
         case 'today':
-            $result = $db->query('
+            $result = $db->executeSQL('
                 SELECT 
                     provider,
                     model,
@@ -56,7 +56,7 @@ try {
             break;
             
         case 'recent':
-            $result = $db->query('
+            $result = $db->executeSQL('
                 SELECT * FROM ai_usage 
                 ORDER BY created_at DESC 
                 LIMIT 50

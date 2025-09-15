@@ -21,8 +21,8 @@ class TimezoneManager {
     private function loadTimezone() {
         try {
             $db = DatabaseManager::getInstance();
-            $db->query("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
-            $result = $db->query("SELECT value FROM system_settings WHERE key = 'timezone'", 'main');
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+            $result = $db->executeSQL("SELECT value FROM system_settings WHERE key = 'timezone'", 'main');
             
             if (!empty($result[0]['data'])) {
                 $this->timezone = $result[0]['data'][0]['value'];
@@ -54,8 +54,8 @@ class TimezoneManager {
         // Save to database
         try {
             $db = DatabaseManager::getInstance();
-            $db->query("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
-            $db->query("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', '$timezone')", 'main');
+            $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+            $db->executeSQL("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', '$timezone')", 'main');
         } catch (\Exception $e) {
             error_log("Failed to save timezone setting: " . $e->getMessage());
         }

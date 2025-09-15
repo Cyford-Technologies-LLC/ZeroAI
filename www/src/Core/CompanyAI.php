@@ -86,7 +86,7 @@ class CompanyAI {
         $context = "";
         
         // Get recent projects
-        $projects = $this->db->query("SELECT name, status, progress FROM projects WHERE company_id = ? ORDER BY updated_at DESC LIMIT 5", [$companyId]);
+        $projects = $this->db->executeSQL("SELECT name, status, progress FROM projects WHERE company_id = ? ORDER BY updated_at DESC LIMIT 5", [$companyId]);
         if ($projects) {
             $context .= "Recent Projects:\n";
             foreach ($projects as $project) {
@@ -95,7 +95,7 @@ class CompanyAI {
         }
         
         // Get active tasks
-        $tasks = $this->db->query("SELECT name, status, priority FROM tasks t JOIN projects p ON t.project_id = p.id WHERE p.company_id = ? AND t.status != 'done' LIMIT 10", [$companyId]);
+        $tasks = $this->db->executeSQL("SELECT name, status, priority FROM tasks t JOIN projects p ON t.project_id = p.id WHERE p.company_id = ? AND t.status != 'done' LIMIT 10", [$companyId]);
         if ($tasks) {
             $context .= "\nActive Tasks:\n";
             foreach ($tasks as $task) {

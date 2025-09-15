@@ -11,7 +11,7 @@ class VisitorTracker {
     
     private function initTables() {
         // IP tracking table
-        $this->db->query("CREATE TABLE IF NOT EXISTS visitor_ips (
+        $this->db->executeSQL("CREATE TABLE IF NOT EXISTS visitor_ips (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip_address TEXT NOT NULL,
             username TEXT,
@@ -26,7 +26,7 @@ class VisitorTracker {
         )");
         
         // Login attempts table
-        $this->db->query("CREATE TABLE IF NOT EXISTS login_attempts (
+        $this->db->executeSQL("CREATE TABLE IF NOT EXISTS login_attempts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip_address TEXT NOT NULL,
             username TEXT,
@@ -37,7 +37,7 @@ class VisitorTracker {
         )");
         
         // Page visits table
-        $this->db->query("CREATE TABLE IF NOT EXISTS page_visits (
+        $this->db->executeSQL("CREATE TABLE IF NOT EXISTS page_visits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip_address TEXT NOT NULL,
             username TEXT,
@@ -49,7 +49,7 @@ class VisitorTracker {
         )");
         
         // Companies/organizations table
-        $this->db->query("CREATE TABLE IF NOT EXISTS visitor_companies (
+        $this->db->executeSQL("CREATE TABLE IF NOT EXISTS visitor_companies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip_address TEXT NOT NULL,
             company_name TEXT,
@@ -113,24 +113,24 @@ class VisitorTracker {
     
     public function getStats() {
         return [
-            'total_visitors' => $this->db->query("SELECT COUNT(DISTINCT ip_address) as count FROM visitor_ips")[0]['count'],
-            'total_users' => $this->db->query("SELECT COUNT(DISTINCT username) as count FROM visitor_ips WHERE username IS NOT NULL")[0]['count'],
-            'today_visits' => $this->db->query("SELECT COUNT(*) as count FROM page_visits WHERE DATE(visit_time) = DATE('now')")[0]['count'],
-            'failed_logins_today' => $this->db->query("SELECT COUNT(*) as count FROM login_attempts WHERE success = 0 AND DATE(attempt_time) = DATE('now')")[0]['count'],
-            'successful_logins_today' => $this->db->query("SELECT COUNT(*) as count FROM login_attempts WHERE success = 1 AND DATE(attempt_time) = DATE('now')")[0]['count']
+            'total_visitors' => $this->db->executeSQL("SELECT COUNT(DISTINCT ip_address) as count FROM visitor_ips")[0]['count'],
+            'total_users' => $this->db->executeSQL("SELECT COUNT(DISTINCT username) as count FROM visitor_ips WHERE username IS NOT NULL")[0]['count'],
+            'today_visits' => $this->db->executeSQL("SELECT COUNT(*) as count FROM page_visits WHERE DATE(visit_time) = DATE('now')")[0]['count'],
+            'failed_logins_today' => $this->db->executeSQL("SELECT COUNT(*) as count FROM login_attempts WHERE success = 0 AND DATE(attempt_time) = DATE('now')")[0]['count'],
+            'successful_logins_today' => $this->db->executeSQL("SELECT COUNT(*) as count FROM login_attempts WHERE success = 1 AND DATE(attempt_time) = DATE('now')")[0]['count']
         ];
     }
     
     public function getTopVisitors($limit = 10) {
-        return $this->db->query("SELECT ip_address, username, visit_count, last_seen FROM visitor_ips ORDER BY visit_count DESC LIMIT $limit");
+        return $this->db->executeSQL("SELECT ip_address, username, visit_count, last_seen FROM visitor_ips ORDER BY visit_count DESC LIMIT $limit");
     }
     
     public function getRecentLogins($limit = 20) {
-        return $this->db->query("SELECT * FROM login_attempts ORDER BY attempt_time DESC LIMIT $limit");
+        return $this->db->executeSQL("SELECT * FROM login_attempts ORDER BY attempt_time DESC LIMIT $limit");
     }
     
     public function getFailedLogins($hours = 24) {
-        return $this->db->query("SELECT ip_address, username, COUNT(*) as attempts, MAX(attempt_time) as last_attempt 
+        return $this->db->executeSQL("SELECT ip_address, username, COUNT(*) as attempts, MAX(attempt_time) as last_attempt 
                                 FROM login_attempts 
                                 WHERE success = 0 AND attempt_time > datetime('now', '-$hours hours') 
                                 GROUP BY ip_address, username 

@@ -13,7 +13,7 @@ class Group extends BaseModel {
     }
     
     protected function initTable() {
-        $this->db->query("
+        $this->db->executeSQL("
             CREATE TABLE IF NOT EXISTS groups (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL,
@@ -23,7 +23,7 @@ class Group extends BaseModel {
             )
         ");
         
-        $this->db->query("
+        $this->db->executeSQL("
             CREATE TABLE IF NOT EXISTS user_groups (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
@@ -45,9 +45,9 @@ class Group extends BaseModel {
         ];
         
         foreach ($groups as $group) {
-            $existing = $this->db->query("SELECT id FROM groups WHERE name = ?", [$group['name']]);
+            $existing = $this->db->executeSQL("SELECT id FROM groups WHERE name = ?", [$group['name']]);
             if (empty($existing[0]['data'])) {
-                $this->db->query(
+                $this->db->executeSQL(
                     "INSERT INTO groups (name, description, permissions) VALUES (?, ?, ?)",
                     [$group['name'], $group['description'], $group['permissions']]
                 );
@@ -56,7 +56,7 @@ class Group extends BaseModel {
     }
     
     public function getUserGroups($userId) {
-        $result = $this->db->query("
+        $result = $this->db->executeSQL("
             SELECT g.* FROM groups g 
             JOIN user_groups ug ON g.id = ug.group_id 
             WHERE ug.user_id = ?
@@ -66,13 +66,13 @@ class Group extends BaseModel {
     }
     
     public function addUserToGroup($userId, $groupId) {
-        $existing = $this->db->query(
+        $existing = $this->db->executeSQL(
             "SELECT id FROM user_groups WHERE user_id = ? AND group_id = ?",
             [$userId, $groupId]
         );
         
         if (empty($existing[0]['data'])) {
-            return $this->db->query(
+            return $this->db->executeSQL(
                 "INSERT INTO user_groups (user_id, group_id) VALUES (?, ?)",
                 [$userId, $groupId]
             );
@@ -82,7 +82,7 @@ class Group extends BaseModel {
     }
     
     public function removeUserFromGroup($userId, $groupId) {
-        return $this->db->query(
+        return $this->db->executeSQL(
             "DELETE FROM user_groups WHERE user_id = ? AND group_id = ?",
             [$userId, $groupId]
         );

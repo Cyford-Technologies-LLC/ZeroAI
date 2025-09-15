@@ -19,7 +19,7 @@ $error = $_SESSION['import_error'] ?? '';
 unset($_SESSION['import_message'], $_SESSION['import_error']);
 
 // Initialize agents table with proper structure
-$db->query("CREATE TABLE IF NOT EXISTS agents (
+$db->executeSQL("CREATE TABLE IF NOT EXISTS agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     role TEXT NOT NULL,
@@ -34,7 +34,7 @@ $db->query("CREATE TABLE IF NOT EXISTS agents (
 )");
 
 // Initialize companies table for CRM
-$db->query("CREATE TABLE IF NOT EXISTS companies (
+$db->executeSQL("CREATE TABLE IF NOT EXISTS companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,

@@ -91,7 +91,7 @@ class AdminAPI {
     private function getTokenUsage() {
         try {
             $db = DatabaseManager::getInstance();
-            $result = $db->query("SELECT SUM(input_tokens) as input, SUM(output_tokens) as output, SUM(cost) as cost FROM claude_token_usage WHERE DATE(timestamp) = DATE('now')");
+            $result = $db->executeSQL("SELECT SUM(input_tokens) as input, SUM(output_tokens) as output, SUM(cost) as cost FROM claude_token_usage WHERE DATE(timestamp) = DATE('now')");
             
             return [
                 'success' => true,

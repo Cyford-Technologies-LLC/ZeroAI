@@ -29,7 +29,7 @@ class Company {
     
     public function getAll() {
         $pdo = $this->db->getConnection();
-        $stmt = $pdo->query("SELECT * FROM companies ORDER BY created_at DESC");
+        $stmt = $pdo->executeSQL("SELECT * FROM companies ORDER BY created_at DESC");
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
     
