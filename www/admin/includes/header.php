@@ -1,6 +1,18 @@
 <?php
 require_once __DIR__ . '/autoload.php';
 require_once __DIR__ . '/../auth_check.php';
+
+// Check for 404 errors and log them
+if (http_response_code() == 404 || !file_exists($_SERVER['SCRIPT_FILENAME'])) {
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->error('404 Not Found', [
+        'url' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+        'referrer' => $_SERVER['HTTP_REFERER'] ?? 'direct',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+        'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'
+    ]);
+}
 ?>
 <!DOCTYPE html>
 <html>
