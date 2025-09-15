@@ -20,7 +20,8 @@ if (isset($_GET['url']) || strpos($_SERVER['REQUEST_URI'], '404') !== false) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZeroAI - Zero Cost AI Workforce</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/www/assets/css/admin.css">
+    <link rel="icon" type="image/x-icon" href="/www/assets/img/favicon.ico">
     <style>
         .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 100px 0; }
         .feature-card { transition: transform 0.3s; }
@@ -103,6 +104,6 @@ if (isset($_GET['url']) || strpos($_SERVER['REQUEST_URI'], '404') !== false) {
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/www/assets/js/admin.js"></script>
 </body>
 </html>

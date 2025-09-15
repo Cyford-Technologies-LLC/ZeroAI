@@ -2,6 +2,8 @@
 <html>
 <head>
     <title><?= $pageTitle ?? 'ZeroAI Admin' ?></title>
+    <link rel="stylesheet" href="/www/assets/css/admin.css">
+    <link rel="icon" type="image/x-icon" href="/www/assets/img/favicon.ico">
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
         .header { background: #007bff; color: white; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
