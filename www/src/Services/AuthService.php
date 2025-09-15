@@ -36,7 +36,13 @@ class AuthService {
     
     public function requireAuth() {
         if (!$this->isLoggedIn()) {
-            header('Location: /admin/login.php');
+            // Check if we're in web context
+            $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+            if (strpos($requestUri, '/web/') === 0) {
+                header('Location: /web/login.php');
+            } else {
+                header('Location: /admin/login.php');
+            }
             exit;
         }
     }

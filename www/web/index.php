@@ -12,7 +12,13 @@ $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
 $isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'ZeroAI CRM Dashboard';
 $currentPage = 'crm_dashboard';
-include __DIR__ . '/includes/header.php';
+
+// Set admin session for header compatibility
+if (!isset($_SESSION['admin_logged_in'])) {
+    $_SESSION['admin_user'] = $currentUser;
+}
+
+include __DIR__ . '/../admin/includes/header.php';
 ?>
     <div class="header">
         <h1>🏢 ZeroAI CRM Dashboard</h1>
@@ -53,15 +59,6 @@ include __DIR__ . '/includes/header.php';
                 <div class="stat-number">0</div>
                 <div>Tasks</div>
             </div>
-        </div>
-
-        <div class="card">
-            <h3>Quick Actions</h3>
-            <a href="/web/companies.php" class="btn">Manage Companies</a>
-            <a href="/web/contacts.php" class="btn">Manage Contacts</a>
-            <a href="/web/projects.php" class="btn">Manage Projects</a>
-            <a href="/web/tasks.php" class="btn">Manage Tasks</a>
-            <a href="/web/init.php" class="btn btn-success">Setup Database</a>
         </div>
 
         <div class="card">
