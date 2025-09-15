@@ -57,142 +57,169 @@ try {
 
 include __DIR__ . '/includes/header.php';
 ?>
-<div class="container-fluid mt-3">
-    <div class="content-wrapper">
-        <div class="sidebar">
-            <div class="sidebar-group">
-                <h3>CRM</h3>
-                <?php if (isset($_GET['company_id'])): ?>
-                    <a href="/web/accounts.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">🏦 Accounts</a>
-                    <a href="/web/employees.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">👥 Employees</a>
-                    <a href="/web/contacts.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📞 Contacts</a>
-                    <a href="/web/locations.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📍 Locations</a>
-                    <a href="/web/calendar.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📅 Calendar</a>
-                <?php else: ?>
-                    <a href="/web/contacts.php">Contacts</a>
-                <?php endif; ?>
-                <a href="/web/projects.php">Projects</a>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <?php if (isset($success)): ?>
+                <div class="alert alert-success"><?= $success ?></div>
+            <?php endif; ?>
+            
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger"><?= $error ?></div>
+            <?php endif; ?>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Add New Company</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">EIN</label>
+                                <input type="text" class="form-control" name="ein" placeholder="XX-XXXXXXX">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Business ID</label>
+                                <input type="text" class="form-control" name="business_id">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" name="phone">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Website</label>
+                                <input type="url" class="form-control" name="website" placeholder="https://">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">LinkedIn</label>
+                                <input type="url" class="form-control" name="linkedin" placeholder="https://linkedin.com/company/">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Industry</label>
+                                <select class="form-select" name="industry">
+                                    <option value="">Select Industry</option>
+                                    <option value="Technology">Technology</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Manufacturing">Manufacturing</option>
+                                    <option value="Retail">Retail</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">About the Company</label>
+                                <textarea class="form-control" name="about" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Street Address</label>
+                                <input type="text" class="form-control" name="street">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Street Address 2</label>
+                                <input type="text" class="form-control" name="street2">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">City</label>
+                                <input type="text" class="form-control" name="city">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">State</label>
+                                <input type="text" class="form-control" name="state">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">ZIP Code</label>
+                                <input type="text" class="form-control" name="zip">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Country</label>
+                                <input type="text" class="form-control" name="country" value="USA">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Company</button>
+                    </form>
+                </div>
             </div>
-            <?php if ($isAdmin): ?>
 
-            <?php endif; ?>
+            <div class="card">
+                <div class="card-header">
+                    <h5>Companies List</h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($companies)): ?>
+                        <p>No companies found. Add your first company above.</p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Industry</th>
+                                        <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($companies as $company): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($company['name']) ?></td>
+                                            <td><?= htmlspecialchars($company['email']) ?></td>
+                                            <td><?= htmlspecialchars($company['phone']) ?></td>
+                                            <td><?= htmlspecialchars($company['industry']) ?></td>
+                                            <?php if ($isAdmin): ?>
+                                                <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
+                                                <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
+                                            <?php endif; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
-        <div class="main-content">
-            <div class="container">
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success"><?= $success ?></div>
-        <?php endif; ?>
-        
-        <?php if (isset($error)): ?>
-            <div class="alert alert-error"><?= $error ?></div>
-        <?php endif; ?>
-
-        <div class="card">
-            <h3>Add New Company</h3>
-            <form method="POST">
-                <div class="form-group">
-                    <label>Company Name</label>
-                    <input type="text" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label>EIN</label>
-                    <input type="text" name="ein" placeholder="XX-XXXXXXX">
-                </div>
-                <div class="form-group">
-                    <label>Business ID</label>
-                    <input type="text" name="business_id">
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email">
-                </div>
-                <div class="form-group">
-                    <label>Phone</label>
-                    <input type="text" name="phone">
-                </div>
-                <div class="form-group">
-                    <label>Website</label>
-                    <input type="url" name="website" placeholder="https://">
-                </div>
-                <div class="form-group">
-                    <label>LinkedIn</label>
-                    <input type="url" name="linkedin" placeholder="https://linkedin.com/company/">
-                </div>
-                <div class="form-group">
-                    <label>Industry</label>
-                    <select name="industry">
-                        <option value="">Select Industry</option>
-                        <option value="Technology">Technology</option>
-                        <option value="Healthcare">Healthcare</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Manufacturing">Manufacturing</option>
-                        <option value="Retail">Retail</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>About the Company</label>
-                    <textarea name="about"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Street Address</label>
-                    <input type="text" name="street">
-                </div>
-                <div class="form-group">
-                    <label>Street Address 2</label>
-                    <input type="text" name="street2">
-                </div>
-                <div class="form-group">
-                    <label>City</label>
-                    <input type="text" name="city">
-                </div>
-                <div class="form-group">
-                    <label>State</label>
-                    <input type="text" name="state">
-                </div>
-                <div class="form-group">
-                    <label>ZIP Code</label>
-                    <input type="text" name="zip">
-                </div>
-                <div class="form-group">
-                    <label>Country</label>
-                    <input type="text" name="country" value="USA">
-                </div>
-                <button type="submit" class="btn">Add Company</button>
-            </form>
-        </div>
-
-        <div class="card">
-            <h3>Companies List</h3>
-            <?php if (empty($companies)): ?>
-                <p>No companies found. Add your first company above or <a href="/web/setup_crm.php">setup the database</a>.</p>
-            <?php else: ?>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Industry</th>
-                            <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($companies as $company): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($company['name']) ?></td>
-                                <td><?= htmlspecialchars($company['email']) ?></td>
-                                <td><?= htmlspecialchars($company['phone']) ?></td>
-                                <td><?= htmlspecialchars($company['industry']) ?></td>
-                                <?php if ($isAdmin): ?>
-                                    <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
-                                    <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
-                                <?php endif; ?>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+    </div>
 </div>
+
+<script>
+// Add some interactivity
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-format EIN input
+    const einInput = document.querySelector('input[name="ein"]');
+    if (einInput) {
+        einInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '-' + value.substring(2, 9);
+            }
+            e.target.value = value;
+        });
+    }
+    
+    // Auto-format phone input
+    const phoneInput = document.querySelector('input[name="phone"]');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 6) {
+                value = '(' + value.substring(0, 3) + ') ' + value.substring(3, 6) + '-' + value.substring(6, 10);
+            } else if (value.length >= 3) {
+                value = '(' + value.substring(0, 3) + ') ' + value.substring(3);
+            }
+            e.target.value = value;
+        });
+    }
+});
+</script>
 </body>
 </html>

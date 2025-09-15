@@ -26,10 +26,28 @@ try {
 }
 
 $pageTitle = 'CRM Dashboard - ZeroAI';
-include __DIR__ . '/../admin/includes/header.php';
+$currentPage = 'crm_dashboard';
+$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
+$isAdmin = isset($_SESSION['admin_logged_in']);
+include __DIR__ . '/includes/header.php';
 ?>
 
-<h1>🏢 Multi-Tenant CRM Dashboard</h1>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0"><i class="fas fa-tachometer-alt text-primary"></i> CRM Dashboard</h1>
+                <div class="d-flex gap-2">
+                    <a href="/web/companies.php" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Company
+                    </a>
+                    <a href="/web/projects.php" class="btn btn-success">
+                        <i class="fas fa-project-diagram"></i> New Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <div class="stats-grid">
     <div class="stat-card">
@@ -100,4 +118,8 @@ include __DIR__ . '/../admin/includes/header.php';
     </div>
 </div>
 
-<?php include __DIR__ . '/../admin/includes/footer.php'; ?>
+        </div>
+    </div>
+</div>
+</body>
+</html>
