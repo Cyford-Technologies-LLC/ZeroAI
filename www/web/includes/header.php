@@ -90,36 +90,36 @@ $currentPage = $currentPage ?? '';
      style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; z-index: 999;"></div>
 
 <!-- Top Navigation -->
-<div style="background: #2563eb; color: white; padding: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-    <div style="max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; flex-wrap: nowrap;">
-        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-            <button style="background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; padding: 6px;"
+<div style="background: #2563eb; color: white; padding: 12px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <div style="max-width: 1600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; flex-wrap: nowrap;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+            <button style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 8px;"
                     onclick="toggleSidebar()">☰
             </button>
-            <div style="font-size: 1.3rem; font-weight: bold; white-space: nowrap;">🏢 ZeroAI</div>
+            <div style="font-size: 1.4rem; font-weight: bold; white-space: nowrap;">🏢 ZeroAI CRM</div>
         </div>
-        <div style="display: flex; gap: 8px; flex: 1; justify-content: center; overflow: hidden;">
+        <div style="display: flex; gap: 15px; flex: 1; justify-content: center;">
             <a href="/web/index.php"
-               style="color: white; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; <?= ($currentPage ?? '') === 'crm_dashboard' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📊 Dashboard</a>
+               style="color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; white-space: nowrap; <?= ($currentPage ?? '') === 'crm_dashboard' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📊 Dashboard</a>
             <a href="/web/companies.php"
-               style="color: white; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; <?= ($currentPage ?? '') === 'companies' ? 'background: rgba(255,255,255,0.2);' : '' ?>">🏢 Companies</a>
+               style="color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; white-space: nowrap; <?= ($currentPage ?? '') === 'companies' ? 'background: rgba(255,255,255,0.2);' : '' ?>">🏢 Companies</a>
             <a href="/web/contacts.php"
-               style="color: white; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; <?= ($currentPage ?? '') === 'contacts' ? 'background: rgba(255,255,255,0.2);' : '' ?>">👥 Contacts</a>
+               style="color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; white-space: nowrap; <?= ($currentPage ?? '') === 'contacts' ? 'background: rgba(255,255,255,0.2);' : '' ?>">👥 Contacts</a>
             <a href="/web/sales.php"
-               style="color: white; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; <?= ($currentPage ?? '') === 'sales' ? 'background: rgba(255,255,255,0.2);' : '' ?>">💰 Sales</a>
+               style="color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; white-space: nowrap; <?= ($currentPage ?? '') === 'sales' ? 'background: rgba(255,255,255,0.2);' : '' ?>">💰 Sales</a>
             <a href="/web/projects.php"
-               style="color: white; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; <?= ($currentPage ?? '') === 'projects' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📋 Projects</a>
+               style="color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; white-space: nowrap; <?= ($currentPage ?? '') === 'projects' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📋 Projects</a>
             <a href="/web/tasks.php"
-               style="color: white; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; <?= ($currentPage ?? '') === 'tasks' ? 'background: rgba(255,255,255,0.2);' : '' ?>">✅ Tasks</a>
+               style="color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 0.95rem; white-space: nowrap; <?= ($currentPage ?? '') === 'tasks' ? 'background: rgba(255,255,255,0.2);' : '' ?>">✅ Tasks</a>
         </div>
-        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
-            <span style="color: rgba(255,255,255,0.9); font-size: 0.8rem;">👤 <?= htmlspecialchars($currentUser ?? 'User') ?></span>
+        <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+            <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">👤 <?= htmlspecialchars($currentUser ?? 'User') ?></span>
             <?php if (isset($isAdmin) && $isAdmin): ?><a href="/admin/dashboard.php"
-                                                         style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">⚙️</a><?php endif; ?>
+                                                         style="background: #6c757d; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">⚙️ Admin</a><?php endif; ?>
             <a href="/web/ai_workshop.php"
-               style="background: #0dcaf0; color: black; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">🤖</a>
+               style="background: #0dcaf0; color: black; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🤖 AI</a>
             <a href="/web/logout.php"
-               style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">🚪</a>
+               style="background: #dc3545; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🚪 Logout</a>
         </div>
     </div>
 </div>
