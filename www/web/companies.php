@@ -79,7 +79,7 @@ include __DIR__ . '/includes/header.php';
                 <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php" class="active">Companies</a>
                 <?php if (isset($_GET['company_id'])): ?>
-                    <a href="/web/users.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">👥 Users</a>
+                    <a href="/web/employees.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">👥 Employees</a>
                     <a href="/web/contacts.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📞 Contacts</a>
                 <?php else: ?>
                     <a href="/web/contacts.php">Contacts</a>
@@ -87,17 +87,15 @@ include __DIR__ . '/includes/header.php';
                 <a href="/web/projects.php">Projects</a>
                 <?php if (isset($_GET['project_id'])): ?>
                     <a href="/web/tasks.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">📋 Tasks</a>
-                    <a href="/web/bugs.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">🐛 Bugs</a>
                     <a href="/web/features.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">✨ Features</a>
+                    <a href="/web/bugs.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">🐛 Bugs</a>
                 <?php else: ?>
                     <a href="/web/tasks.php">Tasks</a>
                 <?php endif; ?>
             </div>
-            <div class="sidebar-group">
-                <h3>Tools</h3>
-                <a href="/web/init.php">Setup Database</a>
-                <a href="/web/cleanup.php">Cleanup Data</a>
-            </div>
+            <?php if ($isAdmin): ?>
+
+            <?php endif; ?>
         </div>
         <div class="main-content">
             <div class="container">

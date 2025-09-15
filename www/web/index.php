@@ -30,24 +30,8 @@ include __DIR__ . '/includes/header.php';
             </div>
         </div>
     </div>
-    <div class="content-wrapper">
-        <div class="sidebar">
-            <div class="sidebar-group">
-                <h3>CRM</h3>
-                <a href="/web/index.php" <?= ($currentPage ?? '') === 'crm_dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
-                <a href="/web/companies.php" <?= ($currentPage ?? '') === 'companies' ? 'class="active"' : '' ?>>Companies</a>
-                <a href="/web/contacts.php" <?= ($currentPage ?? '') === 'contacts' ? 'class="active"' : '' ?>>Contacts</a>
-                <a href="/web/projects.php" <?= ($currentPage ?? '') === 'projects' ? 'class="active"' : '' ?>>Projects</a>
-                <a href="/web/tasks.php" <?= ($currentPage ?? '') === 'tasks' ? 'class="active"' : '' ?>>Tasks</a>
-            </div>
-            <div class="sidebar-group">
-                <h3>Tools</h3>
-                <a href="/web/init.php">Setup Database</a>
-                <a href="/web/cleanup.php">Cleanup Data</a>
-            </div>
-        </div>
-        <div class="main-content">
-            <div class="container">
+    <div class="main-content">
+        <div class="container">
         <div class="card">
             <h3>Quick Actions</h3>
             <a href="/web/companies.php" class="btn">Companies</a>
@@ -79,4 +63,7 @@ include __DIR__ . '/includes/header.php';
             <h3>Welcome to ZeroAI CRM</h3>
             <p>Your customer relationship management system is ready. Use the navigation above to manage your business data.</p>
             <p><strong>Logged in as:</strong> <?= htmlspecialchars($currentUser) ?></p>
-<?php include __DIR__ . '/includes/footer.php'; ?>
+        </div>
+    </div>
+</body>
+</html>
