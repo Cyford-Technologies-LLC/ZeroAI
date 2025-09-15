@@ -5,9 +5,10 @@ $currentPage = 'agents';
 
 require_once __DIR__ . '/includes/autoload.php';
 
-use ZeroAI\Core\DatabaseManager;
+use ZeroAI\Core\{DatabaseManager, Agent};
 
 $db = DatabaseManager::getInstance();
+$agent = new Agent();
 
 include __DIR__ . '/includes/header.php';
 
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         if ($data['name'] && $data['role'] && $data['goal']) {
-            if ($db->insert('agents', $data)) {
+            if ($agent->create($data)) {
                 $message = "Agent '{$data['name']}' created successfully!";
             } else {
                 $error = "Failed to create agent.";
@@ -79,14 +80,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'feedback_incorporation' => $_POST['feedback_incorporation'] ?? 'immediate'
         ]);
         
-        if ($db->update('agents', $updates, ['id' => $agentId])) {
+        if ($agent->update($agentId, $updates)) {
             $message = 'Agent updated successfully!';
         } else {
             $error = 'Failed to update agent.';
         }
     } elseif (($_POST['action'] ?? '') === 'delete_agent') {
         $agentId = (int)($_POST['agent_id'] ?? 0);
-        if ($db->delete('agents', ['id' => $agentId])) {
+        if ($agent->delete($agentId)) {
             $message = 'Agent deleted successfully!';
         } else {
             $error = 'Failed to delete agent.';
@@ -94,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$agents = $db->select('agents') ?: [];
+$agents = $agent->getAll();
 ?>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
