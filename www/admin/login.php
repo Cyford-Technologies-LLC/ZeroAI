@@ -28,7 +28,7 @@ if ($_POST) {
         
         $user = $userManager->authenticate($username, $password);
         
-        if ($user) {
+        if ($user && in_array($user['role'], ['admin', 'demo'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['username'];
             $_SESSION['user_role'] = $user['role'];

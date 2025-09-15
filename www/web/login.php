@@ -67,19 +67,79 @@ if ($_POST) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .login-card { max-width: 400px; margin: 0 auto; }
-        .card { border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
-        .btn-primary:hover { background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%); }
+        body { 
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+            min-height: 100vh; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-container { min-height: 100vh; padding: 20px; }
+        .login-card { 
+            max-width: 420px; 
+            margin: 0 auto;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .card { 
+            border: none; 
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .card-body { padding: 3rem 2rem; }
+        .display-4 { font-size: 3.5rem; }
+        .btn-primary { 
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover { 
+            background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .form-control {
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        .input-group-text {
+            border-radius: 15px 0 0 15px;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            background: #f8f9fa;
+        }
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 15px 15px 0;
+        }
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+        .text-decoration-none:hover {
+            text-decoration: underline !important;
+        }
+        @media (max-width: 576px) {
+            .card-body { padding: 2rem 1.5rem; }
+            .display-4 { font-size: 2.5rem; }
+            .login-container { padding: 10px; }
+        }
     </style>
 </head>
-<body class="d-flex align-items-center">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-4">
+<body>
+    <div class="container-fluid login-container d-flex align-items-center justify-content-center">
+        <div class="row w-100 justify-content-center">
+            <div class="col-12 col-sm-8 col-md-6 col-lg-4">
                 <div class="card login-card">
-                    <div class="card-body p-5">
+                    <div class="card-body">
                         <div class="text-center mb-4">
                             <i class="bi bi-robot display-4 text-primary"></i>
                             <h2 class="mt-2">ZeroAI Portal</h2>
