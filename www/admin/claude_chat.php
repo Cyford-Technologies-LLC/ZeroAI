@@ -146,4 +146,17 @@ include __DIR__ . '/includes/header.php';
 
 
 
+<script>
+function toggleScratchPad() {
+    const scratchPad = document.getElementById('scratch-pad-editor');
+    if (scratchPad) {
+        if (scratchPad.style.display === 'none' || scratchPad.style.display === '') {
+            scratchPad.style.display = 'block';
+        } else {
+            scratchPad.style.display = 'none';
+        }
+    }
+}
+</script>
+
 <?php include __DIR__ . '/includes/footer.php'; ?>
