@@ -287,6 +287,83 @@ $currentPage = $currentPage ?? '';
             }
             updateSidebarContent();
         }
+    }
+
+    function updateSidebarContent() {
+        const currentPage = window.location.pathname;
+        const content = document.getElementById('sidebar-content');
+
+        if (!content) return;
+
+        let links = '';
+
+        if (currentPage.includes('/companies') || currentPage.includes('/contacts') || currentPage.includes('/employees') || currentPage.includes('/locations')) {
+            links = `
+                <a href="/web/contacts.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">👥 Contacts</a>
+                <a href="/web/employees.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">👨💼 Employees</a>
+                <a href="/web/locations.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📍 Locations</a>
+            `;
+        } else if (currentPage.includes('/projects') || currentPage.includes('/tasks') || currentPage.includes('/features') || currentPage.includes('/bugs')) {
+            links = `
+                <a href="/web/tasks.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">✅ Tasks</a>
+                <a href="/web/features.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">✨ Features</a>
+                <a href="/web/bugs.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">🐛 Bugs</a>
+            `;
+        } else if (currentPage.includes('/sales') || currentPage.includes('/leads') || currentPage.includes('/opportunities') || currentPage.includes('/quotes')) {
+            links = `
+                <a href="/web/leads.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📋 Leads</a>
+                <a href="/web/opportunities.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">💰 Opportunities</a>
+                <a href="/web/quotes.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📄 Quotes</a>
+            `;
+        } else {
+            links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available</p>';
+        }
+
+        content.innerHTML = links;
+    }
+
+    function updateSidebarForProfile() {
+        const content = document.getElementById('sidebar-content');
+        if (!content) return;
+
+        const links = `
+            <div style="padding: 12px 0; border-bottom: 1px solid #334155; color: #e2e8f0;">
+                <strong>👤 <?= htmlspecialchars($currentUser ?? 'User') ?></strong>
+            </div>
+            <a href="/web/profile.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">⚙️ Settings</a>
+            <a href="/web/logout.php" style="display: block; color: #f87171; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">🚪 Logout</a>
+        `;
+        
+        content.innerHTML = links;
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        const overlay = document.getElementById('sidebar-overlay');
+        const sidebar = document.getElementById('sidebar');
+        const header = document.getElementById('main-header');
+        
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
+        
+        // Set initial sidebar position below header
+        if (sidebar && header) {
+            const headerHeight = header.offsetHeight;
+            sidebar.style.top = headerHeight + 'px';
+            sidebar.style.height = `calc(100vh - ${headerHeight}px)`;
+        }
+    });
+</script>ainContent) {
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.transition = 'margin-left 0.3s ease';
+                }
+                if (header) {
+                    header.style.marginLeft = '250px';
+                }
+            }
+            updateSidebarContent();
+        }
     }r.style.marginLeft = '250px';
                 }
             }
