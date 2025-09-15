@@ -34,43 +34,6 @@ try {
 
 ?>
 
-<nav class="navbar navbar-expand-lg" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/web/index.php" style="color: white; font-weight: bold;">🏢 ZeroAI CRM</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link <?= ($currentPage ?? '') === 'crm_dashboard' ? 'active' : '' ?>" href="/web/index.php" style="color: rgba(255,255,255,0.9);">📊 Dashboard</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($currentPage ?? '') === 'companies' ? 'active' : '' ?>" href="/web/companies.php" style="color: rgba(255,255,255,0.9);">🏢 Companies</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($currentPage ?? '') === 'contacts' ? 'active' : '' ?>" href="/web/contacts.php" style="color: rgba(255,255,255,0.9);">👥 Contacts</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($currentPage ?? '') === 'sales' ? 'active' : '' ?>" href="/web/sales.php" style="color: rgba(255,255,255,0.9);">💰 Sales</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($currentPage ?? '') === 'projects' ? 'active' : '' ?>" href="/web/projects.php" style="color: rgba(255,255,255,0.9);">📋 Projects</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($currentPage ?? '') === 'tasks' ? 'active' : '' ?>" href="/web/tasks.php" style="color: rgba(255,255,255,0.9);">✅ Tasks</a>
-                </li>
-            </ul>
-            <div class="d-flex align-items-center gap-2">
-                <span class="navbar-text" style="color: rgba(255,255,255,0.9);">👤 <?= htmlspecialchars($currentUser) ?></span>
-                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="btn btn-secondary btn-sm">⚙️ Admin</a><?php endif; ?>
-                <a href="/web/ai_workshop.php" class="btn btn-info btn-sm">🤖 AI</a>
-                <a href="/web/logout.php" class="btn btn-danger btn-sm">🚪 Logout</a>
-            </div>
-        </div>
-    </div>
-</nav>
-
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-md-12">
