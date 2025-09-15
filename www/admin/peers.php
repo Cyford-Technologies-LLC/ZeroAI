@@ -42,14 +42,20 @@ $peers = $peersData['peers'] ?? [];
 <h1>🌐 Peer Resources</h1>
 
 <div class="card">
-    <h3>🤖 Local Ollama Instance</h3>
+    <h3>🤖 Local Ollama Instance (Emergency Fallback)</h3>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $ollamaStatus['available'] ? '#28a745' : '#dc3545' ?>;"></span>
-            <strong><?= $ollamaStatus['available'] ? 'Online' : 'Offline' ?></strong>
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $ollamaStatus['available'] ? '#ffc107' : '#dc3545' ?>;"></span>
+            <strong><?= $ollamaStatus['available'] ? 'Standby' : 'Offline' ?></strong>
             <span style="color: #666;"><?= $ollamaStatus['url'] ?></span>
+            <span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 12px; font-size: 11px;">BACKUP ONLY</span>
         </div>
         <span style="font-size: 0.9em; color: #666;">Last checked: <?= $ollamaStatus['last_checked'] ?></span>
+    </div>
+    
+    <div style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+        ⚠️ <strong>Dynamic Router Priority:</strong> This local instance is only used when all powerful peer nodes are unavailable. 
+        The system automatically routes to the most capable peers first for optimal performance.
     </div>
     
     <?php if ($ollamaStatus['available']): ?>

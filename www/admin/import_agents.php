@@ -69,7 +69,7 @@ if (file_exists($sqlFile)) {
         
         // Fill in CrewAI defaults for any missing values
         $db->query("UPDATE agents SET 
-            llm_model = COALESCE(llm_model, 'llama3.2:1b'),
+            llm_model = COALESCE(llm_model, 'auto'),
             verbose = COALESCE(verbose, 0),
             allow_delegation = COALESCE(allow_delegation, 1),
             allow_code_execution = COALESCE(allow_code_execution, 0),
