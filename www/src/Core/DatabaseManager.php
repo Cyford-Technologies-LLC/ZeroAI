@@ -40,7 +40,7 @@ class DatabaseManager {
         if (stripos(trim($sql), 'SELECT') === 0) {
             $cacheKey = 'db_' . hash('sha256', $sql . serialize($params));
             $cached = $this->cache->get($cacheKey);
-            if ($cached !== null) {
+            if ($cached !== null && $cached !== false) {
                 return $cached;
             }
         }

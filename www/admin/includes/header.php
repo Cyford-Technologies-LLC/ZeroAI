@@ -25,13 +25,13 @@ $currentPage = $currentPage ?? '';
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
     
     <!-- ZeroAI Admin Styles -->
-    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="/www/assets/css/admin.css">
     <?php if ($currentPage === 'claude_chat'): ?>
-    <link rel="stylesheet" href="/assets/css/claude.css">
+    <link rel="stylesheet" href="/www/assets/css/claude.css">
     <?php endif; ?>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/www/assets/img/favicon.ico">
 </head>
 <body>
     <div class="container">

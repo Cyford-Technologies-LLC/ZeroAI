@@ -31,27 +31,36 @@ class CacheManager {
         
         // Try Redis
         if ($this->redis) {
-            $value = $this->redis->get($key);
-            if ($value !== false) {
-                return unserialize($value);
+            try {
+                $value = $this->redis->get($key);
+                if ($value !== false) {
+                    return unserialize($value);
+                }
+            } catch (Exception $e) {
+                error_log("Redis get failed: " . $e->getMessage());
             }
         }
         
-        return false;
+        return null;
     }
     
     public function set($key, $value, $ttl = 3600) {
-        // Store in APCu for fast access
-        if (extension_loaded('apcu')) {
-            apcu_store($key, $value, $ttl);
+        try {
+            // Store in APCu for fast access
+            if (extension_loaded('apcu')) {
+                apcu_store($key, $value, $ttl);
+            }
+            
+            // Store in Redis for persistence
+            if ($this->redis) {
+                $this->redis->setex($key, $ttl, serialize($value));
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Cache set failed: " . $e->getMessage());
+            return false;
         }
-        
-        // Store in Redis for persistence
-        if ($this->redis) {
-            $this->redis->setex($key, $ttl, serialize($value));
-        }
-        
-        return true;
     }
     
     public function delete($key) {

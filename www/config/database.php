@@ -105,32 +105,80 @@ class Database {
     
     // Enhanced write with Redis + Queue
     public function insert($table, $data) {
-        // Immediate Redis cache update
-        $this->invalidateTableCache($table);
+        // Try queue first
+        $queued = $this->queue->push($table, $data, 'INSERT');
         
-        // Queue for background database write
-        $this->queue->push($table, $data, 'INSERT');
+        if (!$queued) {
+            // Fallback to direct database write
+            $sql = "INSERT INTO {$table} (" . implode(',', array_keys($data)) . ") VALUES (" . str_repeat('?,', count($data) - 1) . "?)";
+            $stmt = $this->pdo->prepare($sql);
+            $result = $stmt->execute(array_values($data));
+            
+            if ($result) {
+                $data['id'] = $this->pdo->lastInsertId();
+            }
+        } else {
+            // Simulate ID for immediate use
+            $data['id'] = time() . rand(1000, 9999);
+        }
         
-        return true;
+        // Update Redis cache immediately
+        $this->updateCacheAfterWrite($table, $data, 'INSERT');
+        
+        return $data['id'] ?? true;
     }
     
     public function update($table, $data, $where) {
-        // Immediate Redis cache update
-        $this->invalidateTableCache($table);
+        // Try queue first
+        $queueData = ['data' => $data, 'where' => $where];
+        $queued = $this->queue->push($table, $queueData, 'UPDATE');
         
-        // Queue for background database write
-        $queueData = array_merge($data, $where);
-        $this->queue->push($table, $queueData, 'UPDATE');
+        if (!$queued) {
+            // Fallback to direct database write
+            $setParts = [];
+            $params = [];
+            foreach ($data as $key => $value) {
+                $setParts[] = "{$key} = ?";
+                $params[] = $value;
+            }
+            
+            $whereParts = [];
+            foreach ($where as $key => $value) {
+                $whereParts[] = "{$key} = ?";
+                $params[] = $value;
+            }
+            
+            $sql = "UPDATE {$table} SET " . implode(', ', $setParts) . " WHERE " . implode(' AND ', $whereParts);
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+        }
+        
+        // Update Redis cache immediately
+        $this->updateCacheAfterWrite($table, array_merge($data, $where), 'UPDATE');
         
         return true;
     }
     
     public function delete($table, $where) {
-        // Immediate Redis cache update
-        $this->invalidateTableCache($table);
+        // Try queue first
+        $queued = $this->queue->push($table, $where, 'DELETE');
         
-        // Queue for background database write
-        $this->queue->push($table, $where, 'DELETE');
+        if (!$queued) {
+            // Fallback to direct database write
+            $whereParts = [];
+            $params = [];
+            foreach ($where as $key => $value) {
+                $whereParts[] = "{$key} = ?";
+                $params[] = $value;
+            }
+            
+            $sql = "DELETE FROM {$table} WHERE " . implode(' AND ', $whereParts);
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+        }
+        
+        // Update Redis cache immediately
+        $this->updateCacheAfterWrite($table, $where, 'DELETE');
         
         return true;
     }
@@ -153,6 +201,22 @@ class Database {
         } catch (Exception $e) {
             // Redis error, log but continue
             error_log("Redis cache invalidation failed: " . $e->getMessage());
+        }
+    }
+    
+    private function updateCacheAfterWrite($table, $data, $action) {
+        try {
+            // Invalidate table cache
+            $this->invalidateTableCache($table);
+            
+            // For INSERT/UPDATE, pre-populate cache with new data
+            if ($action === 'INSERT' && isset($data['id'])) {
+                $cacheKey = "db:{$table}:id:" . $data['id'];
+                $this->cache->set($cacheKey, [$data], 300);
+            }
+            
+        } catch (Exception $e) {
+            error_log("Cache update failed: " . $e->getMessage());
         }
     }
 }
