@@ -1,20 +1,25 @@
 <?php
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/includes/autoload.php';
-
 try {
-    $peerManager = \ZeroAI\Core\PeerManager::getInstance();
-    $peers = $peerManager->getPeers();
+    // Simple peer data from config file
+    $configPath = '/app/config/peers.json';
+    $peers = [];
+    
+    if (file_exists($configPath)) {
+        $content = file_get_contents($configPath);
+        $data = json_decode($content, true);
+        $peers = $data['peers'] ?? [];
+    }
     
     // If no peers in config, show local system
     if (empty($peers)) {
         $peers = [[
-            'name' => 'Local System',
+            'name' => 'Local System (Fallback)',
             'ip' => '127.0.0.1',
             'port' => 8080,
             'status' => 'online',
-            'models' => ['llama3.2:1b'],
+            'models' => ['auto'],
             'memory_gb' => round(memory_get_usage(true) / 1024 / 1024 / 1024, 1),
             'gpu_available' => false,
             'gpu_memory_gb' => 0,
