@@ -1,23 +1,8 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-use ZeroAI\Core\{Company, CompanyAI};
-
-$companyId = $_GET['id'] ?? 0;
-$company = new Company();
-$companyAI = new CompanyAI();
-
-$companyData = $company->findById($companyId);
-$aiConfig = $companyAI->getCompanyAI($companyId);
-
-if (!$companyData) {
-    header('Location: dashboard.php');
-    exit;
-}
+include __DIR__ . '/../admin/includes/header.php';
 
 $pageTitle = 'Company AI: ' . $companyData['name'];
-include __DIR__ . '/../admin/includes/header.php';
+
 ?>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
