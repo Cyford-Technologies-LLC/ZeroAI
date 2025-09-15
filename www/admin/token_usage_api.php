@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/includes/autoload.php';
 
 try {
-    $db = new \ZeroAI\Core\DatabaseManager();
+    $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     // Get token usage stats for different time periods
     $stats = [
