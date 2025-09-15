@@ -128,7 +128,7 @@ $currentPage = $currentPage ?? '';
 <body>
 <!-- Left Sidebar -->
 <div id="sidebar"
-     style="position: fixed; left: -250px; width: 250px; background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
+     style="position: fixed; left: -250px; top: 70px; width: 250px; height: calc(100vh - 70px); background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
     <div style="padding: 20px; border-bottom: 1px solid #334155;">
         <h6 style="margin: 0; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem;">Menu</h6>
     </div>
@@ -177,11 +177,6 @@ $currentPage = $currentPage ?? '';
 
         if (!sidebar || !overlay) return;
 
-        // Calculate header height dynamically
-        const headerHeight = header ? header.offsetHeight : 70;
-        sidebar.style.top = headerHeight + 'px';
-        sidebar.style.height = `calc(100vh - ${headerHeight}px)`;
-
         const isOpen = sidebar.style.left === '0px';
 
         if (isOpen) {
@@ -206,11 +201,6 @@ $currentPage = $currentPage ?? '';
                 }
                 if (header) {
                     header.style.marginLeft = '250px';
-                }
-            }
-            updateSidebarContent();
-        }
-    }r.style.marginLeft = '250px';
                 }
             }
             updateSidebarContent();
@@ -268,18 +258,8 @@ $currentPage = $currentPage ?? '';
     // Initialize when page loads
     document.addEventListener('DOMContentLoaded', function () {
         const overlay = document.getElementById('sidebar-overlay');
-        const sidebar = document.getElementById('sidebar');
-        const header = document.getElementById('main-header');
-        
         if (overlay) {
             overlay.addEventListener('click', toggleSidebar);
-        }
-        
-        // Set initial sidebar position below header
-        if (sidebar && header) {
-            const headerHeight = header.offsetHeight;
-            sidebar.style.top = headerHeight + 'px';
-            sidebar.style.height = `calc(100vh - ${headerHeight}px)`;
         }
     });
 </script>
