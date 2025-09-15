@@ -1,9 +1,14 @@
 <?php
 session_start();
 
+// Enable error logging first
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/claude_debug.log');
+
 try {
     require_once __DIR__ . '/../src/autoload.php';
 } catch (Exception $e) {
+    error_log('Claude API Autoload Error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'System error']);
     exit;
@@ -27,7 +32,15 @@ try {
     $logger->info('Claude API action', ['action' => $action]);
     
     // Initialize comprehensive Claude Provider with full tool system
+    $logger->info('Initializing ClaudeProvider');
+    
+    if (!class_exists('\ZeroAI\Providers\AI\Claude\ClaudeProvider')) {
+        $logger->error('ClaudeProvider class not found');
+        throw new Exception('ClaudeProvider class not found');
+    }
+    
     $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
+    $logger->info('ClaudeProvider initialized successfully');
     
     switch ($action) {
         case 'chat':

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/csp.php';
-require_once __DIR__ . '/autoload.php';
+require_once __DIR__ . '/../src/autoload.php';
 require_once __DIR__ . '/../auth_check.php';
 
 // Check for 404 errors and log them
@@ -64,7 +64,7 @@ $currentPage = $currentPage ?? '';
     <!-- ZeroAI Admin Styles -->
     <link rel="stylesheet" href="/assets/admin/css/admin-styles.css">
     <?php if ($currentPage === 'claude_chat'): ?>
-    <link rel="stylesheet" href="/www/assets/css/claude.css">
+    <link rel="stylesheet" href="/assets/css/claude.css">
     <?php endif; ?>
 </head>
 <body>
