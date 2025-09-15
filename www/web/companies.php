@@ -60,9 +60,7 @@ include __DIR__ . '/includes/header.php';
     <div class="header">
         <div class="header-content">
             <div class="logo">🏢 ZeroAI CRM - Companies</div>
-            <div class="ai-workshop">
-                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
-            </div>
+
             <nav class="nav">
                 <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php" class="active">Companies</a>
@@ -71,6 +69,7 @@ include __DIR__ . '/includes/header.php';
             <div class="user-info">
                 <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
                 <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
+                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
                 <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
             </div>
         </div>
@@ -88,13 +87,6 @@ include __DIR__ . '/includes/header.php';
                     <a href="/web/contacts.php">Contacts</a>
                 <?php endif; ?>
                 <a href="/web/projects.php">Projects</a>
-                <?php if (isset($_GET['project_id'])): ?>
-                    <a href="/web/tasks.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">📋 Tasks</a>
-                    <a href="/web/features.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">✨ Features</a>
-                    <a href="/web/bugs.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">🐛 Bugs</a>
-                <?php else: ?>
-                    <a href="/web/tasks.php">Tasks</a>
-                <?php endif; ?>
             </div>
             <?php if ($isAdmin): ?>
 
