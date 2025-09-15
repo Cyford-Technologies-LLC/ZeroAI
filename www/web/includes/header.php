@@ -115,7 +115,85 @@ $currentPage = $currentPage ?? '';
             background: linear-gradient(135deg, #fef2f2, #fecaca);
             color: #991b1b;
         }
+        
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+        
+        .menu-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
     </style>
 
 </head>
 <body>
+    <!-- Left Sidebar -->
+    <div id="sidebar" style="position: fixed; left: -250px; top: 0; width: 250px; height: 100vh; background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto;">
+        <div style="padding: 20px; border-bottom: 1px solid #334155;">
+            <h6 style="margin: 0; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem;">Menu</h6>
+        </div>
+        <div id="sidebar-content" style="padding: 20px;">
+            <!-- Dynamic content based on active page -->
+        </div>
+    </div>
+    
+    <!-- Overlay -->
+    <div id="sidebar-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; z-index: 999;"></div>
+    
+    <script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const isOpen = sidebar.style.left === '0px';
+        
+        if (isOpen) {
+            sidebar.style.left = '-250px';
+            overlay.style.display = 'none';
+        } else {
+            sidebar.style.left = '0px';
+            overlay.style.display = 'block';
+            updateSidebarContent();
+        }
+    }
+    
+    function updateSidebarContent() {
+        const currentPage = '<?= $currentPage ?? '' ?>';
+        const content = document.getElementById('sidebar-content');
+        
+        let links = '';
+        
+        if (currentPage === 'companies') {
+            links = `
+                <a href="/web/employees.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">👥 Employees</a>
+                <a href="/web/locations.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📍 Locations</a>
+                <a href="/web/social_media.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📱 Social Media</a>
+            `;
+        } else if (currentPage === 'projects') {
+            links = `
+                <a href="/web/tasks.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">✅ Tasks</a>
+                <a href="/web/features.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">✨ Features</a>
+                <a href="/web/bugs.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">🐛 Bugs</a>
+            `;
+        } else if (currentPage === 'sales') {
+            links = `
+                <a href="/web/leads.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📋 Leads</a>
+                <a href="/web/opportunities.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">💰 Opportunities</a>
+                <a href="/web/quotes.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📄 Quotes</a>
+            `;
+        } else {
+            links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available</p>';
+        }
+        
+        content.innerHTML = links;
+    }
+    
+    // Close sidebar when clicking overlay
+    document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
+    </script>

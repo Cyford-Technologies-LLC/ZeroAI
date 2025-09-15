@@ -60,7 +60,10 @@ include __DIR__ . '/includes/header.php';
 
 <div style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
-        <div style="font-size: 1.5rem; font-weight: bold;">🏢 ZeroAI CRM</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <div style="font-size: 1.5rem; font-weight: bold;">🏢 ZeroAI CRM</div>
+        </div>
         <div style="display: flex; gap: 20px;">
             <a href="/web/index.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'crm_dashboard' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📊 Dashboard</a>
             <a href="/web/companies.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'companies' ? 'background: rgba(255,255,255,0.2);' : '' ?>">🏢 Companies</a>
