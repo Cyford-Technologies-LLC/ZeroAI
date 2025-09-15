@@ -38,7 +38,20 @@ if (isset($input['action'])) {
 }
 
 $message = $input['message'] ?? '';
-$selectedModel = $input['model'] ?? 'claude-3-5-sonnet-20241022';
+// Get default model from cached models
+$defaultModel = 'claude-3-5-sonnet-20241022'; // fallback
+try {
+    if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeIntegration')) {
+        $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
+        $models = $integration->getModels();
+        if (!empty($models)) {
+            $defaultModel = $models[0]; // Use first available model
+        }
+    }
+} catch (Exception $e) {
+    // Use fallback
+}
+$selectedModel = $input['model'] ?? $defaultModel;
 $conversationHistory = $input['history'] ?? [];
 
 if (!$message) {
