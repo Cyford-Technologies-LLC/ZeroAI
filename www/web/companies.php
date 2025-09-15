@@ -1,5 +1,5 @@
 <?php
-
+include __DIR__ . '/includes/header.php';
 
 // Handle form submission
 if ($_POST && isset($_POST['name'])) {
@@ -13,7 +13,7 @@ if ($_POST && isset($_POST['name'])) {
 }
 
 
-include __DIR__ . '/includes/header.php';
+
 ?>
 
 <div class="container-fluid mt-4">
