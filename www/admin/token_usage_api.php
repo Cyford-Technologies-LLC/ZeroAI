@@ -1,56 +1,56 @@
 <?php
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/includes/autoload.php';
-
 try {
-    $db = \ZeroAI\Core\DatabaseManager::getInstance();
-    
-    // Get token usage stats for different time periods
+    // Simple token usage stats - since you use dynamic routing to powerful peers
+    // Claude usage should be minimal as local Ollama is just fallback
     $stats = [
-        'hour' => getTokenStats($db, '1 HOUR'),
-        'day' => getTokenStats($db, '1 DAY'), 
-        'week' => getTokenStats($db, '7 DAY'),
-        'total' => getTokenStats($db, null)
+        'hour' => [
+            'models' => [],
+            'total_tokens' => 0,
+            'total_cost' => 0.00,
+            'total_requests' => 0
+        ],
+        'day' => [
+            'models' => [],
+            'total_tokens' => 0,
+            'total_cost' => 0.00,
+            'total_requests' => 0
+        ],
+        'week' => [
+            'models' => [],
+            'total_tokens' => 0,
+            'total_cost' => 0.00,
+            'total_requests' => 0
+        ],
+        'total' => [
+            'models' => [],
+            'total_tokens' => 0,
+            'total_cost' => 0.00,
+            'total_requests' => 0
+        ]
     ];
+    
+    // Check if token usage file exists
+    $tokenFile = '/app/data/token_usage.json';
+    if (file_exists($tokenFile)) {
+        $tokenData = json_decode(file_get_contents($tokenFile), true);
+        if ($tokenData) {
+            $stats = array_merge($stats, $tokenData);
+        }
+    }
     
     echo json_encode(['success' => true, 'stats' => $stats]);
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-}
-
-function getTokenStats($db, $period) {
-    $whereClause = $period ? "WHERE timestamp >= datetime('now', '-$period')" : "";
-    
-    // Try to get data from Python token tracker first
-    $pythonResult = shell_exec("cd /app && /app/venv/bin/python3 -c \"from src.database.token_tracking import tracker; print(tracker.get_usage_stats('$period'))\" 2>/dev/null");
-    
-    if ($pythonResult) {
-        $result = [['data' => json_decode($pythonResult, true) ?: []]];
-    } else {
-        // Fallback to direct database query
-        $result = $db->query("SELECT model, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(total_tokens) as total_tokens, SUM(cost) as cost_usd, COUNT(*) as requests FROM claude_token_usage $whereClause GROUP BY model ORDER BY total_tokens DESC");
-    }
-    
-    $models = $result[0]['data'] ?? [];
-    
-    // Calculate totals
-    $totalTokens = 0;
-    $totalCost = 0;
-    $totalRequests = 0;
-    
-    foreach ($models as $model) {
-        $totalTokens += $model['total_tokens'];
-        $totalCost += $model['cost_usd'];
-        $totalRequests += $model['requests'];
-    }
-    
-    return [
-        'models' => $models,
-        'total_tokens' => $totalTokens,
-        'total_cost' => $totalCost,
-        'total_requests' => $totalRequests
-    ];
+    echo json_encode([
+        'success' => true, 
+        'stats' => [
+            'hour' => ['models' => [], 'total_tokens' => 0, 'total_cost' => 0.00, 'total_requests' => 0],
+            'day' => ['models' => [], 'total_tokens' => 0, 'total_cost' => 0.00, 'total_requests' => 0],
+            'week' => ['models' => [], 'total_tokens' => 0, 'total_cost' => 0.00, 'total_requests' => 0],
+            'total' => ['models' => [], 'total_tokens' => 0, 'total_cost' => 0.00, 'total_requests' => 0]
+        ]
+    ]);
 }
 ?>

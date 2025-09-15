@@ -1,42 +1,59 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: zeroai_redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
   zeroai:
-      build: .
-      container_name: zeroai_api-prod
-      ports:
-        - "0.0.0.0:3939:3939"
-        - "0.0.0.0:333:333"
-      volumes:
-        - ./src:/app/src
-        - ./API:/app/API
-        - ./run:/app/run
-        - ./config:/app/config
-        - ./examples:/app/examples
-        - /etc/cyford/zeroai/knowledge:/app/knowledge
-        - ./logs:/app/logs
-        - ./www:/app/www
-        - /etc/cyford/zeroai/data:/app/data
-        - /etc/cyford/zeroai/backup:/app/backup
-        - /etc/cyford/zeroai/.env:/app/.env:ro
-        - /var/run/docker.sock:/var/run/docker.sock
-        - ./scripts:/app/scripts
-      environment:
-        - PYTHONPATH=/app
-        - OLLAMA_HOST=http://ollama:11434
-        - PHP_OPCACHE_ENABLE=1
-        - PHP_OPCACHE_MEMORY=128
-        - REDIS_HOST=127.0.0.1
-        - REDIS_PORT=6379
-      env_file:
-        - .env
-      depends_on:
-        - ollama
-      restart: unless-stopped
-      deploy:
-        resources:
-          limits:
-            memory: 2G
-          reservations:
-            memory: 1G
+    build: .
+    container_name: zeroai_api-prod
+    ports:
+      - "0.0.0.0:3939:3939"
+      - "0.0.0.0:333:333"
+    volumes:
+      - ./src:/app/src:ro
+      - ./API:/app/API:ro
+      - ./run:/app/run:ro
+      - ./config:/app/config
+      - ./examples:/app/examples:ro
+      - /etc/cyford/zeroai/knowledge:/app/knowledge
+      - ./logs:/app/logs
+      - ./www:/app/www
+      - /etc/cyford/zeroai/data:/app/data
+      - /etc/cyford/zeroai/backup:/app/backup
+      - /etc/cyford/zeroai/.env:/app/.env:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./scripts:/app/scripts:ro
+    environment:
+      - PYTHONPATH=/app
+      - OLLAMA_HOST=http://ollama:11434
+      - PHP_OPCACHE_ENABLE=1
+      - PHP_OPCACHE_MEMORY=256
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+    depends_on:
+      - ollama
+      - redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 1.5G
 
 
   peer:
@@ -45,36 +62,37 @@ services:
     ports:
       - "0.0.0.0:8080:8080"
     volumes:
-      - ./src:/app/src
-      - ./API:/app/API
-      - ./run:/app/run
+      - ./src:/app/src:ro
+      - ./API:/app/API:ro
+      - ./run:/app/run:ro
       - ./config:/app/config
-      - ./examples:/app/examples
-      - /etc/cyford/zeroai/knowledge:/app/knowledge
+      - ./examples:/app/examples:ro
+      - /etc/cyford/zeroai/knowledge:/app/knowledge:ro
       - ./logs:/app/logs
+      - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/.env:/app/.env:ro
-      - ./scripts:/app/scripts
+      - ./scripts:/app/scripts:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
-      - REDIS_HOST=127.0.0.1
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
     env_file:
       - .env
     command: >
       bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
-      redis-server --daemonize yes && 
       python3 /app/scripts/cron_runner.py & 
-      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 4 --preload"
+      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload --timeout 300"
     depends_on:
       - ollama
+      - redis
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
         reservations:
-          memory: 512M
+          memory: 1G
 
   ollama:
     image: ollama/ollama:latest
@@ -93,3 +111,4 @@ services:
 
 volumes:
   ollama_data:
+  redis_data:

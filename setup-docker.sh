@@ -6,11 +6,11 @@
 # For simplicity, this example assumes a minimal setup.
 # Kill any process using port 333
 sudo fuser -k 333/tcp 2>/dev/null || true
-# Force stop and remove all containers
-docker stop $(docker ps -aq) 2>/dev/null || true
-docker rm $(docker ps -aq) 2>/dev/null || true
-docker compose down --rmi all --remove-orphans --volumes
-docker system prune --all --volumes --force
+# Gentle cleanup - only ZeroAI containers
+echo "🧹 Cleaning up ZeroAI containers..."
+docker compose -f Docker-compose.yml down 2>/dev/null || true
+docker container prune -f
+docker image prune -f
 
 cp .env.example  .env
 
@@ -56,9 +56,13 @@ log_info "Host GID: $HOST_GID"
 
 # Remove old containers to ensure a clean start
 log_info "Removing old ZeroAI containers..."
-docker compose -f Docker-compose.yml -p zeroai-prod down
-# Remove old learning containers
-#docker compose -f docker-compose.learning.yml -p zeroai-learning down
+docker compose -f Docker-compose.yml down --remove-orphans 2>/dev/null || true
+
+# Ensure data directories exist with proper permissions
+log_info "Setting up data directories..."
+sudo mkdir -p /etc/cyford/zeroai/{data,backup,knowledge,logs}
+sudo chown -R $USER:$USER /etc/cyford/zeroai
+chmod -R 755 /etc/cyford/zeroai
 
 
 # GPU detection and startup logic
@@ -73,12 +77,12 @@ if lspci | grep -i 'NVIDIA' > /dev/null; then
     sudo apt-get install -y nvidia-container-toolkit
 
     # Use env to ensure the variables are set for the docker compose command
-    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml -p zeroai-prod up --build --no-cache -d
+    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up --build -d
 #    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml  -f docker-compose.gpu.override.yml -p zeroai-learning up --build -d
 else
     log_info "No NVIDIA GPU found. Using standard configuration."
     # Use env to ensure the variables are set for the docker compose command
-    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -p zeroai-prod up --build -d
+    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml up --build -d
 #    env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f docker-compose.learning.yml -p zeroai-learning up --build -d
 fi
 
