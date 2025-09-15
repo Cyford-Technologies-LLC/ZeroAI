@@ -68,10 +68,17 @@ class Database {
             company_id INTEGER,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
+            middle_name TEXT,
             email TEXT,
             phone TEXT,
+            mobile TEXT,
             position TEXT,
             department TEXT,
+            address TEXT,
+            city TEXT,
+            state TEXT,
+            zip_code TEXT,
+            country TEXT DEFAULT 'USA',
             organization_id INTEGER DEFAULT 1,
             created_by TEXT,
             status TEXT DEFAULT 'active',
@@ -102,8 +109,7 @@ class Database {
         ('Project Manager', 'Project Management Expert', 'Oversee project execution', 'Experienced project manager', '{\"tools\": [\"file_tool\"], \"memory\": true}', 1),
         ('Prompt Refinement Agent', 'Prompt Optimization Specialist', 'Refine prompts for better responses', 'Expert in prompt engineering', '{\"tools\": [\"learning_tool\"], \"memory\": true}', 1);
         
-        INSERT OR IGNORE INTO companies (name, email, phone, industry, organization_id, created_by) VALUES 
-        ('Sample Company', 'contact@sample.com', '555-0123', 'Technology', 1, 'admin');
+
         ";
         
         $this->pdo->exec($sql);

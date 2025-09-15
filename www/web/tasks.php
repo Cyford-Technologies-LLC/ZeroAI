@@ -29,11 +29,10 @@ if ($_POST && isset($_POST['action']) && $_POST['action'] == 'add') {
 
 // Get tasks
 try {
-    $sql = "SELECT * FROM tasks ORDER BY created_at DESC LIMIT 50";
-    $tasks = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    $tasks = $pdo->query("SELECT * FROM tasks ORDER BY created_at DESC LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $tasks = [];
-    $error = "Database error: " . $e->getMessage();
+    $error = "Database tables not found. Please visit <a href='/web/init.php'>init.php</a> first.";
 }
 
 include __DIR__ . '/includes/header.php';

@@ -32,17 +32,12 @@ if ($_POST && isset($_POST['action']) && $_POST['action'] == 'add') {
 
 // Get projects with company info
 try {
-    $sql = "SELECT p.*, c.name as company_name FROM projects p 
-            LEFT JOIN companies c ON p.company_id = c.id 
-            ORDER BY p.created_at DESC";
-    $projects = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get companies for dropdown
+    $projects = $pdo->query("SELECT * FROM projects ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
     $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $projects = [];
     $companies = [];
-    $error = "Database error: " . $e->getMessage();
+    $error = "Database tables not found. Please visit <a href='/web/init.php'>init.php</a> first.";
 }
 
 include __DIR__ . '/includes/header.php';
@@ -139,7 +134,7 @@ include __DIR__ . '/includes/header.php';
                             <?php foreach ($projects as $project): ?>
                                 <tr>
                                     <td><?= htmlspecialchars($project['name']) ?></td>
-                                    <td><?= htmlspecialchars($project['company_name'] ?? 'No Company') ?></td>
+                                    <td><?= htmlspecialchars($project['company_id'] ?? 'No Company') ?></td>
                                     <td><?= htmlspecialchars($project['status']) ?></td>
                                     <td><?= htmlspecialchars($project['priority']) ?></td>
                                     <td><?= $project['budget'] ? '$' . number_format($project['budget'], 2) : '' ?></td>

@@ -19,10 +19,11 @@ $pdo = $db->getConnection();
 // Handle form submissions
 if ($_POST && isset($_POST['action']) && $_POST['action'] == 'add') {
     try {
-        $stmt = $pdo->prepare("INSERT INTO contacts (company_id, first_name, last_name, email, phone, position, department, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)");
+        $stmt = $pdo->prepare("INSERT INTO contacts (company_id, first_name, middle_name, last_name, email, phone, mobile, position, department, address, city, state, zip_code, country, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)");
         $stmt->execute([
-            $_POST['company_id'], $_POST['first_name'], $_POST['last_name'],
-            $_POST['email'], $_POST['phone'], $_POST['position'], $_POST['department'], $currentUser
+            $_POST['company_id'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'],
+            $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
+            $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $currentUser
         ]);
         $success = "Contact added successfully!";
     } catch (Exception $e) {
@@ -83,6 +84,10 @@ include __DIR__ . '/includes/header.php';
                         <input type="text" name="first_name" required>
                     </div>
                     <div class="form-group">
+                        <label>Middle Name</label>
+                        <input type="text" name="middle_name">
+                    </div>
+                    <div class="form-group">
                         <label>Last Name</label>
                         <input type="text" name="last_name" required>
                     </div>
@@ -104,12 +109,36 @@ include __DIR__ . '/includes/header.php';
                         <input type="text" name="phone">
                     </div>
                     <div class="form-group">
+                        <label>Mobile</label>
+                        <input type="text" name="mobile">
+                    </div>
+                    <div class="form-group">
                         <label>Position</label>
                         <input type="text" name="position">
                     </div>
                     <div class="form-group">
                         <label>Department</label>
                         <input type="text" name="department">
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea name="address"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" name="state">
+                    </div>
+                    <div class="form-group">
+                        <label>ZIP Code</label>
+                        <input type="text" name="zip_code">
+                    </div>
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" name="country" value="USA">
                     </div>
                     <button type="submit" class="btn">Add Contact</button>
                 </form>

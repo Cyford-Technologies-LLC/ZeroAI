@@ -32,7 +32,11 @@ $currentPage = $currentPage ?? '';
         .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .form-group input, .form-group select, .form-group textarea { width: 48%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; display: inline-block; margin-right: 2%; }
+        .form-group { display: flex; flex-wrap: wrap; }
+        .form-group label { width: 100%; margin-bottom: 5px; }
+        .form-group textarea { width: 100%; }
+        .form-group select { width: 100%; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #f8f9fa; }
