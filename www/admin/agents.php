@@ -1,60 +1,100 @@
 <?php 
+session_start();
 $pageTitle = 'Agent Management - ZeroAI';
 $currentPage = 'agents';
 
-use ZeroAI\Services\AgentService;
+require_once __DIR__ . '/includes/autoload.php';
 
-$agentService = new AgentService();
+use ZeroAI\Core\DatabaseManager;
+
+$db = DatabaseManager::getInstance();
 
 include __DIR__ . '/includes/header.php';
 
 $message = '';
 $error = '';
 
+// Initialize agents table
+$db->query("CREATE TABLE IF NOT EXISTS agents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    goal TEXT,
+    backstory TEXT,
+    status TEXT DEFAULT 'active',
+    is_core BOOLEAN DEFAULT 0,
+    llm_model TEXT DEFAULT 'local',
+    verbose BOOLEAN DEFAULT 0,
+    allow_delegation BOOLEAN DEFAULT 1,
+    allow_code_execution BOOLEAN DEFAULT 0,
+    memory BOOLEAN DEFAULT 0,
+    max_iter INTEGER DEFAULT 25,
+    max_rpm INTEGER,
+    max_execution_time INTEGER,
+    max_retry_limit INTEGER DEFAULT 2,
+    learning_enabled BOOLEAN DEFAULT 0,
+    learning_rate REAL DEFAULT 0.05,
+    feedback_incorporation TEXT DEFAULT 'immediate',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
 // Handle actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['action'] ?? '') === 'create_agent') {
-        $name = trim($_POST['name'] ?? '');
-        $role = trim($_POST['role'] ?? '');
-        $goal = trim($_POST['goal'] ?? '');
-        $backstory = trim($_POST['backstory'] ?? '');
+        $data = [
+            'name' => $_POST['name'] ?? '',
+            'role' => $_POST['role'] ?? '',
+            'goal' => $_POST['goal'] ?? '',
+            'backstory' => $_POST['backstory'] ?? ''
+        ];
         
-        if ($name && $role && $goal) {
-            $agentData = ['name' => $name, 'role' => $role, 'goal' => $goal, 'backstory' => $backstory];
-            if ($agentService->createAgent($agentData)) {
-                $message = "Agent '$name' created successfully!";
+        if ($data['name'] && $data['role'] && $data['goal']) {
+            if ($db->insert('agents', $data)) {
+                $message = "Agent '{$data['name']}' created successfully!";
             } else {
-                $error = "Failed to create agent. Name may already exist.";
+                $error = "Failed to create agent.";
             }
         } else {
             $error = "Name, role, and goal are required.";
         }
     } elseif (($_POST['action'] ?? '') === 'update_agent') {
         $agentId = (int)($_POST['agent_id'] ?? 0);
-        $updates = [
+        $updates = array_filter([
             'name' => $_POST['name'] ?? '',
             'role' => $_POST['role'] ?? '',
             'goal' => $_POST['goal'] ?? '',
             'backstory' => $_POST['backstory'] ?? '',
-            'status' => $_POST['status'] ?? 'active'
-        ];
+            'status' => $_POST['status'] ?? 'active',
+            'llm_model' => $_POST['llm_model'] ?? 'local',
+            'verbose' => isset($_POST['verbose']) ? 1 : 0,
+            'allow_delegation' => isset($_POST['allow_delegation']) ? 1 : 0,
+            'allow_code_execution' => isset($_POST['allow_code_execution']) ? 1 : 0,
+            'memory' => isset($_POST['memory']) ? 1 : 0,
+            'max_iter' => $_POST['max_iter'] ? (int)$_POST['max_iter'] : null,
+            'max_rpm' => $_POST['max_rpm'] ? (int)$_POST['max_rpm'] : null,
+            'max_execution_time' => $_POST['max_execution_time'] ? (int)$_POST['max_execution_time'] : null,
+            'max_retry_limit' => $_POST['max_retry_limit'] ? (int)$_POST['max_retry_limit'] : 2,
+            'learning_enabled' => isset($_POST['learning_enabled']) ? 1 : 0,
+            'learning_rate' => $_POST['learning_rate'] ? (float)$_POST['learning_rate'] : 0.05,
+            'feedback_incorporation' => $_POST['feedback_incorporation'] ?? 'immediate'
+        ]);
         
-        if ($agentService->updateAgent($agentId, $updates)) {
+        if ($db->update('agents', $updates, ['id' => $agentId])) {
             $message = 'Agent updated successfully!';
         } else {
             $error = 'Failed to update agent.';
         }
     } elseif (($_POST['action'] ?? '') === 'delete_agent') {
         $agentId = (int)($_POST['agent_id'] ?? 0);
-        if ($agentService->deleteAgent($agentId)) {
+        if ($db->delete('agents', ['id' => $agentId])) {
             $message = 'Agent deleted successfully!';
         } else {
-            $error = 'Failed to delete agent. Core agents cannot be deleted.';
+            $error = 'Failed to delete agent.';
         }
     }
 }
 
-$agents = $agentService->getAllAgents();
+$agents = $db->select('agents') ?: [];
 ?>
 
 <h1>Agent Management</h1>

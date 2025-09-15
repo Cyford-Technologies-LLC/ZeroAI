@@ -1,74 +1,94 @@
 <?php
-require_once __DIR__ . '/../src/bootstrap_secure.php';
-use ZeroAI\Core\InputValidator;
-use ZeroAI\Core\AuthorizationException;
+session_start();
+require_once __DIR__ . '/../admin/includes/autoload.php';
 
-if (!isset($_SESSION['frontend_logged_in']) || !$_SESSION['frontend_logged_in']) {
-    throw new AuthorizationException('Frontend authentication required');
+use ZeroAI\Core\{Tenant, Company, Project};
+
+$tenant = new Tenant();
+$company = new Company();
+$project = new Project();
+
+$tenants = $tenant->getAll();
+$totalCompanies = 0;
+$totalProjects = 0;
+
+foreach ($tenants as $t) {
+    $companies = $company->findByTenant($t['id']);
+    $totalCompanies += count($companies);
+    foreach ($companies as $c) {
+        $projects = $project->findByCompany($c['id']);
+        $totalProjects += count($projects);
+    }
 }
 
-// Sanitize session data
-$username = InputValidator::sanitizeForOutput($_SESSION['frontend_user'] ?? 'Unknown');
+$pageTitle = 'CRM Dashboard - ZeroAI';
+include __DIR__ . '/../admin/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Frontend Dashboard - ZeroAI</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .header { background: #28a745; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn { padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block; }
-        .btn-danger { background: #dc3545; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🌐 Frontend Dashboard</h1>
-        <div>
-            <span>Welcome, <?= $username ?>!</span>
-            <a href="/frontend_logout.php" class="btn btn-danger" style="margin-left: 15px;">Logout</a>
-        </div>
-    </div>
 
-    <div class="card">
-        <h2>Frontend User Portal</h2>
-        <p>Welcome to the ZeroAI frontend user portal. You have access to public-facing features.</p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
-            <div style="border: 2px solid #007bff; border-radius: 8px; padding: 20px; text-align: center;">
-                <h4 style="margin: 0 0 10px 0; color: #007bff;">📊 Analytics</h4>
-                <p style="margin: 0; color: #666;">View system analytics</p>
-            </div>
-            
-            <div style="border: 2px solid #28a745; border-radius: 8px; padding: 20px; text-align: center;">
-                <h4 style="margin: 0 0 10px 0; color: #28a745;">💬 Public Chat</h4>
-                <p style="margin: 0; color: #666;">Access public AI chat</p>
-            </div>
-            
-            <div style="border: 2px solid #ffc107; border-radius: 8px; padding: 20px; text-align: center;">
-                <h4 style="margin: 0 0 10px 0; color: #f57c00;">📈 Reports</h4>
-                <p style="margin: 0; color: #666;">Generate reports</p>
-            </div>
-        </div>
-    </div>
+<h1>🏢 Multi-Tenant CRM Dashboard</h1>
 
-    <div class="card">
-        <h3>User Information</h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-            <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                <strong>Username:</strong> <?= $username ?>
-            </div>
-            <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                <strong>Role:</strong> Frontend User
-            </div>
-            <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                <strong>Access Level:</strong> Public Features Only
-            </div>
-            <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                <strong>Session:</strong> Active
-            </div>
-        </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value"><?= count($tenants) ?></div>
+        <div class="stat-label">Tenants</div>
     </div>
-</body>
-</html>
+    <div class="stat-card">
+        <div class="stat-value"><?= $totalCompanies ?></div>
+        <div class="stat-label">Companies</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value"><?= $totalProjects ?></div>
+        <div class="stat-label">Projects</div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>🏢 Tenants</h3>
+        <a href="tenant_create.php" class="btn btn-primary">Add Tenant</a>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+            <tr style="background: #f5f5f5;">
+                <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Name</th>
+                <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Domain</th>
+                <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Companies</th>
+                <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($tenants as $t): ?>
+                <?php $companies = $company->findByTenant($t['id']); ?>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;"><?= htmlspecialchars($t['name']) ?></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;"><?= htmlspecialchars($t['domain']) ?></td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;"><?= count($companies) ?></td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">
+                        <a href="tenant_view.php?id=<?= $t['id'] ?>">View</a> |
+                        <a href="company_list.php?tenant=<?= $t['id'] ?>">Companies</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>🚀 Quick Actions</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
+        <a href="tenant_create.php" style="padding: 15px; background: #007cba; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
+            🏢 Create Tenant
+        </a>
+        <a href="company_create.php" style="padding: 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
+            🏭 Add Company
+        </a>
+        <a href="project_create.php" style="padding: 15px; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
+            📋 New Project
+        </a>
+        <a href="employee_create.php" style="padding: 15px; background: #6f42c1; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
+            👥 Add Employee
+        </a>
+    </div>
+</div>
+
+<?php include __DIR__ . '/../admin/includes/footer.php'; ?>

@@ -1,4 +1,8 @@
 <?php
+namespace ZeroAI\Core;
+
+use PDO;
+
 class ClaudeMemory {
     private $pdo;
     private $sessionId;

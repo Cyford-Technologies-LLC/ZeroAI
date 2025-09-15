@@ -307,7 +307,7 @@ class ClaudeToolSystem {
             ];
             
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'http://localhost/api/claude_context_api.php');
+            curl_setopt($ch, CURLOPT_URL, 'http://localhost/api/claude_context_api');
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($contextData));
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
