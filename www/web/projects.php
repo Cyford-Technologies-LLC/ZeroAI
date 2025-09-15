@@ -53,6 +53,7 @@ include __DIR__ . '/includes/header.php';
             <div class="user-info">
                 <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
                 <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
+                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
                 <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
             </div>
         </div>

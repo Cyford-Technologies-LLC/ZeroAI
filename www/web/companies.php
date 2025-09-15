@@ -57,32 +57,16 @@ try {
 
 include __DIR__ . '/includes/header.php';
 ?>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">🏢 ZeroAI CRM - Companies</div>
-
-            <nav class="nav">
-                <a href="/web/index.php">Dashboard</a>
-                <a href="/web/companies.php" class="active">Companies</a>
-                <a href="/web/projects.php">Projects</a>
-            </nav>
-            <div class="user-info">
-                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
-                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
-                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
-                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
-            </div>
-        </div>
-    </div>
     <div class="content-wrapper">
         <div class="sidebar">
             <div class="sidebar-group">
                 <h3>CRM</h3>
-                <a href="/web/companies.php" class="active">Companies</a>
                 <?php if (isset($_GET['company_id'])): ?>
+                    <a href="/web/accounts.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">🏦 Accounts</a>
                     <a href="/web/employees.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">👥 Employees</a>
                     <a href="/web/contacts.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📞 Contacts</a>
                     <a href="/web/locations.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📍 Locations</a>
+                    <a href="/web/calendar.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📅 Calendar</a>
                 <?php else: ?>
                     <a href="/web/contacts.php">Contacts</a>
                 <?php endif; ?>
