@@ -62,18 +62,22 @@ function sendMessage() {
     // Show loading
     addSystemMessage('Claude is thinking...');
     
-    // Send to Claude API
+    // Send to Claude API with CSRF protection
     const selectedModel = document.getElementById('claude-model').value;
+    const csrfToken = getCSRFToken();
+    
     fetch('/admin/chat_handler.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             message: message,
             model: selectedModel,
             mode: currentMode,
-            history: chatHistory
+            history: chatHistory,
+            csrf_token: csrfToken
         })
     })
     .then(response => response.json())
@@ -120,7 +124,16 @@ function togglePromptEditor() {
 
 async function loadSystemPrompt() {
     try {
-        const response = await fetch('/admin/get_system_prompt.php');
+        const response = await fetch('/admin/get_system_prompt.php', {
+            headers: {
+                'X-CSRF-Token': getCSRFToken()
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         if (result.success) {
             currentSystemPrompt = result.prompt;
@@ -128,17 +141,31 @@ async function loadSystemPrompt() {
         }
     } catch (error) {
         console.error('Failed to load system prompt:', error);
+        addSystemMessage('❌ Failed to load system prompt');
     }
 }
 
 async function saveSystemPrompt() {
     const prompt = document.getElementById('system-prompt').value;
+    const csrfToken = getCSRFToken();
+    
     try {
         const response = await fetch('/admin/save_system_prompt.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt: prompt})
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+                csrf_token: csrfToken
+            })
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         if (result.success) {
             addSystemMessage('✅ System prompt updated successfully');
@@ -153,26 +180,61 @@ async function saveSystemPrompt() {
 
 function resetSystemPrompt() {
     if (confirm('Reset to default system prompt? This will overwrite your custom prompt.')) {
-        fetch('/admin/reset_system_prompt.php', {method: 'POST'})
-            .then(r => r.json())
-            .then(result => {
-                if (result.success) {
-                    loadSystemPrompt();
-                    addSystemMessage('✅ System prompt reset to default');
-                }
-            });
+        const csrfToken = getCSRFToken();
+        
+        fetch('/admin/reset_system_prompt.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                csrf_token: csrfToken
+            })
+        })
+        .then(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP error! status: ${r.status}`);
+            }
+            return r.json();
+        })
+        .then(result => {
+            if (result.success) {
+                loadSystemPrompt();
+                addSystemMessage('✅ System prompt reset to default');
+            } else {
+                addSystemMessage('❌ Failed to reset prompt');
+            }
+        })
+        .catch(error => {
+            addSystemMessage('❌ Error resetting prompt: ' + error.message);
+        });
     }
 }
 
 // Scratch Pad Functions
 async function saveScratchPad() {
     const content = document.getElementById('scratch-pad').value;
+    const csrfToken = getCSRFToken();
+    
     try {
         const response = await fetch('/admin/chat_handler.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({action: 'save_scratch_pad', content: content})
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                action: 'save_scratch_pad',
+                content: content,
+                csrf_token: csrfToken
+            })
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         if (result.success) {
             addSystemMessage('✅ Notes saved to Claude database');
@@ -187,13 +249,27 @@ async function saveScratchPad() {
 async function clearScratchPad() {
     if (confirm('Clear scratch pad?')) {
         document.getElementById('scratch-pad').value = '';
+        const csrfToken = getCSRFToken();
+        
         try {
-            await fetch('/admin/chat_handler.php', {
+            const response = await fetch('/admin/chat_handler.php', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'save_scratch_pad', content: ''})
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    action: 'save_scratch_pad',
+                    content: '',
+                    csrf_token: csrfToken
+                })
             });
-            addSystemMessage('✅ Scratch pad cleared');
+            
+            if (response.ok) {
+                addSystemMessage('✅ Scratch pad cleared');
+            } else {
+                addSystemMessage('❌ Error clearing notes');
+            }
         } catch (error) {
             addSystemMessage('❌ Error clearing notes');
         }
@@ -206,6 +282,24 @@ function insertToChat() {
         document.getElementById('user-input').value = content;
         document.getElementById('user-input').focus();
     }
+}
+
+// CSRF Token Management
+function getCSRFToken() {
+    // Try to get from meta tag first
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken) {
+        return metaToken.getAttribute('content');
+    }
+    
+    // Fallback to session storage or generate new one
+    let token = sessionStorage.getItem('csrf_token');
+    if (!token) {
+        // Generate a simple token for client-side (server should validate properly)
+        token = 'csrf_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        sessionStorage.setItem('csrf_token', token);
+    }
+    return token;
 }
 
 // Event Listeners
@@ -228,11 +322,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load scratch pad on page load
 async function loadScratchPad() {
     try {
+        const csrfToken = getCSRFToken();
+        
         const response = await fetch('/admin/chat_handler.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({action: 'get_scratch_pad'})
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                action: 'get_scratch_pad',
+                csrf_token: csrfToken
+            })
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         if (result.success && result.content) {
             const scratchPad = document.getElementById('scratch-pad');

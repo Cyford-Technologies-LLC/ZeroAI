@@ -3,7 +3,7 @@ require_once '../bootstrap.php';
 
 use ZeroAI\Core\DatabaseManager;
 
-$db = new DatabaseManager();
+$db = DatabaseManager::getInstance();
 
 // Get current admin user
 $users = $db->executeSQL("SELECT id, username, password FROM users WHERE username = 'admin'");

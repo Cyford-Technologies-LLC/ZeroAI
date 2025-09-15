@@ -6,7 +6,7 @@ $currentPage = 'settings';
 
 use ZeroAI\Core\DatabaseManager;
 
-$db = new DatabaseManager();
+$db = DatabaseManager::getInstance();
 
 if ($_POST) {
     // Handle form submission

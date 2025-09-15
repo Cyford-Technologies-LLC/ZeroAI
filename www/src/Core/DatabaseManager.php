@@ -38,7 +38,7 @@ class DatabaseManager {
     public function query($sql, $params = []) {
         // Check cache for SELECT queries
         if (stripos(trim($sql), 'SELECT') === 0) {
-            $cacheKey = 'db_' . md5($sql . serialize($params));
+            $cacheKey = 'db_' . hash('sha256', $sql . serialize($params));
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
                 return $cached;

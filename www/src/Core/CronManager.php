@@ -6,7 +6,7 @@ class CronManager {
     private $db;
     
     public function __construct() {
-        $this->db = new DatabaseManager();
+        $this->db = DatabaseManager::getInstance();
         $this->initDatabase();
     }
     

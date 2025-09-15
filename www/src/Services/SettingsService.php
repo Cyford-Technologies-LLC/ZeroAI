@@ -7,7 +7,7 @@ class SettingsService {
     private $db;
     
     public function __construct() {
-        $this->db = new DatabaseManager();
+        $this->db = DatabaseManager::getInstance();
         $this->initTable();
     }
     

@@ -3,7 +3,7 @@ require_once 'bootstrap.php';
 
 use ZeroAI\Core\DatabaseManager;
 
-$db = new DatabaseManager();
+$db = DatabaseManager::getInstance();
 
 echo "Available databases:\n";
 $databases = $db->getDatabases();

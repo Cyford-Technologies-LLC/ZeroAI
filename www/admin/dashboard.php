@@ -13,7 +13,7 @@ use ZeroAI\Core\System;
 use ZeroAI\Core\DatabaseManager;
 
 $systemInfo = System::getSystemInfo();
-$db = new DatabaseManager();
+$db = DatabaseManager::getInstance();
 
 $pageTitle = 'Admin Dashboard - ZeroAI';
 $currentPage = 'dashboard';

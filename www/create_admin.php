@@ -3,7 +3,7 @@ require_once 'bootstrap.php';
 
 use ZeroAI\Core\DatabaseManager;
 
-$db = new DatabaseManager();
+$db = DatabaseManager::getInstance();
 
 // Create users table if not exists
 $db->executeSQL("

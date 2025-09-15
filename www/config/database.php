@@ -138,7 +138,7 @@ class Database {
     private function buildCacheKey($table, $where = [], $limit = null) {
         $key = "db:{$table}";
         if (!empty($where)) {
-            $key .= ':' . md5(serialize($where));
+            $key .= ':' . hash('sha256', serialize($where));
         }
         if ($limit) {
             $key .= ":limit:{$limit}";

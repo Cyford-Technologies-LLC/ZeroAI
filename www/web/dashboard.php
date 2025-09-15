@@ -1,10 +1,14 @@
 <?php
-session_start();
+require_once __DIR__ . '/../src/bootstrap_secure.php';
+use ZeroAI\Core\InputValidator;
+use ZeroAI\Core\AuthorizationException;
 
 if (!isset($_SESSION['frontend_logged_in']) || !$_SESSION['frontend_logged_in']) {
-    header('Location: /frontend_login.php');
-    exit;
+    throw new AuthorizationException('Frontend authentication required');
 }
+
+// Sanitize session data
+$username = InputValidator::sanitizeForOutput($_SESSION['frontend_user'] ?? 'Unknown');
 ?>
 <!DOCTYPE html>
 <html>
@@ -22,7 +26,7 @@ if (!isset($_SESSION['frontend_logged_in']) || !$_SESSION['frontend_logged_in'])
     <div class="header">
         <h1>🌐 Frontend Dashboard</h1>
         <div>
-            <span>Welcome, <?= $_SESSION['frontend_user'] ?>!</span>
+            <span>Welcome, <?= $username ?>!</span>
             <a href="/frontend_logout.php" class="btn btn-danger" style="margin-left: 15px;">Logout</a>
         </div>
     </div>
@@ -53,7 +57,7 @@ if (!isset($_SESSION['frontend_logged_in']) || !$_SESSION['frontend_logged_in'])
         <h3>User Information</h3>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
             <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
-                <strong>Username:</strong> <?= $_SESSION['frontend_user'] ?>
+                <strong>Username:</strong> <?= $username ?>
             </div>
             <div style="padding: 10px; background: #f8f9fa; border-radius: 4px;">
                 <strong>Role:</strong> Frontend User

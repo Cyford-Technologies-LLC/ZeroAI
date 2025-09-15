@@ -10,7 +10,7 @@ class ZeroAIChatService {
     private $agent;
     
     public function __construct() {
-        $this->db = new DatabaseManager();
+        $this->db = DatabaseManager::getInstance();
         $this->agent = new Agent();
         $this->initChatTables();
     }

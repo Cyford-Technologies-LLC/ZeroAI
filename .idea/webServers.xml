@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="d463e774-528c-4aa4-8eb9-72a41f3c9526" name="root@74.208.234.43" url="http://zeroai.cyfordtechnologies.com:333/">
+        <fileTransfer accessType="SFTP" host="74.208.234.43" port="22" sshConfigId="f984f3dc-b27d-4fc9-af6b-89e4fcc74b3f" sshConfig="AI-testing">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

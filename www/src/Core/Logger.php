@@ -4,6 +4,8 @@ namespace ZeroAI\Core;
 class Logger {
     private static $instance = null;
     private $logPath = '/app/logs/errors.log';
+    private $securityLogPath = '/app/logs/security.log';
+    private $auditLogPath = '/app/logs/audit.log';
     
     public static function getInstance() {
         if (self::$instance === null) {
@@ -13,8 +15,19 @@ class Logger {
     }
     
     private function __construct() {
-        if (!is_dir('/app/logs')) {
-            mkdir('/app/logs', 0755, true);
+        $this->ensureLogDirectory();
+    }
+    
+    private function ensureLogDirectory() {
+        $logDir = '/app/logs';
+        if (!InputValidator::validatePath($logDir, true)) {
+            throw new SecurityException('Invalid log directory path');
+        }
+        
+        if (!is_dir($logDir)) {
+            if (!mkdir($logDir, 0755, true)) {
+                throw new SecurityException('Cannot create log directory');
+            }
         }
     }
     
@@ -30,24 +43,107 @@ class Logger {
         $this->log('INFO', $message, $context);
     }
     
-    private function log($level, $message, $context = []) {
-        $timestamp = date('Y-m-d H:i:s');
-        $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
-        $logEntry = "[$timestamp] $level: $message$contextStr" . PHP_EOL;
-        
-        file_put_contents($this->logPath, $logEntry, FILE_APPEND | LOCK_EX);
+    public function debug($message, $context = []) {
+        if (getenv('DEBUG') === 'true') {
+            $this->log('DEBUG', $message, $context);
+        }
     }
     
-    public function getRecentLogs($lines = 50) {
-        if (!file_exists($this->logPath)) {
+    private function log($level, $message, $context = [], $logFile = null) {
+        $logFile = $logFile ?: $this->logPath;
+        
+        if (!InputValidator::validatePath($logFile, true)) {
+            return false; // Fail silently to prevent log injection
+        }
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $ip = $this->getClientIP();
+        $user = $_SESSION['admin_user'] ?? 'anonymous';
+        
+        // Sanitize message and context to prevent log injection
+        $message = InputValidator::sanitize($message);
+        $contextStr = !empty($context) ? ' ' . json_encode($context, JSON_UNESCAPED_SLASHES) : '';
+        
+        $logEntry = "[$timestamp] [$ip] [$user] $level: $message$contextStr" . PHP_EOL;
+        
+        return file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX) !== false;
+    }
+    
+    public function logSecurity($message, $level = 'medium', $context = []) {
+        $securityContext = array_merge($context, [
+            'level' => $level,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
+        ]);
+        
+        $this->log('SECURITY', $message, $securityContext, $this->securityLogPath);
+        
+        // Also log to main log if high severity
+        if (in_array($level, ['high', 'critical'])) {
+            $this->error("SECURITY ALERT: $message", $securityContext);
+        }
+    }
+    
+    public function logAudit($action, $resource, $context = []) {
+        $auditContext = array_merge($context, [
+            'action' => $action,
+            'resource' => $resource,
+            'timestamp' => time()
+        ]);
+        
+        $this->log('AUDIT', "$action on $resource", $auditContext, $this->auditLogPath);
+    }
+    
+    public function getRecentLogs($lines = 50, $logType = 'error') {
+        $logFile = $this->getLogFile($logType);
+        
+        if (!InputValidator::validatePath($logFile) || !file_exists($logFile)) {
             return [];
         }
         
-        $logs = file($this->logPath, FILE_IGNORE_NEW_LINES);
+        $logs = file($logFile, FILE_IGNORE_NEW_LINES);
+        if ($logs === false) {
+            return [];
+        }
+        
         return array_reverse(array_slice($logs, -$lines));
     }
     
-    public function clearLogs() {
-        file_put_contents($this->logPath, '');
+    public function clearLogs($logType = 'error') {
+        $logFile = $this->getLogFile($logType);
+        
+        if (InputValidator::validatePath($logFile, true)) {
+            file_put_contents($logFile, '');
+            $this->logAudit('CLEAR_LOGS', $logType);
+        }
+    }
+    
+    private function getLogFile($type) {
+        switch ($type) {
+            case 'security':
+                return $this->securityLogPath;
+            case 'audit':
+                return $this->auditLogPath;
+            default:
+                return $this->logPath;
+        }
+    }
+    
+    private function getClientIP() {
+        $ipKeys = ['HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'];
+        
+        foreach ($ipKeys as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ip = $_SERVER[$key];
+                if (strpos($ip, ',') !== false) {
+                    $ip = trim(explode(',', $ip)[0]);
+                }
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+        
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 }

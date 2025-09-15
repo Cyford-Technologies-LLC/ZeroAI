@@ -1,3 +1,9 @@
+<?php
+use ZeroAI\Core\InputValidator;
+
+// Sanitize session data
+$webUser = InputValidator::sanitizeForOutput($_SESSION['web_user'] ?? 'Unknown');
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +22,7 @@
 <body>
     <div class="header">
         <h1>ZeroAI Frontend Portal</h1>
-        <p>Welcome, <?= $_SESSION['web_user'] ?>!</p>
+        <p>Welcome, <?= $webUser ?>!</p>
         <div class="nav">
             <a href="/web/frontend">Dashboard</a>
             <a href="/web/logout" class="btn-danger" style="padding: 5px 10px; border-radius: 3px;">Logout</a>
@@ -27,7 +33,7 @@
         <div class="card">
             <h3>Project Dashboard</h3>
             <p>Status: Active</p>
-            <p>User: <?= $_SESSION['web_user'] ?></p>
+            <p>User: <?= $webUser ?></p>
             <button class="btn-primary">Manage Projects</button>
         </div>
         

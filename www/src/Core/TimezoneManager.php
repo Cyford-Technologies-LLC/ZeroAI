@@ -20,7 +20,7 @@ class TimezoneManager {
     
     private function loadTimezone() {
         try {
-            $db = new DatabaseManager();
+            $db = DatabaseManager::getInstance();
             $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
             $result = $db->executeSQL("SELECT value FROM system_settings WHERE key = 'timezone'", 'main');
             
@@ -53,7 +53,7 @@ class TimezoneManager {
         
         // Save to database
         try {
-            $db = new DatabaseManager();
+            $db = DatabaseManager::getInstance();
             $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
             $db->executeSQL("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', '$timezone')", 'main');
         } catch (\Exception $e) {
