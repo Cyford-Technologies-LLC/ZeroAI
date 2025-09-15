@@ -149,8 +149,15 @@ $currentPage = $currentPage ?? '';
     
     <script>
     function toggleSidebar() {
+        console.log('Toggle sidebar clicked');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
+        
+        if (!sidebar || !overlay) {
+            console.log('Sidebar elements not found');
+            return;
+        }
+        
         const isOpen = sidebar.style.left === '0px';
         
         if (isOpen) {
@@ -166,6 +173,8 @@ $currentPage = $currentPage ?? '';
     function updateSidebarContent() {
         const currentPage = '<?= $currentPage ?? '' ?>';
         const content = document.getElementById('sidebar-content');
+        
+        if (!content) return;
         
         let links = '';
         
@@ -188,12 +197,17 @@ $currentPage = $currentPage ?? '';
                 <a href="/web/quotes.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📄 Quotes</a>
             `;
         } else {
-            links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available</p>';
+            links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available for ' + currentPage + '</p>';
         }
         
         content.innerHTML = links;
     }
     
-    // Close sidebar when clicking overlay
-    document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const overlay = document.getElementById('sidebar-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
+    });
     </script>

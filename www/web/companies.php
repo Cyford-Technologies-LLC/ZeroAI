@@ -61,7 +61,7 @@ include __DIR__ . '/includes/header.php';
 <div style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <button style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 8px;" onclick="toggleSidebar()">☰</button>
             <div style="font-size: 1.5rem; font-weight: bold;">🏢 ZeroAI CRM</div>
         </div>
         <div style="display: flex; gap: 20px;">
