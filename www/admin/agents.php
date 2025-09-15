@@ -8,14 +8,7 @@ require_once __DIR__ . '/includes/autoload.php';
 use ZeroAI\Core\DatabaseManager;
 
 $db = DatabaseManager::getInstance();
-
-// Fallback to direct DB operations if Agent class not found
-try {
-    $agent = new \ZeroAI\Core\Agent();
-    $agents = $agent->getAll();
-} catch (Exception $e) {
-    $agents = $db->select('agents') ?: [];
-}
+$agents = $db->select('agents') ?: [];
 
 include __DIR__ . '/includes/header.php';
 
@@ -57,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         
         if ($data['name'] && $data['role'] && $data['goal']) {
-            if ($agent->create($data)) {
+            if ($db->insert('agents', $data)) {
                 $message = "Agent '{$data['name']}' created successfully!";
             } else {
                 $error = "Failed to create agent.";
@@ -87,22 +80,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'feedback_incorporation' => $_POST['feedback_incorporation'] ?? 'immediate'
         ]);
         
-        if ($agent->update($agentId, $updates)) {
+        if ($db->update('agents', $updates, ['id' => $agentId])) {
             $message = 'Agent updated successfully!';
         } else {
             $error = 'Failed to update agent.';
         }
     } elseif (($_POST['action'] ?? '') === 'delete_agent') {
         $agentId = (int)($_POST['agent_id'] ?? 0);
-        if ($agent->delete($agentId)) {
+        if ($db->delete('agents', ['id' => $agentId])) {
             $message = 'Agent deleted successfully!';
         } else {
             $error = 'Failed to delete agent.';
         }
     }
 }
-
-$agents = $agent->getAll();
 ?>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -199,9 +190,9 @@ $agents = $agent->getAll();
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                        <button onclick="editAgent(<?= $agent['id'] ?>)" class="btn btn-warning btn-sm" style="font-size: 11px; padding: 6px 8px;">✏️ Edit</button>
-                        <button onclick="chatWithAgent(<?= $agent['id'] ?>)" class="btn btn-success btn-sm" style="font-size: 11px; padding: 6px 8px;">💬 Chat</button>
-                        <button onclick="deleteAgent(<?= $agent['id'] ?>)" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 6px 8px;">🗑️ Delete</button>
+                        <button onclick="editAgent(<?= $agent['id'] ?>)" class="btn btn-warning btn-sm">✏️ Edit</button>
+                        <button onclick="chatWithAgent(<?= $agent['id'] ?>)" class="btn btn-success btn-sm">💬 Chat</button>
+                        <button onclick="deleteAgent(<?= $agent['id'] ?>)" class="btn btn-danger btn-sm">🗑️ Delete</button>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -256,25 +247,20 @@ function hideCreateForm() {
 }
 
 function editAgent(agentId) {
-    fetch(`/api/admin/agents?id=${agentId}`)
-        .then(r => r.json())
-        .then(data => {
-            if (data.success && data.agent) {
-                const agent = data.agent;
-                document.getElementById('editAgentId').value = agent.id;
-                document.getElementById('editName').value = agent.name;
-                document.getElementById('editRole').value = agent.role;
-                document.getElementById('editGoal').value = agent.goal;
-                document.getElementById('editBackstory').value = agent.backstory;
-                document.getElementById('editStatus').value = agent.status;
-                document.getElementById('editLlmModel').value = agent.llm_model || 'local';
-                
-                document.getElementById('editModal').style.display = 'block';
-            }
-        })
-        .catch(e => {
-            alert('Failed to load agent data');
-        });
+    const agents = <?= json_encode($agents) ?>;
+    const agent = agents.find(a => a.id == agentId);
+    
+    if (agent) {
+        document.getElementById('editAgentId').value = agent.id;
+        document.getElementById('editName').value = agent.name;
+        document.getElementById('editRole').value = agent.role;
+        document.getElementById('editGoal').value = agent.goal;
+        document.getElementById('editBackstory').value = agent.backstory;
+        document.getElementById('editStatus').value = agent.status;
+        document.getElementById('editLlmModel').value = agent.llm_model || 'local';
+        
+        document.getElementById('editModal').style.display = 'block';
+    }
 }
 
 function closeEditModal() {
@@ -356,291 +342,5 @@ document.getElementById('editModal').addEventListener('click', function(e) {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 </style>
-                        <button onclick="editAgent(<?= $agent['id'] ?>)" class="btn btn-warning btn-sm" style="font-size: 11px; padding: 6px 8px;">✏️ Edit</button>
-                        <button onclick="chatWithAgent(<?= $agent['id'] ?>)" class="btn btn-success btn-sm" style="font-size: 11px; padding: 6px 8px;">💬 Chat</button>
-                        <button onclick="deleteAgent(<?= $agent['id'] ?>)" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 6px 8px;">🗑️ Delete</button>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-</div>
-
-<!-- Edit Agent Modal -->
-<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
-    <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border-radius: 8px; width: 800px; max-width: 95%; margin-bottom: 20px;">
-        <h3>Edit Agent - All CrewAI Options</h3>
-        <form method="POST" id="editForm">
-            <input type="hidden" name="action" value="update_agent">
-            <input type="hidden" name="agent_id" id="editAgentId">
-            
-            <!-- Basic Info -->
-            <div class="form-section">
-                <h4>Basic Information</h4>
-                <input type="text" name="name" id="editName" placeholder="Agent Name" required style="width: 100%; margin-bottom: 10px;">
-                <input type="text" name="role" id="editRole" placeholder="Agent Role" required style="width: 100%; margin-bottom: 10px;">
-                <textarea name="goal" id="editGoal" placeholder="Agent Goal" rows="2" required style="width: 100%; margin-bottom: 10px;"></textarea>
-                <textarea name="backstory" id="editBackstory" placeholder="Agent Backstory" rows="3" required style="width: 100%; margin-bottom: 10px;"></textarea>
-                <select name="status" id="editStatus" style="width: 100%; margin-bottom: 10px;">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                </select>
-                <select name="llm_model" id="editLlmModel" style="width: 100%; margin-bottom: 10px;">
-                    <option value="local">Local</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="claude">Claude</option>
-                </select>
-            </div>
-            
-            <!-- CrewAI Core Options -->
-            <div class="form-section">
-                <h4>CrewAI Core Options</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <label><input type="checkbox" name="verbose" id="editVerbose"> Verbose Output</label>
-                    <label><input type="checkbox" name="allow_delegation" id="editAllowDelegation"> Allow Delegation</label>
-                    <label><input type="checkbox" name="allow_code_execution" id="editAllowCodeExecution"> Allow Code Execution</label>
-                    <label><input type="checkbox" name="memory" id="editMemory"> Enable Memory</label>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <input type="number" name="max_iter" id="editMaxIter" placeholder="Max Iterations (25)" min="1" max="100">
-                    <input type="number" name="max_rpm" id="editMaxRpm" placeholder="Max RPM (optional)" min="1">
-                    <input type="number" name="max_execution_time" id="editMaxExecutionTime" placeholder="Max Exec Time (s)" min="1">
-                </div>
-                <input type="number" name="max_retry_limit" id="editMaxRetryLimit" placeholder="Max Retry Limit (2)" min="0" max="10" style="width: 100%; margin-bottom: 10px;">
-            </div>
-            
-            <!-- Learning Configuration -->
-            <div class="form-section">
-                <h4>Learning Configuration</h4>
-                <label><input type="checkbox" name="learning_enabled" id="editLearningEnabled"> Enable Learning</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <input type="number" name="learning_rate" id="editLearningRate" placeholder="Learning Rate (0.05)" step="0.01" min="0" max="1">
-                    <select name="feedback_incorporation" id="editFeedbackIncorporation">
-                        <option value="immediate">Immediate</option>
-                        <option value="batch">Batch</option>
-                        <option value="delayed">Delayed</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn btn-success">Update Agent</button>
-                <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function showCreateForm() {
-    document.getElementById('createForm').style.display = 'block';
-    document.getElementById('createForm').scrollIntoView({behavior: 'smooth'});
-}
-
-function hideCreateForm() {
-    document.getElementById('createForm').style.display = 'none';
-}
-
-function editAgent(agentId) {
-    fetch(`/api/admin/agents?id=${agentId}`)
-        .then(r => r.json())
-        .then(data => {
-            if (data.success && data.agent) {
-                const agent = data.agent;
-                document.getElementById('editAgentId').value = agent.id;
-                document.getElementById('editName').value = agent.name;
-                document.getElementById('editRole').value = agent.role;
-                document.getElementById('editGoal').value = agent.goal;
-                document.getElementById('editBackstory').value = agent.backstory;
-                document.getElementById('editStatus').value = agent.status;
-                document.getElementById('editLlmModel').value = agent.llm_model || 'local';
-                document.getElementById('editVerbose').checked = agent.verbose;
-                document.getElementById('editAllowDelegation').checked = agent.allow_delegation;
-                document.getElementById('editAllowCodeExecution').checked = agent.allow_code_execution;
-                document.getElementById('editMemory').checked = agent.memory;
-                document.getElementById('editMaxIter').value = agent.max_iter || '';
-                document.getElementById('editMaxRpm').value = agent.max_rpm || '';
-                document.getElementById('editMaxExecutionTime').value = agent.max_execution_time || '';
-                document.getElementById('editMaxRetryLimit').value = agent.max_retry_limit || 2;
-                document.getElementById('editLearningEnabled').checked = agent.learning_enabled;
-                document.getElementById('editLearningRate').value = agent.learning_rate || 0.05;
-                document.getElementById('editFeedbackIncorporation').value = agent.feedback_incorporation || 'immediate';
-                
-                document.getElementById('editModal').style.display = 'block';
-            }
-        });
-}
-
-function deleteAgent(agentId) {
-    if (confirm('Are you sure you want to delete this agent?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.innerHTML = `
-            <input type="hidden" name="action" value="delete_agent">
-            <input type="hidden" name="agent_id" value="${agentId}">
-        `;
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function chatWithAgent(agentId) {
-    window.location.href = `/admin/agent_chat.php?id=${agentId}`;
-}
-
-function viewTasks(agentId) {
-    window.location.href = `/admin/agent_tasks.php?id=${agentId}`;
-}
-
-// Close modal when clicking outside
-document.getElementById('editModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeEditModal();
-    }
-});
-</script>lect>
-                    <select name="adaptation_strategy" id="editAdaptationStrategy">
-                        <option value="progressive">Progressive</option>
-                        <option value="conservative">Conservative</option>
-                        <option value="aggressive">Aggressive</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- Personality Configuration -->
-            <div class="form-section">
-                <h4>Personality Configuration</h4>
-                <textarea name="personality_traits" id="editPersonalityTraits" placeholder="Personality Traits (JSON array: [&quot;organized&quot;, &quot;decisive&quot;])" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea>
-                <textarea name="personality_quirks" id="editPersonalityQuirks" placeholder="Personality Quirks (JSON array: [&quot;always has backup plan&quot;])" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea>
-                <textarea name="communication_preferences" id="editCommunicationPreferences" placeholder="Communication Preferences (JSON array: [&quot;structured updates&quot;])" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea>
-            </div>
-            
-            <!-- Communication Style -->
-            <div class="form-section">
-                <h4>Communication Style</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <select name="communication_formality" id="editCommunicationFormality">
-                        <option value="professional">Professional</option>
-                        <option value="casual">Casual</option>
-                        <option value="formal">Formal</option>
-                    </select>
-                    <select name="communication_verbosity" id="editCommunicationVerbosity">
-                        <option value="concise">Concise</option>
-                        <option value="detailed">Detailed</option>
-                        <option value="verbose">Verbose</option>
-                    </select>
-                    <select name="communication_tone" id="editCommunicationTone">
-                        <option value="confident">Confident</option>
-                        <option value="friendly">Friendly</option>
-                        <option value="authoritative">Authoritative</option>
-                        <option value="supportive">Supportive</option>
-                    </select>
-                    <select name="communication_technical_level" id="editCommunicationTechnicalLevel">
-                        <option value="intermediate">Intermediate</option>
-                        <option value="beginner">Beginner</option>
-                        <option value="advanced">Advanced</option>
-                        <option value="expert">Expert</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- Advanced Configuration -->
-            <div class="form-section">
-                <h4>Advanced Configuration</h4>
-                <textarea name="tools" id="editTools" placeholder="Tools (JSON array of tool names)" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea>
-                <textarea name="knowledge" id="editKnowledge" placeholder="Knowledge Sources" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea>
-                <textarea name="coworkers" id="editCoworkers" placeholder="Coworkers (JSON array of agent roles)" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea>
-            </div>
-            
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn-success">Update Agent</button>
-                <button type="button" onclick="closeEditModal()" class="btn-danger">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<style>
-.form-section {
-    border: 1px solid #ddd;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    background: #f9f9f9;
-}
-.form-section h4 {
-    margin: 0 0 10px 0;
-    color: #333;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
-}
-</style>
-
-<script>
-function editAgent(agentId) {
-    // Get agent data and populate form
-    const agents = <?= json_encode($agents) ?>;
-    const agent = agents.find(a => a.id == agentId);
-    
-    // Basic Info
-    document.getElementById('editAgentId').value = agentId;
-    document.getElementById('editName').value = agent.name || '';
-    document.getElementById('editRole').value = agent.role || '';
-    document.getElementById('editGoal').value = agent.goal || '';
-    document.getElementById('editBackstory').value = agent.backstory || '';
-    document.getElementById('editStatus').value = agent.status || 'active';
-    document.getElementById('editLlmModel').value = agent.llm_model || 'local';
-    
-    // CrewAI Core Options
-    document.getElementById('editVerbose').checked = agent.verbose == 1;
-    document.getElementById('editAllowDelegation').checked = agent.allow_delegation == 1;
-    document.getElementById('editAllowCodeExecution').checked = agent.allow_code_execution == 1;
-    document.getElementById('editMemory').checked = agent.memory == 1;
-    document.getElementById('editMaxIter').value = agent.max_iter || 25;
-    document.getElementById('editMaxRpm').value = agent.max_rpm || '';
-    document.getElementById('editMaxExecutionTime').value = agent.max_execution_time || '';
-    document.getElementById('editMaxRetryLimit').value = agent.max_retry_limit || 2;
-    
-    // Learning Configuration
-    document.getElementById('editLearningEnabled').checked = agent.learning_enabled == 1;
-    document.getElementById('editLearningRate').value = agent.learning_rate || 0.05;
-    document.getElementById('editFeedbackIncorporation').value = agent.feedback_incorporation || 'immediate';
-    document.getElementById('editAdaptationStrategy').value = agent.adaptation_strategy || 'progressive';
-    
-    // Personality Configuration
-    document.getElementById('editPersonalityTraits').value = agent.personality_traits || '';
-    document.getElementById('editPersonalityQuirks').value = agent.personality_quirks || '';
-    document.getElementById('editCommunicationPreferences').value = agent.communication_preferences || '';
-    
-    // Communication Style
-    document.getElementById('editCommunicationFormality').value = agent.communication_formality || 'professional';
-    document.getElementById('editCommunicationVerbosity').value = agent.communication_verbosity || 'concise';
-    document.getElementById('editCommunicationTone').value = agent.communication_tone || 'confident';
-    document.getElementById('editCommunicationTechnicalLevel').value = agent.communication_technical_level || 'intermediate';
-    
-    // Advanced Configuration
-    document.getElementById('editTools').value = agent.tools || '';
-    document.getElementById('editKnowledge').value = agent.knowledge || '';
-    document.getElementById('editCoworkers').value = agent.coworkers || '';
-    
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function chatWithAgent(agentId) {
-    window.open('/admin/chat?agent=' + agentId, '_blank');
-}
-
-function viewTasks(agentId) {
-    window.location.href = '/admin/tasks?agent=' + agentId;
-}
-</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
