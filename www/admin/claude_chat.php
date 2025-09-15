@@ -228,7 +228,7 @@ function clearChat() {
 }
 
 function testConnection() {
-    fetch('/admin/claude_api.php', {
+    fetch('/admin/providers/claude/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({action: 'test_connection'})
@@ -255,7 +255,7 @@ function saveScratchPad() {
     const content = document.getElementById('scratch-pad').value;
     
     // Save to server using Claude class
-    fetch('/admin/claude_api.php', {
+    fetch('/admin/providers/claude/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({action: 'save_scratch', content: content})
@@ -298,7 +298,7 @@ function addUsageInfo(model, usage) {
 // Load scratch pad on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Try to load from server first
-    fetch('/admin/claude_api.php', {
+    fetch('/admin/providers/claude/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({action: 'get_scratch'})
