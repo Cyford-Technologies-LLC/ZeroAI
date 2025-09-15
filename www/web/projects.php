@@ -48,9 +48,7 @@ include __DIR__ . '/includes/header.php';
             <nav class="nav">
                 <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php">Companies</a>
-                <a href="/web/contacts.php">Contacts</a>
                 <a href="/web/projects.php" class="active">Projects</a>
-                <a href="/web/tasks.php">Tasks</a>
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
@@ -59,8 +57,25 @@ include __DIR__ . '/includes/header.php';
             </div>
         </div>
     </div>
-    <div class="main-content">
-        <div class="container">
+    <div class="content-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-group">
+                <h3>CRM</h3>
+                <a href="/web/index.php">Dashboard</a>
+                <a href="/web/companies.php">Companies</a>
+                <a href="/web/contacts.php">Contacts</a>
+                <a href="/web/projects.php" class="active">Projects</a>
+                <?php if (isset($_GET['project_id'])): ?>
+                    <a href="/web/tasks.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">📋 Tasks</a>
+                    <a href="/web/features.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">✨ Features</a>
+                    <a href="/web/bugs.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">🐛 Bugs</a>
+                <?php else: ?>
+                    <a href="/web/tasks.php">Tasks</a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="container">
             <?php if (isset($success)): ?>
                 <div class="alert alert-success"><?= $success ?></div>
             <?php endif; ?>
@@ -135,15 +150,16 @@ include __DIR__ . '/includes/header.php';
                                 <tr>
                                     <td><?= htmlspecialchars($project['name']) ?></td>
                                     <td><?= htmlspecialchars($project['company_id'] ?? 'No Company') ?></td>
-                                    <td><?= htmlspecialchars($project['status']) ?></td>
-                                    <td><?= htmlspecialchars($project['priority']) ?></td>
-                                    <td><?= $project['budget'] ? '$' . number_format($project['budget'], 2) : '' ?></td>
-                                    <td><?= $project['start_date'] ? date('M j, Y', strtotime($project['start_date'])) : '' ?></td>
+                                    <td><?= htmlspecialchars($project['status'] ?? 'active') ?></td>
+                                    <td><?= htmlspecialchars($project['priority'] ?? 'medium') ?></td>
+                                    <td><?= isset($project['budget']) && $project['budget'] ? '$' . number_format($project['budget'], 2) : '' ?></td>
+                                    <td><?= isset($project['start_date']) && $project['start_date'] ? date('M j, Y', strtotime($project['start_date'])) : '' ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 <?php endif; ?>
+            </div>
             </div>
         </div>
     </div>

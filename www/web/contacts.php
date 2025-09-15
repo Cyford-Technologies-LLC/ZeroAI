@@ -54,9 +54,7 @@ include __DIR__ . '/includes/header.php';
             <nav class="nav">
                 <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php">Companies</a>
-                <a href="/web/contacts.php" class="active">Contacts</a>
                 <a href="/web/projects.php">Projects</a>
-                <a href="/web/tasks.php">Tasks</a>
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
@@ -65,8 +63,19 @@ include __DIR__ . '/includes/header.php';
             </div>
         </div>
     </div>
-    <div class="main-content">
-        <div class="container">
+    <div class="content-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-group">
+                <h3>CRM</h3>
+                <a href="/web/index.php">Dashboard</a>
+                <a href="/web/companies.php">Companies</a>
+                <a href="/web/contacts.php" class="active">Contacts</a>
+                <a href="/web/projects.php">Projects</a>
+                <a href="/web/tasks.php">Tasks</a>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="container">
             <?php if (isset($success)): ?>
                 <div class="alert alert-success"><?= $success ?></div>
             <?php endif; ?>
@@ -172,6 +181,7 @@ include __DIR__ . '/includes/header.php';
                         </tbody>
                     </table>
                 <?php endif; ?>
+            </div>
             </div>
         </div>
     </div>
