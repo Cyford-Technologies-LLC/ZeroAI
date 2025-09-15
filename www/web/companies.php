@@ -6,6 +6,8 @@ if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) 
     exit;
 }
 
+$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
+
 // Handle form submission
 if ($_POST && isset($_POST['name'])) {
     try {
@@ -13,21 +15,29 @@ if ($_POST && isset($_POST['name'])) {
         $db = new Database();
         $pdo = $db->getConnection();
         
-        $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, industry) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry']]);
+        $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, industry, owner) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry'], $currentUser]);
         $success = "Company added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
     }
 }
 
-// Get companies
+// Get companies - admins see all, users see only their own
 $companies = [];
+$isAdmin = isset($_SESSION['admin_logged_in']);
 try {
     require_once __DIR__ . '/../config/database.php';
     $db = new Database();
     $pdo = $db->getConnection();
-    $companies = $pdo->query("SELECT * FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    
+    if ($isAdmin) {
+        $companies = $pdo->query("SELECT * FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM companies WHERE owner = ? ORDER BY name");
+        $stmt->execute([$currentUser]);
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (Exception $e) {
     $error = "Database error: " . $e->getMessage();
 }
@@ -68,7 +78,6 @@ try {
             <a href="/web/contacts.php">Contacts</a>
             <a href="/web/projects.php">Projects</a>
             <a href="/web/tasks.php">Tasks</a>
-            <a href="/admin/">Admin</a>
             <a href="/web/logout.php">Logout</a>
         </div>
     </div>
@@ -129,6 +138,7 @@ try {
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Industry</th>
+                            <?php if ($isAdmin): ?><th>Owner</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,6 +148,7 @@ try {
                                 <td><?= htmlspecialchars($company['email']) ?></td>
                                 <td><?= htmlspecialchars($company['phone']) ?></td>
                                 <td><?= htmlspecialchars($company['industry']) ?></td>
+                                <?php if ($isAdmin): ?><td><?= htmlspecialchars($company['owner'] ?? 'Unknown') ?></td><?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

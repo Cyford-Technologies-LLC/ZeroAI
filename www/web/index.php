@@ -48,7 +48,6 @@ $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
             <a href="/web/contacts.php">Contacts</a>
             <a href="/web/projects.php">Projects</a>
             <a href="/web/tasks.php">Tasks</a>
-            <a href="/admin/">Admin</a>
             <a href="/web/logout.php">Logout (<?= htmlspecialchars($currentUser) ?>)</a>
         </div>
     </div>

@@ -15,10 +15,18 @@ try {
         address TEXT,
         website TEXT,
         industry TEXT,
+        owner TEXT NOT NULL,
         status TEXT DEFAULT 'active',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
+    
+    // Add owner column to existing companies table if it doesn't exist
+    try {
+        $pdo->exec("ALTER TABLE companies ADD COLUMN owner TEXT");
+    } catch (Exception $e) {
+        // Column already exists
+    }
     
     // Contacts table
     $pdo->exec("CREATE TABLE IF NOT EXISTS contacts (
