@@ -4,6 +4,12 @@
 try {
     require_once __DIR__ . '/../../../src/bootstrap.php';
 } catch (Exception $e) {
+    try {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } catch (Exception $logError) {
+        error_log('Claude API Bootstrap Error: ' . $e->getMessage());
+    }
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'System error']);
     exit;
