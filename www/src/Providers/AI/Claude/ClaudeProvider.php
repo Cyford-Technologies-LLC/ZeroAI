@@ -77,10 +77,14 @@ class ClaudeProvider {
                 $systemPrompt .= "\n\nBACKGROUND CONTEXT:\n" . $backgroundContext;
             }
             
-            // Convert frontend history format to Claude API format
+            // Use history directly if already in correct format, otherwise convert
             $convertedHistory = [];
             foreach ($history as $msg) {
-                if (isset($msg['sender']) && isset($msg['message'])) {
+                if (isset($msg['role']) && isset($msg['content'])) {
+                    // Already in correct format
+                    $convertedHistory[] = $msg;
+                } elseif (isset($msg['sender']) && isset($msg['message'])) {
+                    // Convert old format
                     if ($msg['sender'] === 'Claude') {
                         $convertedHistory[] = ['role' => 'assistant', 'content' => $msg['message']];
                     } elseif ($msg['sender'] === 'You' || $msg['sender'] === 'User') {
@@ -88,6 +92,8 @@ class ClaudeProvider {
                     }
                 }
             }
+            
+            $logger->debug('Converted history', ['original_count' => count($history), 'converted_count' => count($convertedHistory), 'sample' => array_slice($convertedHistory, -2)]);
             
             if ($this->useUnifiedTools()) {
                 // NEW SYSTEM: Unified tools (Claude sees results before responding)
