@@ -84,12 +84,12 @@ try {
     <div class="header">
         <h1>🏢 ZeroAI CRM - Companies</h1>
         <div class="nav">
-            <a href="/web/">Dashboard</a>
+            <a href="/web/index.php">Dashboard</a>
             <a href="/web/companies.php" class="active">Companies</a>
             <a href="/web/contacts.php">Contacts</a>
             <a href="/web/projects.php">Projects</a>
             <a href="/web/tasks.php">Tasks</a>
-            <?php if ($isAdmin): ?><a href="/admin/">Admin</a><?php endif; ?>
+            <?php if ($isAdmin): ?><a href="/admin/dashboard.php">Admin</a><?php endif; ?>
             <a href="/web/logout.php">Logout</a>
         </div>
     </div>

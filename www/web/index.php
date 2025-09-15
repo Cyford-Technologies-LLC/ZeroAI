@@ -9,19 +9,33 @@ if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) 
 }
 
 $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
+$isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'ZeroAI CRM Dashboard';
 $currentPage = 'crm_dashboard';
-include __DIR__ . '/../admin/includes/header.php';
+include __DIR__ . '/includes/header.php';
 ?>
-<div class="card">
-    <h1>🏢 ZeroAI CRM Dashboard</h1>
-    <div style="display: flex; gap: 20px; margin: 20px 0;">
-        <a href="/web/companies.php" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">Companies</a>
-        <a href="/web/contacts.php" style="padding: 10px 20px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">Contacts</a>
-        <a href="/web/projects.php" style="padding: 10px 20px; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px;">Projects</a>
-        <a href="/web/tasks.php" style="padding: 10px 20px; background: #ffc107; color: #212529; text-decoration: none; border-radius: 4px;">Tasks</a>
+    <div class="header">
+        <h1>🏢 ZeroAI CRM Dashboard</h1>
+        <div class="nav">
+            <a href="/web/index.php" class="active">Dashboard</a>
+            <a href="/web/companies.php">Companies</a>
+            <a href="/web/contacts.php">Contacts</a>
+            <a href="/web/projects.php">Projects</a>
+            <a href="/web/tasks.php">Tasks</a>
+            <?php if ($isAdmin): ?><a href="/admin/dashboard.php">Admin</a><?php endif; ?>
+            <a href="/web/logout.php">Logout</a>
+        </div>
     </div>
-</div>
+
+    <div class="container">
+        <div class="card">
+            <h3>Quick Actions</h3>
+            <a href="/web/companies.php" class="btn">Companies</a>
+            <a href="/web/contacts.php" class="btn">Contacts</a>
+            <a href="/web/projects.php" class="btn">Projects</a>
+            <a href="/web/tasks.php" class="btn">Tasks</a>
+            <a href="/web/init.php" class="btn btn-success">Setup Database</a>
+        </div>
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-number">0</div>
@@ -47,7 +61,7 @@ include __DIR__ . '/../admin/includes/header.php';
             <a href="/web/contacts.php" class="btn">Manage Contacts</a>
             <a href="/web/projects.php" class="btn">Manage Projects</a>
             <a href="/web/tasks.php" class="btn">Manage Tasks</a>
-            <a href="/web/setup_crm.php" class="btn btn-success">Setup Database</a>
+            <a href="/web/init.php" class="btn btn-success">Setup Database</a>
         </div>
 
         <div class="card">
