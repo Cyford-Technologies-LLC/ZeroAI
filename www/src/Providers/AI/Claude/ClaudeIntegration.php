@@ -12,14 +12,11 @@ class ClaudeIntegration extends BaseAIProvider {
         parent::__construct('Claude', $apiKey, $config);
         $this->toolSystem = new ClaudeToolSystem();
         $this->models = [
-            'claude-3-5-sonnet-20241022' => ['input' => 3.00, 'output' => 15.00],
-            'claude-3-5-haiku-20241022' => ['input' => 0.25, 'output' => 1.25],
-            'claude-3-opus-20240229' => ['input' => 15.00, 'output' => 75.00],
-            'claude-3-sonnet-20240229' => ['input' => 3.00, 'output' => 15.00],
-            'claude-3-haiku-20240307' => ['input' => 0.25, 'output' => 1.25],
-            'claude-2.1' => ['input' => 8.00, 'output' => 24.00],
-            'claude-2.0' => ['input' => 8.00, 'output' => 24.00],
-            'claude-instant-1.2' => ['input' => 0.80, 'output' => 2.40]
+            'claude-opus-4-1-20250805' => ['input' => 20.00, 'output' => 100.00],
+            'claude-opus-4-20250514' => ['input' => 18.00, 'output' => 90.00],
+            'claude-sonnet-4-20250514' => ['input' => 4.00, 'output' => 20.00],
+            'claude-3-7-sonnet-20250219' => ['input' => 3.50, 'output' => 17.50],
+            'claude-3-5-haiku-20241022' => ['input' => 0.25, 'output' => 1.25]
         ];
     }
     
@@ -86,13 +83,13 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
     private function fetchRealModels(): array {
-        // Return hardcoded models since API endpoint doesn't exist
+        // Return current Claude models with snapshot dates
         return [
-            'claude-3-5-sonnet-20241022',
-            'claude-3-5-haiku-20241022',
-            'claude-3-opus-20240229',
-            'claude-3-sonnet-20240229',
-            'claude-3-haiku-20240307'
+            'claude-opus-4-1-20250805',
+            'claude-opus-4-20250514',
+            'claude-sonnet-4-20250514',
+            'claude-3-7-sonnet-20250219',
+            'claude-3-5-haiku-20241022'
         ];
     }
     

@@ -325,12 +325,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear existing options
             modelSelect.innerHTML = '';
             
+            // Add source info as first option (disabled)
+            const sourceOption = document.createElement('option');
+            sourceOption.value = '';
+            sourceOption.textContent = `📋 Source: ${data.source || 'Unknown'}`;
+            sourceOption.disabled = true;
+            sourceOption.style.fontWeight = 'bold';
+            sourceOption.style.color = '#666';
+            modelSelect.appendChild(sourceOption);
+            
+            // Add separator
+            const separator = document.createElement('option');
+            separator.value = '';
+            separator.textContent = '─────────────────';
+            separator.disabled = true;
+            modelSelect.appendChild(separator);
+            
             // Add real models
             data.models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model;
                 option.textContent = model;
-                if (model === currentValue || model === 'claude-3-5-sonnet-20241022') {
+                if (model === currentValue || model === 'claude-3-5-haiku-20241022') {
                     option.selected = true;
                 }
                 modelSelect.appendChild(option);
