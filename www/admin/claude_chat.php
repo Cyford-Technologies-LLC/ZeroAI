@@ -75,37 +75,37 @@ include __DIR__ . '/includes/header.php';
                     <strong>🤖 Claude:</strong> Ready! Use @commands to interact with your ZeroAI system.
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Chat Input -->
-    <div class="chat-input-container">
-        <div class="mb-3">
-            <label class="form-label">Message to Claude</label>
-            <textarea id="user-input" class="form-control form-control-lg" rows="4" placeholder="Ask Claude about your ZeroAI system...\n\n• @file path/to/file.py\n• @list directory/\n• @agents\n• Help optimize my configuration"></textarea>
-        </div>
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="btn-group" role="group">
-                <button onclick="insertCommand('@file ')" class="btn btn-outline-secondary btn-sm">@file</button>
-                <button onclick="insertCommand('@list ')" class="btn btn-outline-secondary btn-sm">@list</button>
-                <button onclick="insertCommand('@agents')" class="btn btn-outline-secondary btn-sm">@agents</button>
+            
+            <hr>
+            
+            <!-- Chat Input -->
+            <div class="mt-3">
+                <label class="form-label">Message to Claude</label>
+                <textarea id="user-input" class="form-control form-control-lg" rows="4" placeholder="Ask Claude about your ZeroAI system...\n\n• @file path/to/file.py\n• @list directory/\n• @agents\n• Help optimize my configuration"></textarea>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="btn-group" role="group">
+                        <button onclick="insertCommand('@file ')" class="btn btn-outline-secondary btn-sm">@file</button>
+                        <button onclick="insertCommand('@list ')" class="btn btn-outline-secondary btn-sm">@list</button>
+                        <button onclick="insertCommand('@agents')" class="btn btn-outline-secondary btn-sm">@agents</button>
+                    </div>
+                    <button onclick="sendMessage()" class="btn btn-primary btn-lg">🚀 Send Message</button>
+                </div>
             </div>
-            <button onclick="sendMessage()" class="btn btn-primary btn-lg">🚀 Send Message</button>
-        </div>
-    </div>
-
-    <!-- Scratch Pad -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5>📝 Scratch Pad</h5>
-            <div class="btn-group" role="group">
-                <button onclick="saveScratchPad()" class="btn btn-outline-success btn-sm">💾 Save</button>
-                <button onclick="insertToChat()" class="btn btn-outline-primary btn-sm">➡️ To Chat</button>
-                <button onclick="clearScratchPad()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
+            
+            <hr>
+            
+            <!-- Scratch Pad -->
+            <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">📝 Scratch Pad</label>
+                    <div class="btn-group" role="group">
+                        <button onclick="saveScratchPad()" class="btn btn-outline-success btn-sm">💾 Save</button>
+                        <button onclick="insertToChat()" class="btn btn-outline-primary btn-sm">➡️ To Chat</button>
+                        <button onclick="clearScratchPad()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
+                    </div>
+                </div>
+                <textarea id="scratch-pad" class="form-control" rows="6" placeholder="Quick notes, code snippets, ideas..."></textarea>
             </div>
-        </div>
-        <div class="card-body">
-            <textarea id="scratch-pad" class="form-control" rows="6" placeholder="Quick notes, code snippets, ideas..."></textarea>
         </div>
     </div>
 
