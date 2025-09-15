@@ -136,6 +136,48 @@ try {
             }
             break;
             
+        case 'save_system_prompt':
+            $logger->logClaude('Save system prompt action started');
+            try {
+                $content = $input['content'] ?? '';
+                $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $existing = $db->query("SELECT id FROM claude_system_prompt LIMIT 1");
+                if ($existing && count($existing) > 0) {
+                    $db->query("UPDATE claude_system_prompt SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+                } else {
+                    $db->query("INSERT INTO claude_system_prompt (content) VALUES (?)", [$content]);
+                }
+                echo json_encode(['success' => true]);
+            } catch (\Exception $e) {
+                $logger->logClaude('Save system prompt error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+            
+        case 'get_system_prompt':
+            $logger->logClaude('Get system prompt action started');
+            try {
+                $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $result = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
+                $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
+                
+                // If no custom prompt, load default from file
+                if (empty($content)) {
+                    $defaultPromptFile = __DIR__ . '/claude_system_prompt.txt';
+                    if (file_exists($defaultPromptFile)) {
+                        $content = file_get_contents($defaultPromptFile);
+                    }
+                }
+                
+                echo json_encode(['success' => true, 'content' => $content]);
+            } catch (\Exception $e) {
+                $logger->logClaude('Get system prompt error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+            
         case 'get_models':
             $logger->logClaude('Get models action started');
             try {
@@ -155,6 +197,18 @@ try {
             $args = $input['args'] ?? [];
             $result = $claudeProvider->executeBackgroundCommand($command, $args);
             echo json_encode(['success' => true, 'result' => $result]);
+            break;
+            
+        case 'reset_system_prompt':
+            $logger->logClaude('Reset system prompt action started');
+            try {
+                $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $db->query("DELETE FROM claude_system_prompt");
+                echo json_encode(['success' => true]);
+            } catch (\Exception $e) {
+                $logger->logClaude('Reset system prompt error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
             break;
             
         default:

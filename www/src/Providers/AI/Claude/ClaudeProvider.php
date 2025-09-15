@@ -199,14 +199,25 @@ class ClaudeProvider {
     private function getSystemPrompt() {
         try {
             $db = \ZeroAI\Core\DatabaseManager::getInstance();
-            $result = $db->query("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
+            $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $result = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
             
-            if (!empty($result)) {
-                $prompt = $result[0]['prompt'];
-                if ($prompt && strpos($prompt, '@file') === false) {
+            if (!empty($result) && !empty($result[0]['content'])) {
+                $prompt = $result[0]['content'];
+                // Don't add commands help if prompt already contains commands
+                if (strpos($prompt, '@file') === false && strpos($prompt, 'COMMANDS:') === false) {
                     $prompt .= $this->getCommandsHelp();
                 }
                 return $prompt;
+            }
+            
+            // If no custom prompt, try to load default from file
+            $defaultPromptFile = __DIR__ . '/../../../admin/providers/claude/claude_system_prompt.txt';
+            if (file_exists($defaultPromptFile)) {
+                $defaultPrompt = file_get_contents($defaultPromptFile);
+                if ($defaultPrompt) {
+                    return $defaultPrompt;
+                }
             }
         } catch (\Exception $e) {
             // Fall back to default

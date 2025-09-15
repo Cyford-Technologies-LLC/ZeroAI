@@ -308,6 +308,69 @@ function addUsageInfo(model, usage) {
     container.appendChild(usageDiv);
 }
 
+function saveSystemPrompt() {
+    const content = document.getElementById('system-prompt').value;
+    
+    fetch('/admin/providers/claude/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'save_system_prompt', content: content})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ System prompt saved successfully!');
+            togglePromptEditor();
+        } else {
+            alert('❌ Error saving system prompt: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('❌ Connection error: ' + error.message);
+    });
+}
+
+function resetSystemPrompt() {
+    if (confirm('Reset system prompt to default? This will delete your custom prompt.')) {
+        fetch('/admin/providers/claude/claude_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'reset_system_prompt'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ System prompt reset to default!');
+                loadSystemPrompt();
+            } else {
+                alert('❌ Error resetting system prompt: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('❌ Connection error: ' + error.message);
+        });
+    }
+}
+
+function loadSystemPrompt() {
+    fetch('/admin/providers/claude/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'get_system_prompt'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('system-prompt').value = data.content || '';
+        } else {
+            console.error('Error loading system prompt:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading system prompt:', error);
+    });
+}
+
 // Load models and scratch pad on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Load real Claude models
@@ -373,6 +436,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('scratch-pad').value = saved;
         }
     });
+    
+    // Load system prompt
+    loadSystemPrompt();
 });
 </script>
 
