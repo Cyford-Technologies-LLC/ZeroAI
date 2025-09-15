@@ -100,7 +100,8 @@ include __DIR__ . '/includes/header.php';
                 <div class="mt-3">
                     <button onclick="sendMessage()" class="btn btn-primary btn-lg w-100">🚀 Send Message</button>
                 </div>
-                <div class="d-flex justify-content-end align-items-center mt-2">
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <button onclick="clearChat()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
                     <div class="btn-group" role="group">
                         <button onclick="insertCommand('@file ')" class="btn btn-outline-secondary btn-sm">@file</button>
                         <button onclick="insertCommand('@list ')" class="btn btn-outline-secondary btn-sm">@list</button>
