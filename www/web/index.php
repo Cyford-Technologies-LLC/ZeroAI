@@ -1,17 +1,4 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-// Authentication check
-if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
-    header('Location: /web/login.php');
-    exit;
-}
-
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
-$pageTitle = 'ZeroAI CRM Dashboard';
-$currentPage = 'crm_dashboard';
 
 include __DIR__ . '/includes/header.php';
 ?>
