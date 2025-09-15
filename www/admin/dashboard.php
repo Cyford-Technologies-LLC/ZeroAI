@@ -9,7 +9,19 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 
 require_once 'includes/autoload.php';
 
+use ZeroAI\Core\OllamaService;
+
+function formatBytes($size, $precision = 2) {
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    for ($i = 0; $size > 1024 && $i < count($units) - 1; $i++) {
+        $size /= 1024;
+    }
+    return round($size, $precision) . ' ' . $units[$i];
+}
+
 try {
+    $ollama = new OllamaService();
+    $ollamaStatus = $ollama->getStatus();
     if (class_exists('ZeroAI\Core\System')) {
         $systemInfo = ZeroAI\Core\System::getSystemInfo();
     } else {
@@ -54,6 +66,36 @@ include __DIR__ . '/includes/header.php';
         <div class="stat-value" id="disk">0</div>
         <div class="stat-label">Disk I/O</div>
     </div>
+</div>
+
+<div class="card">
+    <h3>🤖 Local Ollama (Fallback Only)</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $ollamaStatus['available'] ? '#ffc107' : '#dc3545' ?>;"></span>
+            <strong><?= $ollamaStatus['available'] ? 'Standby' : 'Offline' ?></strong>
+            <span style="color: #666;"><?= $ollamaStatus['url'] ?></span>
+            <span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 12px; font-size: 11px;">BACKUP</span>
+        </div>
+        <div style="font-size: 0.9em; color: #666;">
+            <?= $ollamaStatus['model_count'] ?> models | <?= formatBytes($ollamaStatus['total_size']) ?>
+        </div>
+    </div>
+    <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9em;">
+        ⚠️ <strong>Note:</strong> Dynamic router uses most powerful peers first. Local Ollama only used as emergency fallback.
+    </div>
+    <?php if ($ollamaStatus['available'] && !empty($ollamaStatus['models'])): ?>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <?php foreach (array_slice($ollamaStatus['models'], 0, 6) as $model): ?>
+                <span style="background: #e8f5e8; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">
+                    <?= htmlspecialchars($model['name']) ?>
+                </span>
+            <?php endforeach; ?>
+            <?php if (count($ollamaStatus['models']) > 6): ?>
+                <span style="color: #666; font-size: 0.85em;">+<?= count($ollamaStatus['models']) - 6 ?> more</span>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </div>
 
 <div class="card">

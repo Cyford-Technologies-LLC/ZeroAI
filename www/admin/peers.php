@@ -1,7 +1,14 @@
 <?php 
 $pageTitle = 'Peer Resources - ZeroAI';
 $currentPage = 'peers';
+require_once __DIR__ . '/includes/autoload.php';
+
+use ZeroAI\Core\OllamaService;
+
 include __DIR__ . '/includes/header.php';
+
+$ollama = new OllamaService();
+$ollamaStatus = $ollama->getStatus();
 
 function loadPeersConfig() {
     $configPath = '/app/config/peers.json';
@@ -33,6 +40,52 @@ $peers = $peersData['peers'] ?? [];
 ?>
 
 <h1>🌐 Peer Resources</h1>
+
+<div class="card">
+    <h3>🤖 Local Ollama Instance</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $ollamaStatus['available'] ? '#28a745' : '#dc3545' ?>;"></span>
+            <strong><?= $ollamaStatus['available'] ? 'Online' : 'Offline' ?></strong>
+            <span style="color: #666;"><?= $ollamaStatus['url'] ?></span>
+        </div>
+        <span style="font-size: 0.9em; color: #666;">Last checked: <?= $ollamaStatus['last_checked'] ?></span>
+    </div>
+    
+    <?php if ($ollamaStatus['available']): ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+            <div style="text-align: center; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                <div style="font-size: 1.5em; font-weight: bold; color: #388e3c;"><?= $ollamaStatus['model_count'] ?></div>
+                <div style="font-size: 0.9em; color: #666;">Models</div>
+            </div>
+            <div style="text-align: center; padding: 10px; background: #e3f2fd; border-radius: 6px;">
+                <div style="font-size: 1.2em; font-weight: bold; color: #1976d2;"><?= formatBytes($ollamaStatus['total_size']) ?></div>
+                <div style="font-size: 0.9em; color: #666;">Total Size</div>
+            </div>
+        </div>
+        
+        <div>
+            <h4>Available Models (<?= count($ollamaStatus['models']) ?>)</h4>
+            <?php if (!empty($ollamaStatus['models'])): ?>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">
+                    <?php foreach ($ollamaStatus['models'] as $model): ?>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid #007cba;">
+                            <div style="font-weight: bold; color: #007cba;"><?= htmlspecialchars($model['name']) ?></div>
+                            <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                                Size: <?= formatBytes($model['size']) ?> | 
+                                Modified: <?= date('M j, Y', strtotime($model['modified_at'])) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 4px;">⚠️ No models found. Run <code>ollama pull llama3.2:1b</code> to download a model.</p>
+            <?php endif; ?>
+        </div>
+    <?php else: ?>
+        <p style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">❌ Ollama service is not available. Check if the container is running.</p>
+    <?php endif; ?>
+</div>
 
 <div class="card">
     <h3>Peer Network Overview</h3>
