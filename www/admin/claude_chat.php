@@ -314,25 +314,42 @@ function addUsageInfo(model, usage) {
 }
 
 function saveSystemPrompt() {
-    const content = document.getElementById('system-prompt').value;
-    
-    fetch('/admin/providers/claude/claude_api.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action: 'save_system_prompt', content: content})
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ System prompt saved successfully!');
-            document.getElementById('prompt-editor').style.display = 'none';
-        } else {
-            alert('❌ Error saving system prompt: ' + data.error);
+    try {
+        const content = document.getElementById('system-prompt').value;
+        console.log('SAVE: Content length:', content.length);
+        
+        if (!content.trim()) {
+            alert('❌ Cannot save empty prompt');
+            return;
         }
-    })
-    .catch(error => {
-        alert('❌ Connection error: ' + error.message);
-    });
+        
+        fetch('/admin/providers/claude/claude_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'save_system_prompt', content: content})
+        })
+        .then(response => {
+            console.log('SAVE: Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('SAVE: Response data:', data);
+            if (data.success) {
+                alert('✅ System prompt saved successfully!');
+                document.getElementById('prompt-editor').style.display = 'none';
+            } else {
+                alert('❌ Error saving system prompt: ' + data.error);
+                console.error('SAVE ERROR:', data);
+            }
+        })
+        .catch(error => {
+            console.error('SAVE FETCH ERROR:', error);
+            alert('❌ Connection error: ' + error.message);
+        });
+    } catch (error) {
+        console.error('SAVE JS ERROR:', error);
+        alert('❌ JavaScript error: ' + error.message);
+    }
 }
 
 function resetSystemPrompt() {
@@ -358,22 +375,38 @@ function resetSystemPrompt() {
 }
 
 function loadSystemPrompt() {
-    fetch('/admin/providers/claude/claude_api.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action: 'get_system_prompt'})
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('system-prompt').value = data.content || '';
-        } else {
-            console.error('Error loading system prompt:', data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error loading system prompt:', error);
-    });
+    try {
+        console.log('LOAD: Starting system prompt load');
+        
+        fetch('/admin/providers/claude/claude_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'get_system_prompt'})
+        })
+        .then(response => {
+            console.log('LOAD: Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('LOAD: Response data:', data);
+            console.log('LOAD: Content length:', (data.content || '').length);
+            
+            if (data.success) {
+                document.getElementById('system-prompt').value = data.content || '';
+                console.log('LOAD: Prompt loaded successfully');
+            } else {
+                console.error('LOAD ERROR:', data.error);
+                alert('❌ Error loading system prompt: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('LOAD FETCH ERROR:', error);
+            alert('❌ Connection error loading prompt: ' + error.message);
+        });
+    } catch (error) {
+        console.error('LOAD JS ERROR:', error);
+        alert('❌ JavaScript error loading prompt: ' + error.message);
+    }
 }
 
 // Load models and scratch pad on page load

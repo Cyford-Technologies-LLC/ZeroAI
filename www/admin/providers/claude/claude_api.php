@@ -140,17 +140,32 @@ try {
             $logger->logClaude('Save system prompt action started');
             try {
                 $content = $input['content'] ?? '';
+                $logger->logClaude('System prompt content received', ['content_length' => strlen($content), 'content_preview' => substr($content, 0, 100)]);
+                
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $logger->logClaude('Database instance obtained');
+                
                 $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $logger->logClaude('Table created/verified');
+                
                 $existing = $db->query("SELECT id FROM claude_system_prompt LIMIT 1");
+                $logger->logClaude('Existing check completed', ['existing_count' => count($existing)]);
+                
                 if ($existing && count($existing) > 0) {
-                    $db->query("UPDATE claude_system_prompt SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+                    $result = $db->query("UPDATE claude_system_prompt SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+                    $logger->logClaude('UPDATE executed', ['result' => $result]);
                 } else {
-                    $db->query("INSERT INTO claude_system_prompt (content) VALUES (?)", [$content]);
+                    $result = $db->query("INSERT INTO claude_system_prompt (content) VALUES (?)", [$content]);
+                    $logger->logClaude('INSERT executed', ['result' => $result]);
                 }
-                echo json_encode(['success' => true]);
+                
+                // Verify save
+                $verify = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
+                $logger->logClaude('Save verification', ['saved_length' => strlen($verify[0]['content'] ?? ''), 'matches' => ($verify[0]['content'] ?? '') === $content]);
+                
+                echo json_encode(['success' => true, 'debug' => 'Saved successfully']);
             } catch (\Exception $e) {
-                $logger->logClaude('Save system prompt error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                $logger->logClaude('Save system prompt FAILED', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => $e->getTraceAsString()]);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             break;
@@ -159,21 +174,34 @@ try {
             $logger->logClaude('Get system prompt action started');
             try {
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $logger->logClaude('Database instance obtained for GET');
+                
                 $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $logger->logClaude('Table verified for GET');
+                
                 $result = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
+                $logger->logClaude('Query executed for GET', ['result_count' => count($result)]);
+                
                 $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
+                $logger->logClaude('Content extracted', ['has_content' => !empty($content), 'content_length' => strlen($content)]);
                 
                 // If no custom prompt, load default from file
                 if (empty($content)) {
+                    $logger->logClaude('No custom prompt found, loading default');
                     $defaultPromptFile = __DIR__ . '/claude_system_prompt.txt';
+                    $logger->logClaude('Default file path', ['path' => $defaultPromptFile, 'exists' => file_exists($defaultPromptFile)]);
+                    
                     if (file_exists($defaultPromptFile)) {
                         $content = file_get_contents($defaultPromptFile);
+                        $logger->logClaude('Default file loaded', ['content_length' => strlen($content)]);
+                    } else {
+                        $logger->logClaude('Default file not found');
                     }
                 }
                 
-                echo json_encode(['success' => true, 'content' => $content]);
+                echo json_encode(['success' => true, 'content' => $content, 'debug' => 'Retrieved successfully']);
             } catch (\Exception $e) {
-                $logger->logClaude('Get system prompt error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                $logger->logClaude('Get system prompt FAILED', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => $e->getTraceAsString()]);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             break;
