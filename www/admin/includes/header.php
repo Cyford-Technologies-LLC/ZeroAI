@@ -21,8 +21,42 @@ $currentPage = $currentPage ?? '';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="ZeroAI Admin Portal - Manage your AI agents, crews, and system configuration. Zero Cost, Zero Cloud, Zero Limits.">
+    <meta name="keywords" content="ZeroAI, Admin, AI Agents, CrewAI, Claude, System Management, Dashboard">
+    <meta name="author" content="ZeroAI">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#007bff">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    <meta property="og:title" content="<?= htmlspecialchars($pageTitle) ?>">
+    <meta property="og:description" content="ZeroAI Admin Portal - Manage your AI workforce with zero cost and zero limits.">
+    <meta property="og:image" content="/assets/admin/images/admin-og.png">
+    <meta property="og:site_name" content="ZeroAI Admin">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    <meta property="twitter:title" content="<?= htmlspecialchars($pageTitle) ?>">
+    <meta property="twitter:description" content="ZeroAI Admin Portal - Manage your AI workforce with zero cost and zero limits.">
+    <meta property="twitter:image" content="/assets/admin/images/admin-twitter.png">
+    
+    <!-- Mobile App Meta -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ZeroAI Admin">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/admin/images/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/admin/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/admin/images/favicon-16x16.png">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -31,9 +65,6 @@ $currentPage = $currentPage ?? '';
     <?php if ($currentPage === 'claude_chat'): ?>
     <link rel="stylesheet" href="/www/assets/css/claude.css">
     <?php endif; ?>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/www/assets/img/favicon.ico">
 </head>
 <body>
     <div class="container">

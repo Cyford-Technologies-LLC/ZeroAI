@@ -1,5 +1,31 @@
 /* ZeroAI Admin Portal - Central CSS */
 
+/* Accessibility Improvements */
+.form-control:focus, .form-select:focus, .btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Skip to content link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 9999;
+}
+
+.skip-link:focus {
+    top: 6px;
+}
+
 /* Form Elements */
 .form-control, .form-select, .form-check-input {
     border: 1px solid #d1d5db;
@@ -118,17 +144,82 @@ textarea.form-control {
     padding: 20px;
 }
 
-/* Responsive */
+/* Mobile Optimizations */
 @media (max-width: 768px) {
     .chat-container {
         padding: 10px;
     }
     
     .message.user {
-        margin-left: 10%;
+        margin-left: 5%;
     }
     
     .message.assistant {
-        margin-right: 10%;
+        margin-right: 5%;
+    }
+    
+    .form-control, .form-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 14px 16px;
+    }
+    
+    .btn {
+        min-height: 44px; /* Touch target size */
+        font-size: 16px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+    
+    .chat-input-container {
+        padding: 15px;
+        position: sticky;
+        bottom: 0;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+    }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .chat-container {
+        max-width: 900px;
+    }
+    
+    .message.user {
+        margin-left: 15%;
+    }
+    
+    .message.assistant {
+        margin-right: 15%;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .btn, .form-control {
+        border-width: 0.5px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .card {
+        background: #1f2937;
+        border-color: #374151;
+        color: #f9fafb;
+    }
+    
+    .form-control, .form-select {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .chat-messages {
+        background: #111827;
+        border-color: #374151;
     }
 }

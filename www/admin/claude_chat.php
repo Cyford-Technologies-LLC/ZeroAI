@@ -24,46 +24,45 @@ include __DIR__ . '/includes/header.php';
             <p class="mb-0 text-muted">Your intelligent development companion</p>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-4">
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-3">
                     <label class="form-label">Model</label>
-                    <select id="claude-model" class="form-select">
-                        <option value="claude-opus-4-1-20250805">Claude Opus 4.1 (Most Advanced)</option>
-                        <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Default)</option>
-                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                    <select id="claude-model" class="form-select form-select-sm">
+                        <option value="claude-opus-4-1-20250805">Opus 4.1</option>
+                        <option value="claude-3-5-sonnet-20241022" selected>Sonnet 3.5</option>
+                        <option value="claude-3-opus-20240229">Opus 3</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Mode</label>
-                    <select id="claude-mode" class="form-select">
-                        <option value="chat">💬 Chat Mode</option>
-                        <option value="autonomous">🤖 Autonomous</option>
+                    <select id="claude-mode" class="form-select form-select-sm">
+                        <option value="chat">💬 Chat</option>
+                        <option value="autonomous">🤖 Auto</option>
                         <option value="hybrid">⚡ Hybrid</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Actions</label>
+                <div class="col-md-6">
                     <div class="d-flex gap-2">
                         <button onclick="togglePromptEditor()" class="btn btn-outline-primary btn-sm">✏️ Prompt</button>
                         <button onclick="clearChat()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
+                        <a href="/admin/claude_settings.php" class="btn btn-outline-secondary btn-sm">⚙️ Settings</a>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- System Prompt Editor -->
-    <div id="prompt-editor" class="card mb-4" style="display: none;">
-        <div class="card-header">
-            <h5>📝 System Prompt Editor</h5>
-            <small class="text-muted">Commands (@file, @create, @edit, etc.) are automatically available</small>
-        </div>
-        <div class="card-body">
-            <textarea id="system-prompt" class="form-control form-control-lg" placeholder="Loading system prompt..."></textarea>
-            <div class="mt-3">
-                <button onclick="saveSystemPrompt()" class="btn btn-success">✅ Save</button>
-                <button onclick="resetSystemPrompt()" class="btn btn-warning">🔄 Reset</button>
-                <button onclick="togglePromptEditor()" class="btn btn-secondary">❌ Cancel</button>
+            
+            <!-- System Prompt Editor -->
+            <div id="prompt-editor" style="display: none;">
+                <hr>
+                <h6>📝 System Prompt Editor</h6>
+                <small class="text-muted">Commands (@file, @create, @edit, etc.) are automatically available</small>
+                <div class="mt-2">
+                    <textarea id="system-prompt" class="form-control form-control-lg" placeholder="Loading system prompt..."></textarea>
+                    <div class="mt-3">
+                        <button onclick="saveSystemPrompt()" class="btn btn-success btn-sm">✅ Save</button>
+                        <button onclick="resetSystemPrompt()" class="btn btn-warning btn-sm">🔄 Reset</button>
+                        <button onclick="togglePromptEditor()" class="btn btn-secondary btn-sm">❌ Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
