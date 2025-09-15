@@ -325,21 +325,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear existing options
             modelSelect.innerHTML = '';
             
-            // Add source info as first option (disabled)
-            const sourceOption = document.createElement('option');
-            sourceOption.value = '';
-            sourceOption.textContent = `📋 Source: ${data.source || 'Unknown'}`;
-            sourceOption.disabled = true;
-            sourceOption.style.fontWeight = 'bold';
-            sourceOption.style.color = '#666';
-            modelSelect.appendChild(sourceOption);
-            
-            // Add separator
-            const separator = document.createElement('option');
-            separator.value = '';
-            separator.textContent = '─────────────────';
-            separator.disabled = true;
-            modelSelect.appendChild(separator);
+            // Update source indicator
+            const sourceIndicator = document.getElementById('model-source-indicator');
+            if (sourceIndicator) {
+                const color = data.color === 'green' ? '#28a745' : '#dc3545';
+                sourceIndicator.innerHTML = `<span style="color: ${color}; font-weight: bold;">(${data.source})</span>`;
+            }
             
             // Add real models
             data.models.forEach(model => {
