@@ -60,6 +60,9 @@ include __DIR__ . '/includes/header.php';
     <div class="header">
         <div class="header-content">
             <div class="logo">🏢 ZeroAI CRM - Companies</div>
+            <div class="ai-workshop">
+                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
+            </div>
             <nav class="nav">
                 <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php" class="active">Companies</a>
@@ -76,11 +79,11 @@ include __DIR__ . '/includes/header.php';
         <div class="sidebar">
             <div class="sidebar-group">
                 <h3>CRM</h3>
-                <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php" class="active">Companies</a>
                 <?php if (isset($_GET['company_id'])): ?>
                     <a href="/web/employees.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">👥 Employees</a>
                     <a href="/web/contacts.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📞 Contacts</a>
+                    <a href="/web/locations.php?company_id=<?= $_GET['company_id'] ?>" style="padding-left: 40px;">📍 Locations</a>
                 <?php else: ?>
                     <a href="/web/contacts.php">Contacts</a>
                 <?php endif; ?>
@@ -131,24 +134,12 @@ include __DIR__ . '/includes/header.php';
                     <input type="text" name="phone">
                 </div>
                 <div class="form-group">
-                    <label>Street Address</label>
-                    <input type="text" name="street">
-                </div>
-                <div class="form-group">
                     <label>Website</label>
                     <input type="url" name="website" placeholder="https://">
                 </div>
                 <div class="form-group">
-                    <label>Street Address 2</label>
-                    <input type="text" name="street2">
-                </div>
-                <div class="form-group">
                     <label>LinkedIn</label>
                     <input type="url" name="linkedin" placeholder="https://linkedin.com/company/">
-                </div>
-                <div class="form-group">
-                    <label>City</label>
-                    <input type="text" name="city">
                 </div>
                 <div class="form-group">
                     <label>Industry</label>
@@ -161,6 +152,22 @@ include __DIR__ . '/includes/header.php';
                         <option value="Retail">Retail</option>
                         <option value="Other">Other</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>About the Company</label>
+                    <textarea name="about"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Street Address</label>
+                    <input type="text" name="street">
+                </div>
+                <div class="form-group">
+                    <label>Street Address 2</label>
+                    <input type="text" name="street2">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" name="city">
                 </div>
                 <div class="form-group">
                     <label>State</label>

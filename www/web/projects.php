@@ -61,7 +61,6 @@ include __DIR__ . '/includes/header.php';
         <div class="sidebar">
             <div class="sidebar-group">
                 <h3>CRM</h3>
-                <a href="/web/index.php">Dashboard</a>
                 <a href="/web/companies.php">Companies</a>
                 <a href="/web/contacts.php">Contacts</a>
                 <a href="/web/projects.php" class="active">Projects</a>

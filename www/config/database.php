@@ -64,6 +64,7 @@ class Database {
             website TEXT,
             linkedin TEXT,
             industry TEXT,
+            about TEXT,
             organization_id INTEGER DEFAULT 1,
             created_by TEXT,
             status TEXT DEFAULT 'active',
