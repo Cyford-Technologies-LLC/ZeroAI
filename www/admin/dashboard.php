@@ -9,8 +9,6 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 
 require_once 'includes/autoload.php';
 
-use ZeroAI\Core\OllamaService;
-
 function formatBytes($size, $precision = 2) {
     $units = ['B', 'KB', 'MB', 'GB', 'TB'];
     for ($i = 0; $size > 1024 && $i < count($units) - 1; $i++) {
@@ -19,9 +17,32 @@ function formatBytes($size, $precision = 2) {
     return round($size, $precision) . ' ' . $units[$i];
 }
 
+// Simple Ollama status check
+function getOllamaStatus() {
+    $url = 'http://ollama:11434';
+    try {
+        $context = stream_context_create(['http' => ['timeout' => 3]]);
+        $response = @file_get_contents($url . '/api/tags', false, $context);
+        if ($response === false) {
+            return ['available' => false, 'url' => $url, 'models' => [], 'model_count' => 0, 'total_size' => 0];
+        }
+        $data = json_decode($response, true);
+        $models = $data['models'] ?? [];
+        return [
+            'available' => true,
+            'url' => $url,
+            'models' => $models,
+            'model_count' => count($models),
+            'total_size' => array_sum(array_column($models, 'size'))
+        ];
+    } catch (Exception $e) {
+        return ['available' => false, 'url' => $url, 'models' => [], 'model_count' => 0, 'total_size' => 0];
+    }
+}
+
+$ollamaStatus = getOllamaStatus();
+
 try {
-    $ollama = new OllamaService();
-    $ollamaStatus = $ollama->getStatus();
     if (class_exists('ZeroAI\Core\System')) {
         $systemInfo = ZeroAI\Core\System::getSystemInfo();
     } else {

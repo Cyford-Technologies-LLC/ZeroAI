@@ -3,12 +3,32 @@ $pageTitle = 'Peer Resources - ZeroAI';
 $currentPage = 'peers';
 require_once __DIR__ . '/includes/autoload.php';
 
-use ZeroAI\Core\OllamaService;
-
 include __DIR__ . '/includes/header.php';
 
-$ollama = new OllamaService();
-$ollamaStatus = $ollama->getStatus();
+// Simple Ollama status check
+function getOllamaStatus() {
+    $url = 'http://ollama:11434';
+    try {
+        $context = stream_context_create(['http' => ['timeout' => 3]]);
+        $response = @file_get_contents($url . '/api/tags', false, $context);
+        if ($response === false) {
+            return ['available' => false, 'url' => $url, 'models' => [], 'model_count' => 0, 'total_size' => 0];
+        }
+        $data = json_decode($response, true);
+        $models = $data['models'] ?? [];
+        return [
+            'available' => true,
+            'url' => $url,
+            'models' => $models,
+            'model_count' => count($models),
+            'total_size' => array_sum(array_column($models, 'size'))
+        ];
+    } catch (Exception $e) {
+        return ['available' => false, 'url' => $url, 'models' => [], 'model_count' => 0, 'total_size' => 0];
+    }
+}
+
+$ollamaStatus = getOllamaStatus();
 
 function loadPeersConfig() {
     $configPath = '/app/config/peers.json';

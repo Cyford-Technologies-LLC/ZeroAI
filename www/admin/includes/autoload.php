@@ -12,6 +12,11 @@ require_once __DIR__ . '/../../src/Core/InputValidator.php';
 require_once __DIR__ . '/../../src/Core/Logger.php';
 require_once __DIR__ . '/../../src/Models/User.php';
 
+// Load additional services
+if (file_exists(__DIR__ . '/../../src/Core/Company.php')) {
+    require_once __DIR__ . '/../../src/Core/Company.php';
+}
+
 // Initialize core systems
 $cache = \ZeroAI\Core\CacheManager::getInstance();
 $session = \ZeroAI\Core\SessionManager::getInstance();
