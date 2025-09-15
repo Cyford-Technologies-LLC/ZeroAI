@@ -202,6 +202,67 @@ $agents = $db->select('agents') ?: [];
                         <option value="batch">Batch</option>
                         <option value="delayed">Delayed</option>
                     </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-success">Update Agent</button>
+                <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editAgent(agentId) {
+    fetch(`/api/admin/agents?id=${agentId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.agent) {
+                const agent = data.agent;
+                document.getElementById('editAgentId').value = agent.id;
+                document.getElementById('editName').value = agent.name;
+                document.getElementById('editRole').value = agent.role;
+                document.getElementById('editGoal').value = agent.goal;
+                document.getElementById('editBackstory').value = agent.backstory;
+                document.getElementById('editStatus').value = agent.status;
+                document.getElementById('editLlmModel').value = agent.llm_model || 'local';
+                document.getElementById('editVerbose').checked = agent.verbose;
+                document.getElementById('editAllowDelegation').checked = agent.allow_delegation;
+                document.getElementById('editAllowCodeExecution').checked = agent.allow_code_execution;
+                document.getElementById('editMemory').checked = agent.memory;
+                document.getElementById('editMaxIter').value = agent.max_iter || '';
+                document.getElementById('editMaxRpm').value = agent.max_rpm || '';
+                document.getElementById('editMaxExecutionTime').value = agent.max_execution_time || '';
+                document.getElementById('editMaxRetryLimit').value = agent.max_retry_limit || 2;
+                document.getElementById('editLearningEnabled').checked = agent.learning_enabled;
+                document.getElementById('editLearningRate').value = agent.learning_rate || 0.05;
+                document.getElementById('editFeedbackIncorporation').value = agent.feedback_incorporation || 'immediate';
+                
+                document.getElementById('editModal').style.display = 'block';
+            }
+        });
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+function chatWithAgent(agentId) {
+    window.location.href = `/admin/agent_chat.php?id=${agentId}`;
+}
+
+function viewTasks(agentId) {
+    window.location.href = `/admin/agent_tasks.php?id=${agentId}`;
+}
+
+// Close modal when clicking outside
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+</script>lect>
                     <select name="adaptation_strategy" id="editAdaptationStrategy">
                         <option value="progressive">Progressive</option>
                         <option value="conservative">Conservative</option>

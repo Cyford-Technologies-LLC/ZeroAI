@@ -9,16 +9,14 @@ class CRMAPI {
     
     private function initializeAITables() {
         $db = DatabaseManager::getInstance();
-        $db->query("CREATE TABLE IF NOT EXISTS company_ai (
+        $db->query("CREATE TABLE IF NOT EXISTS company_agents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             company_id INTEGER NOT NULL,
-            ai_name VARCHAR(255) NOT NULL,
-            base_prompt TEXT,
-            model_preference VARCHAR(100),
-            capabilities JSON,
-            knowledge_sources JSON,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (company_id) REFERENCES companies(id)
+            agent_id INTEGER NOT NULL,
+            assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (company_id) REFERENCES companies(id),
+            FOREIGN KEY (agent_id) REFERENCES agents(id),
+            UNIQUE(company_id, agent_id)
         )");
     }
     public function handle($endpoint) {
@@ -63,9 +61,17 @@ class CRMAPI {
                 echo json_encode($this->handleAIOptimize());
                 break;
                 
-            // Company AI
-            case 'company-ai':
-                echo json_encode($this->handleCompanyAI());
+            // Company AI Selection
+            case 'available-agents':
+                echo json_encode($this->getAvailableAgents());
+                break;
+                
+            case 'assign-agent':
+                echo json_encode($this->assignAgentToCompany());
+                break;
+                
+            case 'company-agents':
+                echo json_encode($this->getCompanyAgents());
                 break;
                 
             case 'ai-chat':
@@ -314,24 +320,38 @@ class CRMAPI {
         }
     }
     
-    private function handleCompanyAI() {
-        $method = $_SERVER['REQUEST_METHOD'];
-        $companyAI = new CompanyAI();
+    private function getAvailableAgents() {
+        $db = DatabaseManager::getInstance();
+        $agents = $db->select('agents', ['status' => 'active']);
+        return ['success' => true, 'agents' => $agents];
+    }
+    
+    private function assignAgentToCompany() {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $db = DatabaseManager::getInstance();
         
-        switch ($method) {
-            case 'GET':
-                $companyId = $_GET['company_id'] ?? null;
-                $ai = $companyAI->getCompanyAI($companyId);
-                return ['success' => true, 'ai' => $ai];
-                
-            case 'POST':
-                $data = json_decode(file_get_contents('php://input'), true);
-                $result = $companyAI->createCompanyAI($data['company_id'], $data['config']);
-                return ['success' => $result, 'message' => $result ? 'Company AI created' : 'Failed to create AI'];
-                
-            default:
-                return ['success' => false, 'error' => 'Method not allowed'];
-        }
+        $assignment = [
+            'company_id' => $data['company_id'],
+            'agent_id' => $data['agent_id'],
+            'assigned_at' => date('Y-m-d H:i:s')
+        ];
+        
+        $result = $db->insert('company_agents', $assignment);
+        return ['success' => $result, 'message' => $result ? 'Agent assigned to company' : 'Failed to assign agent'];
+    }
+    
+    private function getCompanyAgents() {
+        $companyId = $_GET['company_id'] ?? null;
+        $db = DatabaseManager::getInstance();
+        
+        $agents = $db->query(
+            "SELECT a.*, ca.assigned_at FROM agents a 
+             JOIN company_agents ca ON a.id = ca.agent_id 
+             WHERE ca.company_id = ? AND a.status = 'active'",
+            [$companyId]
+        );
+        
+        return ['success' => true, 'agents' => $agents];
     }
     
     private function handleAIChat() {

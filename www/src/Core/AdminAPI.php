@@ -62,6 +62,11 @@ class AdminAPI {
                 echo json_encode($this->handleLogin());
                 break;
                 
+            // Agent Management
+            case 'agents':
+                echo json_encode($this->handleAgents());
+                break;
+                
             default:
                 http_response_code(404);
                 echo json_encode(['error' => 'Admin endpoint not found']);
@@ -134,5 +139,30 @@ class AdminAPI {
         }
         
         return ['success' => false, 'error' => 'Invalid credentials'];
+    }
+    
+    private function handleAgents() {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $db = DatabaseManager::getInstance();
+        
+        switch ($method) {
+            case 'GET':
+                $id = $_GET['id'] ?? null;
+                if ($id) {
+                    $agent = $db->select('agents', ['id' => $id]);
+                    return ['success' => true, 'agent' => $agent ? $agent[0] : null];
+                } else {
+                    $agents = $db->select('agents');
+                    return ['success' => true, 'agents' => $agents];
+                }
+                
+            case 'POST':
+                $data = json_decode(file_get_contents('php://input'), true);
+                $result = $db->insert('agents', $data);
+                return ['success' => $result, 'message' => $result ? 'Agent created' : 'Failed to create agent'];
+                
+            default:
+                return ['success' => false, 'error' => 'Method not allowed'];
+        }
     }
 }
