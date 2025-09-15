@@ -17,95 +17,377 @@ $currentPage = 'claude_chat';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<h1>💬 Claude Direct Chat</h1>
+<div class="claude-header">
+    <h1>💬 Claude AI Assistant</h1>
+    <p class="subtitle">Your intelligent development companion</p>
+</div>
 
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h3>Chat with Claude</h3>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="togglePromptEditor()" class="btn-warning">✏️ Edit Prompt</button>
-            <select id="claude-mode" onchange="updateMode()">
-                <option value="chat">Chat Mode</option>
-                <option value="autonomous">Autonomous Mode</option>
-                <option value="hybrid">Hybrid Mode</option>
-            </select>
-            <a href="/admin/claude_settings.php" class="btn-secondary">⚙️ Settings</a>
-            <button onclick="clearChat()" class="btn-warning">Clear Chat</button>
+<div class="claude-controls">
+    <div class="control-group">
+        <button onclick="togglePromptEditor()" class="btn-modern btn-edit">✏️ System Prompt</button>
+        <select id="claude-mode" onchange="updateMode()" class="select-modern">
+            <option value="chat">💬 Chat Mode</option>
+            <option value="autonomous">🤖 Autonomous</option>
+            <option value="hybrid">⚡ Hybrid</option>
+        </select>
+    </div>
+    <div class="control-group">
+        <a href="/admin/claude_settings.php" class="btn-modern btn-settings">⚙️ Settings</a>
+        <button onclick="clearChat()" class="btn-modern btn-clear">🗑️ Clear</button>
+    </div>
+</div>
+
+<div class="claude-main">
+    <div id="prompt-editor" class="prompt-editor">
+        <div class="prompt-note">
+            📝 <strong>System Prompt Editor</strong> - Commands (@file, @create, @edit, etc.) are automatically available
+        </div>
+        <textarea id="system-prompt" class="prompt-textarea" placeholder="Loading system prompt..."></textarea>
+        <div class="prompt-actions">
+            <button onclick="saveSystemPrompt()" class="btn-modern btn-save">✅ Save</button>
+            <button onclick="resetSystemPrompt()" class="btn-modern btn-reset">🔄 Reset</button>
+            <button onclick="togglePromptEditor()" class="btn-modern btn-cancel">❌ Cancel</button>
         </div>
     </div>
     
-    <div id="prompt-editor" style="display: none; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">📝 <strong>Note:</strong> Commands (@file, @create, @edit, etc.) are automatically added to Claude's prompt even if not included here.</p>
-        <textarea id="system-prompt" rows="6" style="width: 100%; font-family: monospace; font-size: 12px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;" placeholder="Loading system prompt..."></textarea>
-        <div style="margin-top: 10px; display: flex; gap: 10px;">
-            <button onclick="saveSystemPrompt()" class="btn-success">Save Prompt</button>
-            <button onclick="resetSystemPrompt()" class="btn-danger">Reset to Default</button>
-            <button onclick="togglePromptEditor()" class="btn-secondary">Cancel</button>
+    <div class="chat-section">
+        <div id="chat-container" class="chat-container">
+            <div class="message system-message">
+                <div class="message-header">🤖 System</div>
+                <div class="message-content">Claude is ready! Use @commands to interact with your ZeroAI system.</div>
+            </div>
         </div>
-    </div>
-    
-    <div id="chat-container" style="height: 400px; border: 1px solid #ddd; padding: 15px; overflow-y: auto; background: #f9f9f9; margin-bottom: 15px;">
-        <div class="message system-message">
-            <strong>System:</strong> Claude is ready. You can use commands like @file, @list, @agents, etc.
-        </div>
-    </div>
-    
-    <div style="display: flex; gap: 10px;">
-        <textarea id="user-input" placeholder="Ask Claude about ZeroAI optimization, code review, or development help...\n\nExamples:\n- @file src/main.py (to share a file)\n- @list www/admin/ (to list directory contents)\n- @search config (to find files)\n- @agents (to see all agents)\n- Help me optimize my ZeroAI configuration" style="flex: 1; height: 100px; resize: vertical; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
-        <div style="display: flex; flex-direction: column; gap: 5px;">
-            <button onclick="sendMessage()" class="btn-success" style="height: 40px;">Send</button>
-            <button onclick="insertCommand('@file ')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px;">@file</button>
-            <button onclick="insertCommand('@list ')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px;">@list</button>
-            <button onclick="insertCommand('@agents')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px;">@agents</button>
+        
+        <div class="input-section">
+            <div class="input-container">
+                <textarea id="user-input" class="chat-input" placeholder="Ask Claude about your ZeroAI system...\n\n• @file path/to/file.py\n• @list directory/\n• @agents\n• Help optimize my configuration"></textarea>
+                <div class="input-controls">
+                    <button onclick="sendMessage()" class="btn-send">🚀 Send</button>
+                    <div class="quick-commands">
+                        <button onclick="insertCommand('@file ')" class="cmd-btn">@file</button>
+                        <button onclick="insertCommand('@list ')" class="cmd-btn">@list</button>
+                        <button onclick="insertCommand('@agents')" class="cmd-btn">@agents</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <h3>📝 Scratch Pad</h3>
-    <textarea id="scratch-pad" placeholder="Use this area for notes, ideas, or temporary text..." style="width: 100%; height: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; resize: vertical;"></textarea>
-    <div style="margin-top: 10px; display: flex; gap: 10px;">
-        <button onclick="saveScratchPad()" class="btn-success">Save Notes</button>
-        <button onclick="clearScratchPad()" class="btn-warning">Clear</button>
-        <button onclick="insertToChat()" class="btn-secondary">Send to Chat</button>
+<div class="scratch-section">
+    <div class="section-header">
+        <h3>📝 Scratch Pad</h3>
+        <div class="scratch-controls">
+            <button onclick="saveScratchPad()" class="btn-mini btn-save">💾 Save</button>
+            <button onclick="insertToChat()" class="btn-mini btn-send">➡️ To Chat</button>
+            <button onclick="clearScratchPad()" class="btn-mini btn-clear">🗑️ Clear</button>
+        </div>
     </div>
+    <textarea id="scratch-pad" class="scratch-textarea" placeholder="Quick notes, code snippets, ideas..."></textarea>
 </div>
 
-<div class="card">
-    <h3>🚀 Quick Actions</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-        <button onclick="quickCommand('@agents')" class="btn-primary" style="padding: 12px; border-radius: 6px;">🤖 List Agents</button>
-        <button onclick="quickCommand('@crews')" class="btn-primary" style="padding: 12px; border-radius: 6px;">👥 Show Crews</button>
-        <button onclick="quickCommand('@list /app/src')" class="btn-info" style="padding: 12px; border-radius: 6px;">📁 List Source Code</button>
-        <button onclick="quickCommand('@file /app/config/settings.yaml')" class="btn-info" style="padding: 12px; border-radius: 6px;">⚙️ Show Config</button>
-        <button onclick="quickCommand('Analyze my ZeroAI system and suggest optimizations')" class="btn-success" style="padding: 12px; border-radius: 6px;">🔍 System Analysis</button>
-        <button onclick="quickCommand('Review my agent performance and suggest improvements')" class="btn-warning" style="padding: 12px; border-radius: 6px;">📊 Performance Review</button>
+<div class="actions-grid">
+    <div class="action-category">
+        <h4>🤖 System Commands</h4>
+        <div class="action-buttons">
+            <button onclick="quickCommand('@agents')" class="action-btn primary">🤖 List Agents</button>
+            <button onclick="quickCommand('@crews')" class="action-btn primary">👥 Show Crews</button>
+            <button onclick="quickCommand('@list /app/src')" class="action-btn info">📁 Browse Code</button>
+        </div>
+    </div>
+    
+    <div class="action-category">
+        <h4>🔍 Analysis & Optimization</h4>
+        <div class="action-buttons">
+            <button onclick="quickCommand('Analyze my ZeroAI system and suggest optimizations')" class="action-btn success">🔍 System Analysis</button>
+            <button onclick="quickCommand('Review my agent performance and suggest improvements')" class="action-btn warning">📊 Performance Review</button>
+            <button onclick="quickCommand('@file /app/config/settings.yaml')" class="action-btn info">⚙️ Config Review</button>
+        </div>
     </div>
 </div>
 
 <style>
-.message {
-    margin-bottom: 15px;
-    padding: 10px;
+/* Modern Claude Interface */
+.claude-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.claude-header h1 {
+    margin: 0 0 8px 0;
+    font-size: 2.2em;
+    font-weight: 600;
+}
+.subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+.claude-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+.control-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.btn-modern {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-edit { background: #ffc107; color: #000; }
+.btn-edit:hover { background: #e0a800; }
+.btn-settings { background: #6c757d; color: white; }
+.btn-settings:hover { background: #545b62; }
+.btn-clear { background: #dc3545; color: white; }
+.btn-clear:hover { background: #c82333; }
+.btn-save { background: #28a745; color: white; }
+.btn-save:hover { background: #218838; }
+.btn-reset { background: #fd7e14; color: white; }
+.btn-reset:hover { background: #e8650e; }
+.btn-cancel { background: #6c757d; color: white; }
+.btn-cancel:hover { background: #545b62; }
+
+.select-modern {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+}
+
+.claude-main {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.prompt-editor {
+    display: none;
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+.prompt-note {
+    color: #6c757d;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+.prompt-textarea {
+    width: 100%;
+    height: 120px;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    resize: vertical;
+}
+.prompt-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+}
+
+.chat-section {
+    padding: 20px;
+}
+.chat-container {
+    height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    background: #fafbfc;
+    border: 1px solid #e1e5e9;
     border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.message {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.message-header {
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.message-content {
+    line-height: 1.5;
 }
 .user-message {
-    background: #e3f2fd;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     border-left: 4px solid #2196f3;
 }
 .claude-message {
-    background: #f3e5f5;
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
     border-left: 4px solid #9c27b0;
 }
 .system-message {
-    background: #fff3e0;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
     border-left: 4px solid #ff9800;
-    font-style: italic;
 }
 .error-message {
-    background: #ffebee;
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
     border-left: 4px solid #f44336;
 }
+
+.input-section {
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+.input-container {
+    display: flex;
+    gap: 15px;
+}
+.chat-input {
+    flex: 1;
+    height: 100px;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+}
+.input-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.btn-send {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-send:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40,167,69,0.3);
+}
+.quick-commands {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.cmd-btn {
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.cmd-btn:hover {
+    background: #e9ecef;
+}
+
+.scratch-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 25px;
+}
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.section-header h3 {
+    margin: 0;
+    color: #495057;
+}
+.scratch-controls {
+    display: flex;
+    gap: 8px;
+}
+.btn-mini {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.scratch-textarea {
+    width: 100%;
+    height: 120px;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 25px;
+}
+.action-category {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.action-category h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 16px;
+}
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.action-btn {
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.action-btn.primary { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; }
+.action-btn.success { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; }
+.action-btn.info { background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%); color: white; }
+.action-btn.warning { background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); color: #000; }
 </style>
 
 <script>
