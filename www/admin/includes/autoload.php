@@ -12,6 +12,9 @@ require_once __DIR__ . '/../../src/Core/InputValidator.php';
 require_once __DIR__ . '/../../src/Core/Logger.php';
 require_once __DIR__ . '/../../src/Core/VisitorTracker.php';
 require_once __DIR__ . '/../../src/Models/User.php';
+require_once __DIR__ . '/../../src/Models/Tenant.php';
+require_once __DIR__ . '/../../src/Core/Company.php';
+require_once __DIR__ . '/../../src/Core/Project.php';
 
 // Load additional services
 if (file_exists(__DIR__ . '/../../src/Core/Company.php')) {

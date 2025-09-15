@@ -2,11 +2,14 @@
 session_start();
 require_once __DIR__ . '/../admin/includes/autoload.php';
 
-use ZeroAI\Core\{Tenant, Company, Project};
+// Use existing classes
+require_once __DIR__ . '/../src/Models/Tenant.php';
+require_once __DIR__ . '/../src/Core/Company.php';
+require_once __DIR__ . '/../src/Core/Project.php';
 
-$tenant = new Tenant();
-$company = new Company();
-$project = new Project();
+$tenant = new \ZeroAI\Core\Tenant();
+$company = new \ZeroAI\Core\Company();
+$project = new \ZeroAI\Core\Project();
 
 $tenants = $tenant->getAll();
 $totalCompanies = 0;
