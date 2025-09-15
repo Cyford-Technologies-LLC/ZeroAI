@@ -1,15 +1,8 @@
 <?php
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+session_start();
+require_once __DIR__ . '/../admin/includes/autoload.php';
 
-try {
-    session_start();
-} catch (Exception $e) {
-    die("Session error: " . $e->getMessage());
-}
-
-// Simple authentication check
+// Authentication check
 if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
     header('Location: /web/login.php');
     exit;
