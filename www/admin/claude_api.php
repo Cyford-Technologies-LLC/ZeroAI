@@ -1,6 +1,13 @@
 <?php
 session_start();
-require_once __DIR__ . '/../src/autoload.php';
+
+try {
+    require_once __DIR__ . '/../src/autoload.php';
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'System error']);
+    exit;
+}
 
 if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
     http_response_code(401);
@@ -11,8 +18,13 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 header('Content-Type: application/json');
 
 try {
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->info('Claude API request started');
+    
     $input = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? '';
+    
+    $logger->info('Claude API action', ['action' => $action]);
     
     // Initialize comprehensive Claude Provider with full tool system
     $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
@@ -98,12 +110,7 @@ try {
         'user' => $_SESSION['admin_user'] ?? 'unknown'
     ]);
     
-    // Also log to Claude-specific debug log
-    $debugLog = '/app/logs/claude_debug.log';
-    if (!is_dir('/app/logs')) {
-        mkdir('/app/logs', 0755, true);
-    }
-    error_log(date('Y-m-d H:i:s') . ' [ERROR] ' . $e->getMessage() . "\n", 3, $debugLog);
+
     
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
