@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/autoload.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 header('Content-Type: application/json');
 
@@ -47,29 +47,24 @@ if (!$message) {
 }
 
 try {
-    // Use existing CloudAI class or create simple response
-    if (class_exists('\ZeroAI\AI\CloudAI')) {
-        $cloudAI = new \ZeroAI\AI\CloudAI();
-        $response = $cloudAI->chat($message, $selectedModel);
-    } else {
-        // Fallback to simple response
-        $response = [
-            'success' => true,
-            'response' => 'Claude integration is being configured. Your message: ' . $message,
-            'tokens' => 0,
-            'model' => $selectedModel
-        ];
-    }
+
     
-    if ($response['success']) {
-        echo json_encode([
-            'success' => true,
-            'response' => $response['response'],
-            'tokens' => $response['tokens'] ?? 0,
-            'model' => $response['model'] ?? $selectedModel
-        ]);
+    if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeProvider')) {
+        $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
+        $response = $claudeProvider->chat($message, $selectedModel, $conversationHistory, 'hybrid');
+        
+        if ($response['success']) {
+            echo json_encode([
+                'success' => true,
+                'response' => $response['response'],
+                'tokens' => $response['tokens'] ?? 0,
+                'model' => $response['model'] ?? $selectedModel
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'error' => $response['error']]);
+        }
     } else {
-        echo json_encode(['success' => false, 'error' => $response['error']]);
+        echo json_encode(['success' => false, 'error' => 'Claude provider not available']);
     }
     
 } catch (Exception $e) {

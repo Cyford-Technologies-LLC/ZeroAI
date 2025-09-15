@@ -64,19 +64,26 @@ try {
     
     switch ($action) {
         case 'chat':
+            $logger->logClaude('Chat action started');
             $message = $input['message'] ?? '';
             $model = $input['model'] ?? 'claude-3-5-sonnet-20241022';
             $mode = $input['mode'] ?? 'hybrid';
             $history = $input['history'] ?? [];
             
+            $logger->logClaude('Chat parameters', ['message_length' => strlen($message), 'model' => $model, 'mode' => $mode, 'history_count' => count($history)]);
+            
             if (empty($message)) {
+                $logger->logClaude('Chat failed: empty message');
                 echo json_encode(['success' => false, 'error' => 'Message required']);
                 exit;
             }
             
+            $logger->logClaude('Calling claudeProvider->chat()');
             $response = $claudeProvider->chat($message, $model, $history, $mode);
+            $logger->logClaude('ClaudeProvider chat response', ['response_type' => gettype($response), 'success' => $response['success'] ?? 'unknown']);
             
             if ($response['success']) {
+                $logger->logClaude('Chat successful, sending response');
                 echo json_encode([
                     'success' => true, 
                     'response' => $response['response'],
@@ -85,6 +92,7 @@ try {
                     'cost' => $response['cost']
                 ]);
             } else {
+                $logger->logClaude('Chat failed', ['error' => $response['error'] ?? 'unknown error']);
                 echo json_encode(['success' => false, 'error' => $response['error']]);
             }
             break;
