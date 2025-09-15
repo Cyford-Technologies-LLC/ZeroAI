@@ -106,7 +106,7 @@ $currentPage = $currentPage ?? '';
                 "header header header"
                 "sidebar main right"
                 "footer footer footer";
-            grid-template-rows: 70px 1fr 60px;
+            grid-template-rows: 70px 1fr auto;
             grid-template-columns: 250px 1fr 0px;
             height: 100vh;
             transition: grid-template-columns 0.3s ease;
@@ -120,7 +120,7 @@ $currentPage = $currentPage ?? '';
         .sidebar-section { grid-area: sidebar; z-index: 1000; overflow: hidden; }
         .main-section { grid-area: main; overflow-y: auto; padding: 20px; }
         .right-section { grid-area: right; }
-        .footer-section { grid-area: footer; background: #f8f9fa; border-top: 1px solid #dee2e6; }
+        .footer-section { grid-area: footer; background: #f8f9fa; border-top: 1px solid #dee2e6; min-height: 50px; }
         
         @media (max-width: 768px) {
             .layout-container {
