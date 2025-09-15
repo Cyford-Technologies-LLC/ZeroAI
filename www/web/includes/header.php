@@ -172,7 +172,7 @@ $currentPage = $currentPage ?? '';
 
     <!-- MAIN SECTION -->
     <div class="main-section" id="mainContent">
-    </div>
+        <?php ob_start(); ?>
 
     <!-- RIGHT SECTION -->
     <div class="right-section">
