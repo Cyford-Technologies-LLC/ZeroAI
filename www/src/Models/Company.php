@@ -5,7 +5,8 @@ class Company {
     private $db;
     
     public function __construct() {
-        $this->db = DatabaseManager::getInstance();
+        require_once __DIR__ . '/../../config/database.php';
+        $this->db = new \Database();
     }
     
     public function create($data) {
@@ -19,12 +20,17 @@ class Company {
         return $result ? $result[0] : null;
     }
     
-    public function findByTenant($tenantId) {
-        return $this->db->select('companies', ['tenant_id' => $tenantId]);
+    public function findByTenant($orgId) {
+        $pdo = $this->db->getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM companies WHERE organization_id = ?");
+        $stmt->execute([$orgId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
     
     public function getAll() {
-        return $this->db->select('companies');
+        $pdo = $this->db->getConnection();
+        $stmt = $pdo->query("SELECT * FROM companies ORDER BY created_at DESC");
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
     
     public function update($id, $data) {
