@@ -88,7 +88,22 @@ class Database {
         ('admin', '" . password_hash('admin123', PASSWORD_DEFAULT) . "', 'admin'),
         ('user', '" . password_hash('user123', PASSWORD_DEFAULT) . "', 'user');
         
-        ALTER TABLE users ADD COLUMN organization_id INTEGER DEFAULT 1;
+        ";
+        
+        try {
+            $this->pdo->exec($sql);
+        } catch (PDOException $e) {
+            // Continue if tables already exist
+        }
+        
+        // Add columns that might not exist
+        try {
+            $this->pdo->exec("ALTER TABLE users ADD COLUMN organization_id INTEGER DEFAULT 1");
+        } catch (PDOException $e) {
+            // Column already exists
+        }
+        
+        $sql2 = "
         
         CREATE TABLE IF NOT EXISTS organizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,7 +193,11 @@ class Database {
         ('Sample Company', 'contact@sample.com', '555-0123', 'Technology', 1, 'admin');
         ";
         
-        $this->pdo->exec($sql);
+        try {
+            $this->pdo->exec($sql2);
+        } catch (PDOException $e) {
+            // Continue if error
+        }
     }
     
     public function getConnection() {
