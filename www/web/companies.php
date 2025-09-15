@@ -6,186 +6,144 @@ if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) 
     exit;
 }
 
-require_once __DIR__ . '/../config/database.php';
-$db = new Database();
-$pdo = $db->getConnection();
-
-// Handle form submissions
-if ($_POST) {
-    if (isset($_POST['action'])) {
-        switch ($_POST['action']) {
-            case 'add':
-                $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, website, industry, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([
-                    $_POST['name'], $_POST['email'], $_POST['phone'], 
-                    $_POST['address'], $_POST['website'], $_POST['industry'], 'active'
-                ]);
-                $success = "Company added successfully!";
-                break;
-            case 'edit':
-                $stmt = $pdo->prepare("UPDATE companies SET name=?, email=?, phone=?, address=?, website=?, industry=? WHERE id=?");
-                $stmt->execute([
-                    $_POST['name'], $_POST['email'], $_POST['phone'], 
-                    $_POST['address'], $_POST['website'], $_POST['industry'], $_POST['id']
-                ]);
-                $success = "Company updated successfully!";
-                break;
-        }
+// Handle form submission
+if ($_POST && isset($_POST['name'])) {
+    try {
+        require_once __DIR__ . '/../config/database.php';
+        $db = new Database();
+        $pdo = $db->getConnection();
+        
+        $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, industry) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry']]);
+        $success = "Company added successfully!";
+    } catch (Exception $e) {
+        $error = "Error: " . $e->getMessage();
     }
 }
 
 // Get companies
-$companies = $pdo->query("SELECT * FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-
-// Get single company for editing
-$editCompany = null;
-if (isset($_GET['edit'])) {
-    $stmt = $pdo->prepare("SELECT * FROM companies WHERE id = ?");
-    $stmt->execute([$_GET['edit']]);
-    $editCompany = $stmt->fetch(PDO::FETCH_ASSOC);
+$companies = [];
+try {
+    require_once __DIR__ . '/../config/database.php';
+    $db = new Database();
+    $pdo = $db->getConnection();
+    $companies = $pdo->query("SELECT * FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $error = "Database error: " . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Companies - ZeroAI CRM</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: #2c3e50; color: white; padding: 15px 20px; margin-bottom: 20px; }
+        .nav { display: flex; gap: 20px; margin-top: 10px; }
+        .nav a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px; }
+        .nav a:hover { background: rgba(255,255,255,0.2); }
+        .nav a.active { background: rgba(255,255,255,0.3); }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 3px; }
+        .btn { display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border: none; border-radius: 3px; cursor: pointer; }
+        .btn:hover { background: #2980b9; }
+        .alert { padding: 10px; margin-bottom: 20px; border-radius: 3px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; }
+    </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 bg-light p-3" style="min-height: 100vh;">
-                <h5 class="text-primary mb-4"><i class="bi bi-robot"></i> ZeroAI CRM</h5>
-                <nav class="nav flex-column">
-                    <a class="nav-link" href="/web/"><i class="bi bi-house"></i> Dashboard</a>
-                    <a class="nav-link active" href="/web/companies.php"><i class="bi bi-building"></i> Companies</a>
-                    <a class="nav-link" href="/web/contacts.php"><i class="bi bi-people"></i> Contacts</a>
-                    <a class="nav-link" href="/web/projects.php"><i class="bi bi-folder"></i> Projects</a>
-                    <a class="nav-link" href="/web/tasks.php"><i class="bi bi-check-square"></i> Tasks</a>
-                </nav>
-            </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-10 p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2><i class="bi bi-building"></i> Companies</h2>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#companyModal">
-                        <i class="bi bi-plus"></i> Add Company
-                    </button>
-                </div>
-                
-                <?php if (isset($success)): ?>
-                    <div class="alert alert-success"><?= $success ?></div>
-                <?php endif; ?>
-                
-                <!-- Companies Table -->
-                <div class="card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
-                                        <th>Industry</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($companies as $company): ?>
-                                        <tr>
-                                            <td><strong><?= htmlspecialchars($company['name']) ?></strong></td>
-                                            <td><?= htmlspecialchars($company['email']) ?></td>
-                                            <td><?= htmlspecialchars($company['phone']) ?></td>
-                                            <td><?= htmlspecialchars($company['industry']) ?></td>
-                                            <td>
-                                                <span class="badge bg-<?= $company['status'] == 'active' ? 'success' : 'secondary' ?>">
-                                                    <?= ucfirst($company['status']) ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="?edit=<?= $company['id'] ?>" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <a href="/web/contacts.php?company=<?= $company['id'] ?>" class="btn btn-sm btn-outline-info">Contacts</a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="header">
+        <h1>🏢 ZeroAI CRM - Companies</h1>
+        <div class="nav">
+            <a href="/web/">Dashboard</a>
+            <a href="/web/companies.php" class="active">Companies</a>
+            <a href="/web/contacts.php">Contacts</a>
+            <a href="/web/projects.php">Projects</a>
+            <a href="/web/tasks.php">Tasks</a>
+            <a href="/admin/">Admin</a>
+            <a href="/web/logout.php">Logout</a>
         </div>
     </div>
-    
-    <!-- Company Modal -->
-    <div class="modal fade" id="companyModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="POST">
-                    <div class="modal-header">
-                        <h5 class="modal-title"><?= $editCompany ? 'Edit' : 'Add' ?> Company</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="<?= $editCompany ? 'edit' : 'add' ?>">
-                        <?php if ($editCompany): ?>
-                            <input type="hidden" name="id" value="<?= $editCompany['id'] ?>">
-                        <?php endif; ?>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Company Name</label>
-                            <input type="text" class="form-control" name="name" value="<?= htmlspecialchars($editCompany['name'] ?? '') ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email" value="<?= htmlspecialchars($editCompany['email'] ?? '') ?>">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Phone</label>
-                            <input type="text" class="form-control" name="phone" value="<?= htmlspecialchars($editCompany['phone'] ?? '') ?>">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Address</label>
-                            <textarea class="form-control" name="address"><?= htmlspecialchars($editCompany['address'] ?? '') ?></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Website</label>
-                            <input type="url" class="form-control" name="website" value="<?= htmlspecialchars($editCompany['website'] ?? '') ?>">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Industry</label>
-                            <select class="form-control" name="industry">
-                                <option value="">Select Industry</option>
-                                <option value="Technology" <?= ($editCompany['industry'] ?? '') == 'Technology' ? 'selected' : '' ?>>Technology</option>
-                                <option value="Healthcare" <?= ($editCompany['industry'] ?? '') == 'Healthcare' ? 'selected' : '' ?>>Healthcare</option>
-                                <option value="Finance" <?= ($editCompany['industry'] ?? '') == 'Finance' ? 'selected' : '' ?>>Finance</option>
-                                <option value="Manufacturing" <?= ($editCompany['industry'] ?? '') == 'Manufacturing' ? 'selected' : '' ?>>Manufacturing</option>
-                                <option value="Retail" <?= ($editCompany['industry'] ?? '') == 'Retail' ? 'selected' : '' ?>>Retail</option>
-                                <option value="Other" <?= ($editCompany['industry'] ?? '') == 'Other' ? 'selected' : '' ?>>Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><?= $editCompany ? 'Update' : 'Add' ?> Company</button>
-                    </div>
-                </form>
-            </div>
+
+    <div class="container">
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success"><?= $success ?></div>
+        <?php endif; ?>
+        
+        <?php if (isset($error)): ?>
+            <div class="alert alert-error"><?= $error ?></div>
+        <?php endif; ?>
+
+        <div class="card">
+            <h3>Add New Company</h3>
+            <form method="POST">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea name="address"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Industry</label>
+                    <select name="industry">
+                        <option value="">Select Industry</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Add Company</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Companies List</h3>
+            <?php if (empty($companies)): ?>
+                <p>No companies found. Add your first company above or <a href="/web/setup_crm.php">setup the database</a>.</p>
+            <?php else: ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Industry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($companies as $company): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($company['name']) ?></td>
+                                <td><?= htmlspecialchars($company['email']) ?></td>
+                                <td><?= htmlspecialchars($company['phone']) ?></td>
+                                <td><?= htmlspecialchars($company['industry']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <?php if ($editCompany): ?>
-        <script>
-            new bootstrap.Modal(document.getElementById('companyModal')).show();
-        </script>
-    <?php endif; ?>
 </body>
 </html>
