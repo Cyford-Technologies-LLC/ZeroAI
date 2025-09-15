@@ -57,6 +57,7 @@ class Database {
             phone TEXT,
             address TEXT,
             website TEXT,
+            linkedin TEXT,
             industry TEXT,
             organization_id INTEGER DEFAULT 1,
             created_by TEXT,

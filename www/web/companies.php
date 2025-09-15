@@ -32,8 +32,8 @@ try {
 // Handle form submission
 if ($_POST && isset($_POST['name'])) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, industry, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry'], $userOrgId, $currentUser]);
+        $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, address, industry, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry'], $userOrgId, $currentUser]);
         $success = "Company added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
@@ -92,12 +92,28 @@ include __DIR__ . '/includes/header.php';
                     <input type="text" name="name" required>
                 </div>
                 <div class="form-group">
+                    <label>EIN</label>
+                    <input type="text" name="ein" placeholder="XX-XXXXXXX">
+                </div>
+                <div class="form-group">
+                    <label>Business ID</label>
+                    <input type="text" name="business_id">
+                </div>
+                <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email">
                 </div>
                 <div class="form-group">
                     <label>Phone</label>
                     <input type="text" name="phone">
+                </div>
+                <div class="form-group">
+                    <label>Website</label>
+                    <input type="url" name="website" placeholder="https://">
+                </div>
+                <div class="form-group">
+                    <label>LinkedIn</label>
+                    <input type="url" name="linkedin" placeholder="https://linkedin.com/company/">
                 </div>
                 <div class="form-group">
                     <label>Address</label>
