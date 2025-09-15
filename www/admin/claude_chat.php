@@ -42,12 +42,21 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
                         <option value="claude-3-opus-20240229">Opus 3</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Mode</label>
                     <select id="claude-mode" class="form-select form-select-sm">
                         <option value="chat">💬 Chat</option>
                         <option value="autonomous">🤖 Auto</option>
                         <option value="hybrid">⚡ Hybrid</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">History</label>
+                    <select id="claude-history" class="form-select form-select-sm">
+                        <option value="5">5 msgs</option>
+                        <option value="10" selected>10 msgs</option>
+                        <option value="20">20 msgs</option>
+                        <option value="50">50 msgs</option>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -183,6 +192,15 @@ function sendMessage() {
     const modelSelect = document.getElementById('claude-model');
     const selectedModel = modelSelect ? modelSelect.value : 'claude-3-5-sonnet-20241022';
     
+    const modeSelect = document.getElementById('claude-mode');
+    const selectedMode = modeSelect ? modeSelect.value : 'hybrid';
+    
+    const historySelect = document.getElementById('claude-history');
+    const historyLimit = historySelect ? parseInt(historySelect.value) : 10;
+    
+    // Get recent chat history
+    const chatHistory = getChatHistory(historyLimit);
+    
     // Add user message to chat
     addMessageToChat('user', message);
     input.value = '';
@@ -190,11 +208,11 @@ function sendMessage() {
     // Show typing indicator
     addMessageToChat('assistant', 'Claude is typing...');
     
-    // Send to backend with model selection
+    // Send to backend with model selection and history
     fetch('/admin/providers/claude/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action: 'chat', message: message, model: selectedModel})
+        body: JSON.stringify({action: 'chat', message: message, model: selectedModel, mode: selectedMode, history: chatHistory})
     })
     .then(response => response.json())
     .then(data => {
@@ -238,6 +256,30 @@ function insertCommand(command) {
     const input = document.getElementById('user-input');
     input.value += command;
     input.focus();
+}
+
+function getChatHistory(limit = 10) {
+    const messages = document.querySelectorAll('.message');
+    const history = [];
+    
+    // Get last N messages (excluding typing indicators)
+    const recentMessages = Array.from(messages)
+        .filter(msg => !msg.textContent.includes('typing'))
+        .slice(-limit * 2); // *2 because each exchange has user + assistant
+    
+    recentMessages.forEach(msg => {
+        const isUser = msg.classList.contains('user');
+        const text = msg.textContent.replace(/^(👤 You:|🤖 Claude:)\s*/, '');
+        
+        if (text.trim()) {
+            history.push({
+                role: isUser ? 'user' : 'assistant',
+                content: text.trim()
+            });
+        }
+    });
+    
+    return history;
 }
 
 function clearChat() {
