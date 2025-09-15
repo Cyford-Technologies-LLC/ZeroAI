@@ -19,23 +19,23 @@ header('Content-Type: application/json');
 
 try {
     $logger = \ZeroAI\Core\Logger::getInstance();
-    $logger->info('Claude API request started');
+    $logger->logClaude('Claude API request started');
     
     $input = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? '';
     
-    $logger->info('Claude API action', ['action' => $action]);
+    $logger->logClaude('Claude API action', ['action' => $action]);
     
     // Initialize comprehensive Claude Provider with full tool system
-    $logger->info('Initializing ClaudeProvider');
+    $logger->logClaude('Initializing ClaudeProvider');
     
     if (!class_exists('\ZeroAI\Providers\AI\Claude\ClaudeProvider')) {
-        $logger->error('ClaudeProvider class not found');
+        $logger->logClaude('ClaudeProvider class not found');
         throw new Exception('ClaudeProvider class not found');
     }
     
     $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
-    $logger->info('ClaudeProvider initialized successfully');
+    $logger->logClaude('ClaudeProvider initialized successfully');
     
     switch ($action) {
         case 'chat':
