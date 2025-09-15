@@ -9,20 +9,32 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 
 require_once 'includes/autoload.php';
 
-use ZeroAI\Core\System;
-use ZeroAI\Core\DatabaseManager;
-
-$systemInfo = System::getSystemInfo();
-$db = DatabaseManager::getInstance();
+try {
+    if (class_exists('ZeroAI\Core\System')) {
+        $systemInfo = ZeroAI\Core\System::getSystemInfo();
+    } else {
+        $systemInfo = [];
+    }
+    
+    if (class_exists('ZeroAI\Core\DatabaseManager')) {
+        $db = ZeroAI\Core\DatabaseManager::getInstance();
+        $userResult = $db->select('users');
+        $userStats = ['total' => count($userResult), 'admin' => 1];
+    } else {
+        $userStats = ['total' => 0, 'admin' => 1];
+    }
+    
+    $agentStats = ['total' => 0, 'active' => 0];
+    $recentLogs = [];
+    
+} catch (Exception $e) {
+    $userStats = ['total' => 0, 'admin' => 1];
+    $agentStats = ['total' => 0, 'active' => 0];
+    $recentLogs = [];
+}
 
 $pageTitle = 'Admin Dashboard - ZeroAI';
 $currentPage = 'dashboard';
-
-// Get basic stats
-$userResult = $db->select('users');
-$userStats = ['total' => count($userResult), 'admin' => 1];
-$agentStats = ['total' => 0, 'active' => 0];
-$recentLogs = [];
 
 include __DIR__ . '/includes/header.php'; 
 ?>

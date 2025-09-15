@@ -20,13 +20,9 @@ class Logger {
     
     private function ensureLogDirectory() {
         $logDir = '/app/logs';
-        if (!InputValidator::validatePath($logDir, true)) {
-            throw new SecurityException('Invalid log directory path');
-        }
-        
         if (!is_dir($logDir)) {
             if (!mkdir($logDir, 0755, true)) {
-                throw new SecurityException('Cannot create log directory');
+                error_log('Cannot create log directory');
             }
         }
     }
