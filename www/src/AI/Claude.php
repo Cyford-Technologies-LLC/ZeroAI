@@ -9,6 +9,10 @@ class Claude extends CloudAI {
         parent::__construct($apiKey ?: getenv('ANTHROPIC_API_KEY'), $model);
     }
     
+    public function setModel($model) {
+        $this->model = $model;
+    }
+    
     public function chat($message, $systemPrompt = null, $conversationHistory = []) {
         if (!$this->apiKey) {
             throw new \Exception('Anthropic API key not configured');

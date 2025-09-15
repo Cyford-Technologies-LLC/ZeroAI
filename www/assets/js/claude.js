@@ -64,7 +64,7 @@ function sendMessage() {
     
     // Send to Claude API
     const selectedModel = document.getElementById('claude-model').value;
-    fetch('/admin/claude_api.php', {
+    fetch('/admin/chat_handler.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ function resetSystemPrompt() {
 async function saveScratchPad() {
     const content = document.getElementById('scratch-pad').value;
     try {
-        const response = await fetch('/admin/claude_api.php', {
+        const response = await fetch('/admin/chat_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({action: 'save_scratch_pad', content: content})
@@ -188,7 +188,7 @@ async function clearScratchPad() {
     if (confirm('Clear scratch pad?')) {
         document.getElementById('scratch-pad').value = '';
         try {
-            await fetch('/admin/claude_api.php', {
+            await fetch('/admin/chat_handler.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({action: 'save_scratch_pad', content: ''})
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load scratch pad on page load
 async function loadScratchPad() {
     try {
-        const response = await fetch('/admin/claude_api.php', {
+        const response = await fetch('/admin/chat_handler.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({action: 'get_scratch_pad'})
