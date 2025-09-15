@@ -25,20 +25,31 @@ function quickCommand(command) {
 function addMessage(type, content, sender = '') {
     const container = document.getElementById('chat-container');
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}-message`;
+    messageDiv.className = `message ${type}`;
     
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'message-header';
-    headerDiv.textContent = sender || type.charAt(0).toUpperCase() + type.slice(1);
+    // Decode HTML entities and preserve formatting
+    const decodedContent = decodeHtmlEntities(content);
     
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.textContent = content;
+    const senderName = sender || (type === 'claude' ? '🤖 Claude' : type.charAt(0).toUpperCase() + type.slice(1));
     
-    messageDiv.appendChild(headerDiv);
-    messageDiv.appendChild(contentDiv);
+    messageDiv.innerHTML = `
+        <strong>${senderName}:</strong>
+        <div class="message-text">${formatMessage(decodedContent)}</div>
+    `;
+    
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
+}
+
+function decodeHtmlEntities(text) {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+}
+
+function formatMessage(text) {
+    // Convert newlines to <br> and preserve formatting
+    return text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
 }
 
 function addSystemMessage(content) {
@@ -87,7 +98,7 @@ function sendMessage() {
         container.removeChild(container.lastChild);
         
         if (data.success) {
-            addMessage('claude', data.response, 'Claude');
+            addMessage('claude', data.response);
             chatHistory.push({role: 'assistant', content: data.response});
         } else {
             addMessage('error', data.error || 'Failed to get response from Claude', 'Error');

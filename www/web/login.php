@@ -183,12 +183,8 @@ if ($_POST) {
                         
 
                         
-                        <div class="alert alert-info mt-3" role="alert">
-                            <small>
-                                <strong>Default Login:</strong><br>
-                                Username: <code>user</code><br>
-                                Password: <code>user123</code>
-                            </small>
+                        <div class="text-center mt-3">
+                            <p class="text-muted">Don't have an account? <a href="/web/register.php" class="text-decoration-none">Register here</a></p>
                         </div>
                     </div>
                 </div>
