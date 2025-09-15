@@ -55,12 +55,15 @@ class Logger {
             if (!empty($result)) {
                 return $result[0]['value'] === 'true';
             }
+            // Enable debug by default if no setting exists
+            $db->query("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('debug_logging', 'true')");
+            return true;
         } catch (\Exception $e) {
             // Fall back to environment variable
         }
         
-        // Default to false if no setting found
-        return getenv('DEBUG') === 'true';
+        // Default to true for debugging
+        return getenv('DEBUG') !== 'false';
     }
     
     private function log($level, $message, $context = [], $logFile = null) {

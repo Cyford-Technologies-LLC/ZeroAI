@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once __DIR__ . '/../src/bootstrap.php';
 
 header('Content-Type: application/json');
@@ -60,17 +63,18 @@ if (!$message) {
 }
 
 try {
+    // Initialize logger first
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->info('Chat handler: Processing request', ['model' => $selectedModel, 'message_length' => strlen($message)]);
+    
     // Route to appropriate provider based on model
     if (strpos($selectedModel, 'claude') !== false) {
-        // Claude models - use Claude logging
-        $logger = \ZeroAI\Core\Logger::getInstance();
-        $logger->logClaude('Chat handler: Claude model request', ['model' => $selectedModel, 'message_length' => strlen($message)]);
-        
+        // Claude models
         if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeProvider')) {
             $provider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
             $response = $provider->chat($message, $selectedModel, $conversationHistory, 'hybrid');
         } else {
-            $logger->logClaude('Chat handler: Claude provider not available');
+            $logger->error('Chat handler: Claude provider not available');
             echo json_encode(['success' => false, 'error' => 'Claude provider not available']);
             exit;
         }
@@ -80,14 +84,13 @@ try {
         exit;
     } else {
         // Default to Claude for unknown models
-        $logger = \ZeroAI\Core\Logger::getInstance();
-        $logger->logClaude('Chat handler: Unknown model defaulting to Claude', ['model' => $selectedModel]);
+        $logger->info('Chat handler: Unknown model defaulting to Claude', ['model' => $selectedModel]);
         
         if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeProvider')) {
             $provider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
             $response = $provider->chat($message, $selectedModel, $conversationHistory, 'hybrid');
         } else {
-            $logger->logClaude('Chat handler: No AI provider available');
+            $logger->error('Chat handler: No AI provider available');
             echo json_encode(['success' => false, 'error' => 'No AI provider available']);
             exit;
         }
@@ -105,21 +108,21 @@ try {
     }
     
 } catch (Exception $e) {
-    // Log Claude errors with Claude logger
-    if (strpos($selectedModel, 'claude') !== false || !isset($selectedModel)) {
-        try {
-            $logger = \ZeroAI\Core\Logger::getInstance();
-            $logger->logClaude('Chat handler exception: ' . $e->getMessage(), [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'model' => $selectedModel
-            ]);
-        } catch (Exception $logError) {
-            error_log('Chat handler error: ' . $e->getMessage());
-        }
+    // Log errors
+    try {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->error('Chat handler exception: ' . $e->getMessage(), [
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'model' => $selectedModel ?? 'unknown',
+            'trace' => $e->getTraceAsString()
+        ]);
+    } catch (Exception $logError) {
+        error_log('Chat handler error: ' . $e->getMessage());
+        error_log('Log error: ' . $logError->getMessage());
     }
-    echo json_encode(['success' => false, 'error' => 'Chat service temporarily unavailable']);
+    echo json_encode(['success' => false, 'error' => 'Chat service temporarily unavailable: ' . $e->getMessage()]);
 }
 ?>
 
