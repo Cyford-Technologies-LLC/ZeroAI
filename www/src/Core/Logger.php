@@ -41,9 +41,26 @@ class Logger {
     }
     
     public function debug($message, $context = []) {
-        if (getenv('DEBUG') === 'true') {
+        if ($this->isDebugEnabled()) {
             $this->log('DEBUG', $message, $context);
         }
+    }
+    
+    private function isDebugEnabled() {
+        // Check system setting first
+        try {
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
+            $db->query("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $result = $db->query("SELECT value FROM system_settings WHERE key = 'debug_logging'");
+            if (!empty($result)) {
+                return $result[0]['value'] === 'true';
+            }
+        } catch (\Exception $e) {
+            // Fall back to environment variable
+        }
+        
+        // Default to false if no setting found
+        return getenv('DEBUG') === 'true';
     }
     
     private function log($level, $message, $context = [], $logFile = null) {
