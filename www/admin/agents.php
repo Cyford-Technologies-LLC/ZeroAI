@@ -12,8 +12,11 @@ $agents = $db->select('agents') ?: [];
 
 include __DIR__ . '/includes/header.php';
 
-$message = '';
-$error = '';
+$message = $_SESSION['import_message'] ?? '';
+$error = $_SESSION['import_error'] ?? '';
+
+// Clear session messages
+unset($_SESSION['import_message'], $_SESSION['import_error']);
 
 // Initialize agents table with proper structure
 $db->query("CREATE TABLE IF NOT EXISTS agents (
@@ -28,6 +31,15 @@ $db->query("CREATE TABLE IF NOT EXISTS agents (
     is_core BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)");
+
+// Initialize companies table for CRM
+$db->query("CREATE TABLE IF NOT EXISTS companies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
 // Handle actions
