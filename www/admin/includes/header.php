@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/csp.php';
-require_once __DIR__ . '/../src/autoload.php';
+require_once __DIR__ . '/../../src/autoload.php';
 require_once __DIR__ . '/../auth_check.php';
 
 // Check for 404 errors and log them
