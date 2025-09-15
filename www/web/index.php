@@ -61,6 +61,7 @@ try {
                 </h5>
                 <nav class="nav flex-column">
                     <a class="nav-link active" href="/web/"><i class="bi bi-house"></i> Dashboard</a>
+                    <a class="nav-link" href="/web/dashboard.php"><i class="bi bi-building-gear"></i> Multi-Tenant CRM</a>
                     <a class="nav-link" href="/web/companies.php"><i class="bi bi-building"></i> Companies</a>
                     <a class="nav-link" href="/web/contacts.php"><i class="bi bi-people"></i> Contacts</a>
                     <a class="nav-link" href="/web/projects.php"><i class="bi bi-folder"></i> Projects</a>
