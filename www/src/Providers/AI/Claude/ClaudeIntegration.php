@@ -14,7 +14,12 @@ class ClaudeIntegration extends BaseAIProvider {
         $this->models = [
             'claude-3-5-sonnet-20241022' => ['input' => 3.00, 'output' => 15.00],
             'claude-3-5-haiku-20241022' => ['input' => 0.25, 'output' => 1.25],
-            'claude-3-opus-20240229' => ['input' => 15.00, 'output' => 75.00]
+            'claude-3-opus-20240229' => ['input' => 15.00, 'output' => 75.00],
+            'claude-3-sonnet-20240229' => ['input' => 3.00, 'output' => 15.00],
+            'claude-3-haiku-20240307' => ['input' => 0.25, 'output' => 1.25],
+            'claude-2.1' => ['input' => 8.00, 'output' => 24.00],
+            'claude-2.0' => ['input' => 8.00, 'output' => 24.00],
+            'claude-instant-1.2' => ['input' => 0.80, 'output' => 2.40]
         ];
     }
     
@@ -56,40 +61,50 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
     private function fetchRealModels(): array {
-        try {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => 'https://api.anthropic.com/v1/models',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER => [
-                    'x-api-key: ' . $this->apiKey,
-                    'anthropic-version: 2023-06-01'
-                ],
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_SSL_VERIFYPEER => false
-            ]);
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            
-            if ($httpCode === 200) {
-                $data = json_decode($response, true);
-                if (isset($data['data']) && is_array($data['data'])) {
-                    $models = [];
-                    foreach ($data['data'] as $model) {
-                        if (isset($model['id'])) {
-                            $models[] = $model['id'];
-                        }
-                    }
-                    return $models;
-                }
-            }
-        } catch (\Exception $e) {
-            // API failed, return empty to use fallback
-        }
+        $allModels = [];
+        $url = 'https://api.anthropic.com/v1/models';
         
-        return [];
+        do {
+            try {
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $url,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => [
+                        'x-api-key: ' . $this->apiKey,
+                        'anthropic-version: 2023-06-01'
+                    ],
+                    CURLOPT_TIMEOUT => 10,
+                    CURLOPT_SSL_VERIFYPEER => false
+                ]);
+                
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                
+                if ($httpCode !== 200) break;
+                
+                $data = json_decode($response, true);
+                if (!isset($data['data']) || !is_array($data['data'])) break;
+                
+                foreach ($data['data'] as $model) {
+                    if (isset($model['id'])) {
+                        $allModels[] = $model['id'];
+                    }
+                }
+                
+                // Handle pagination
+                if (isset($data['has_more']) && $data['has_more'] && isset($data['last_id'])) {
+                    $url = 'https://api.anthropic.com/v1/models?after=' . urlencode($data['last_id']);
+                } else {
+                    break;
+                }
+            } catch (\Exception $e) {
+                break;
+            }
+        } while (true);
+        
+        return $allModels;
     }
     
     public function validateApiKey(): bool {

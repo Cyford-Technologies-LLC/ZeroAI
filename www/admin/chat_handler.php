@@ -39,7 +39,7 @@ if (isset($input['action'])) {
 
 $message = $input['message'] ?? '';
 // Get default model from cached models
-$defaultModel = 'claude-3-5-sonnet-20241022'; // fallback
+$defaultModel = 'claude-3-5-haiku-20241022'; // fallback
 try {
     if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeIntegration')) {
         $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
