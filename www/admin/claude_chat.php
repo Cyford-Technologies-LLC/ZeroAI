@@ -17,102 +17,128 @@ $currentPage = 'claude_chat';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="claude-header">
-    <h1>💬 Claude AI Assistant</h1>
-    <p class="subtitle">Your intelligent development companion</p>
-</div>
-
-<div class="claude-controls">
-    <div class="control-group">
-        <button onclick="togglePromptEditor()" class="btn-modern btn-edit">✏️ System Prompt</button>
-        <select id="claude-model" class="select-modern">
-            <option value="claude-opus-4-1-20250805">Claude Opus 4.1 (Most Advanced)</option>
-            <option value="claude-opus-4-20250514">Claude Opus 4</option>
-            <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-            <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
-            <option value="claude-haiku-3.5-20250514">Claude Haiku 3.5</option>
-            <option value="claude-3-haiku-20240307">Claude Haiku 3</option>
-            <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Default)</option>
-            <option value="claude-3-opus-20240229">Claude 3 Opus (Legacy)</option>
-            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Legacy)</option>
-        </select>
-        <select id="claude-mode" onchange="updateMode()" class="select-modern">
-            <option value="chat">💬 Chat Mode</option>
-            <option value="autonomous">🤖 Autonomous</option>
-            <option value="hybrid">⚡ Hybrid</option>
-        </select>
-    </div>
-    <div class="control-group">
-        <a href="/admin/claude_settings.php" class="btn-modern btn-settings">⚙️ Settings</a>
-        <button onclick="clearChat()" class="btn-modern btn-clear">🗑️ Clear</button>
-    </div>
-</div>
-
-<div class="claude-main">
-    <div id="prompt-editor" class="prompt-editor">
-        <div class="prompt-note">
-            📝 <strong>System Prompt Editor</strong> - Commands (@file, @create, @edit, etc.) are automatically available
+<div class="chat-container">
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>💬 Claude AI Assistant</h3>
+            <p class="mb-0 text-muted">Your intelligent development companion</p>
         </div>
-        <textarea id="system-prompt" class="prompt-textarea" placeholder="Loading system prompt..."></textarea>
-        <div class="prompt-actions">
-            <button onclick="saveSystemPrompt()" class="btn-modern btn-save">✅ Save</button>
-            <button onclick="resetSystemPrompt()" class="btn-modern btn-reset">🔄 Reset</button>
-            <button onclick="togglePromptEditor()" class="btn-modern btn-cancel">❌ Cancel</button>
-        </div>
-    </div>
-    
-    <div class="chat-section">
-        <div id="chat-container" class="chat-container">
-            <div class="message system-message">
-                <div class="message-header">🤖 System</div>
-                <div class="message-content">Claude is ready! Use @commands to interact with your ZeroAI system.</div>
-            </div>
-        </div>
-        
-        <div class="input-section">
-            <div class="input-container">
-                <textarea id="user-input" class="chat-input" placeholder="Ask Claude about your ZeroAI system...\n\n• @file path/to/file.py\n• @list directory/\n• @agents\n• Help optimize my configuration"></textarea>
-                <div class="input-controls">
-                    <button onclick="sendMessage()" class="btn-send">🚀 Send</button>
-                    <div class="quick-commands">
-                        <button onclick="insertCommand('@file ')" class="cmd-btn">@file</button>
-                        <button onclick="insertCommand('@list ')" class="cmd-btn">@list</button>
-                        <button onclick="insertCommand('@agents')" class="cmd-btn">@agents</button>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Model</label>
+                    <select id="claude-model" class="form-select">
+                        <option value="claude-opus-4-1-20250805">Claude Opus 4.1 (Most Advanced)</option>
+                        <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Default)</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Mode</label>
+                    <select id="claude-mode" class="form-select">
+                        <option value="chat">💬 Chat Mode</option>
+                        <option value="autonomous">🤖 Autonomous</option>
+                        <option value="hybrid">⚡ Hybrid</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Actions</label>
+                    <div class="d-flex gap-2">
+                        <button onclick="togglePromptEditor()" class="btn btn-outline-primary btn-sm">✏️ Prompt</button>
+                        <button onclick="clearChat()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="scratch-section">
-    <div class="section-header">
-        <h3>📝 Scratch Pad</h3>
-        <div class="scratch-controls">
-            <button onclick="saveScratchPad()" class="btn-mini btn-save">💾 Save</button>
-            <button onclick="insertToChat()" class="btn-mini btn-send">➡️ To Chat</button>
-            <button onclick="clearScratchPad()" class="btn-mini btn-clear">🗑️ Clear</button>
+    <!-- System Prompt Editor -->
+    <div id="prompt-editor" class="card mb-4" style="display: none;">
+        <div class="card-header">
+            <h5>📝 System Prompt Editor</h5>
+            <small class="text-muted">Commands (@file, @create, @edit, etc.) are automatically available</small>
         </div>
-    </div>
-    <textarea id="scratch-pad" class="scratch-textarea" placeholder="Quick notes, code snippets, ideas..."></textarea>
-</div>
-
-<div class="actions-grid">
-    <div class="action-category">
-        <h4>🤖 System Commands</h4>
-        <div class="action-buttons">
-            <button onclick="quickCommand('@agents')" class="action-btn primary">🤖 List Agents</button>
-            <button onclick="quickCommand('@crews')" class="action-btn primary">👥 Show Crews</button>
-            <button onclick="quickCommand('@list /app/src')" class="action-btn info">📁 Browse Code</button>
+        <div class="card-body">
+            <textarea id="system-prompt" class="form-control form-control-lg" placeholder="Loading system prompt..."></textarea>
+            <div class="mt-3">
+                <button onclick="saveSystemPrompt()" class="btn btn-success">✅ Save</button>
+                <button onclick="resetSystemPrompt()" class="btn btn-warning">🔄 Reset</button>
+                <button onclick="togglePromptEditor()" class="btn btn-secondary">❌ Cancel</button>
+            </div>
         </div>
     </div>
     
-    <div class="action-category">
-        <h4>🔍 Analysis & Optimization</h4>
-        <div class="action-buttons">
-            <button onclick="quickCommand('Analyze my ZeroAI system and suggest optimizations')" class="action-btn success">🔍 System Analysis</button>
-            <button onclick="quickCommand('Review my agent performance and suggest improvements')" class="action-btn warning">📊 Performance Review</button>
-            <button onclick="quickCommand('@file /app/config/settings.yaml')" class="action-btn info">⚙️ Config Review</button>
+    <!-- Chat Messages -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div id="chat-container" class="chat-messages">
+                <div class="message assistant">
+                    <strong>🤖 Claude:</strong> Ready! Use @commands to interact with your ZeroAI system.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Input -->
+    <div class="chat-input-container">
+        <div class="mb-3">
+            <label class="form-label">Message to Claude</label>
+            <textarea id="user-input" class="form-control form-control-lg" rows="4" placeholder="Ask Claude about your ZeroAI system...\n\n• @file path/to/file.py\n• @list directory/\n• @agents\n• Help optimize my configuration"></textarea>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="btn-group" role="group">
+                <button onclick="insertCommand('@file ')" class="btn btn-outline-secondary btn-sm">@file</button>
+                <button onclick="insertCommand('@list ')" class="btn btn-outline-secondary btn-sm">@list</button>
+                <button onclick="insertCommand('@agents')" class="btn btn-outline-secondary btn-sm">@agents</button>
+            </div>
+            <button onclick="sendMessage()" class="btn btn-primary btn-lg">🚀 Send Message</button>
+        </div>
+    </div>
+
+    <!-- Scratch Pad -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>📝 Scratch Pad</h5>
+            <div class="btn-group" role="group">
+                <button onclick="saveScratchPad()" class="btn btn-outline-success btn-sm">💾 Save</button>
+                <button onclick="insertToChat()" class="btn btn-outline-primary btn-sm">➡️ To Chat</button>
+                <button onclick="clearScratchPad()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <textarea id="scratch-pad" class="form-control" rows="6" placeholder="Quick notes, code snippets, ideas..."></textarea>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6>🤖 System Commands</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button onclick="quickCommand('@agents')" class="btn btn-outline-primary">🤖 List Agents</button>
+                        <button onclick="quickCommand('@crews')" class="btn btn-outline-primary">👥 Show Crews</button>
+                        <button onclick="quickCommand('@list /app/src')" class="btn btn-outline-info">📁 Browse Code</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6>🔍 Analysis & Optimization</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button onclick="quickCommand('Analyze my ZeroAI system and suggest optimizations')" class="btn btn-outline-success">🔍 System Analysis</button>
+                        <button onclick="quickCommand('Review my agent performance and suggest improvements')" class="btn btn-outline-warning">📊 Performance Review</button>
+                        <button onclick="quickCommand('@file /app/config/settings.yaml')" class="btn btn-outline-info">⚙️ Config Review</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -24,8 +24,10 @@ $currentPage = $currentPage ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
     
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- ZeroAI Admin Styles -->
-    <link rel="stylesheet" href="/www/assets/css/admin.css">
+    <link rel="stylesheet" href="/assets/admin/css/admin-styles.css">
     <?php if ($currentPage === 'claude_chat'): ?>
     <link rel="stylesheet" href="/www/assets/css/claude.css">
     <?php endif; ?>
