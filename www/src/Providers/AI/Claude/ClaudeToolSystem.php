@@ -148,14 +148,14 @@ class ClaudeToolSystem {
     private function listAgents() {
         try {
             $db = \ZeroAI\Core\DatabaseManager::getInstance();
-            $result = $db->executeSQL("SELECT * FROM agents ORDER BY id", 'main');
+            $result = $db->query("SELECT * FROM agents ORDER BY id");
             
             $output = "🤖 Agents:\n";
-            if (!empty($result[0]['data'])) {
-                foreach ($result[0]['data'] as $a) {
+            if (!empty($result)) {
+                foreach ($result as $a) {
                     $output .= "ID: {$a['id']} | Role: {$a['role']} | Goal: {$a['goal']}\n";
                 }
-                $this->logCommand('agents', 'list agents', count($result[0]['data']) . ' agents listed');
+                $this->logCommand('agents', 'list agents', count($result) . ' agents listed');
             } else {
                 $output .= "No agents found\n";
                 $this->logCommand('agents', 'list agents', 'No agents found');
@@ -210,7 +210,7 @@ class ClaudeToolSystem {
                 $params[] = $agentId;
                 
                 $sql = "UPDATE agents SET " . implode(', ', $setParts) . " WHERE id = ?";
-                $db->executeSQL($sql, 'main', $params);
+                $db->query($sql, $params);
                 
                 $this->logCommand('update_agent', "update agent $agentId", json_encode($updateData));
                 return ['success' => true, 'formatted' => "✅ Agent {$agentId} updated: " . json_encode($updateData)];
@@ -249,18 +249,18 @@ class ClaudeToolSystem {
             
             if ($type === 'chat' && preg_match('/(\d+)min/', $filter, $timeMatch)) {
                 $minutes = (int)$timeMatch[1];
-                $result = $db->executeSQL("SELECT sender, message, model_used, timestamp FROM chat_history ORDER BY timestamp DESC LIMIT 50", 'claude');
-                $memoryData = $result[0]['data'] ?? [];
+                $result = $db->query("SELECT sender, message, model_used, timestamp FROM chat_history ORDER BY timestamp DESC LIMIT 50");
+                $memoryData = $result ?? [];
             } elseif ($type === 'commands' && preg_match('/(\d+)min/', $filter, $timeMatch)) {
                 $minutes = (int)$timeMatch[1];
-                $result = $db->executeSQL("SELECT command, output, status, model_used, timestamp FROM command_history ORDER BY timestamp DESC LIMIT 50", 'claude');
-                $memoryData = $result[0]['data'] ?? [];
+                $result = $db->query("SELECT command, output, status, model_used, timestamp FROM command_history ORDER BY timestamp DESC LIMIT 50");
+                $memoryData = $result ?? [];
             } elseif ($type === 'config') {
-                $result = $db->executeSQL("SELECT system_prompt, goals, personality, capabilities, updated_at FROM claude_config WHERE id = 1", 'claude');
-                $memoryData = $result[0]['data'] ?? [];
+                $result = $db->query("SELECT system_prompt, goals, personality, capabilities, updated_at FROM claude_config WHERE id = 1");
+                $memoryData = $result ?? [];
             } elseif ($type === 'sessions') {
-                $result = $db->executeSQL("SELECT model_used, mode, start_time, message_count, command_count FROM claude_sessions ORDER BY start_time DESC LIMIT 10", 'claude');
-                $memoryData = $result[0]['data'] ?? [];
+                $result = $db->query("SELECT model_used, mode, start_time, message_count, command_count FROM claude_sessions ORDER BY start_time DESC LIMIT 10");
+                $memoryData = $result ?? [];
             }
             
             // Create memory file
@@ -347,25 +347,14 @@ class ClaudeToolSystem {
             $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
             // Create table if not exists
-            $db->executeSQL("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
+            $db->query("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
             
-            // Log the command with null checks
             $safeCommand = $command ?: 'unknown';
             $safeInput = $input ?: 'unknown_command';
             $safeOutput = $output ?: '';
-            
-            // Use command + input for the command field
             $fullCommand = $safeCommand . ': ' . $safeInput;
             
-            // Use raw SQL - DatabaseManager doesn't support parameters
-            $escapedCommand = str_replace("'", "''", $fullCommand);
-            $escapedOutput = str_replace("'", "''", $safeOutput);
-            
-            // Get current timestamp in proper timezone
-            $timezone = \ZeroAI\Core\TimezoneManager::getInstance();
-            $timestamp = $timezone->getCurrentTime();
-            
-            $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id, timestamp) VALUES ('$escapedCommand', '$escapedOutput', 'success', 'claude-unified', 1, '$timestamp')", 'claude');
+            $db->query("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", [$fullCommand, $safeOutput, 'success', 'claude-unified', 1]);
                 
         } catch (\Exception $e) {
             error_log("Failed to log Claude command: " . $e->getMessage());
