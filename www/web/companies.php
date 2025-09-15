@@ -116,8 +116,28 @@ include __DIR__ . '/includes/header.php';
                     <input type="url" name="linkedin" placeholder="https://linkedin.com/company/">
                 </div>
                 <div class="form-group">
-                    <label>Address</label>
-                    <textarea name="address"></textarea>
+                    <label>Street Address</label>
+                    <input type="text" name="street">
+                </div>
+                <div class="form-group">
+                    <label>Street Address 2</label>
+                    <input type="text" name="street2">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" name="city">
+                </div>
+                <div class="form-group">
+                    <label>State</label>
+                    <input type="text" name="state">
+                </div>
+                <div class="form-group">
+                    <label>ZIP Code</label>
+                    <input type="text" name="zip">
+                </div>
+                <div class="form-group">
+                    <label>Country</label>
+                    <input type="text" name="country" value="USA">
                 </div>
                 <div class="form-group">
                     <label>Industry</label>
