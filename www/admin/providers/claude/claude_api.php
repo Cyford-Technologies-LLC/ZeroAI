@@ -1,16 +1,35 @@
 <?php
 
 
+// Ensure logs directory exists
+@mkdir('/app/logs', 0755, true);
+
 try {
     require_once __DIR__ . '/../../../src/bootstrap.php';
 } catch (Exception $e) {
-    try {
-        $logger = \ZeroAI\Core\Logger::getInstance();
-        $logger->logClaude('Bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
-    } catch (Exception $logError) {
-        error_log('Claude API Bootstrap Error: ' . $e->getMessage());
-    }
+    // Log to multiple locations to ensure we catch the error
+    $errorMsg = 'Claude API Bootstrap Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine();
+    
+    // Direct file logging (most reliable)
+    @file_put_contents('/app/logs/claude_debug.log', '[' . date('Y-m-d H:i:s') . '] BOOTSTRAP_ERROR: ' . $errorMsg . "\n", FILE_APPEND | LOCK_EX);
+    
+    // PHP error log
+    error_log($errorMsg);
+    
+    // Set 500 status immediately
     http_response_code(500);
+    header('Content-Type: application/json');
+    
+    // Try Logger if possible
+    try {
+        if (class_exists('\\ZeroAI\\Core\\Logger')) {
+            $logger = \ZeroAI\Core\Logger::getInstance();
+            $logger->logClaude('Bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+        }
+    } catch (Exception $logError) {
+        @file_put_contents('/app/logs/claude_debug.log', '[' . date('Y-m-d H:i:s') . '] LOGGER_FAILED: ' . $logError->getMessage() . "\n", FILE_APPEND | LOCK_EX);
+    }
+    
     echo json_encode(['success' => false, 'error' => 'System error']);
     exit;
 }
