@@ -28,14 +28,14 @@ class ClaudeProvider {
     private function useUnifiedTools() {
         // Check setting for which command system to use
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
             // Create table if not exists
-            $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
+            $db->query("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
             
-            $result = $db->executeSQL("SELECT setting_value FROM claude_settings WHERE setting_name = 'unified_tools'", 'main');
-            if (!empty($result[0]['data'])) {
-                return $result[0]['data'][0]['setting_value'] === 'true';
+            $result = $db->query("SELECT setting_value FROM claude_settings WHERE setting_name = 'unified_tools'");
+            if (!empty($result)) {
+                return $result[0]['setting_value'] === 'true';
             }
         } catch (\Exception $e) {
             // Default to new system if setting not found
@@ -137,13 +137,13 @@ class ClaudeProvider {
         }
         
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
             // Create table if not exists
-            $db->executeSQL("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
+            $db->query("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
             
             foreach ($GLOBALS['executedCommands'] as $cmdData) {
-                $db->executeSQL("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", 'claude', [$cmdData['command'], $cmdData['output'], 'success', 'claude-unified-system', 1]);
+                $db->query("INSERT INTO command_history (command, output, status, model_used, session_id) VALUES (?, ?, ?, ?, ?)", [$cmdData['command'], $cmdData['output'], 'success', 'claude-unified-system', 1]);
             }
             
             $GLOBALS['executedCommands'] = [];
@@ -171,11 +171,11 @@ class ClaudeProvider {
     
     private function getSystemPrompt() {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
-            $result = $db->executeSQL("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1", 'claude');
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
+            $result = $db->query("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
             
-            if (!empty($result[0]['data'])) {
-                $prompt = $result[0]['data'][0]['prompt'];
+            if (!empty($result)) {
+                $prompt = $result[0]['prompt'];
                 if ($prompt && strpos($prompt, '@file') === false) {
                     $prompt .= $this->getCommandsHelp();
                 }
@@ -234,33 +234,16 @@ class ClaudeProvider {
     
     private function saveChatToMemory($userMessage, $claudeResponse, $model) {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
             // Create table if not exists
-            $db->executeSQL("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
+            $db->query("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, message TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)");
             
-            // Save user and Claude messages with null checks
-            $userSender = 'User';
-            $claudeSender = 'Claude';
-            $safeUserMessage = $userMessage ?: '';
-            $safeClaudeResponse = $claudeResponse ?: '';
-            $safeModel = $model ?: 'unknown';
+            // Save user and Claude messages
+            $timestamp = date('Y-m-d H:i:s');
             
-            // Use raw SQL since DatabaseManager parameter handling is broken
-            $escapedUserMessage = str_replace("'", "''", $safeUserMessage);
-            $escapedClaudeResponse = str_replace("'", "''", $safeClaudeResponse);
-            $escapedModel = str_replace("'", "''", $safeModel);
-            
-            // Get current timestamp in proper timezone
-            try {
-                $timezone = \ZeroAI\Core\TimezoneManager::getInstance();
-                $timestamp = $timezone->getCurrentTime();
-            } catch (\Exception $e) {
-                $timestamp = date('Y-m-d H:i:s T');
-            }
-            
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES ('$userSender', '$escapedUserMessage', '$escapedModel', 1, '$timestamp')", 'claude');
-            $db->executeSQL("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES ('$claudeSender', '$escapedClaudeResponse', '$escapedModel', 1, '$timestamp')", 'claude');
+            $db->query("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES (?, ?, ?, ?, ?)", ['User', $userMessage, $model, 1, $timestamp]);
+            $db->query("INSERT INTO chat_history (sender, message, model_used, session_id, timestamp) VALUES (?, ?, ?, ?, ?)", ['Claude', $claudeResponse, $model, 1, $timestamp]);
                 
         } catch (\Exception $e) {
             error_log("Failed to save chat to Claude memory: " . $e->getMessage());
