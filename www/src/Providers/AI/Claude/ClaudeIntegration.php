@@ -90,6 +90,8 @@ class ClaudeIntegration extends BaseAIProvider {
         $logger = \ZeroAI\Core\Logger::getInstance();
         
         try {
+            $logger->logClaude('API key check', ['has_key' => !empty($this->apiKey), 'key_length' => strlen($this->apiKey)]);
+            
             $ch = curl_init();
             curl_setopt_array($ch, [
                 CURLOPT_URL => 'https://api.anthropic.com/v1/models',
