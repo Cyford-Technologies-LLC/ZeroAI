@@ -23,6 +23,10 @@ class Company {
         return $this->db->select('companies', ['tenant_id' => $tenantId]);
     }
     
+    public function getAll() {
+        return $this->db->select('companies');
+    }
+    
     public function update($id, $data) {
         $data['updated_at'] = date('Y-m-d H:i:s');
         return $this->db->update('companies', $data, ['id' => $id]);

@@ -88,6 +88,8 @@ class Database {
         ('admin', '" . password_hash('admin123', PASSWORD_DEFAULT) . "', 'admin'),
         ('user', '" . password_hash('user123', PASSWORD_DEFAULT) . "', 'user');
         
+        ALTER TABLE users ADD COLUMN tenant_id INTEGER DEFAULT 1;
+        
         INSERT OR IGNORE INTO agents (name, role, goal, backstory, config, is_core) VALUES 
         ('Team Manager', 'Team Coordination', 'Coordinate team activities and manage workflow', 'Expert team coordinator with years of experience managing AI crews', '{"tools": ["task_manager", "communication"], "memory": true, "planning": true}', 1),
         ('Project Manager', 'Project Management', 'Oversee projects and ensure delivery', 'Experienced project manager specializing in AI development projects', '{"tools": ["project_tracker", "resource_manager"], "memory": true, "planning": true}', 1),
@@ -100,6 +102,58 @@ class Database {
         INSERT OR IGNORE INTO knowledge (title, content, type, access_level) VALUES
         ('ZeroAI Overview', 'ZeroAI is a zero-cost AI workforce platform that runs entirely on your hardware.', 'document', 'all'),
         ('CrewAI Best Practices', 'Guidelines for creating effective AI crews and task management.', 'guide', 'all');
+        
+        CREATE TABLE IF NOT EXISTS companies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            website TEXT,
+            industry TEXT,
+            tenant_id INTEGER DEFAULT 1,
+            created_by TEXT,
+            status TEXT DEFAULT 'active',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS contacts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            position TEXT,
+            department TEXT,
+            tenant_id INTEGER DEFAULT 1,
+            created_by TEXT,
+            status TEXT DEFAULT 'active',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (company_id) REFERENCES companies(id)
+        );
+        
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER,
+            name TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'active',
+            priority TEXT DEFAULT 'medium',
+            start_date DATE,
+            end_date DATE,
+            budget DECIMAL(10,2),
+            tenant_id INTEGER DEFAULT 1,
+            created_by TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (company_id) REFERENCES companies(id)
+        );
+        
+        INSERT OR IGNORE INTO companies (name, email, phone, industry, tenant_id, created_by) VALUES 
+        ('Sample Company', 'contact@sample.com', '555-0123', 'Technology', 1, 'admin');
         ";
         
         $this->pdo->exec($sql);

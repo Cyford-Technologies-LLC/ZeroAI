@@ -7,38 +7,48 @@ if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) 
 }
 
 $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
+$isAdmin = isset($_SESSION['admin_logged_in']);
+
+// Get user's organization_id
+$userOrgId = 1; // Default
+try {
+    require_once __DIR__ . '/../config/database.php';
+    $db = new Database();
+    $pdo = $db->getConnection();
+    
+    $stmt = $pdo->prepare("SELECT organization_id FROM users WHERE username = ?");
+    $stmt->execute([$currentUser]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($user) {
+        $userOrgId = $user['organization_id'] ?? 1;
+    }
+} catch (Exception $e) {
+    // Use default
+}
 
 // Handle form submission
 if ($_POST && isset($_POST['name'])) {
     try {
-        require_once __DIR__ . '/../config/database.php';
-        $db = new Database();
-        $pdo = $db->getConnection();
-        
-        $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, industry, owner) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry'], $currentUser]);
+        $stmt = $pdo->prepare("INSERT INTO companies (name, email, phone, address, industry, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry'], $userOrgId, $currentUser]);
         $success = "Company added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
     }
 }
 
-// Get companies - admins see all, users see only their own
-$companies = [];
-$isAdmin = isset($_SESSION['admin_logged_in']);
+// Use existing Company model
 try {
-    require_once __DIR__ . '/../config/database.php';
-    $db = new Database();
-    $pdo = $db->getConnection();
+    require_once __DIR__ . '/../src/Models/Company.php';
+    $companyModel = new \ZeroAI\Core\Company();
     
     if ($isAdmin) {
-        $companies = $pdo->query("SELECT * FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        $companies = $companyModel->getAll();
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM companies WHERE owner = ? ORDER BY name");
-        $stmt->execute([$currentUser]);
-        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $companies = $companyModel->findByTenant($userOrgId);
     }
 } catch (Exception $e) {
+    $companies = [];
     $error = "Database error: " . $e->getMessage();
 }
 ?>
@@ -78,6 +88,7 @@ try {
             <a href="/web/contacts.php">Contacts</a>
             <a href="/web/projects.php">Projects</a>
             <a href="/web/tasks.php">Tasks</a>
+            <?php if ($isAdmin): ?><a href="/admin/">Admin</a><?php endif; ?>
             <a href="/web/logout.php">Logout</a>
         </div>
     </div>
@@ -138,7 +149,7 @@ try {
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Industry</th>
-                            <?php if ($isAdmin): ?><th>Owner</th><?php endif; ?>
+                            <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -148,7 +159,10 @@ try {
                                 <td><?= htmlspecialchars($company['email']) ?></td>
                                 <td><?= htmlspecialchars($company['phone']) ?></td>
                                 <td><?= htmlspecialchars($company['industry']) ?></td>
-                                <?php if ($isAdmin): ?><td><?= htmlspecialchars($company['owner'] ?? 'Unknown') ?></td><?php endif; ?>
+                                <?php if ($isAdmin): ?>
+                                    <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
+                                    <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
+                                <?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
