@@ -5,10 +5,17 @@ $currentPage = 'agents';
 
 require_once __DIR__ . '/includes/autoload.php';
 
-use ZeroAI\Core\{DatabaseManager, Agent};
+use ZeroAI\Core\DatabaseManager;
 
 $db = DatabaseManager::getInstance();
-$agent = new Agent();
+
+// Fallback to direct DB operations if Agent class not found
+try {
+    $agent = new \ZeroAI\Core\Agent();
+    $agents = $agent->getAll();
+} catch (Exception $e) {
+    $agents = $db->select('agents') ?: [];
+}
 
 include __DIR__ . '/includes/header.php';
 
