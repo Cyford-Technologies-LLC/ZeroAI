@@ -13,27 +13,27 @@ $isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'ZeroAI CRM Dashboard';
 $currentPage = 'crm_dashboard';
 
-// Set admin session for header compatibility
-if (!isset($_SESSION['admin_logged_in'])) {
-    $_SESSION['admin_user'] = $currentUser;
-}
-
-include __DIR__ . '/../admin/includes/header.php';
+include __DIR__ . '/includes/header.php';
 ?>
     <div class="header">
-        <h1>🏢 ZeroAI CRM Dashboard</h1>
-        <div class="nav">
-            <a href="/web/index.php" class="active">Dashboard</a>
-            <a href="/web/companies.php">Companies</a>
-            <a href="/web/contacts.php">Contacts</a>
-            <a href="/web/projects.php">Projects</a>
-            <a href="/web/tasks.php">Tasks</a>
-            <?php if ($isAdmin): ?><a href="/admin/dashboard.php">Admin</a><?php endif; ?>
-            <a href="/web/logout.php">Logout</a>
+        <div class="header-content">
+            <div class="logo">🏢 ZeroAI CRM</div>
+            <nav class="nav">
+                <a href="/web/index.php" class="active">Dashboard</a>
+                <a href="/web/companies.php">Companies</a>
+                <a href="/web/contacts.php">Contacts</a>
+                <a href="/web/projects.php">Projects</a>
+                <a href="/web/tasks.php">Tasks</a>
+            </nav>
+            <div class="user-info">
+                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
+                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
+                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
+            </div>
         </div>
     </div>
-
-    <div class="container">
+    <div class="main-content">
+        <div class="container">
         <div class="card">
             <h3>Quick Actions</h3>
             <a href="/web/companies.php" class="btn">Companies</a>
@@ -65,6 +65,7 @@ include __DIR__ . '/../admin/includes/header.php';
             <h3>Welcome to ZeroAI CRM</h3>
             <p>Your customer relationship management system is ready. Use the navigation above to manage your business data.</p>
             <p><strong>Logged in as:</strong> <?= htmlspecialchars($currentUser) ?></p>
+        </div>
         </div>
     </div>
 </body>
