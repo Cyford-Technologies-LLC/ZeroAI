@@ -19,7 +19,7 @@ try {
     if (class_exists('ZeroAI\Core\DatabaseManager')) {
         $db = ZeroAI\Core\DatabaseManager::getInstance();
         $userResult = $db->select('users');
-        $userStats = ['total' => count($userResult), 'admin' => 1];
+        $userStats = ['total' => is_array($userResult) ? count($userResult) : 0, 'admin' => 1];
     } else {
         $userStats = ['total' => 0, 'admin' => 1];
     }
