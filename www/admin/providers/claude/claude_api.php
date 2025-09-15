@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/../../src/bootstrap.php';
+
 
 try {
-    require_once __DIR__ . '/../src/autoload.php';
+    require_once __DIR__ . '/../../../src/bootstrap.php';
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'System error']);
