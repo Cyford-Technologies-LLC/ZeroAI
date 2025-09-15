@@ -51,6 +51,8 @@ class Database {
         CREATE TABLE IF NOT EXISTS companies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
+            ein TEXT,
+            business_id TEXT,
             email TEXT,
             phone TEXT,
             address TEXT,
