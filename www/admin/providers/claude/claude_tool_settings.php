@@ -1,7 +1,20 @@
 <?php
-$pageTitle = 'Claude Tool Settings - ZeroAI Admin';
-$currentPage = 'claude_tool_settings';
-include __DIR__ . '/includes/header.php';
+try {
+    $pageTitle = 'Claude Tool Settings - ZeroAI Admin';
+    $currentPage = 'claude_tool_settings';
+    include __DIR__ . '/includes/header.php';
+} catch (Exception $e) {
+    try {
+        require_once __DIR__ . '/../../../src/bootstrap.php';
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Claude tool settings bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } catch (Exception $logError) {
+        error_log('Claude Tool Settings Bootstrap Error: ' . $e->getMessage());
+    }
+    http_response_code(500);
+    echo 'System error';
+    exit;
+}
 
 // Handle form submission
 if ($_POST) {

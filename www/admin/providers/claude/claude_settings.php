@@ -1,19 +1,32 @@
 <?php 
-// Load environment variables
-if (file_exists('/app/.env')) {
-    $lines = file('/app/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && !str_starts_with($line, '#')) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
-            putenv(trim($key) . '=' . trim($value));
+try {
+    // Load environment variables
+    if (file_exists('/app/.env')) {
+        $lines = file('/app/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos($line, '=') !== false && !str_starts_with($line, '#')) {
+                list($key, $value) = explode('=', $line, 2);
+                $_ENV[trim($key)] = trim($value);
+                putenv(trim($key) . '=' . trim($value));
+            }
         }
     }
-}
 
-$pageTitle = 'Claude AI Settings - ZeroAI';
-$currentPage = 'claude_settings';
-include __DIR__ . '/includes/header.php';
+    $pageTitle = 'Claude AI Settings - ZeroAI';
+    $currentPage = 'claude_settings';
+    include __DIR__ . '/includes/header.php';
+} catch (Exception $e) {
+    try {
+        require_once __DIR__ . '/../../../src/bootstrap.php';
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Claude settings bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } catch (Exception $logError) {
+        error_log('Claude Settings Bootstrap Error: ' . $e->getMessage());
+    }
+    http_response_code(500);
+    echo 'System error';
+    exit;
+}
 
 // Handle tool system update
 if ($_POST['action'] ?? '' === 'update_tool_system') {

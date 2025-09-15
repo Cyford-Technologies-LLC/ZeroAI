@@ -1,8 +1,21 @@
 <?php 
-$pageTitle = 'Claude Models - ZeroAI';
-$currentPage = 'claude_models';
-include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/includes/autoload.php';
+try {
+    $pageTitle = 'Claude Models - ZeroAI';
+    $currentPage = 'claude_models';
+    include __DIR__ . '/includes/header.php';
+    require_once __DIR__ . '/includes/autoload.php';
+} catch (Exception $e) {
+    try {
+        require_once __DIR__ . '/../../../src/bootstrap.php';
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Claude models bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } catch (Exception $logError) {
+        error_log('Claude Models Bootstrap Error: ' . $e->getMessage());
+    }
+    http_response_code(500);
+    echo 'System error';
+    exit;
+}
 $db = new \ZeroAI\Core\DatabaseManager();
 
 // Handle form submissions

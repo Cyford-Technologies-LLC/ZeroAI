@@ -1,5 +1,18 @@
 <?php
-header('Content-Type: text/plain');
+try {
+    require_once __DIR__ . '/../../../src/bootstrap.php';
+    header('Content-Type: text/plain');
+} catch (Exception $e) {
+    try {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Check Claude logs bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } catch (Exception $logError) {
+        error_log('Check Claude Logs Bootstrap Error: ' . $e->getMessage());
+    }
+    http_response_code(500);
+    echo 'System error';
+    exit;
+}
 
 echo "=== CLAUDE DEBUG LOGS ===\n\n";
 

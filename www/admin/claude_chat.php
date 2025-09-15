@@ -1,7 +1,20 @@
 <?php
-$pageTitle = 'Claude Chat - ZeroAI';
-$currentPage = 'claude_chat';
-include __DIR__ . '/includes/header.php';
+try {
+    $pageTitle = 'Claude Chat - ZeroAI';
+    $currentPage = 'claude_chat';
+    include __DIR__ . '/includes/header.php';
+} catch (Exception $e) {
+    try {
+        require_once __DIR__ . '/../src/bootstrap.php';
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Claude chat bootstrap failed: ' . $e->getMessage(), ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } catch (Exception $logError) {
+        error_log('Claude Chat Bootstrap Error: ' . $e->getMessage());
+    }
+    http_response_code(500);
+    echo 'System error';
+    exit;
+}
 
 
 // Block demo users from Claude chat
