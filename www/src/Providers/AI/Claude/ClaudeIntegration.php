@@ -31,16 +31,13 @@ class ClaudeIntegration extends BaseAIProvider {
     public function getModels(): array {
         $logger = \ZeroAI\Core\Logger::getInstance();
         
-        // Try to get cached models from Redis first
+        // Clear old cache to force refresh
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
-            $cachedModels = $cache->get('claude_models');
-            if ($cachedModels !== false && !empty($cachedModels)) {
-                $logger->logClaude('Models loaded from Redis cache', ['count' => count($cachedModels), 'source' => 'cached']);
-                return $cachedModels;
-            }
+            $cache->delete('claude_models');
+            $logger->logClaude('Cleared old model cache');
         } catch (\Exception $e) {
-            $logger->logClaude('Cache failed, continuing to fetch models', ['error' => $e->getMessage()]);
+            $logger->logClaude('Cache clear failed', ['error' => $e->getMessage()]);
         }
         
         // Fetch real models from Claude API
