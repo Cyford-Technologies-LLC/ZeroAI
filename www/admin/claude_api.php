@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../src/autoload.php';
 
 if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
     http_response_code(401);
@@ -9,72 +10,78 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 
 header('Content-Type: application/json');
 
-$input = json_decode(file_get_contents('php://input'), true);
-$action = $input['action'] ?? '';
-
-if ($action === 'chat') {
-    $message = $input['message'] ?? '';
+try {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
     
-    if (empty($message)) {
-        echo json_encode(['success' => false, 'error' => 'Message required']);
-        exit;
+    // Initialize comprehensive Claude Provider with full tool system
+    $claudeProvider = new \ZeroAI\Providers\AI\Claude\ClaudeProvider();
+    
+    switch ($action) {
+        case 'chat':
+            $message = $input['message'] ?? '';
+            $model = $input['model'] ?? 'claude-3-5-sonnet-20241022';
+            $mode = $input['mode'] ?? 'hybrid';
+            $history = $input['history'] ?? [];
+            
+            if (empty($message)) {
+                echo json_encode(['success' => false, 'error' => 'Message required']);
+                exit;
+            }
+            
+            $response = $claudeProvider->chat($message, $model, $history, $mode);
+            
+            if ($response['success']) {
+                echo json_encode([
+                    'success' => true, 
+                    'response' => $response['response'],
+                    'model' => $response['model'],
+                    'tokens' => $response['tokens'],
+                    'cost' => $response['cost']
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'error' => $response['error']]);
+            }
+            break;
+            
+        case 'test_connection':
+            // Use basic Claude class for simple connection test
+            $claude = new \ZeroAI\AI\Claude();
+            $result = $claude->testConnection();
+            echo json_encode($result);
+            break;
+            
+        case 'save_scratch':
+            $content = $input['content'] ?? '';
+            $claude = new \ZeroAI\AI\Claude();
+            $claude->saveScratchPad($content);
+            echo json_encode(['success' => true]);
+            break;
+            
+        case 'get_scratch':
+            $claude = new \ZeroAI\AI\Claude();
+            $content = $claude->getScratchPad();
+            echo json_encode(['success' => true, 'content' => $content]);
+            break;
+            
+        case 'get_models':
+            $claude = new \ZeroAI\AI\Claude();
+            $models = $claude->getAvailableModels();
+            echo json_encode(['success' => true, 'models' => $models]);
+            break;
+            
+        case 'execute_background':
+            $command = $input['command'] ?? '';
+            $args = $input['args'] ?? [];
+            $result = $claudeProvider->executeBackgroundCommand($command, $args);
+            echo json_encode(['success' => true, 'result' => $result]);
+            break;
+            
+        default:
+            echo json_encode(['success' => false, 'error' => 'Invalid action']);
     }
     
-    // Read API key from .env
-    $envFile = '/app/.env';
-    if (file_exists($envFile)) {
-        $envContent = file_get_contents($envFile);
-        preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches);
-        $apiKey = isset($matches[1]) ? trim($matches[1]) : '';
-        
-        if ($apiKey) {
-            // Simple Claude API call
-            $response = callClaudeAPI($message, $apiKey);
-            echo json_encode(['success' => true, 'response' => $response]);
-        } else {
-            echo json_encode(['success' => false, 'error' => 'API key not configured']);
-        }
-    } else {
-        echo json_encode(['success' => false, 'error' => 'Environment file not found']);
-    }
-} else {
-    echo json_encode(['success' => false, 'error' => 'Invalid action']);
-}
-
-function callClaudeAPI($message, $apiKey) {
-    $url = 'https://api.anthropic.com/v1/messages';
-    
-    $data = [
-        'model' => 'claude-3-5-sonnet-20241022',
-        'max_tokens' => 1000,
-        'messages' => [
-            [
-                'role' => 'user',
-                'content' => $message
-            ]
-        ]
-    ];
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'x-api-key: ' . $apiKey,
-        'anthropic-version: 2023-06-01'
-    ]);
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    if ($httpCode === 200) {
-        $decoded = json_decode($response, true);
-        return $decoded['content'][0]['text'] ?? 'No response received';
-    } else {
-        return 'API Error: HTTP ' . $httpCode;
-    }
+} catch (\Exception $e) {
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

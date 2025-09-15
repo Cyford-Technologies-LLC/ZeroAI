@@ -166,25 +166,47 @@ function sendMessage() {
     const message = input.value.trim();
     if (!message) return;
     
+    const modelSelect = document.getElementById('claude-model');
+    const selectedModel = modelSelect ? modelSelect.value : 'claude-3-5-sonnet-20241022';
+    
     // Add user message to chat
     addMessageToChat('user', message);
     input.value = '';
     
-    // Send to backend
+    // Show typing indicator
+    addMessageToChat('assistant', 'Claude is typing...');
+    
+    // Send to backend with model selection
     fetch('/admin/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action: 'chat', message: message})
+        body: JSON.stringify({action: 'chat', message: message, model: selectedModel})
     })
     .then(response => response.json())
     .then(data => {
+        // Remove typing indicator
+        const messages = document.querySelectorAll('.message.assistant');
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage && lastMessage.textContent.includes('typing')) {
+            lastMessage.remove();
+        }
+        
         if (data.success) {
             addMessageToChat('assistant', data.response);
+            if (data.usage && data.usage.input_tokens) {
+                addUsageInfo(data.model, data.usage);
+            }
         } else {
             addMessageToChat('assistant', 'Error: ' + data.error);
         }
     })
     .catch(error => {
+        // Remove typing indicator
+        const messages = document.querySelectorAll('.message.assistant');
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage && lastMessage.textContent.includes('typing')) {
+            lastMessage.remove();
+        }
         addMessageToChat('assistant', 'Connection error: ' + error.message);
     });
 }
@@ -209,6 +231,25 @@ function clearChat() {
     container.innerHTML = '<div class="message assistant"><strong>🤖 Claude:</strong> Chat cleared. How can I help you?</div>';
 }
 
+function testConnection() {
+    fetch('/admin/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'test_connection'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addMessageToChat('assistant', '✅ Connection test successful: ' + data.message);
+        } else {
+            addMessageToChat('assistant', '❌ Connection test failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        addMessageToChat('assistant', '❌ Connection error: ' + error.message);
+    });
+}
+
 function quickCommand(command) {
     document.getElementById('user-input').value = command;
     sendMessage();
@@ -216,8 +257,28 @@ function quickCommand(command) {
 
 function saveScratchPad() {
     const content = document.getElementById('scratch-pad').value;
-    localStorage.setItem('claude-scratch-pad', content);
-    alert('Scratch pad saved!');
+    
+    // Save to server using Claude class
+    fetch('/admin/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'save_scratch', content: content})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Also save locally as backup
+            localStorage.setItem('claude-scratch-pad', content);
+            alert('Scratch pad saved to server!');
+        } else {
+            alert('Error saving: ' + data.error);
+        }
+    })
+    .catch(error => {
+        // Fallback to local storage
+        localStorage.setItem('claude-scratch-pad', content);
+        alert('Saved locally (server unavailable)');
+    });
 }
 
 function insertToChat() {
@@ -229,12 +290,42 @@ function clearScratchPad() {
     document.getElementById('scratch-pad').value = '';
 }
 
+function addUsageInfo(model, usage) {
+    const container = document.getElementById('chat-container');
+    const usageDiv = document.createElement('div');
+    usageDiv.className = 'usage-info';
+    usageDiv.style.cssText = 'font-size: 11px; color: #666; text-align: right; margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 4px;';
+    usageDiv.innerHTML = `Model: ${model} | Tokens: ${usage.input_tokens || 0} in, ${usage.output_tokens || 0} out`;
+    container.appendChild(usageDiv);
+}
+
 // Load scratch pad on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const saved = localStorage.getItem('claude-scratch-pad');
-    if (saved) {
-        document.getElementById('scratch-pad').value = saved;
-    }
+    // Try to load from server first
+    fetch('/admin/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'get_scratch'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.content) {
+            document.getElementById('scratch-pad').value = data.content;
+        } else {
+            // Fallback to local storage
+            const saved = localStorage.getItem('claude-scratch-pad');
+            if (saved) {
+                document.getElementById('scratch-pad').value = saved;
+            }
+        }
+    })
+    .catch(error => {
+        // Fallback to local storage
+        const saved = localStorage.getItem('claude-scratch-pad');
+        if (saved) {
+            document.getElementById('scratch-pad').value = saved;
+        }
+    });
 });
 </script>
 
