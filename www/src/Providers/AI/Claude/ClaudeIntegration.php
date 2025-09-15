@@ -450,7 +450,7 @@ class ClaudeIntegration extends BaseAIProvider {
     
     private function trackTokenUsage($model, $usage) {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
             // Use existing token tracking system instead of creating duplicate table
             // This integrates with your existing /app/data/zeroai.db system
