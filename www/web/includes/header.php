@@ -49,17 +49,13 @@ try {
     $error = "Database error: " . $e->getMessage();
 }
 
-$companyId = $_GET['company_id'] ?? null;
-// Get company info
+// Get company data from existing companies array
 $company = null;
-if ($companyId) {
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM companies WHERE id = ?");
-        $stmt->execute([$companyId]);
-        $company = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        $error = "Company not found";
-    }
+$companyId = null;
+
+if (!empty($companies)) {
+    $company = $companies[0]; // Use first company
+    $companyId = $company['id'];
 }
 
 $pageTitle = $pageTitle ?? 'ZeroAI CRM';
