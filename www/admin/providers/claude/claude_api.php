@@ -1,24 +1,9 @@
 <?php
 session_start();
 
-// Force error logging
-ini_set('log_errors', 1);
-ini_set('error_log', '/app/logs/claude_debug.log');
-
-// Create log directory
-if (!is_dir('/app/logs')) {
-    mkdir('/app/logs', 0755, true);
-}
-
-// Log start
-file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [START] Claude API started\n", FILE_APPEND);
-
 try {
-    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [INFO] Loading autoload\n", FILE_APPEND);
     require_once __DIR__ . '/../src/autoload.php';
-    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [INFO] Autoload loaded successfully\n", FILE_APPEND);
 } catch (Exception $e) {
-    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] Autoload failed: " . $e->getMessage() . "\n", FILE_APPEND);
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'System error']);
     exit;
@@ -86,24 +71,36 @@ try {
             break;
             
         case 'save_scratch':
-            $content = $input['content'] ?? '';
-            $db = \ZeroAI\Core\DatabaseManager::getInstance();
-            $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-            $existing = $db->query("SELECT id FROM claude_scratch_pad LIMIT 1");
-            if ($existing && count($existing) > 0) {
-                $db->query("UPDATE claude_scratch_pad SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
-            } else {
-                $db->query("INSERT INTO claude_scratch_pad (content) VALUES (?)", [$content]);
+            $logger->logClaude('Save scratch action started');
+            try {
+                $content = $input['content'] ?? '';
+                $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $existing = $db->query("SELECT id FROM claude_scratch_pad LIMIT 1");
+                if ($existing && count($existing) > 0) {
+                    $db->query("UPDATE claude_scratch_pad SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+                } else {
+                    $db->query("INSERT INTO claude_scratch_pad (content) VALUES (?)", [$content]);
+                }
+                echo json_encode(['success' => true]);
+            } catch (\Exception $e) {
+                $logger->logClaude('Save scratch error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
-            echo json_encode(['success' => true]);
             break;
             
         case 'get_scratch':
-            $db = \ZeroAI\Core\DatabaseManager::getInstance();
-            $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-            $result = $db->query("SELECT content FROM claude_scratch_pad ORDER BY updated_at DESC LIMIT 1");
-            $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
-            echo json_encode(['success' => true, 'content' => $content]);
+            $logger->logClaude('Get scratch action started');
+            try {
+                $db = \ZeroAI\Core\DatabaseManager::getInstance();
+                $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                $result = $db->query("SELECT content FROM claude_scratch_pad ORDER BY updated_at DESC LIMIT 1");
+                $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
+                echo json_encode(['success' => true, 'content' => $content]);
+            } catch (\Exception $e) {
+                $logger->logClaude('Get scratch error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
             break;
             
         case 'get_models':
@@ -124,10 +121,20 @@ try {
     }
     
 } catch (\Exception $e) {
-    // Direct logging to catch all errors
-    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] Claude API Exception: " . $e->getMessage() . "\n", FILE_APPEND);
-    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] File: " . $e->getFile() . " Line: " . $e->getLine() . "\n", FILE_APPEND);
-    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] Trace: " . $e->getTraceAsString() . "\n", FILE_APPEND);
+    // Use Logger class for all errors
+    try {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->logClaude('Claude API Exception: ' . $e->getMessage(), [
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+            'action' => $input['action'] ?? 'unknown'
+        ]);
+    } catch (\Exception $logError) {
+        // Fallback only if Logger completely fails
+        error_log('Claude API Error: ' . $e->getMessage());
+    }
     
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

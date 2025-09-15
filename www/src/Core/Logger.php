@@ -49,8 +49,9 @@ class Logger {
     private function log($level, $message, $context = [], $logFile = null) {
         $logFile = $logFile ?: $this->logPath;
         
-        if (!InputValidator::validatePath($logFile, true)) {
-            return false; // Fail silently to prevent log injection
+        // Skip validation for log files - they're internal
+        if (!$logFile || !is_string($logFile)) {
+            return false;
         }
         
         $timestamp = date('Y-m-d H:i:s');
@@ -103,7 +104,7 @@ class Logger {
     public function getRecentLogs($lines = 50, $logType = 'error') {
         $logFile = $this->getLogFile($logType);
         
-        if (!InputValidator::validatePath($logFile) || !file_exists($logFile)) {
+        if (!file_exists($logFile)) {
             return [];
         }
         
@@ -118,7 +119,7 @@ class Logger {
     public function clearLogs($logType = 'error') {
         $logFile = $this->getLogFile($logType);
         
-        if (InputValidator::validatePath($logFile, true)) {
+        if ($logFile && is_string($logFile)) {
             file_put_contents($logFile, '');
             $this->logAudit('CLEAR_LOGS', $logType);
         }

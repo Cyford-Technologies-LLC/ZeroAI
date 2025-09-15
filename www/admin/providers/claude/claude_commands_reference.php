@@ -16,10 +16,10 @@
             <div class="col-md-2 bg-dark text-white p-3">
                 <h5><i class="fas fa-robot"></i> ZeroAI Admin</h5>
                 <nav class="nav flex-column">
-                    <a class="nav-link text-white" href="index.php"><i class="fas fa-home"></i> Dashboard</a>
-                    <a class="nav-link text-white" href="claude_settings.php"><i class="fas fa-cog"></i> Claude Settings</a>
-                    <a class="nav-link text-white active" href="claude_commands_reference.php"><i class="fas fa-terminal"></i> Commands</a>
-                    <a class="nav-link text-white" href="claude_chat.php"><i class="fas fa-comments"></i> Chat</a>
+                    <a class="nav-link text-white" href="../../../index.php"><i class="fas fa-home"></i> Dashboard</a>
+                    <a class="nav-link text-white" href="claude_settings.php><i class="fas fa-cog"></i> Claude Settings</a>
+                    <a class="nav-link text-white active" href="../../../index.php"><i class="fas fa-terminal"></i> Commands</a>
+                    <a class="nav-link text-white" href="../../../index.php"><i class="fas fa-comments"></i> Chat</a>
                 </nav>
             </div>
             
