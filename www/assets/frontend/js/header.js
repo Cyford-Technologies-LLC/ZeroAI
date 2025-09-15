@@ -80,8 +80,11 @@ function updateSidebarForProjects() {
         <div style="margin-bottom: 20px;">
             <h6 style="color: #94a3b8; margin-bottom: 10px;">Project Actions</h6>
             <a href="#add-project" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Project</a>
-            <a href="/web/tasks.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">✅ View Tasks</a>
-            <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 View Companies</a>
+            <a href="/web/tasks.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">✅ Tasks</a>
+            <a href="/web/bugs.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🐛 Bugs</a>
+            <a href="/web/features.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">✨ Features</a>
+            <a href="/web/releases.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🚀 Releases</a>
+            <a href="/web/team.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Team</a>
         </div>
     `;
     updateSidebarContent(content);
