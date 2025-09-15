@@ -1,9 +1,32 @@
 <?php
 session_start();
 
+// Load error logging
+require_once __DIR__ . '/../admin/includes/autoload.php';
+
+// Log web portal access
+try {
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->info('Web portal accessed', [
+        'url' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+        'session_id' => session_id()
+    ]);
+} catch (Exception $e) {
+    error_log('Logger failed: ' . $e->getMessage());
+}
+
 // Check if user is logged in (from admin session)
 if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
-    // Redirect to login
+    try {
+        $logger->warning('Unauthorized web portal access', [
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            'redirect_to' => '/admin/login.php?redirect=/web'
+        ]);
+    } catch (Exception $e) {
+        error_log('Logger failed: ' . $e->getMessage());
+    }
     header('Location: /admin/login.php?redirect=/web');
     exit;
 }
@@ -16,69 +39,118 @@ $pageTitle = 'ZeroAI User Portal';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
-        .header { background: #007bff; color: white; padding: 1rem 0; }
-        .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.5rem; font-weight: bold; }
-        .nav a { color: white; text-decoration: none; margin: 0 15px; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .btn { display: inline-block; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 6px; margin: 10px 10px 10px 0; }
-        .btn:hover { background: #0056b3; }
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 30px; }
-        .feature-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
-        .feature-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .navbar-brand { font-weight: bold; }
+        .feature-card { transition: transform 0.3s; height: 100%; }
+        .feature-card:hover { transform: translateY(-5px); }
+        .feature-icon { font-size: 3rem; color: #0d6efd; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">💰 ZeroAI Portal</div>
-            <nav class="nav">
-                <a href="/web">Dashboard</a>
-                <a href="/web/ai_center.php">AI Center</a>
-                <a href="/admin/">Admin</a>
-                <a href="/admin/logout.php">Logout</a>
-            </nav>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/web">
+                <i class="bi bi-robot"></i> ZeroAI Portal
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/web">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/ai_center.php">AI Center</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">Admin</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <?= htmlspecialchars($_SESSION['admin_user'] ?? 'User') ?>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/admin/settings.php">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/admin/logout.php">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
+    </nav>
     
-    <div class="container">
-        <div class="card">
-            <h1>Welcome to ZeroAI User Portal</h1>
-            <p>Manage your AI workforce and projects from this central dashboard.</p>
-            
-            <div>
-                <a href="/web/ai_center.php" class="btn">🤖 AI Community Center</a>
-                <a href="/admin/agents.php" class="btn">⚙️ Manage Agents</a>
-                <a href="/admin/dashboard.php" class="btn">📊 System Dashboard</a>
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h1 class="card-title">Welcome to ZeroAI User Portal</h1>
+                        <p class="card-text lead">Manage your AI workforce and projects from this central dashboard.</p>
+                        
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="/web/ai_center.php" class="btn btn-primary">
+                                <i class="bi bi-robot"></i> AI Community Center
+                            </a>
+                            <a href="/admin/agents.php" class="btn btn-outline-primary">
+                                <i class="bi bi-gear"></i> Manage Agents
+                            </a>
+                            <a href="/admin/dashboard.php" class="btn btn-outline-secondary">
+                                <i class="bi bi-graph-up"></i> System Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
-                <h3>AI Agents</h3>
-                <p>Browse and assign AI agents from the community pool to your projects.</p>
-                <a href="/web/ai_center.php" class="btn">Browse Agents</a>
+        <div class="row g-4 mt-4">
+            <div class="col-md-4">
+                <div class="card h-100 feature-card shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <h5 class="card-title">AI Agents</h5>
+                        <p class="card-text">Browse and assign AI agents from the community pool to your projects.</p>
+                        <a href="/web/ai_center.php" class="btn btn-primary">Browse Agents</a>
+                    </div>
+                </div>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Analytics</h3>
-                <p>Monitor your AI workforce performance and resource usage.</p>
-                <a href="/admin/dashboard.php" class="btn">View Analytics</a>
+            <div class="col-md-4">
+                <div class="card h-100 feature-card shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h5 class="card-title">Analytics</h5>
+                        <p class="card-text">Monitor your AI workforce performance and resource usage.</p>
+                        <a href="/admin/dashboard.php" class="btn btn-primary">View Analytics</a>
+                    </div>
+                </div>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">⚙️</div>
-                <h3>Configuration</h3>
-                <p>Configure your AI agents and system settings.</p>
-                <a href="/admin/agents.php" class="btn">Configure</a>
+            <div class="col-md-4">
+                <div class="card h-100 feature-card shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <h5 class="card-title">Configuration</h5>
+                        <p class="card-text">Configure your AI agents and system settings.</p>
+                        <a href="/admin/agents.php" class="btn btn-primary">Configure</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
