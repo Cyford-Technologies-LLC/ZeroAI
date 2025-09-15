@@ -213,35 +213,4 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<script>
-// Add some interactivity
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-format EIN input
-    const einInput = document.querySelector('input[name="ein"]');
-    if (einInput) {
-        einInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length >= 2) {
-                value = value.substring(0, 2) + '-' + value.substring(2, 9);
-            }
-            e.target.value = value;
-        });
-    }
-    
-    // Auto-format phone input
-    const phoneInput = document.querySelector('input[name="phone"]');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length >= 6) {
-                value = '(' + value.substring(0, 3) + ') ' + value.substring(3, 6) + '-' + value.substring(6, 10);
-            } else if (value.length >= 3) {
-                value = '(' + value.substring(0, 3) + ') ' + value.substring(3);
-            }
-            e.target.value = value;
-        });
-    }
-});
-</script>
-</body>
-</html>
+<?php include __DIR__ . '/includes/footer.php'; ?>

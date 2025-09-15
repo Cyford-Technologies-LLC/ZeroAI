@@ -116,7 +116,7 @@ $currentPage = $currentPage ?? '';
             color: #991b1b;
         }
     </style>
-    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">

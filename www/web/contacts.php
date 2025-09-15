@@ -78,106 +78,114 @@ include __DIR__ . '/includes/header.php';
             <?php endif; ?>
             
             <?php if (isset($error)): ?>
-                <div class="alert alert-error"><?= $error ?></div>
+                <div class="alert alert-danger"><?= $error ?></div>
             <?php endif; ?>
 
-            <div class="card">
-                <h3>Add New Contact</h3>
-                <form method="POST">
-                    <input type="hidden" name="action" value="add">
-                    <div class="form-group">
-                        <label>First Name</label>
-                        <input type="text" name="first_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Middle Name</label>
-                        <input type="text" name="middle_name">
-                    </div>
-                    <div class="form-group">
-                        <label>Last Name</label>
-                        <input type="text" name="last_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Company</label>
-                        <select name="company_id">
-                            <option value="">Select Company</option>
-                            <?php foreach ($companies as $company): ?>
-                                <option value="<?= $company['id'] ?>"><?= htmlspecialchars($company['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email">
-                    </div>
-                    <div class="form-group">
-                        <label>Phone</label>
-                        <input type="text" name="phone">
-                    </div>
-                    <div class="form-group">
-                        <label>Mobile</label>
-                        <input type="text" name="mobile">
-                    </div>
-                    <div class="form-group">
-                        <label>Position</label>
-                        <input type="text" name="position">
-                    </div>
-                    <div class="form-group">
-                        <label>Department</label>
-                        <input type="text" name="department">
-                    </div>
-                    <div class="form-group">
-                        <label>Address</label>
-                        <textarea name="address"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>City</label>
-                        <input type="text" name="city">
-                    </div>
-                    <div class="form-group">
-                        <label>State</label>
-                        <input type="text" name="state">
-                    </div>
-                    <div class="form-group">
-                        <label>ZIP Code</label>
-                        <input type="text" name="zip_code">
-                    </div>
-                    <div class="form-group">
-                        <label>Country</label>
-                        <input type="text" name="country" value="USA">
-                    </div>
-                    <button type="submit" class="btn">Add Contact</button>
-                </form>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Add New Contact</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="add">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" name="first_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" name="last_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Company</label>
+                                <select class="form-select" name="company_id">
+                                    <option value="">Select Company</option>
+                                    <?php foreach ($companies as $company): ?>
+                                        <option value="<?= $company['id'] ?>"><?= htmlspecialchars($company['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Position</label>
+                                <input type="text" class="form-control" name="position">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" name="phone">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mobile</label>
+                                <input type="text" class="form-control" name="mobile">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" class="form-control" name="department">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">City</label>
+                                <input type="text" class="form-control" name="city">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">State</label>
+                                <input type="text" class="form-control" name="state">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ZIP Code</label>
+                                <input type="text" class="form-control" name="zip_code">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Country</label>
+                                <input type="text" class="form-control" name="country" value="USA">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="address" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Contact</button>
+                    </form>
+                </div>
             </div>
 
             <div class="card">
-                <h3>Contacts List</h3>
-                <?php if (empty($contacts)): ?>
-                    <p>No contacts found. Add your first contact above.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Company</th>
-                                <th>Position</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($contacts as $contact): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($contact['first_name'] . ' ' . $contact['last_name']) ?></td>
-                                    <td><?= htmlspecialchars($contact['company_name'] ?? 'No Company') ?></td>
-                                    <td><?= htmlspecialchars($contact['position']) ?></td>
-                                    <td><?= htmlspecialchars($contact['email']) ?></td>
-                                    <td><?= htmlspecialchars($contact['phone']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
+                <div class="card-header">
+                    <h5>Contacts List</h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($contacts)): ?>
+                        <p>No contacts found. Add your first contact above.</p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Company</th>
+                                        <th>Position</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($contacts as $contact): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($contact['first_name'] . ' ' . $contact['last_name']) ?></td>
+                                            <td><?= htmlspecialchars($contact['company_name'] ?? 'No Company') ?></td>
+                                            <td><?= htmlspecialchars($contact['position']) ?></td>
+                                            <td><?= htmlspecialchars($contact['email']) ?></td>
+                                            <td><?= htmlspecialchars($contact['phone']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

@@ -128,5 +128,6 @@ include __DIR__ . '/includes/header.php';
             </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
