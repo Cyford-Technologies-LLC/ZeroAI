@@ -1,21 +1,5 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
-    header('Location: /web/login.php');
-    exit;
-}
-
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
-$pageTitle = 'Features - ZeroAI CRM';
-$currentPage = 'features';
-$projectId = $_GET['project_id'] ?? null;
-
-require_once __DIR__ . '/../config/database.php';
-$db = new Database();
-$pdo = $db->getConnection();
+include __DIR__ . '/includes/header.php';
 
 // Get project info
 $project = null;
@@ -29,7 +13,7 @@ if ($projectId) {
     }
 }
 
-include __DIR__ . '/includes/header.php';
+
 ?>
     <div class="header">
         <div class="header-content">
@@ -47,22 +31,6 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
     <div class="content-wrapper">
-        <div class="sidebar">
-            <div class="sidebar-group">
-                <h3>CRM</h3>
-                <a href="/web/index.php">Dashboard</a>
-                <a href="/web/companies.php">Companies</a>
-                <a href="/web/contacts.php">Contacts</a>
-                <a href="/web/projects.php">Projects</a>
-                <?php if ($projectId): ?>
-                    <a href="/web/tasks.php?project_id=<?= $projectId ?>" style="padding-left: 40px;">📋 Tasks</a>
-                    <a href="/web/bugs.php?project_id=<?= $projectId ?>" style="padding-left: 40px;">🐛 Bugs</a>
-                    <a href="/web/features.php?project_id=<?= $projectId ?>" class="active" style="padding-left: 40px;">✨ Features</a>
-                <?php else: ?>
-                    <a href="/web/tasks.php">Tasks</a>
-                <?php endif; ?>
-            </div>
-        </div>
         <div class="main-content">
             <div class="container">
                 <?php if ($project): ?>
