@@ -63,6 +63,7 @@ function sendMessage() {
     addSystemMessage('Claude is thinking...');
     
     // Send to Claude API
+    const selectedModel = document.getElementById('claude-model').value;
     fetch('/admin/claude_api.php', {
         method: 'POST',
         headers: {
@@ -70,6 +71,7 @@ function sendMessage() {
         },
         body: JSON.stringify({
             message: message,
+            model: selectedModel,
             mode: currentMode,
             history: chatHistory
         })

@@ -25,6 +25,17 @@ include __DIR__ . '/includes/header.php';
 <div class="claude-controls">
     <div class="control-group">
         <button onclick="togglePromptEditor()" class="btn-modern btn-edit">✏️ System Prompt</button>
+        <select id="claude-model" class="select-modern">
+            <option value="claude-opus-4-1-20250805">Claude Opus 4.1 (Most Advanced)</option>
+            <option value="claude-opus-4-20250514">Claude Opus 4</option>
+            <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+            <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+            <option value="claude-haiku-3.5-20250514">Claude Haiku 3.5</option>
+            <option value="claude-3-haiku-20240307">Claude Haiku 3</option>
+            <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet (Default)</option>
+            <option value="claude-3-opus-20240229">Claude 3 Opus (Legacy)</option>
+            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Legacy)</option>
+        </select>
         <select id="claude-mode" onchange="updateMode()" class="select-modern">
             <option value="chat">💬 Chat Mode</option>
             <option value="autonomous">🤖 Autonomous</option>
@@ -108,229 +119,6 @@ include __DIR__ . '/includes/header.php';
 
 
 
-<script>
-let chatHistory = [];
-let currentMode = 'chat';
 
-function updateMode() {
-    currentMode = document.getElementById('claude-mode').value;
-    addSystemMessage(`Mode changed to: ${currentMode}`);
-}
-
-function insertCommand(command) {
-    const input = document.getElementById('user-input');
-    input.value += command;
-    input.focus();
-}
-
-function quickCommand(command) {
-    document.getElementById('user-input').value = command;
-    sendMessage();
-}
-
-function addMessage(type, content, sender = '') {
-    const container = document.getElementById('chat-container');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}-message`;
-    
-    if (sender) {
-        messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
-    } else {
-        messageDiv.innerHTML = content;
-    }
-    
-    container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function addSystemMessage(content) {
-    addMessage('system', content, 'System');
-}
-
-function sendMessage() {
-    const input = document.getElementById('user-input');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    // Add user message to chat
-    addMessage('user', message, 'You');
-    chatHistory.push({role: 'user', content: message});
-    
-    // Clear input
-    input.value = '';
-    
-    // Show loading
-    addSystemMessage('Claude is thinking...');
-    
-    // Send to Claude API
-    fetch('/admin/claude_api.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message: message,
-            mode: currentMode,
-            history: chatHistory
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Remove loading message
-        const container = document.getElementById('chat-container');
-        container.removeChild(container.lastChild);
-        
-        if (data.success) {
-            addMessage('claude', data.response, 'Claude');
-            chatHistory.push({role: 'assistant', content: data.response});
-        } else {
-            addMessage('error', data.error || 'Failed to get response from Claude', 'Error');
-        }
-    })
-    .catch(error => {
-        // Remove loading message
-        const container = document.getElementById('chat-container');
-        container.removeChild(container.lastChild);
-        
-        addMessage('error', 'Network error: ' + error.message, 'Error');
-    });
-}
-
-function clearChat() {
-    if (confirm('Clear chat history?')) {
-        document.getElementById('chat-container').innerHTML = '<div class="message system-message"><strong>System:</strong> Claude is ready. You can use commands like @file, @list, @agents, etc.</div>';
-        chatHistory = [];
-    }
-}
-
-// Enter key to send
-document.getElementById('user-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
-// System prompt editing functions
-let currentSystemPrompt = '';
-
-function togglePromptEditor() {
-    const editor = document.getElementById('prompt-editor');
-    if (editor.style.display === 'none') {
-        editor.style.display = 'block';
-        loadSystemPrompt();
-    } else {
-        editor.style.display = 'none';
-    }
-}
-
-async function loadSystemPrompt() {
-    try {
-        const response = await fetch('/admin/get_system_prompt.php');
-        const result = await response.json();
-        if (result.success) {
-            currentSystemPrompt = result.prompt;
-            document.getElementById('system-prompt').value = result.prompt;
-        }
-    } catch (error) {
-        console.error('Failed to load system prompt:', error);
-    }
-}
-
-async function saveSystemPrompt() {
-    const prompt = document.getElementById('system-prompt').value;
-    try {
-        const response = await fetch('/admin/save_system_prompt.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt: prompt})
-        });
-        const result = await response.json();
-        if (result.success) {
-            addSystemMessage('✅ System prompt updated successfully');
-            togglePromptEditor();
-        } else {
-            addSystemMessage('❌ Failed to save prompt: ' + result.error);
-        }
-    } catch (error) {
-        addSystemMessage('❌ Error saving prompt: ' + error.message);
-    }
-}
-
-function resetSystemPrompt() {
-    if (confirm('Reset to default system prompt? This will overwrite your custom prompt.')) {
-        fetch('/admin/reset_system_prompt.php', {method: 'POST'})
-            .then(r => r.json())
-            .then(result => {
-                if (result.success) {
-                    loadSystemPrompt();
-                    addSystemMessage('✅ System prompt reset to default');
-                }
-            });
-    }
-}
-
-// Scratch pad functions
-async function saveScratchPad() {
-    const content = document.getElementById('scratch-pad').value;
-    try {
-        const response = await fetch('/admin/claude_api.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({action: 'save_scratch_pad', content: content})
-        });
-        const result = await response.json();
-        if (result.success) {
-            addSystemMessage('✅ Notes saved to Claude database');
-        } else {
-            addSystemMessage('❌ Failed to save notes: ' + result.error);
-        }
-    } catch (error) {
-        addSystemMessage('❌ Error saving notes: ' + error.message);
-    }
-}
-
-async function clearScratchPad() {
-    if (confirm('Clear scratch pad?')) {
-        document.getElementById('scratch-pad').value = '';
-        try {
-            await fetch('/admin/claude_api.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'save_scratch_pad', content: ''})
-            });
-            addSystemMessage('✅ Scratch pad cleared');
-        } catch (error) {
-            addSystemMessage('❌ Error clearing notes');
-        }
-    }
-}
-
-function insertToChat() {
-    const content = document.getElementById('scratch-pad').value.trim();
-    if (content) {
-        document.getElementById('user-input').value = content;
-        document.getElementById('user-input').focus();
-    }
-}
-
-// Load scratch pad on page load
-window.addEventListener('load', async function() {
-    try {
-        const response = await fetch('/admin/claude_api.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({action: 'get_scratch_pad'})
-        });
-        const result = await response.json();
-        if (result.success && result.content) {
-            document.getElementById('scratch-pad').value = result.content;
-        }
-    } catch (error) {
-        console.error('Failed to load scratch pad:', error);
-    }
-});
-</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
