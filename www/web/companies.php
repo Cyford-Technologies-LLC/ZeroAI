@@ -58,19 +58,24 @@ try {
 include __DIR__ . '/includes/header.php';
 ?>
     <div class="header">
-        <h1>🏢 ZeroAI CRM - Companies</h1>
-        <div class="nav">
-            <a href="/web/index.php">Dashboard</a>
-            <a href="/web/companies.php" class="active">Companies</a>
-            <a href="/web/contacts.php">Contacts</a>
-            <a href="/web/projects.php">Projects</a>
-            <a href="/web/tasks.php">Tasks</a>
-            <?php if ($isAdmin): ?><a href="/admin/dashboard.php">Admin</a><?php endif; ?>
-            <a href="/web/logout.php">Logout</a>
+        <div class="header-content">
+            <div class="logo">🏢 ZeroAI CRM - Companies</div>
+            <nav class="nav">
+                <a href="/web/index.php">Dashboard</a>
+                <a href="/web/companies.php" class="active">Companies</a>
+                <a href="/web/contacts.php">Contacts</a>
+                <a href="/web/projects.php">Projects</a>
+                <a href="/web/tasks.php">Tasks</a>
+            </nav>
+            <div class="user-info">
+                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
+                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
+                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
+            </div>
         </div>
     </div>
-
-    <div class="container">
+    <div class="main-content">
+        <div class="container">
         <?php if (isset($success)): ?>
             <div class="alert alert-success"><?= $success ?></div>
         <?php endif; ?>
@@ -145,6 +150,7 @@ include __DIR__ . '/includes/header.php';
                     </tbody>
                 </table>
             <?php endif; ?>
+        </div>
         </div>
     </div>
 </body>
