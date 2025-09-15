@@ -89,6 +89,22 @@ try {
     }
     
 } catch (\Exception $e) {
+    // Log Claude errors to debug log
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->error('Claude API Error', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'action' => $input['action'] ?? 'unknown',
+        'user' => $_SESSION['admin_user'] ?? 'unknown'
+    ]);
+    
+    // Also log to Claude-specific debug log
+    $debugLog = '/app/logs/claude_debug.log';
+    if (!is_dir('/app/logs')) {
+        mkdir('/app/logs', 0755, true);
+    }
+    error_log(date('Y-m-d H:i:s') . ' [ERROR] ' . $e->getMessage() . "\n", 3, $debugLog);
+    
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

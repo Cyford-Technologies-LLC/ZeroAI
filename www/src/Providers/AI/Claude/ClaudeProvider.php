@@ -117,6 +117,13 @@ class ClaudeProvider {
                 'model' => $response['model'] ?? $model
             ];
         } catch (\Exception $e) {
+            // Log to Claude debug log
+            $debugLog = '/app/logs/claude_debug.log';
+            if (!is_dir('/app/logs')) {
+                mkdir('/app/logs', 0755, true);
+            }
+            error_log(date('Y-m-d H:i:s') . ' [PROVIDER ERROR] ' . $e->getMessage() . "\n", 3, $debugLog);
+            
             return ['success' => false, 'error' => 'Claude error: ' . $e->getMessage()];
         }
     }
