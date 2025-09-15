@@ -31,29 +31,37 @@ include __DIR__ . '/includes/header.php';
     </div>
     
     <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-value">0</div>
-            <div class="stat-label">
-                <i class="fas fa-building"></i> Companies
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div>📢 Companies</div>
+                </div>
             </div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, var(--success), #059669);">
-            <div class="stat-value">0</div>
-            <div class="stat-label">
-                <i class="fas fa-users"></i> Contacts
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div>👥 Contacts</div>
+                </div>
             </div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, var(--info), #0891b2);">
-            <div class="stat-value">0</div>
-            <div class="stat-label">
-                <i class="fas fa-project-diagram"></i> Projects
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div>📋 Projects</div>
+                </div>
             </div>
         </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, var(--warning), #d97706);">
-            <div class="stat-value">0</div>
-            <div class="stat-label">
-                <i class="fas fa-tasks"></i> Tasks
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div>✅ Tasks</div>
+                </div>
             </div>
         </div>
     </div>
