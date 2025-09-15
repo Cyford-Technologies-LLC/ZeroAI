@@ -96,9 +96,9 @@ include __DIR__ . '/includes/header.php';
             <div class="mt-3">
                 <label class="form-label">Message to Claude</label>
                 <textarea id="user-input" class="form-control form-control-lg" rows="4" placeholder="Ask Claude about your ZeroAI system...\n\n• @file path/to/file.py\n• @list directory/\n• @agents\n• Help optimize my configuration"></textarea>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <button onclick="sendMessage()" class="btn btn-primary btn-lg">🚀 Send Message</button>
-                    <div class="btn-group" role="group">
+                <div class="d-flex align-items-center mt-3">
+                    <button onclick="sendMessage()" class="btn btn-primary btn-lg me-auto">🚀 Send Message</button>
+                    <div class="btn-group ms-auto" role="group">
                         <button onclick="clearChat()" class="btn btn-outline-danger btn-sm">🗑️</button>
                         <button onclick="insertCommand('@file ')" class="btn btn-outline-secondary btn-sm">@file</button>
                         <button onclick="insertCommand('@list ')" class="btn btn-outline-secondary btn-sm">@list</button>
