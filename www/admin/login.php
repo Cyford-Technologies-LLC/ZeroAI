@@ -50,31 +50,81 @@ if ($_POST) {
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Login - ZeroAI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroAI Admin Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-form { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .error { color: red; margin: 10px 0; }
+        body { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); min-height: 100vh; }
+        .login-card { max-width: 400px; margin: 0 auto; }
+        .card { border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .btn-primary { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border: none; }
+        .btn-primary:hover { background: linear-gradient(135deg, #0056b3 0%, #004085 100%); }
     </style>
 </head>
-<body>
-    <div class="login-form">
-        <h2>ZeroAI Admin Login</h2>
-        <?php if (isset($error)): ?>
-            <div class="error"><?= $error ?></div>
-        <?php endif; ?>
-        <form method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-        <p style="text-align: center; margin-top: 15px; color: #666; font-size: 12px;">
-            Demo: demo / demo123
-        </p>
+<body class="d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card login-card">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-shield-lock display-4 text-primary"></i>
+                            <h2 class="mt-2">ZeroAI Admin</h2>
+                            <p class="text-muted">Administrator Access</p>
+                        </div>
+                        
+                        <?php if (isset($error)): ?>
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                <i class="bi bi-box-arrow-in-right"></i> Admin Login
+                            </button>
+                        </form>
+                        
+                        <div class="text-center">
+                            <a href="/web/login.php" class="text-decoration-none">
+                                <i class="bi bi-person"></i> User Login
+                            </a>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3" role="alert">
+                            <small>
+                                <strong>Demo Login:</strong><br>
+                                Username: <code>demo</code><br>
+                                Password: <code>demo123</code>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

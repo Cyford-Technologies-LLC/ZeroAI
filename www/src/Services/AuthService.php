@@ -35,7 +35,7 @@ class AuthService {
     }
     
     public function requireAuth() {
-        if (!$this->isLoggedIn()) {
+        if (!isset($_SESSION['admin_logged_in']) && !isset($_SESSION['web_logged_in'])) {
             // Check if we're in web context
             $requestUri = $_SERVER['REQUEST_URI'] ?? '';
             if (strpos($requestUri, '/web/') === 0) {
