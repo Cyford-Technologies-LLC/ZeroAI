@@ -1,14 +1,9 @@
 <?php
 session_start();
 
-// Enable error logging first
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/../logs/claude_debug.log');
-
 try {
     require_once __DIR__ . '/../src/autoload.php';
 } catch (Exception $e) {
-    error_log('Claude API Autoload Error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'System error']);
     exit;
@@ -114,16 +109,21 @@ try {
     }
     
 } catch (\Exception $e) {
-    // Log Claude errors to debug log
-    $logger = \ZeroAI\Core\Logger::getInstance();
-    $logger->error('Claude API Error', [
-        'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString(),
-        'action' => $input['action'] ?? 'unknown',
-        'user' => $_SESSION['admin_user'] ?? 'unknown'
-    ]);
-    
-
+    // Log Claude errors using proper Logger class
+    try {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        $logger->error('Claude API Error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'action' => $input['action'] ?? 'unknown',
+            'user' => $_SESSION['admin_user'] ?? 'unknown',
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+    } catch (Exception $logError) {
+        // Fallback if logger fails
+        error_log('Claude API Error: ' . $e->getMessage());
+    }
     
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
