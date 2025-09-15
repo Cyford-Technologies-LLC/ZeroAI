@@ -58,6 +58,11 @@ $currentPage = $currentPage ?? '';
         .dropdown:hover .dropdown-content { display: block; }
         .dropdown > a::after { content: ' ▼'; font-size: 10px; }
         .user-info { display: flex; align-items: center; gap: 15px; }
+        .header-btn { padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-frontend { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .btn-frontend:hover { background: linear-gradient(135deg, #218838, #1ea080); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-logout { background: linear-gradient(135deg, #dc3545, #e74c3c); color: white; }
+        .btn-logout:hover { background: linear-gradient(135deg, #c82333, #dc2626); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .content-wrapper { display: flex; flex: 1; }
         .sidebar { width: 250px; background: #343a40; color: white; padding: 20px 0; overflow-y: auto; }
         .sidebar-group { margin-bottom: 20px; }
@@ -103,8 +108,8 @@ $currentPage = $currentPage ?? '';
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= $_SESSION['admin_user'] ?? 'Admin' ?>!</span>
-                <a href="/" target="_blank" style="background: #28a745; padding: 6px 12px; border-radius: 4px; margin-right: 10px;">🌐 Frontend</a>
-                <a href="/admin/logout.php" style="background: #dc3545; padding: 6px 12px; border-radius: 4px;">Logout</a>
+                <a href="/" target="_blank" class="header-btn btn-frontend">🌐 Frontend</a>
+                <a href="/admin/logout.php" class="header-btn btn-logout">Logout</a>
             </div>
         </div>
     </div>
