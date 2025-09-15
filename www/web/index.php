@@ -15,22 +15,7 @@ $currentPage = 'crm_dashboard';
 
 include __DIR__ . '/includes/header.php';
 ?>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">🏢 ZeroAI CRM</div>
-            <nav class="nav">
-                <a href="/web/index.php" class="active">Dashboard</a>
-                <a href="/web/companies.php">Companies</a>
-                <a href="/web/projects.php">Projects</a>
-            </nav>
-            <div class="user-info">
-                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
-                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
-                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
-                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
-            </div>
-        </div>
-    </div>
+<div class="container-fluid mt-3">
     <div class="main-content">
         <div class="container">
         <div class="card">
@@ -64,7 +49,6 @@ include __DIR__ . '/includes/header.php';
             <h3>Welcome to ZeroAI CRM</h3>
             <p>Your customer relationship management system is ready. Use the navigation above to manage your business data.</p>
             <p><strong>Logged in as:</strong> <?= htmlspecialchars($currentUser) ?></p>
-        </div>
-    </div>
+</div>
 </body>
 </html>

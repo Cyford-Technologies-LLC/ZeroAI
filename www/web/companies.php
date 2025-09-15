@@ -57,6 +57,7 @@ try {
 
 include __DIR__ . '/includes/header.php';
 ?>
+<div class="container-fluid mt-3">
     <div class="content-wrapper">
         <div class="sidebar">
             <div class="sidebar-group">
@@ -192,8 +193,6 @@ include __DIR__ . '/includes/header.php';
                     </tbody>
                 </table>
             <?php endif; ?>
-        </div>
-        </div>
-    </div>
+</div>
 </body>
 </html>

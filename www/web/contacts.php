@@ -48,22 +48,6 @@ try {
 
 include __DIR__ . '/includes/header.php';
 ?>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">🏢 ZeroAI CRM - Contacts</div>
-            <nav class="nav">
-                <a href="/web/index.php">Dashboard</a>
-                <a href="/web/companies.php">Companies</a>
-                <a href="/web/projects.php">Projects</a>
-            </nav>
-            <div class="user-info">
-                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
-                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
-                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
-                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
-            </div>
-        </div>
-    </div>
     <div class="content-wrapper">
         <div class="sidebar">
             <div class="sidebar-group">
