@@ -14,6 +14,29 @@ if (!$input) {
     exit;
 }
 
+// Handle scratch pad actions
+if (isset($input['action'])) {
+    try {
+        $claude = new \ZeroAI\AI\Claude();
+        
+        if ($input['action'] === 'save_scratch_pad') {
+            $content = $input['content'] ?? '';
+            $claude->saveScratchPad($content);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        
+        if ($input['action'] === 'get_scratch_pad') {
+            $content = $claude->getScratchPad();
+            echo json_encode(['success' => true, 'content' => $content]);
+            exit;
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
 $message = $input['message'] ?? '';
 $selectedModel = $input['model'] ?? 'claude-3-5-sonnet-20241022';
 $conversationHistory = $input['history'] ?? [];
