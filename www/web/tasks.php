@@ -1,20 +1,10 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
+include __DIR__ . '/includes/header.php';
 
-if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
-    header('Location: /web/login.php');
-    exit;
-}
 
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'Tasks - ZeroAI CRM';
 $currentPage = 'tasks';
 
-require_once __DIR__ . '/../config/database.php';
-$db = new Database();
-$pdo = $db->getConnection();
 
 // Handle form submissions
 if ($_POST && isset($_POST['action']) && $_POST['action'] == 'add') {
@@ -35,7 +25,6 @@ try {
     $error = "Database tables not found. Please visit <a href='/web/init.php'>init.php</a> first.";
 }
 
-include __DIR__ . '/includes/header.php';
 ?>
 
 <!-- TOP MENU -->

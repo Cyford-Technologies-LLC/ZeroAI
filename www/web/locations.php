@@ -1,35 +1,10 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
+include __DIR__ . '/includes/header.php';
 
-if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
-    header('Location: /web/login.php');
-    exit;
-}
 
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'Locations - ZeroAI CRM';
 $currentPage = 'locations';
-$companyId = $_GET['company_id'] ?? null;
 
-require_once __DIR__ . '/../config/database.php';
-$db = new Database();
-$pdo = $db->getConnection();
-
-// Get company info
-$company = null;
-if ($companyId) {
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM companies WHERE id = ?");
-        $stmt->execute([$companyId]);
-        $company = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        $error = "Company not found";
-    }
-}
-
-include __DIR__ . '/includes/header.php';
 ?>
     <div class="header">
         <div class="header-content">
