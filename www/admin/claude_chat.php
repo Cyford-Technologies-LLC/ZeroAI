@@ -173,7 +173,7 @@ function sendMessage() {
     addMessageToChat('assistant', 'Claude is typing...');
     
     // Send to backend with model selection
-    fetch('/admin/claude_api.php', {
+    fetch('www/src/Providers/AI/Claude/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({action: 'chat', message: message, model: selectedModel})
