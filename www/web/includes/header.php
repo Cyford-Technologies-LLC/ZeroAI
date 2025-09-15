@@ -96,7 +96,7 @@ $currentPage = $currentPage ?? '';
     <link href="/assets/frontend/css/crm-frontend.css" rel="stylesheet">
     <script src="/assets/frontend/js/header.js" defer></script>
     <script src="/assets/frontend/js/forms.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/frontend/js/bootstrap-collapse.js" defer></script>
     
     <style>
         * { box-sizing: border-box; }

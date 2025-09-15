@@ -4,8 +4,12 @@ include __DIR__ . '/includes/header.php';
 // Handle form submission
 if ($_POST && isset($_POST['name'])) {
     try {
+        // Combine address fields
+        $address = trim(($_POST['street'] ?? '') . ' ' . ($_POST['street2'] ?? '') . ', ' . ($_POST['city'] ?? '') . ', ' . ($_POST['state'] ?? '') . ' ' . ($_POST['zip'] ?? ''));
+        $address = trim($address, ', ');
+        
         $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, address, industry, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['industry'], $userOrgId, $currentUser]);
+        $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $address, $_POST['industry'], $userOrgId, $currentUser]);
         $success = "Company added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
@@ -16,16 +20,13 @@ if ($_POST && isset($_POST['name'])) {
 
 ?>
 
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <?php if (isset($success)): ?>
-                <div class="alert alert-success"><?= $success ?></div>
-            <?php endif; ?>
-            
-            <?php if (isset($error)): ?>
-                <div class="alert alert-danger"><?= $error ?></div>
-            <?php endif; ?>
+<?php if (isset($success)): ?>
+    <div class="alert alert-success"><?= $success ?></div>
+<?php endif; ?>
+
+<?php if (isset($error)): ?>
+    <div class="alert alert-danger"><?= $error ?></div>
+<?php endif; ?>
 
             <div class="card mb-4">
                 <div class="card-header">
@@ -152,8 +153,5 @@ if ($_POST && isset($_POST['name'])) {
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
