@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../src/bootstrap.php';
 
+$logger = \ZeroAI\Core\Logger::getInstance();
 $error = '';
 $success = '';
 
@@ -61,6 +62,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Registration successful! You can now login.';
             }
         } catch (Exception $e) {
+            $logger->error('Registration failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'username' => $username ?? 'unknown',
+                'email' => $email ?? 'unknown',
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
             $error = 'Registration failed. Please try again.';
         }
     }
