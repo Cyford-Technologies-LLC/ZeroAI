@@ -10,30 +10,43 @@ if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) 
 $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
 
 // Get CRM stats
+$stats = ['companies' => 0, 'contacts' => 0, 'projects' => 0, 'tasks' => 0];
+$recentActivities = [];
+
 try {
     require_once __DIR__ . '/../config/database.php';
     $db = new Database();
     $pdo = $db->getConnection();
     
-    // Get basic stats
-    $stats = [
-        'companies' => $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0,
-        'contacts' => $pdo->query("SELECT COUNT(*) FROM contacts")->fetchColumn() ?: 0,
-        'projects' => $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0,
-        'tasks' => $pdo->query("SELECT COUNT(*) FROM tasks WHERE status != 'completed'")->fetchColumn() ?: 0
-    ];
+    // Check if tables exist and get stats
+    $tables = ['companies', 'contacts', 'projects', 'tasks'];
+    foreach ($tables as $table) {
+        try {
+            if ($table === 'tasks') {
+                $count = $pdo->query("SELECT COUNT(*) FROM $table WHERE status != 'completed'")->fetchColumn();
+            } else {
+                $count = $pdo->query("SELECT COUNT(*) FROM $table")->fetchColumn();
+            }
+            $stats[$table] = $count ?: 0;
+        } catch (Exception $e) {
+            $stats[$table] = 0;
+        }
+    }
     
-    // Recent activities
-    $recentActivities = $pdo->query("
-        SELECT 'project' as type, name as title, created_at, status 
-        FROM projects 
-        ORDER BY created_at DESC 
-        LIMIT 5
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    // Get recent activities
+    try {
+        $recentActivities = $pdo->query("
+            SELECT 'project' as type, name as title, created_at, status 
+            FROM projects 
+            ORDER BY created_at DESC 
+            LIMIT 5
+        ")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $recentActivities = [];
+    }
     
 } catch (Exception $e) {
-    $stats = ['companies' => 0, 'contacts' => 0, 'projects' => 0, 'tasks' => 0];
-    $recentActivities = [];
+    // Keep default values
 }
 ?>
 <!DOCTYPE html>
@@ -190,6 +203,12 @@ try {
                             <div class="card-body">
                                 <?php if (empty($recentActivities)): ?>
                                     <p class="text-muted">No recent activity</p>
+                                    <?php if ($stats['companies'] == 0 && $stats['projects'] == 0): ?>
+                                        <div class="alert alert-info mt-3">
+                                            <strong>Getting Started:</strong><br>
+                                            <a href="/web/setup_crm.php" class="btn btn-sm btn-primary">Setup CRM Database</a>
+                                        </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <div class="list-group list-group-flush">
                                         <?php foreach ($recentActivities as $activity): ?>

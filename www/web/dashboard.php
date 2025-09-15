@@ -2,26 +2,27 @@
 session_start();
 require_once __DIR__ . '/../admin/includes/autoload.php';
 
-// Use existing classes
-require_once __DIR__ . '/../src/Models/Tenant.php';
-require_once __DIR__ . '/../src/Core/Company.php';
-require_once __DIR__ . '/../src/Core/Project.php';
-
-$tenant = new \ZeroAI\Core\Tenant();
-$company = new \ZeroAI\Core\Company();
-$project = new \ZeroAI\Core\Project();
-
-$tenants = $tenant->getAll();
+// Initialize with safe defaults
+$tenants = [];
 $totalCompanies = 0;
 $totalProjects = 0;
 
-foreach ($tenants as $t) {
-    $companies = $company->findByTenant($t['id']);
-    $totalCompanies += count($companies);
-    foreach ($companies as $c) {
-        $projects = $project->findByCompany($c['id']);
-        $totalProjects += count($projects);
-    }
+try {
+    require_once __DIR__ . '/../config/database.php';
+    $db = new Database();
+    $pdo = $db->getConnection();
+    
+    // Get tenants
+    $stmt = $pdo->query("SELECT * FROM tenants ORDER BY name");
+    $tenants = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    
+    // Get totals
+    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
+    $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
+    
+} catch (Exception $e) {
+    error_log('CRM Dashboard Error: ' . $e->getMessage());
+    $tenants = [];
 }
 
 $pageTitle = 'CRM Dashboard - ZeroAI';
@@ -60,18 +61,23 @@ include __DIR__ . '/../admin/includes/header.php';
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($tenants as $t): ?>
-                <?php $companies = $company->findByTenant($t['id']); ?>
+            <?php if (!empty($tenants)): ?>
+                <?php foreach ($tenants as $t): ?>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><?= htmlspecialchars($t['name']) ?></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><?= htmlspecialchars($t['domain'] ?? '') ?></td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">0</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">
+                            <a href="tenant_view.php?id=<?= $t['id'] ?>">View</a> |
+                            <a href="company_list.php?tenant=<?= $t['id'] ?>">Companies</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
                 <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd;"><?= htmlspecialchars($t['name']) ?></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;"><?= htmlspecialchars($t['domain']) ?></td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;"><?= count($companies) ?></td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">
-                        <a href="tenant_view.php?id=<?= $t['id'] ?>">View</a> |
-                        <a href="company_list.php?tenant=<?= $t['id'] ?>">Companies</a>
-                    </td>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No tenants found. <a href="setup_tenant_db.php">Setup Database</a></td>
                 </tr>
-            <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>
