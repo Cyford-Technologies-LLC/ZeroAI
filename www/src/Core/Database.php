@@ -92,14 +92,14 @@ class Database {
         
         try {
             $this->pdo->exec($sql);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             // Continue if tables already exist
         }
         
         // Add columns that might not exist
         try {
             $this->pdo->exec("ALTER TABLE users ADD COLUMN organization_id INTEGER DEFAULT 1");
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             // Column already exists
         }
         
@@ -195,7 +195,7 @@ class Database {
         
         try {
             $this->pdo->exec($sql2);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             // Continue if error
         }
     }
