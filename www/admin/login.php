@@ -1,6 +1,12 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/includes/autoload.php';
+use ZeroAI\Core\VisitorTracker;
+
+$tracker = new VisitorTracker();
+$tracker->trackVisitor();
+
 if ($_POST) {
     try {
         require_once '../src/Core/UserManager.php';
@@ -22,12 +28,16 @@ if ($_POST) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_user'] = $username;
             
+            $tracker->trackLogin($username, true);
+            
             header('Location: /admin/dashboard.php');
             exit;
         } else {
+            $tracker->trackLogin($username, false, 'Invalid credentials');
             $error = "Invalid credentials";
         }
     } catch (Exception $e) {
+        $tracker->trackLogin($username ?? 'unknown', false, $e->getMessage());
         $error = "Login failed: " . $e->getMessage();
     }
 }

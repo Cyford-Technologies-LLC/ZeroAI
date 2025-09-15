@@ -211,6 +211,7 @@ $currentPage = $currentPage ?? '';
                     <h3>User Management</h3>
                     <a href="/admin/users.php" <?= ($currentPage ?? '') === 'users' ? 'class="active"' : '' ?>>All Users</a>
                     <a href="/admin/roles.php" <?= ($currentPage ?? '') === 'roles' ? 'class="active"' : '' ?>>Roles & Permissions</a>
+                    <a href="/admin/visitor_analytics.php" <?= ($currentPage ?? '') === 'analytics' ? 'class="active"' : '' ?>>📊 Visitor Analytics</a>
                     <a href="/admin/sessions.php" <?= ($currentPage ?? '') === 'sessions' ? 'class="active"' : '' ?>>Active Sessions</a>
                 </div>
                 <?php endif; ?>
