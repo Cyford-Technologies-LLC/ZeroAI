@@ -166,7 +166,12 @@ function toggleScratchPad() {
 function togglePromptEditor() {
     const promptEditor = document.getElementById('prompt-editor');
     if (promptEditor) {
-        promptEditor.style.display = promptEditor.style.display === 'none' ? 'block' : 'none';
+        if (promptEditor.style.display === 'none') {
+            promptEditor.style.display = 'block';
+            loadSystemPrompt();
+        } else {
+            promptEditor.style.display = 'none';
+        }
     }
 }
 
@@ -320,7 +325,7 @@ function saveSystemPrompt() {
     .then(data => {
         if (data.success) {
             alert('✅ System prompt saved successfully!');
-            togglePromptEditor();
+            document.getElementById('prompt-editor').style.display = 'none';
         } else {
             alert('❌ Error saving system prompt: ' + data.error);
         }
@@ -437,8 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Load system prompt
-    loadSystemPrompt();
+    // Don't auto-load system prompt on page load
 });
 </script>
 
