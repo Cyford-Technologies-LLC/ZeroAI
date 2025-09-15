@@ -94,7 +94,7 @@ class ClaudeProvider {
             }
             
             $logger = \ZeroAI\Core\Logger::getInstance();
-            $logger->debug('Converted history', ['original_count' => count($history), 'converted_count' => count($convertedHistory), 'sample' => array_slice($convertedHistory, -2)]);
+            $logger->info('Converted history', ['original_count' => count($history), 'converted_count' => count($convertedHistory)]);
             
             if ($this->useUnifiedTools()) {
                 // NEW SYSTEM: Unified tools (Claude sees results before responding)
