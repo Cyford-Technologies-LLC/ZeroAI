@@ -8,7 +8,7 @@ class ClaudeBackgroundWorker {
     
     public function __construct() {
         $this->toolSystem = new ClaudeToolSystem();
-        $this->db = new \ZeroAI\Core\DatabaseManager();
+        $this->db = \ZeroAI\Core\DatabaseManager::getInstance();
     }
     
     public function executeCommand($command, $args = []) {
