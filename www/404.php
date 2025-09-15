@@ -1,17 +1,27 @@
 <?php
 require_once __DIR__ . '/admin/includes/autoload.php';
 
-// Log 404 error with details
-$logger = \ZeroAI\Core\Logger::getInstance();
-$logger->error('404 Not Found', [
-    'url' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-    'referrer' => $_SERVER['HTTP_REFERER'] ?? 'direct',
-    'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
-    'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'
-]);
+// Check if this is a 404 redirect or direct access
+$originalUrl = $_GET['url'] ?? $_SERVER['REQUEST_URI'] ?? 'unknown';
+$is404 = isset($_GET['url']) || strpos($_SERVER['HTTP_REFERER'] ?? '', '404') !== false;
 
-http_response_code(404);
+if ($is404) {
+    // Log 404 error with details
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->error('404 Not Found', [
+        'url' => $originalUrl,
+        'referrer' => $_SERVER['HTTP_REFERER'] ?? 'direct',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+        'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'
+    ]);
+    
+    http_response_code(404);
+} else {
+    // Direct access to 404.php - redirect to dashboard
+    header('Location: /admin/dashboard.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html>
