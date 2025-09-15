@@ -35,8 +35,10 @@ class ClaudeIntegration extends BaseAIProvider {
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
             $cachedModels = $cache->get('claude_api_models');
-            if ($cachedModels !== false && !empty($cachedModels)) {
-                $logger->logClaude('Models loaded from API cache', ['count' => count($cachedModels), 'source' => 'api_cached']);
+            $logger->logClaude('Cache key check', ['key' => 'claude_api_models', 'found' => $cachedModels !== null, 'empty' => empty($cachedModels)]);
+            
+            if ($cachedModels !== null && !empty($cachedModels)) {
+                $logger->logClaude('Cache key found and not empty - using cached models', ['count' => count($cachedModels), 'models' => $cachedModels]);
                 return $cachedModels;
             }
         } catch (\Exception $e) {
@@ -44,13 +46,16 @@ class ClaudeIntegration extends BaseAIProvider {
         }
         
         // Try API call
+        $logger->logClaude('Attempting API call to fetch models');
         $apiModels = $this->fetchRealModels();
+        $logger->logClaude('API call result', ['api_models' => $apiModels, 'count' => count($apiModels)]);
+        
         if (!empty($apiModels)) {
             // Cache API models
             try {
                 $cache = \ZeroAI\Core\CacheManager::getInstance();
                 $cache->set('claude_api_models', $apiModels, 3600);
-                $logger->logClaude('API models fetched and cached', ['count' => count($apiModels), 'source' => 'api_fresh']);
+                $logger->logClaude('API models fetched and cached', ['count' => count($apiModels), 'source' => 'api_fresh', 'models' => $apiModels]);
             } catch (\Exception $e) {
                 $logger->logClaude('Failed to cache API models', ['error' => $e->getMessage()]);
             }
@@ -70,7 +75,7 @@ class ClaudeIntegration extends BaseAIProvider {
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
             $cachedModels = $cache->get('claude_api_models');
-            if ($cachedModels !== false && !empty($cachedModels) && $models === $cachedModels) {
+            if ($cachedModels !== null && !empty($cachedModels) && $models === $cachedModels) {
                 return ['models' => $models, 'source' => 'API', 'color' => 'green'];
             }
         } catch (\Exception $e) {
@@ -82,6 +87,8 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
     private function fetchRealModels(): array {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        
         try {
             $ch = curl_init();
             curl_setopt_array($ch, [
@@ -97,10 +104,15 @@ class ClaudeIntegration extends BaseAIProvider {
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
+            
+            $logger->logClaude('API call details', ['http_code' => $httpCode, 'curl_error' => $curlError, 'response_length' => strlen($response)]);
             
             if ($httpCode === 200) {
                 $data = json_decode($response, true);
+                $logger->logClaude('API response parsed', ['data_structure' => isset($data['data']), 'data_count' => isset($data['data']) ? count($data['data']) : 0]);
+                
                 if (isset($data['data']) && is_array($data['data'])) {
                     $models = [];
                     foreach ($data['data'] as $model) {
@@ -108,11 +120,14 @@ class ClaudeIntegration extends BaseAIProvider {
                             $models[] = $model['id'];
                         }
                     }
+                    $logger->logClaude('API models extracted', ['models' => $models]);
                     return $models;
                 }
+            } else {
+                $logger->logClaude('API call failed', ['http_code' => $httpCode, 'response' => substr($response, 0, 500)]);
             }
         } catch (\Exception $e) {
-            // API failed, return empty to trigger hardcoded fallback
+            $logger->logClaude('API call exception', ['error' => $e->getMessage()]);
         }
         
         return [];
