@@ -35,23 +35,7 @@ try {
 }
 
 ?>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">🏢 ZeroAI CRM - Users<?= $company ? ' - ' . htmlspecialchars($company['name']) : '' ?></div>
-            <nav class="nav">
-                <a href="/web/index.php">Dashboard</a>
-                <a href="/web/companies.php">Companies</a>
-                <a href="/web/contacts.php">Contacts</a>
-                <a href="/web/projects.php">Projects</a>
-                <a href="/web/tasks.php">Tasks</a>
-            </nav>
-            <div class="user-info">
-                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
-                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
-                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
-            </div>
-        </div>
-    </div>
+
     <div class="content-wrapper">
         <div class="sidebar">
             <div class="sidebar-group">
