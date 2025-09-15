@@ -9,10 +9,28 @@ class ClaudeProvider {
     private $backgroundWorker;
     
     public function __construct($apiKey = null) {
-        $this->apiKey = $apiKey ?: $this->getApiKey();
-        $this->commands = new ClaudeCommands();
-        $this->integration = new ClaudeIntegration($this->apiKey);
-        $this->backgroundWorker = new ClaudeBackgroundWorker();
+        try {
+            $this->apiKey = $apiKey ?: $this->getApiKey();
+            
+            // Initialize with error handling
+            if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeCommands')) {
+                $this->commands = new ClaudeCommands();
+            }
+            
+            if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeIntegration')) {
+                $this->integration = new ClaudeIntegration($this->apiKey);
+            } else {
+                throw new \Exception('ClaudeIntegration class not found');
+            }
+            
+            if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeBackgroundWorker')) {
+                $this->backgroundWorker = new ClaudeBackgroundWorker();
+            }
+        } catch (\Exception $e) {
+            $logger = \ZeroAI\Core\Logger::getInstance();
+            $logger->logClaude('ClaudeProvider constructor error: ' . $e->getMessage());
+            throw $e;
+        }
     }
     
     private function getApiKey() {
@@ -132,8 +150,10 @@ class ClaudeProvider {
         $originalLength = strlen($message);
         
         // Pass actual Claude mode for permission checks
-        $this->commands->processFileCommands($message, 'claude', $mode);
-        $this->commands->processClaudeCommands($message, 'claude', $mode);
+        if ($this->commands) {
+            $this->commands->processFileCommands($message, 'claude', $mode);
+            $this->commands->processClaudeCommands($message, 'claude', $mode);
+        }
         
         return strlen($message) > $originalLength ? substr($message, $originalLength) : '';
     }
@@ -211,7 +231,10 @@ class ClaudeProvider {
     }
     
     public function executeBackgroundCommand($command, $args = []) {
-        return $this->backgroundWorker->executeCommand($command, $args);
+        if ($this->backgroundWorker) {
+            return $this->backgroundWorker->executeCommand($command, $args);
+        }
+        return ['error' => 'Background worker not available'];
     }
     
     private function getCommandsHelp() {
