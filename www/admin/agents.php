@@ -202,6 +202,163 @@ $agents = $agent->getAll();
     <?php endif; ?>
 </div>
 
+<!-- Edit Modal -->
+<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; width: 600px; max-width: 95%; max-height: 90%; overflow-y: auto;">
+        <h3 style="margin: 0 0 20px 0; color: #007cba;">Edit Agent</h3>
+        <form method="POST" id="editForm">
+            <input type="hidden" name="action" value="update_agent">
+            <input type="hidden" name="agent_id" id="editAgentId">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <input type="text" name="name" id="editName" placeholder="Agent Name" required style="padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                <input type="text" name="role" id="editRole" placeholder="Agent Role" required style="padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <textarea name="goal" id="editGoal" placeholder="Agent Goal" rows="2" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box;"></textarea>
+            <textarea name="backstory" id="editBackstory" placeholder="Agent Backstory" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box;"></textarea>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <select name="status" id="editStatus" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <select name="llm_model" id="editLlmModel" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <option value="local">Local</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="claude">Claude</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button type="submit" style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Update Agent</button>
+                <button type="button" onclick="closeEditModal()" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showCreateForm() {
+    document.getElementById('createForm').style.display = 'block';
+    document.getElementById('createForm').scrollIntoView({behavior: 'smooth'});
+}
+
+function hideCreateForm() {
+    document.getElementById('createForm').style.display = 'none';
+}
+
+function editAgent(agentId) {
+    fetch(`/api/admin/agents?id=${agentId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.agent) {
+                const agent = data.agent;
+                document.getElementById('editAgentId').value = agent.id;
+                document.getElementById('editName').value = agent.name;
+                document.getElementById('editRole').value = agent.role;
+                document.getElementById('editGoal').value = agent.goal;
+                document.getElementById('editBackstory').value = agent.backstory;
+                document.getElementById('editStatus').value = agent.status;
+                document.getElementById('editLlmModel').value = agent.llm_model || 'local';
+                
+                document.getElementById('editModal').style.display = 'block';
+            }
+        })
+        .catch(e => {
+            alert('Failed to load agent data');
+        });
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+function chatWithAgent(agentId) {
+    window.location.href = `/admin/agent_chat.php?id=${agentId}`;
+}
+
+function deleteAgent(agentId) {
+    if (confirm('Are you sure you want to delete this agent?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="delete_agent">
+            <input type="hidden" name="agent_id" value="${agentId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+</script>
+
+<style>
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary { background: #007cba; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-warning { background: #ffc107; color: #212529; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.form-input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+}
+
+.agent-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.agent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+</style>
+                        <button onclick="editAgent(<?= $agent['id'] ?>)" class="btn btn-warning btn-sm" style="font-size: 11px; padding: 6px 8px;">✏️ Edit</button>
+                        <button onclick="chatWithAgent(<?= $agent['id'] ?>)" class="btn btn-success btn-sm" style="font-size: 11px; padding: 6px 8px;">💬 Chat</button>
+                        <button onclick="deleteAgent(<?= $agent['id'] ?>)" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 6px 8px;">🗑️ Delete</button>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
 <!-- Edit Agent Modal -->
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
     <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border-radius: 8px; width: 800px; max-width: 95%; margin-bottom: 20px;">
