@@ -48,10 +48,62 @@ class Database {
         ('admin', '$adminPassword', 'admin'),
         ('user', '$userPassword', 'user');
         
+        CREATE TABLE IF NOT EXISTS companies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            website TEXT,
+            industry TEXT,
+            organization_id INTEGER DEFAULT 1,
+            created_by TEXT,
+            status TEXT DEFAULT 'active',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS contacts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            position TEXT,
+            department TEXT,
+            organization_id INTEGER DEFAULT 1,
+            created_by TEXT,
+            status TEXT DEFAULT 'active',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (company_id) REFERENCES companies(id)
+        );
+        
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company_id INTEGER,
+            name TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'active',
+            priority TEXT DEFAULT 'medium',
+            start_date DATE,
+            end_date DATE,
+            budget DECIMAL(10,2),
+            organization_id INTEGER DEFAULT 1,
+            created_by TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (company_id) REFERENCES companies(id)
+        );
+        
         INSERT OR IGNORE INTO agents (name, role, goal, backstory, config, is_core) VALUES 
         ('Team Manager', 'Team Coordination Specialist', 'Coordinate team activities', 'Expert in team management', '{\"tools\": [\"delegate_tool\"], \"memory\": true}', 1),
         ('Project Manager', 'Project Management Expert', 'Oversee project execution', 'Experienced project manager', '{\"tools\": [\"file_tool\"], \"memory\": true}', 1),
         ('Prompt Refinement Agent', 'Prompt Optimization Specialist', 'Refine prompts for better responses', 'Expert in prompt engineering', '{\"tools\": [\"learning_tool\"], \"memory\": true}', 1);
+        
+        INSERT OR IGNORE INTO companies (name, email, phone, industry, organization_id, created_by) VALUES 
+        ('Sample Company', 'contact@sample.com', '555-0123', 'Technology', 1, 'admin');
         ";
         
         $this->pdo->exec($sql);
