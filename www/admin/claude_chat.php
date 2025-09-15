@@ -1,10 +1,8 @@
 <?php
-session_start();
+$pageTitle = 'Claude Chat - ZeroAI';
+$currentPage = 'claude_chat';
+include __DIR__ . '/includes/header.php';
 
-if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
-    header('Location: /admin/login.php');
-    exit;
-}
 
 // Block demo users from Claude chat
 if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
@@ -12,9 +10,7 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
     exit;
 }
 
-$pageTitle = 'Claude Chat - ZeroAI';
-$currentPage = 'claude_chat';
-include __DIR__ . '/includes/header.php';
+
 ?>
 
 <div class="chat-container">
