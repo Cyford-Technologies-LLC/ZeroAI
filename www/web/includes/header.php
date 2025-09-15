@@ -65,11 +65,63 @@ $currentPage = $currentPage ?? '';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title><?= $pageTitle ?></title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="ZeroAI CRM - Zero Cost, Zero Cloud, Zero Limits. Manage your business with our powerful CRM system.">
+    <meta name="keywords" content="CRM, Customer Relationship Management, ZeroAI, Business Management, Projects, Companies, Contacts">
+    <meta name="author" content="ZeroAI">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    <meta property="og:title" content="<?= $pageTitle ?>">
+    <meta property="og:description" content="ZeroAI CRM - Zero Cost, Zero Cloud, Zero Limits. Manage your business efficiently.">
+    <meta property="og:image" content="/assets/frontend/images/zeroai-logo.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    <meta property="twitter:title" content="<?= $pageTitle ?>">
+    <meta property="twitter:description" content="ZeroAI CRM - Zero Cost, Zero Cloud, Zero Limits.">
+    <meta property="twitter:image" content="/assets/frontend/images/zeroai-logo.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
     <link href="/assets/frontend/css/bootstrap.min.css" rel="stylesheet">
     <link href="/assets/frontend/css/fontawesome.min.css" rel="stylesheet">
     <link href="/assets/frontend/css/crm-frontend.css" rel="stylesheet">
+    
+    <style>
+        @media (max-width: 768px) {
+            .navbar-nav { flex-direction: column; width: 100%; }
+            .navbar-nav .nav-link { padding: 0.5rem 0.75rem; }
+            .mobile-menu { display: block !important; }
+            .desktop-menu { display: none !important; }
+            .logo-text { font-size: 1.2rem !important; }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu { display: none !important; }
+            .desktop-menu { display: flex !important; }
+        }
+        
+        .header-responsive {
+            transition: all 0.3s ease;
+        }
+        
+        .content-shift {
+            margin-left: 250px;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .sidebar-open .header-responsive {
+            margin-left: 250px;
+        }
+    </style>
 
 
 </head>
@@ -90,65 +142,66 @@ $currentPage = $currentPage ?? '';
      style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; z-index: 999;"></div>
 
 <!-- Top Navigation -->
-<div style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<div id="main-header" class="header-responsive" style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     <div style="width: 100%; display: flex; align-items: center; padding: 0 20px;">
         <button style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 12px; border-radius: 4px; transition: background 0.2s ease; margin-right: 20px;"
                 onclick="toggleSidebar()" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">☰
         </button>
-        <div style="font-size: 1.5rem; font-weight: bold; margin-right: auto;">🏢 ZeroAI CRM</div>
-        <div style="display: flex; gap: 20px; margin-right: 20px;">
+        <div class="logo-text" style="font-size: 1.5rem; font-weight: bold; margin-right: auto;">🏢 ZeroAI CRM</div>
+        <div class="desktop-menu" style="display: flex; gap: 20px; margin-right: 20px;">
             <a href="/web/index.php"
-               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'crm_dashboard' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📊
-                Dashboard</a>
+               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; white-space: nowrap; <?= ($currentPage ?? '') === 'crm_dashboard' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📊 Dashboard</a>
             <a href="/web/companies.php"
-               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'companies' ? 'background: rgba(255,255,255,0.2);' : '' ?>">🏢
-                Companies</a>
+               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; white-space: nowrap; <?= ($currentPage ?? '') === 'companies' ? 'background: rgba(255,255,255,0.2);' : '' ?>">🏢 Companies</a>
             <a href="/web/sales.php"
-               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'sales' ? 'background: rgba(255,255,255,0.2);' : '' ?>">💰
-                Sales</a>
+               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; white-space: nowrap; <?= ($currentPage ?? '') === 'sales' ? 'background: rgba(255,255,255,0.2);' : '' ?>">💰 Sales</a>
             <a href="/web/projects.php"
-               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'projects' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📋
-                Projects</a>
+               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; white-space: nowrap; <?= ($currentPage ?? '') === 'projects' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📋 Projects</a>
             <a href="/web/ai_workshop.php"
-               style="background: #0dcaf0; color: black; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; margin-left: 20px;">🤖
-                AI</a>
+               style="background: #0dcaf0; color: black; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; margin-left: 20px; white-space: nowrap;">🤖 AI</a>
             <?php if (isset($isAdmin) && $isAdmin): ?><a href="/admin/dashboard.php"
-                                                         style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">⚙️
-                Admin</a><?php endif; ?>
+                                                         style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; white-space: nowrap;">⚙️ Admin</a><?php endif; ?>
         </div>
         <button style="background: #6366f1; color: white; padding: 6px 12px; border-radius: 4px; border: none; font-size: 0.9rem; cursor: pointer;"
-                onclick="toggleSidebar(); updateSidebarForProfile();">👤
-            Profile</button>
+                onclick="toggleSidebar(); updateSidebarForProfile();">👤 Profile</button>
     </div>
 </div>
 
 <script>
     function toggleSidebar() {
-        console.log('Toggle sidebar clicked');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         const mainContent = document.querySelector('.container-fluid, .container');
+        const header = document.getElementById('main-header');
+        const body = document.body;
 
-        if (!sidebar || !overlay) {
-            console.log('Sidebar elements not found');
-            return;
-        }
+        if (!sidebar || !overlay) return;
 
         const isOpen = sidebar.style.left === '0px';
 
         if (isOpen) {
             sidebar.style.left = '-250px';
             overlay.style.display = 'none';
+            body.classList.remove('sidebar-open');
             if (mainContent) {
                 mainContent.style.marginLeft = '0';
                 mainContent.style.transition = 'margin-left 0.3s ease';
             }
+            if (header) {
+                header.style.marginLeft = '0';
+            }
         } else {
             sidebar.style.left = '0px';
             overlay.style.display = 'block';
-            if (mainContent) {
-                mainContent.style.marginLeft = '250px';
-                mainContent.style.transition = 'margin-left 0.3s ease';
+            body.classList.add('sidebar-open');
+            if (window.innerWidth > 768) {
+                if (mainContent) {
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.transition = 'margin-left 0.3s ease';
+                }
+                if (header) {
+                    header.style.marginLeft = '250px';
+                }
             }
             updateSidebarContent();
         }
