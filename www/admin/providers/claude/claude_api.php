@@ -159,10 +159,19 @@ try {
                     $logger->debug('INSERT executed', ['result' => $result]);
                 }
                 
+                // Clear any Redis cache
+                try {
+                    $cache = \ZeroAI\Core\CacheManager::getInstance();
+                    $cache->delete('claude_system_prompt');
+                    $logger->debug('Redis cache cleared for system prompt');
+                } catch (\Exception $cacheError) {
+                    $logger->warning('Failed to clear cache', ['error' => $cacheError->getMessage()]);
+                }
+                
                 // Verify save
                 $verify = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
                 $saved = ($verify[0]['content'] ?? '') === $content;
-                $logger->info('System prompt saved', ['saved_length' => strlen($verify[0]['content'] ?? ''), 'matches' => $saved]);
+                $logger->info('System prompt saved', ['saved_length' => strlen($verify[0]['content'] ?? ''), 'matches' => $saved, 'verify_content' => substr($verify[0]['content'] ?? '', 0, 100)]);
                 
                 echo json_encode(['success' => true]);
             } catch (\Exception $e) {
