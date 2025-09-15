@@ -1,9 +1,24 @@
 <?php
 session_start();
 
+// Force error logging
+ini_set('log_errors', 1);
+ini_set('error_log', '/app/logs/claude_debug.log');
+
+// Create log directory
+if (!is_dir('/app/logs')) {
+    mkdir('/app/logs', 0755, true);
+}
+
+// Log start
+file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [START] Claude API started\n", FILE_APPEND);
+
 try {
+    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [INFO] Loading autoload\n", FILE_APPEND);
     require_once __DIR__ . '/../src/autoload.php';
+    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [INFO] Autoload loaded successfully\n", FILE_APPEND);
 } catch (Exception $e) {
+    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] Autoload failed: " . $e->getMessage() . "\n", FILE_APPEND);
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'System error']);
     exit;
@@ -109,21 +124,10 @@ try {
     }
     
 } catch (\Exception $e) {
-    // Log Claude errors using proper Logger class
-    try {
-        $logger = \ZeroAI\Core\Logger::getInstance();
-        $logger->logClaude('Claude API Error: ' . $e->getMessage(), [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'action' => $input['action'] ?? 'unknown',
-            'user' => $_SESSION['admin_user'] ?? 'unknown',
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]);
-    } catch (Exception $logError) {
-        // Fallback if logger fails
-        error_log('Claude API Error: ' . $e->getMessage());
-    }
+    // Direct logging to catch all errors
+    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] Claude API Exception: " . $e->getMessage() . "\n", FILE_APPEND);
+    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] File: " . $e->getFile() . " Line: " . $e->getLine() . "\n", FILE_APPEND);
+    file_put_contents('/app/logs/claude_debug.log', date('Y-m-d H:i:s') . " [ERROR] Trace: " . $e->getTraceAsString() . "\n", FILE_APPEND);
     
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
