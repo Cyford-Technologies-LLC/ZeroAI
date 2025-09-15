@@ -1,4 +1,20 @@
 services:
+  redis-test:
+    image: redis:7-alpine
+    container_name: zeroai_redis-test
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - redis_test_data:/data
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
   zeroai-test:
     build: .
     container_name: zeroai_api-test
@@ -6,33 +22,34 @@ services:
       - "3940:3939"
       - "334:333"
     volumes:
-      - ./src:/app/src
-      - ./API:/app/API
-      - ./run:/app/run
+      - ./src:/app/src:ro
+      - ./API:/app/API:ro
+      - ./run:/app/run:ro
       - ./config:/app/config
-      - ./examples:/app/examples
+      - ./examples:/app/examples:ro
       - ./logs:/app/logs
       - ./www:/app/www
       - ./data:/app/data
-      - ./scripts:/app/scripts
+      - ./scripts:/app/scripts:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama-test:11434
       - PHP_OPCACHE_ENABLE=1
       - PHP_OPCACHE_MEMORY=128
-      - REDIS_HOST=127.0.0.1
+      - REDIS_HOST=redis-test
       - REDIS_PORT=6379
     env_file:
       - .env
     depends_on:
       - ollama-test
+      - redis-test
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
         reservations:
-          memory: 512M
+          memory: 1G
 
   peer-test:
     build: .
@@ -40,34 +57,35 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ./src:/app/src
-      - ./API:/app/API
-      - ./run:/app/run
+      - ./src:/app/src:ro
+      - ./API:/app/API:ro
+      - ./run:/app/run:ro
       - ./config:/app/config
-      - ./examples:/app/examples
+      - ./examples:/app/examples:ro
       - ./logs:/app/logs
-      - ./scripts:/app/scripts
+      - ./data:/app/data
+      - ./scripts:/app/scripts:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama-test:11434
-      - REDIS_HOST=127.0.0.1
+      - REDIS_HOST=redis-test
       - REDIS_PORT=6379
     env_file:
       - .env
     command: >
       bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
-      redis-server --daemonize yes && 
       python3 /app/scripts/cron_runner.py & 
-      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload"
+      /app/venv/bin/gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 1 --preload --timeout 300"
     depends_on:
       - ollama-test
+      - redis-test
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
         reservations:
-          memory: 256M
+          memory: 512M
 
   ollama-test:
     image: ollama/ollama:latest
@@ -86,3 +104,4 @@ services:
 
 volumes:
   ollama_test_data:
+  redis_test_data:

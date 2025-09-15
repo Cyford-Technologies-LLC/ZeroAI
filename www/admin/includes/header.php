@@ -103,6 +103,7 @@ $currentPage = $currentPage ?? '';
             </nav>
             <div class="user-info">
                 <span>Welcome, <?= $_SESSION['admin_user'] ?? 'Admin' ?>!</span>
+                <a href="/" target="_blank" style="background: #28a745; padding: 6px 12px; border-radius: 4px; margin-right: 10px;">🌐 Frontend</a>
                 <a href="/admin/logout.php" style="background: #dc3545; padding: 6px 12px; border-radius: 4px;">Logout</a>
             </div>
         </div>
