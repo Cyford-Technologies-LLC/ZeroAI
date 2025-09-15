@@ -20,8 +20,23 @@ include __DIR__ . '/includes/header.php';
 <h1>💬 Claude Direct Chat</h1>
 
 <div class="card">
+    <h3>Direct Claude AI Chat</h3>
+    <p>Chat directly with Claude using your configured personality and ZeroAI context. Use @file, @list, @search commands to share project files.</p>
+    
+    <div style="margin-bottom: 15px;">
+        <button onclick="togglePromptEditor()" class="btn-warning" style="margin-bottom: 10px;">✏️ Edit System Prompt</button>
+        <div id="prompt-editor" style="display: none;">
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">📝 <strong>Note:</strong> Commands (@file, @create, @edit, etc.) are automatically added to Claude's prompt even if not included here.</p>
+            <textarea id="system-prompt" rows="8" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder="Loading system prompt..."></textarea>
+            <div style="margin-top: 10px;">
+                <button onclick="saveSystemPrompt()" class="btn-success">Save Prompt</button>
+                <button onclick="resetSystemPrompt()" class="btn-danger">Reset to Default</button>
+                <button onclick="togglePromptEditor()" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h3>Chat with Claude</h3>
         <div>
             <select id="claude-mode" onchange="updateMode()">
                 <option value="chat">Chat Mode</option>
@@ -190,6 +205,65 @@ document.getElementById('user-input').addEventListener('keydown', function(e) {
         sendMessage();
     }
 });
+
+// System prompt editing functions
+let currentSystemPrompt = '';
+
+function togglePromptEditor() {
+    const editor = document.getElementById('prompt-editor');
+    if (editor.style.display === 'none') {
+        editor.style.display = 'block';
+        loadSystemPrompt();
+    } else {
+        editor.style.display = 'none';
+    }
+}
+
+async function loadSystemPrompt() {
+    try {
+        const response = await fetch('/admin/get_system_prompt.php');
+        const result = await response.json();
+        if (result.success) {
+            currentSystemPrompt = result.prompt;
+            document.getElementById('system-prompt').value = result.prompt;
+        }
+    } catch (error) {
+        console.error('Failed to load system prompt:', error);
+    }
+}
+
+async function saveSystemPrompt() {
+    const prompt = document.getElementById('system-prompt').value;
+    try {
+        const response = await fetch('/admin/save_system_prompt.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt: prompt})
+        });
+        const result = await response.json();
+        if (result.success) {
+            addSystemMessage('✅ System prompt updated successfully');
+            togglePromptEditor();
+        } else {
+            addSystemMessage('❌ Failed to save prompt: ' + result.error);
+        }
+    } catch (error) {
+        addSystemMessage('❌ Error saving prompt: ' + error.message);
+    }
+}
+
+function resetSystemPrompt() {
+    if (confirm('Reset to default system prompt? This will overwrite your custom prompt.')) {
+        fetch('/admin/reset_system_prompt.php', {method: 'POST'})
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    loadSystemPrompt();
+                    addSystemMessage('✅ System prompt reset to default');
+                }
+            });
+    }
+}
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

@@ -9,9 +9,9 @@ chmod +x /usr/local/bin/git
 
 # Create directories and fix ownership (AFTER volumes are mounted)
 mkdir -p /app/data /app/logs /app/knowledge/internal_crew/agent_learning/self/claude/sessions_data
-# Skip .env file (read-only) and chown specific directories
-chown -R www-data:www-data /app/data /app/logs /app/knowledge /app/www /app/src /app/API /app/run /app/config /app/examples /app/scripts
-chmod -R 775 /app/data /app/logs /app/knowledge /app/www
+# Only chown writable directories, skip mounted volumes that may be read-only
+chown -R www-data:www-data /app/data /app/logs /app/knowledge 2>/dev/null || true
+chmod -R 775 /app/data /app/logs /app/knowledge 2>/dev/null || true
 
 # Start Redis
 echo "Starting Redis..."
