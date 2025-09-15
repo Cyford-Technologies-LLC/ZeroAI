@@ -193,29 +193,36 @@ class ClaudeProvider {
     }
     
     private function getSystemPrompt() {
+        $logger = \ZeroAI\Core\Logger::getInstance();
         try {
             $db = \ZeroAI\Core\DatabaseManager::getInstance();
             $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
             $result = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
             
+            $logger->debug('System prompt DB check', ['result_count' => count($result), 'has_content' => !empty($result[0]['content'] ?? '')]);
+            
             if (!empty($result) && !empty($result[0]['content'])) {
                 $prompt = $result[0]['content'];
-                // Return custom prompt as-is (don't add commands to prevent execution)
+                $logger->info('Using custom system prompt', ['length' => strlen($prompt)]);
                 return $prompt;
             }
             
             // If no custom prompt, try to load default from file
             $defaultPromptFile = __DIR__ . '/../../../admin/providers/claude/claude_system_prompt.txt';
+            $logger->debug('Checking default file', ['path' => $defaultPromptFile, 'exists' => file_exists($defaultPromptFile)]);
+            
             if (file_exists($defaultPromptFile)) {
                 $defaultPrompt = file_get_contents($defaultPromptFile);
                 if ($defaultPrompt) {
+                    $logger->info('Using default file prompt', ['length' => strlen($defaultPrompt)]);
                     return $defaultPrompt;
                 }
             }
         } catch (\Exception $e) {
-            // Fall back to default
+            $logger->error('System prompt error', ['error' => $e->getMessage()]);
         }
         
+        $logger->warning('Using fallback system prompt');
         return 'You are Claude, integrated into ZeroAI. You have access to tools via @commands when users request them.';
     }
     
