@@ -27,3 +27,5 @@ class CommandPermission {
         return "[RESTRICTED] The @$command command is not allowed in " . strtoupper($mode) . " mode.";
     }
 }
+
+

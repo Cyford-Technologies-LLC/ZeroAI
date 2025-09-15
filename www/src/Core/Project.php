@@ -30,3 +30,5 @@ class Project {
         return $this->db->update('projects', $data, ['id' => $id]);
     }
 }
+
+

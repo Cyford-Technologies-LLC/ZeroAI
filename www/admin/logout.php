@@ -11,3 +11,5 @@ $auth->logout();
 
 header('Location: /admin/login.php');
 exit;
+
+

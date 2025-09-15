@@ -86,13 +86,13 @@ class ChatAPI {
         $sql = "SELECT prompt FROM system_prompts WHERE id = 1 ORDER BY created_at DESC LIMIT 1";
         $result = \SQLiteManager::executeSQL($sql);
         
-        if (!empty($result[0]['data'])) {
-            return $result[0]['data'][0]['prompt'];
+        if (!empty($result)) {
+            return $result[0]['prompt'];
         }
         
         require_once __DIR__ . '/../../api/init_claude_prompt.php';
         $result = \SQLiteManager::executeSQL($sql);
-        return $result[0]['data'][0]['prompt'];
+        return $result[0]['prompt'];
     }
     
     public function getProviders() {
@@ -120,3 +120,5 @@ class ChatAPI {
         exit;
     }
 }
+
+

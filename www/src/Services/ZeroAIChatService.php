@@ -16,7 +16,7 @@ class ZeroAIChatService {
     }
     
     private function initChatTables() {
-        $this->db->executeSQL("
+        $this->db->query("
             CREATE TABLE IF NOT EXISTS chat_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 agent_id INTEGER,
@@ -42,7 +42,7 @@ class ZeroAIChatService {
     public function startChatSession($agentId, $userId, $sessionName = null) {
         $sessionName = $sessionName ?: 'Chat with Agent ' . $agentId;
         
-        $result = $this->db->executeSQL(
+        $result = $this->db->query(
             "INSERT INTO chat_sessions (agent_id, user_id, session_name) VALUES (?, ?, ?)",
             [$agentId, $userId, $sessionName]
         );
@@ -56,7 +56,7 @@ class ZeroAIChatService {
             throw new \Exception("Chat session not found");
         }
         
-        $result = $this->db->executeSQL(
+        $result = $this->db->query(
             "INSERT INTO chat_messages (session_id, sender, message) VALUES (?, 'user', ?)",
             [$sessionId, $message]
         );
@@ -65,7 +65,7 @@ class ZeroAIChatService {
         $history = $this->getChatHistory($sessionId, 10);
         $response = $this->executeAgentChat($session, $message, $history);
         
-        $this->db->executeSQL(
+        $this->db->query(
             "UPDATE chat_messages SET response = ?, tokens_used = ? WHERE id = ?",
             [$response['message'], $response['tokens'], $messageId]
         );
@@ -202,15 +202,15 @@ except Exception as e:
     }
     
     public function getChatHistory($sessionId, $limit = 50) {
-        $result = $this->db->executeSQL(
+        $result = $this->db->query(
             "SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at DESC LIMIT ?",
             [$sessionId, $limit]
         );
-        return array_reverse($result[0]['data'] ?? []);
+        return array_reverse($result ?? []);
     }
     
     public function getUserSessions($userId) {
-        $result = $this->db->executeSQL("
+        $result = $this->db->query("
             SELECT cs.*, a.name as agent_name, a.role as agent_role,
                    COUNT(cm.id) as message_count,
                    MAX(cm.created_at) as last_message
@@ -222,7 +222,7 @@ except Exception as e:
             ORDER BY cs.created_at DESC
         ", [$userId]);
         
-        return $result[0]['data'] ?? [];
+        return $result ?? [];
     }
     
     public function getAvailableAgents() {
@@ -230,13 +230,15 @@ except Exception as e:
     }
     
     public function getSession($sessionId) {
-        $result = $this->db->executeSQL("
+        $result = $this->db->query("
             SELECT cs.*, a.name as agent_name, a.role as agent_role
             FROM chat_sessions cs
             JOIN agents a ON cs.agent_id = a.id
             WHERE cs.id = ?
         ", [$sessionId]);
         
-        return $result[0]['data'][0] ?? null;
+        return $result[0] ?? null;
     }
 }
+
+

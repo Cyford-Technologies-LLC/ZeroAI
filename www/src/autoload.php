@@ -16,3 +16,5 @@ spl_autoload_register(function ($class) {
 
 // Load common classes
 require_once __DIR__ . '/../config/database.php';
+
+

@@ -127,3 +127,5 @@ setInterval(loadMonitoringData, 30000);
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
+
+

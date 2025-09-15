@@ -24,3 +24,5 @@ if (file_exists('/app/logs/claude_debug.log')) {
     echo "No debug log found\n";
 }
 ?>
+
+

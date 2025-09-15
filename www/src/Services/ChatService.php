@@ -42,3 +42,5 @@ class ChatService {
         return $local->chat($message, $model, $autonomous, $history);
     }
 }
+
+

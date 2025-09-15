@@ -30,3 +30,5 @@ echo json_encode([
     'claude_response' => json_decode($response, true)
 ]);
 ?>
+
+

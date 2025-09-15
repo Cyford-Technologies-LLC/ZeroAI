@@ -27,7 +27,7 @@ foreach ($databases as $dbName) {
     
     if ($hasUsersTable) {
         echo "Users table found. Current users:\n";
-        $users = $db->executeSQL("SELECT id, username, role, created_at FROM users", $dbName);
+        $users = $db->query("SELECT id, username, role, created_at FROM users", $dbName);
         if (!empty($users[0]['data'])) {
             foreach ($users[0]['data'] as $user) {
                 echo "  ID: {$user['id']}, Username: {$user['username']}, Role: {$user['role']}\n";
@@ -40,3 +40,4 @@ foreach ($databases as $dbName) {
     }
 }
 ?>
+

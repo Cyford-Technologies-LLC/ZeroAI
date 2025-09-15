@@ -109,3 +109,5 @@ $models = SQLiteManager::executeSQL("SELECT * FROM claude_models ORDER BY is_def
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
+
+

@@ -37,3 +37,5 @@ class InputValidator {
         return str_replace(["\n", "\r"], '', $input);
     }
 }
+
+

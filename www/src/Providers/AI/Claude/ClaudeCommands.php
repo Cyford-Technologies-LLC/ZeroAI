@@ -145,14 +145,14 @@ class ClaudeCommands {
     private function listAgents() {
         try {
             $db = new \ZeroAI\Core\DatabaseManager();
-            $result = $db->executeSQL("SELECT * FROM agents ORDER BY id");
+            $result = $db->query("SELECT * FROM agents ORDER BY id");
             
             $output = "\n\n🤖 Agents:\n";
-            if (!empty($result[0]['data'])) {
-                foreach ($result[0]['data'] as $a) {
+            if (!empty($result)) {
+                foreach ($result as $a) {
                     $output .= "ID: {$a['id']} | Role: {$a['role']} | Goal: {$a['goal']}\n";
                 }
-                $GLOBALS['executedCommands'][] = ['command' => 'agents', 'output' => count($result[0]['data']) . ' agents listed'];
+                $GLOBALS['executedCommands'][] = ['command' => 'agents', 'output' => count($result) . ' agents listed'];
             } else {
                 $output .= "No agents found\n";
                 $GLOBALS['executedCommands'][] = ['command' => 'agents', 'output' => 'No agents found'];
@@ -233,3 +233,5 @@ class ClaudeCommands {
         }
     }
 }
+
+

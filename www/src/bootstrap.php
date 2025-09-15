@@ -64,3 +64,5 @@ ini_set('expose_php', 0);
 ini_set('display_errors', getenv('ENVIRONMENT') === 'development' ? 1 : 0);
 ini_set('log_errors', 1);
 ini_set('error_log', '/app/logs/php_errors.log');
+
+

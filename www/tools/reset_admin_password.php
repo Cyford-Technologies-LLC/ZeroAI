@@ -6,7 +6,7 @@ use ZeroAI\Core\DatabaseManager;
 $db = DatabaseManager::getInstance();
 
 // Get current admin user
-$users = $db->executeSQL("SELECT id, username, password FROM users WHERE username = 'admin'");
+$users = $db->query("SELECT id, username, password FROM users WHERE username = 'admin'");
 
 if (!empty($users[0]['data'])) {
     $admin = $users[0]['data'][0];
@@ -14,7 +14,7 @@ if (!empty($users[0]['data'])) {
     
     // Reset password to 'admin123'
     $newPassword = password_hash('admin123', PASSWORD_DEFAULT);
-    $result = $db->executeSQL("UPDATE users SET password = '$newPassword' WHERE id = {$admin['id']}");
+    $result = $db->query("UPDATE users SET password = '$newPassword' WHERE id = {$admin['id']}");
     
     if (!isset($result[0]['error'])) {
         echo "Password reset successfully!\n";
@@ -27,3 +27,4 @@ if (!empty($users[0]['data'])) {
     echo "No admin user found\n";
 }
 ?>
+

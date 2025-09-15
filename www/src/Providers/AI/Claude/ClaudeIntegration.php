@@ -264,10 +264,13 @@ class ClaudeIntegration extends BaseAIProvider {
         
         $claudeResponse = $decoded['content'][0]['text'];
         
+        // Format Claude's response with proper code blocks
+        $claudeResponse = $this->formatResponse($claudeResponse);
+        
         // Process Claude's commands and show results
         $claudeToolResults = $this->processTools($claudeResponse);
         if ($claudeToolResults) {
-            $claudeResponse .= "\n\nTool Results:\n" . $claudeToolResults;
+            $claudeResponse .= "\n\n" . $claudeToolResults;
         }
         
         // Track token usage by model
@@ -278,6 +281,22 @@ class ClaudeIntegration extends BaseAIProvider {
             'usage' => $decoded['usage'] ?? [],
             'model' => $decoded['model'] ?? $model
         ];
+    }
+    
+    private function formatResponse($response) {
+        // Format code blocks
+        $response = preg_replace('/```([a-zA-Z]*\n[^`]+)```/', '<pre><code>$1</code></pre>', $response);
+        
+        // Format tool results sections
+        $response = preg_replace('/Tool Results:\n([^\n]+(?:\n[^\n]+)*)/m', '<div class="tool-results"><strong>🔧 Tool Results:</strong><br>$1</div>', $response);
+        
+        // Format file paths
+        $response = preg_replace('/📄 File: ([^\n]+)/', '<strong>📄 File:</strong> <code>$1</code>', $response);
+        
+        // Format directory listings
+        $response = preg_replace('/📁 Directory: ([^\n]+)/', '<strong>📁 Directory:</strong> <code>$1</code>', $response);
+        
+        return $response;
     }
     
     private function processTools($message) {
@@ -529,3 +548,5 @@ class ClaudeIntegration extends BaseAIProvider {
     }
 }
 ?>
+
+

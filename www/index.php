@@ -103,3 +103,4 @@ if (isset($_GET['url']) || strpos($_SERVER['REQUEST_URI'], '404') !== false) {
     </footer>
 </body>
 </html>
+

@@ -261,3 +261,4 @@ document.getElementById('chatModal').addEventListener('click', function(e) {
 </script>
 
 <?php include __DIR__ . '/../admin/includes/footer.php'; ?>
+

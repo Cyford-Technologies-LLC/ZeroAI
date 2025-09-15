@@ -9,3 +9,5 @@ $currentPage = 'chat';
 
 $chat = new ChatAdmin($pageTitle, $currentPage);
 $chat->render();
+
+

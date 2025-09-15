@@ -11,7 +11,7 @@ class CronManager {
     }
     
     private function initDatabase() {
-        $this->db->executeSQL("CREATE TABLE IF NOT EXISTS cron_jobs (
+        $this->db->query("CREATE TABLE IF NOT EXISTS cron_jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             command TEXT NOT NULL,
@@ -25,25 +25,25 @@ class CronManager {
     
     public function addJob($name, $command, $schedule) {
         $nextRun = $this->calculateNextRun($schedule);
-        return $this->db->executeSQL(
+        return $this->db->query(
             "INSERT INTO cron_jobs (name, command, schedule, next_run) VALUES (?, ?, ?, ?)",
             [$name, $command, $schedule, $nextRun]
         );
     }
     
     public function getJobs() {
-        $result = $this->db->executeSQL("SELECT * FROM cron_jobs ORDER BY next_run");
-        return $result[0]['data'] ?? [];
+        $result = $this->db->query("SELECT * FROM cron_jobs ORDER BY next_run");
+        return $result ?? [];
     }
     
     public function runDueJobs() {
         $now = date('Y-m-d H:i:s');
-        $result = $this->db->executeSQL(
+        $result = $this->db->query(
             "SELECT * FROM cron_jobs WHERE enabled = 1 AND next_run <= ?",
             [$now]
         );
         
-        $jobs = $result[0]['data'] ?? [];
+        $jobs = $result ?? [];
         foreach ($jobs as $job) {
             $this->executeJob($job);
         }
@@ -53,7 +53,7 @@ class CronManager {
         $output = shell_exec($job['command'] . ' 2>&1');
         $nextRun = $this->calculateNextRun($job['schedule']);
         
-        $this->db->executeSQL(
+        $this->db->query(
             "UPDATE cron_jobs SET last_run = ?, next_run = ? WHERE id = ?",
             [date('Y-m-d H:i:s'), $nextRun, $job['id']]
         );
@@ -76,14 +76,16 @@ class CronManager {
     }
     
     public function toggleJob($id, $enabled) {
-        return $this->db->executeSQL(
+        return $this->db->query(
             "UPDATE cron_jobs SET enabled = ? WHERE id = ?",
             [$enabled ? 1 : 0, $id]
         );
     }
     
     public function deleteJob($id) {
-        return $this->db->executeSQL("DELETE FROM cron_jobs WHERE id = ?", [$id]);
+        return $this->db->query("DELETE FROM cron_jobs WHERE id = ?", [$id]);
     }
 }
 ?>
+
+

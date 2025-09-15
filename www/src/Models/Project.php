@@ -40,9 +40,9 @@ class Project {
         $project = $this->findById($id);
         if (!$project) return null;
         
-        $tasks = $this->db->executeSQL("SELECT COUNT(*) as total, status FROM tasks WHERE project_id = ? GROUP BY status", [$id]);
-        $bugs = $this->db->executeSQL("SELECT COUNT(*) as count FROM bugs WHERE project_id = ? AND status != 'closed'", [$id]);
-        $milestones = $this->db->executeSQL("SELECT COUNT(*) as total, status FROM milestones WHERE project_id = ? GROUP BY status", [$id]);
+        $tasks = $this->db->query("SELECT COUNT(*) as total, status FROM tasks WHERE project_id = ? GROUP BY status", [$id]);
+        $bugs = $this->db->query("SELECT COUNT(*) as count FROM bugs WHERE project_id = ? AND status != 'closed'", [$id]);
+        $milestones = $this->db->query("SELECT COUNT(*) as total, status FROM milestones WHERE project_id = ? GROUP BY status", [$id]);
         
         return [
             'tasks' => $tasks,
@@ -55,3 +55,5 @@ class Project {
         return strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', $name));
     }
 }
+
+

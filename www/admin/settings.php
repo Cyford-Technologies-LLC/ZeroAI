@@ -60,3 +60,5 @@ include __DIR__ . '/includes/header.php';
         <p><strong>Error Display:</strong> <?= $systemInfo['error_display'] ?></p>
     </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>
+
+

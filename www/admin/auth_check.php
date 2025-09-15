@@ -11,3 +11,5 @@ use ZeroAI\Services\AuthService;
 
 $auth = new AuthService();
 $auth->requireAuth();
+
+

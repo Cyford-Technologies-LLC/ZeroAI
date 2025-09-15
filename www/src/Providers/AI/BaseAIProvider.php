@@ -66,3 +66,5 @@ abstract class BaseAIProvider
         $stmt->execute();
     }
 }
+
+

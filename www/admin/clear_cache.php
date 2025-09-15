@@ -42,3 +42,5 @@ switch ($type) {
 }
 
 echo json_encode(['success' => $success]);
+
+

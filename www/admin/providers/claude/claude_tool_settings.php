@@ -25,10 +25,10 @@ if ($_POST) {
         $db = \ZeroAI\Core\DatabaseManager::getInstance();
         
         // Create table if not exists
-        $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+        $db->query("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
         
         // Update or insert setting
-        $db->executeSQL("INSERT OR REPLACE INTO claude_settings (setting_name, setting_value, updated_at) VALUES (?, ?, datetime('now'))", ['unified_tools', $unifiedTools]);
+        $db->query("INSERT OR REPLACE INTO claude_settings (setting_name, setting_value, updated_at) VALUES (?, ?, datetime('now'))", ['unified_tools', $unifiedTools]);
         
         $message = "Settings saved successfully!";
     } catch (Exception $e) {
@@ -41,7 +41,7 @@ $currentSetting = 'false';
 try {
     require_once __DIR__ . '/../bootstrap.php';
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
-    $result = $db->executeSQL("SELECT setting_value FROM claude_settings WHERE setting_name = 'unified_tools'");
+    $result = $db->query("SELECT setting_value FROM claude_settings WHERE setting_name = 'unified_tools'");
     if (!empty($result)) {
         $currentSetting = $result[0]['setting_value'];
     }
@@ -112,3 +112,5 @@ try {
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 ?>
+
+

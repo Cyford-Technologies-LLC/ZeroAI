@@ -141,3 +141,5 @@ class AIManager {
         return min($score, 10);
     }
 }
+
+

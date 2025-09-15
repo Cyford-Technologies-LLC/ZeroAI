@@ -49,3 +49,5 @@ class ClaudeMemoryInit {
         return ['success' => true, 'message' => 'Claude memory database initialized'];
     }
 }
+
+

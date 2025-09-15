@@ -8,7 +8,7 @@ try {
     
     switch ($action) {
         case 'summary':
-            $result = $db->executeSQL('
+            $result = $db->query('
                 SELECT 
                     provider,
                     model,
@@ -33,7 +33,7 @@ try {
             break;
             
         case 'today':
-            $result = $db->executeSQL('
+            $result = $db->query('
                 SELECT 
                     provider,
                     model,
@@ -56,7 +56,7 @@ try {
             break;
             
         case 'recent':
-            $result = $db->executeSQL('
+            $result = $db->query('
                 SELECT * FROM ai_usage 
                 ORDER BY created_at DESC 
                 LIMIT 50
@@ -77,3 +77,5 @@ try {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
+

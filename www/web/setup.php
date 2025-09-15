@@ -68,3 +68,4 @@ try {
 
 echo "\n🎉 CRM setup complete! Visit /web/dashboard.php\n";
 ?>
+

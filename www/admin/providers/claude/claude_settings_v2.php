@@ -22,3 +22,5 @@ $currentPage = 'claude_settings';
 
 $claudeSettings = new ClaudeSettingsAdmin($pageTitle, $currentPage);
 $claudeSettings->render();
+
+

@@ -12,3 +12,4 @@ $content = str_replace(
 file_put_contents('/app/www/api/claude_chat.php', $content);
 echo "Fixed missing brace in claude_chat.php\n";
 ?>
+

@@ -67,3 +67,5 @@ class Chat {
         $this->contexts[$name] = $context;
     }
 }
+
+

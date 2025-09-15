@@ -51,3 +51,5 @@ class LocalCommands {
         return "\n❌ Ollama not available\n";
     }
 }
+
+

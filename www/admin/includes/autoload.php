@@ -39,3 +39,5 @@ set_exception_handler(function($exception) use ($logger) {
         'trace' => $exception->getTraceAsString()
     ]);
 });
+
+

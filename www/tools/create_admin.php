@@ -8,7 +8,7 @@ use ZeroAI\Core\InputValidator;
 $db = DatabaseManager::getInstance();
 
 // Create users table if not exists
-$db->executeSQL("
+$db->query("
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -36,7 +36,7 @@ if (strlen($adminPassword) < 8) {
 }
 
 // Delete existing admin user
-$db->executeSQL("DELETE FROM users WHERE username = ?", [$adminUsername]);
+$db->query("DELETE FROM users WHERE username = ?", [$adminUsername]);
 
 // Create new admin user with secure password hashing
 $hashedPassword = password_hash($adminPassword, PASSWORD_ARGON2ID, [
@@ -45,7 +45,7 @@ $hashedPassword = password_hash($adminPassword, PASSWORD_ARGON2ID, [
     'threads' => 3          // 3 threads
 ]);
 
-$result = $db->executeSQL(
+$result = $db->query(
     "INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')",
     [$adminUsername, $hashedPassword]
 );
@@ -64,7 +64,7 @@ if (!isset($result[0]['error'])) {
 
 // Show all users (without sensitive data)
 echo "\nCurrent users:\n";
-$users = $db->executeSQL("SELECT id, username, role, created_at FROM users");
+$users = $db->query("SELECT id, username, role, created_at FROM users");
 if (!empty($users[0]['data'])) {
     foreach ($users[0]['data'] as $user) {
         echo "ID: {$user['id']}, Username: {$user['username']}, Role: {$user['role']}\n";
@@ -86,3 +86,4 @@ function generateSecurePassword($length = 16) {
     return $password;
 }
 ?>
+

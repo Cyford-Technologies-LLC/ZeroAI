@@ -51,3 +51,5 @@ $webUser = InputValidator::sanitizeForOutput($_SESSION['web_user'] ?? 'Unknown')
     </div>
 </body>
 </html>
+
+

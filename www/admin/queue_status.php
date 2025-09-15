@@ -96,3 +96,5 @@ setInterval(() => location.reload(), 30000);
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
+
+

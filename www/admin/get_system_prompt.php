@@ -7,13 +7,13 @@ try {
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     // Check if system_prompts table exists, create if not
-    $db->executeSQL("CREATE TABLE IF NOT EXISTS system_prompts (
+    $db->query("CREATE TABLE IF NOT EXISTS system_prompts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         prompt TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
     
-    $result = $db->executeSQL("SELECT prompt FROM system_prompts ORDER BY created_at DESC LIMIT 1");
+    $result = $db->query("SELECT prompt FROM system_prompts ORDER BY created_at DESC LIMIT 1");
     
     if ($result && count($result) > 0) {
         echo json_encode(['success' => true, 'prompt' => $result[0]['prompt']]);
@@ -26,3 +26,5 @@ try {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
+

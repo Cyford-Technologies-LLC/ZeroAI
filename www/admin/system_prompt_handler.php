@@ -10,12 +10,12 @@ try {
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     if ($action === 'get') {
-        $result = $db->executeSQL("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1", 'claude');
+        $result = $db->query("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1");
         
-        if (!empty($result[0]['data'])) {
+        if (!empty($result)) {
             echo json_encode([
                 'success' => true,
-                'prompt' => $result[0]['data'][0]['prompt']
+                'prompt' => $result[0]['prompt']
             ]);
         } else {
             echo json_encode([
@@ -33,11 +33,11 @@ try {
         }
         
         // Create table if not exists
-        $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'claude');
+        $db->query("CREATE TABLE IF NOT EXISTS claude_prompts (id INTEGER PRIMARY KEY AUTOINCREMENT, prompt TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'claude');
         
         // Use raw SQL since DatabaseManager parameter binding is broken
         $escapedPrompt = str_replace("'", "''", $prompt);
-        $db->executeSQL("INSERT INTO claude_prompts (prompt) VALUES ('$escapedPrompt')", 'claude');
+        $db->query("INSERT INTO claude_prompts (prompt) VALUES ('$escapedPrompt')", 'claude');
         
         echo json_encode(['success' => true, 'message' => 'System prompt saved successfully']);
     }
@@ -49,3 +49,5 @@ try {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
+

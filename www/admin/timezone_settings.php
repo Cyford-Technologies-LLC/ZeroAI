@@ -13,10 +13,10 @@ if ($_POST) {
     }
     
     // Create settings table if not exists
-    $db->executeSQL("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+    $db->query("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
     
     // Save timezone setting using prepared statement
-    $db->executeSQL("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', ?)", [$timezone]);
+    $db->query("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('timezone', ?)", [$timezone]);
     
     // Apply timezone immediately
     date_default_timezone_set($timezone);
@@ -28,8 +28,8 @@ if ($_POST) {
 }
 
 // Get current timezone setting
-$result = $db->executeSQL("SELECT value FROM system_settings WHERE key = 'timezone'", 'main');
-$currentTimezone = $result[0]['data'][0]['value'] ?? 'America/New_York';
+$result = $db->query("SELECT value FROM system_settings WHERE key = 'timezone'");
+$currentTimezone = $result[0]['value'] ?? 'America/New_York';
 
 // Apply current timezone
 date_default_timezone_set($currentTimezone);
@@ -84,3 +84,5 @@ date_default_timezone_set($currentTimezone);
     <p><a href="index.php">← Back to Admin</a></p>
 </body>
 </html>
+
+

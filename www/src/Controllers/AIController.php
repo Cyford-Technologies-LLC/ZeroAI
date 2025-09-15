@@ -109,3 +109,5 @@ class AIController extends BaseController {
         return $this->jsonResponse(['success' => true, 'data' => ['models' => $models]]);
     }
 }
+
+

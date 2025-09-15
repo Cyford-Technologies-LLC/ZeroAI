@@ -15,7 +15,7 @@ if (file_exists($sqlFile)) {
     
     try {
         // Create table with correct structure first
-        $db->executeSQL("CREATE TABLE IF NOT EXISTS agents (
+        $db->query("CREATE TABLE IF NOT EXISTS agents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             role TEXT NOT NULL,
@@ -52,7 +52,7 @@ if (file_exists($sqlFile)) {
         
         foreach ($columns as $column) {
             try {
-                $db->executeSQL("ALTER TABLE agents ADD COLUMN {$column}");
+                $db->query("ALTER TABLE agents ADD COLUMN {$column}");
             } catch (Exception $e) {
                 // Column already exists, ignore
             }
@@ -63,13 +63,13 @@ if (file_exists($sqlFile)) {
         
         foreach ($statements as $statement) {
             if (!empty($statement) && !str_starts_with($statement, '--')) {
-                $db->executeSQL($statement);
+                $db->query($statement);
             }
         }
         
         // Fill in CrewAI defaults for any missing values
-        $db->executeSQL("UPDATE agents SET 
-            llm_model = COALESCE(llm_model, 'auto'),
+        $db->query("UPDATE agents SET 
+            llm_model = COALESCE(llm_model),
             verbose = COALESCE(verbose, 0),
             allow_delegation = COALESCE(allow_delegation, 1),
             allow_code_execution = COALESCE(allow_code_execution, 0),
@@ -85,7 +85,7 @@ if (file_exists($sqlFile)) {
             WHERE id > 0");
         
         // Count imported agents
-        $count = $db->executeSQL("SELECT COUNT(*) as count FROM agents");
+        $count = $db->query("SELECT COUNT(*) as count FROM agents");
         $agentCount = $count[0]['count'] ?? 0;
         
         $message = "✅ Agents imported successfully! Total agents: {$agentCount}";
@@ -107,3 +107,5 @@ if ($message) {
 header("Location: agents.php");
 exit;
 ?>
+
+

@@ -38,3 +38,5 @@ if (file_exists('/tmp/claude_debug.log')) {
     }
 }
 ?>
+
+

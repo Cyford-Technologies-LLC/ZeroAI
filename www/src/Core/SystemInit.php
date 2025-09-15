@@ -113,7 +113,7 @@ Respond as Claude with your configured personality and expertise. Be helpful, in
                 ('Research Crew', 'Research and analysis team', 'hierarchical', '[1, 3]');
             ";
             
-            $db->executeSQL($sql);
+            $db->query($sql);
             
             $system->getLogger()->info('System initialized successfully');
             
@@ -123,3 +123,5 @@ Respond as Claude with your configured personality and expertise. Be helpful, in
         }
     }
 }
+
+

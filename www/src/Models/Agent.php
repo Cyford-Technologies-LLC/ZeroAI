@@ -10,7 +10,7 @@ class Agent extends BaseModel {
     }
     
     protected function initTable() {
-        $this->executeSQL("
+        $this->query("
             CREATE TABLE IF NOT EXISTS agents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -24,13 +24,13 @@ class Agent extends BaseModel {
     }
     
     public function getActiveAgents(): array {
-        $result = $this->executeSQL("SELECT * FROM agents WHERE status = 'active'");
-        return $result[0]['data'] ?? [];
+        $result = $this->query("SELECT * FROM agents WHERE status = 'active'");
+        return $result ?? [];
     }
     
     public function getAgentStats(): array {
-        $total = $this->executeSQL("SELECT COUNT(*) as count FROM agents");
-        $active = $this->executeSQL("SELECT COUNT(*) as count FROM agents WHERE status = 'active'");
+        $total = $this->query("SELECT COUNT(*) as count FROM agents");
+        $active = $this->query("SELECT COUNT(*) as count FROM agents WHERE status = 'active'");
         
         return [
             'total' => $total[0]['data'][0]['count'] ?? 0,
@@ -38,3 +38,5 @@ class Agent extends BaseModel {
         ];
     }
 }
+
+

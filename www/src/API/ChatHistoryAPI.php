@@ -24,3 +24,5 @@ class ChatHistoryAPI {
         echo json_encode(['success' => true]);
     }
 }
+
+

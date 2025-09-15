@@ -14,3 +14,4 @@ echo "<h2>After Processing:</h2><pre>" . htmlspecialchars($message) . "</pre>";
 echo "<h2>Length Change:</h2>";
 echo "Command outputs are " . (strlen($message) > 50 ? "being added" : "NOT being added");
 ?>
+

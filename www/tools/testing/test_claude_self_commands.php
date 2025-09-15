@@ -18,3 +18,4 @@ $commands->processFileCommands($testMessage);
 echo "<h2>After Command Processing:</h2>";
 echo "<pre>" . htmlspecialchars($testMessage) . "</pre>";
 ?>
+

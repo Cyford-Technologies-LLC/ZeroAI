@@ -106,7 +106,7 @@ class Agent {
         
         // Get from agents.db
         try {
-            $stmt = $this->agentsDb->executeSQL("SELECT * FROM agents ORDER BY name");
+            $stmt = $this->agentsDb->query("SELECT * FROM agents ORDER BY name");
             $agents = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
             // Cache for 5 minutes
@@ -179,3 +179,5 @@ class Agent {
         ]);
     }
 }
+
+

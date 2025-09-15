@@ -44,3 +44,4 @@ echo json_encode([
     'api_key_length' => strlen($apiKey)
 ]);
 ?>
+

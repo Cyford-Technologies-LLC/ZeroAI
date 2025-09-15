@@ -4,3 +4,4 @@ session_destroy();
 header('Location: /web');
 exit;
 ?>
+

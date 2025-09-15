@@ -63,3 +63,5 @@ foreach ($testHistory as $item) {
     echo "Sender: '$sender' -> Claude: " . ($isClaude ? 'YES' : 'NO') . ", User: " . ($isUser ? 'YES' : 'NO') . "\n";
 }
 ?>
+
+

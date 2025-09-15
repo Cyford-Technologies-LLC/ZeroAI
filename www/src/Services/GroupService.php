@@ -43,3 +43,5 @@ class GroupService {
         return $this->hasPermission($userId, 'frontend');
     }
 }
+
+

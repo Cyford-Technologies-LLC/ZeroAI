@@ -10,7 +10,7 @@ class Logs extends BaseModel {
     }
     
     protected function initTable() {
-        $this->executeSQL("
+        $this->query("
             CREATE TABLE IF NOT EXISTS logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 type TEXT NOT NULL,
@@ -22,8 +22,8 @@ class Logs extends BaseModel {
     }
     
     public function getRecentLogs(string $type = 'ai', int $limit = 10): array {
-        $result = $this->executeSQL("SELECT * FROM logs WHERE type = '$type' ORDER BY created_at DESC LIMIT $limit");
-        $logs = $result[0]['data'] ?? [];
+        $result = $this->query("SELECT * FROM logs WHERE type = '$type' ORDER BY created_at DESC LIMIT $limit");
+        $logs = $result ?? [];
         
         // Format logs as strings
         return array_map(function($log) {
@@ -31,3 +31,5 @@ class Logs extends BaseModel {
         }, $logs);
     }
 }
+
+

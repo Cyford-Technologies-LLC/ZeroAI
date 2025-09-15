@@ -49,3 +49,5 @@ class AsyncDatabase {
         return $this->update('user_stats', array_merge($stats, ['id' => $userId]));
     }
 }
+
+

@@ -204,10 +204,7 @@ class ClaudeProvider {
             
             if (!empty($result) && !empty($result[0]['content'])) {
                 $prompt = $result[0]['content'];
-                // Don't add commands help if prompt already contains commands
-                if (strpos($prompt, '@file') === false && strpos($prompt, 'COMMANDS:') === false) {
-                    $prompt .= $this->getCommandsHelp();
-                }
+                // Return custom prompt as-is (don't add commands to prevent execution)
                 return $prompt;
             }
             
@@ -223,7 +220,7 @@ class ClaudeProvider {
             // Fall back to default
         }
         
-        return 'You are Claude, integrated into ZeroAI.' . $this->getCommandsHelp();
+        return 'You are Claude, integrated into ZeroAI. You have access to tools via @commands when users request them.';
     }
     
     private function getBackgroundContext() {
@@ -292,3 +289,5 @@ class ClaudeProvider {
     }
 }
 ?>
+
+

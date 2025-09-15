@@ -31,3 +31,4 @@ if (count($segments) >= 2 && $segments[0] === 'api') {
     echo json_encode(['error' => 'Invalid API path']);
 }
 ?>
+

@@ -19,3 +19,4 @@ if ($openBraces != $closeBraces) {
     echo "✅ Braces match\n";
 }
 ?>
+

@@ -152,3 +152,4 @@ document.getElementById('chat-input')?.addEventListener('keypress', function(e) 
 </script>
 
 <?php include __DIR__ . '/../admin/includes/footer.php'; ?>
+

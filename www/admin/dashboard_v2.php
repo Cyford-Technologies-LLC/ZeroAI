@@ -9,3 +9,5 @@ $currentPage = 'dashboard';
 
 $dashboard = new DashboardAdmin($pageTitle, $currentPage);
 $dashboard->render();
+
+

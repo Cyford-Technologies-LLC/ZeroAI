@@ -92,7 +92,7 @@ class UserManager {
         
         if ($users === false) {
             $pdo = $this->db->getConnection();
-            $stmt = $pdo->executeSQL("SELECT id, username, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
+            $stmt = $pdo->query("SELECT id, username, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
             $users = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             $this->cache->set($cacheKey, $users, 300); // Cache for 5 minutes
         }
@@ -155,3 +155,5 @@ class UserManager {
         ]);
     }
 }
+
+

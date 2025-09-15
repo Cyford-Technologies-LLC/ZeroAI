@@ -122,3 +122,5 @@ try {
     echo json_encode(['success' => false, 'error' => 'Chat service temporarily unavailable']);
 }
 ?>
+
+

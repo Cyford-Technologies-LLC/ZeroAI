@@ -4,7 +4,7 @@ namespace Models;
 class CrewAI extends BaseModel {
     
     public function getAgents() {
-        $stmt = $this->db->executeSQL("SELECT * FROM agents ORDER BY is_core DESC, name");
+        $stmt = $this->db->query("SELECT * FROM agents ORDER BY is_core DESC, name");
         return $stmt->fetchAll();
     }
     
@@ -22,7 +22,7 @@ class CrewAI extends BaseModel {
     }
     
     public function getCrews() {
-        $stmt = $this->db->executeSQL("SELECT * FROM crews ORDER BY name");
+        $stmt = $this->db->query("SELECT * FROM crews ORDER BY name");
         return $stmt->fetchAll();
     }
     
@@ -32,7 +32,7 @@ class CrewAI extends BaseModel {
     }
     
     public function getTasks() {
-        $stmt = $this->db->executeSQL("SELECT * FROM tasks ORDER BY created_at DESC LIMIT 50");
+        $stmt = $this->db->query("SELECT * FROM tasks ORDER BY created_at DESC LIMIT 50");
         return $stmt->fetchAll();
     }
     
@@ -43,12 +43,14 @@ class CrewAI extends BaseModel {
     
     public function getSystemMetrics() {
         return [
-            'total_agents' => $this->db->executeSQL("SELECT COUNT(*) FROM agents")->fetchColumn(),
-            'total_crews' => $this->db->executeSQL("SELECT COUNT(*) FROM crews")->fetchColumn(),
-            'pending_tasks' => $this->db->executeSQL("SELECT COUNT(*) FROM tasks WHERE status = 'pending'")->fetchColumn(),
-            'completed_tasks' => $this->db->executeSQL("SELECT COUNT(*) FROM tasks WHERE status = 'completed'")->fetchColumn(),
-            'failed_tasks' => $this->db->executeSQL("SELECT COUNT(*) FROM tasks WHERE status = 'failed'")->fetchColumn()
+            'total_agents' => $this->db->query("SELECT COUNT(*) FROM agents")->fetchColumn(),
+            'total_crews' => $this->db->query("SELECT COUNT(*) FROM crews")->fetchColumn(),
+            'pending_tasks' => $this->db->query("SELECT COUNT(*) FROM tasks WHERE status = 'pending'")->fetchColumn(),
+            'completed_tasks' => $this->db->query("SELECT COUNT(*) FROM tasks WHERE status = 'completed'")->fetchColumn(),
+            'failed_tasks' => $this->db->query("SELECT COUNT(*) FROM tasks WHERE status = 'failed'")->fetchColumn()
         ];
     }
 }
 ?>
+
+

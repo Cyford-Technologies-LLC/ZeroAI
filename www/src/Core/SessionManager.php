@@ -65,3 +65,5 @@ class SessionManager {
         unset($_SESSION[$key]);
     }
 }
+
+

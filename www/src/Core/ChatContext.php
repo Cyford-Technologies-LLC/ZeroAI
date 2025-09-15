@@ -20,3 +20,5 @@ abstract class ChatContext {
         return $this->system->getSecurity()->hasPermission($user, $command, $mode);
     }
 }
+
+

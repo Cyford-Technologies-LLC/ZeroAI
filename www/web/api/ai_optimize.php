@@ -41,3 +41,4 @@ if ($method === 'POST' && preg_match('/\/api\/tasks\/(\d+)\/ai-rewrite/', $path,
 
 echo json_encode(['success' => false, 'error' => 'Invalid endpoint']);
 ?>
+

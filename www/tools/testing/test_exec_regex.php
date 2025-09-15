@@ -25,3 +25,4 @@ if (preg_match_all('/\@(\w+)/', $message, $matches)) {
     echo "No @ commands found";
 }
 ?>
+

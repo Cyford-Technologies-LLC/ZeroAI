@@ -72,3 +72,5 @@ class QueueManager {
         return $this->redis->del($this->queueKey);
     }
 }
+
+

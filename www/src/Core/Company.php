@@ -30,3 +30,5 @@ class Company {
         return $this->db->update('companies', $data, ['id' => $id]);
     }
 }
+
+

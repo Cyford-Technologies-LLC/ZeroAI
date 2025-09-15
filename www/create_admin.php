@@ -6,7 +6,7 @@ use ZeroAI\Core\DatabaseManager;
 $db = DatabaseManager::getInstance();
 
 // Create users table if not exists
-$db->executeSQL("
+$db->query("
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -17,11 +17,11 @@ $db->executeSQL("
 ");
 
 // Delete existing admin user
-$db->executeSQL("DELETE FROM users WHERE username = 'admin'");
+$db->query("DELETE FROM users WHERE username = 'admin'");
 
 // Create new admin user
 $password = password_hash('admin123', PASSWORD_DEFAULT);
-$result = $db->executeSQL("INSERT INTO users (username, password, role) VALUES ('admin', '$password', 'admin')");
+$result = $db->query("INSERT INTO users (username, password, role) VALUES ('admin', '$password', 'admin')");
 
 if (!isset($result[0]['error'])) {
     echo "Admin user created successfully!\n";
@@ -33,10 +33,11 @@ if (!isset($result[0]['error'])) {
 
 // Show all users
 echo "\nCurrent users:\n";
-$users = $db->executeSQL("SELECT id, username, role, created_at FROM users");
+$users = $db->query("SELECT id, username, role, created_at FROM users");
 if (!empty($users[0]['data'])) {
     foreach ($users[0]['data'] as $user) {
         echo "ID: {$user['id']}, Username: {$user['username']}, Role: {$user['role']}\n";
     }
 }
 ?>
+

@@ -32,3 +32,5 @@ class Tenant {
         return $this->db->update('tenants', $data, ['id' => $id]);
     }
 }
+
+

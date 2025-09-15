@@ -21,3 +21,4 @@ if (preg_match('/\@create\s+([^\s\n]+)(?:\s+```([\s\S]*?)```)?/', $message, $mat
 
 echo "\nCheck /app/logs/debug_processing.log for results\n";
 ?>
+

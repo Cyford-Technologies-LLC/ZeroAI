@@ -40,3 +40,5 @@ class FileSecurityException extends SecurityException {
         parent::__construct($message, $code, 'critical', $previous);
     }
 }
+
+

@@ -111,3 +111,5 @@ ini_set('error_log', '/app/logs/php_errors.log');
 if (getenv('ENVIRONMENT') !== 'development') {
     ini_set('disable_functions', 'exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source');
 }
+
+

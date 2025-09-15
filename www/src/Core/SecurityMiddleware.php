@@ -187,3 +187,5 @@ class SecurityMiddleware {
         $this->logger->logSecurity($event, $level, $details);
     }
 }
+
+
