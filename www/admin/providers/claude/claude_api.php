@@ -140,13 +140,13 @@ try {
             $logger->logClaude('Get models action started');
             try {
                 $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
-                $models = $integration->getModels();
-                $logger->logClaude('Models retrieved', ['count' => count($models), 'models' => $models]);
-                echo json_encode(['success' => true, 'models' => $models]);
+                $modelsWithSource = $integration->getModelsWithSource();
+                $logger->logClaude('Models retrieved', ['count' => count($modelsWithSource['models']), 'source' => $modelsWithSource['source'], 'models' => $modelsWithSource['models']]);
+                echo json_encode(['success' => true, 'models' => $modelsWithSource['models'], 'source' => $modelsWithSource['source']]);
             } catch (\Exception $e) {
                 $logger->logClaude('Get models error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
                 // Fallback to basic models
-                echo json_encode(['success' => true, 'models' => ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']]);
+                echo json_encode(['success' => true, 'models' => ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'], 'source' => 'Fallback']);
             }
             break;
             

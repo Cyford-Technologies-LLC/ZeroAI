@@ -32,79 +32,68 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
     public function getModels(): array {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        
         // Try to get cached models from Redis first
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
             $cachedModels = $cache->get('claude_models');
             if ($cachedModels !== false && !empty($cachedModels)) {
+                $logger->logClaude('Models loaded from Redis cache', ['count' => count($cachedModels), 'source' => 'cached']);
                 return $cachedModels;
             }
         } catch (\Exception $e) {
-            // Cache failed, continue to API
+            $logger->logClaude('Cache failed, continuing to fetch models', ['error' => $e->getMessage()]);
         }
         
         // Fetch real models from Claude API
         $realModels = $this->fetchRealModels();
         if (!empty($realModels)) {
+            $logger->logClaude('Models loaded from hardcoded list', ['count' => count($realModels), 'source' => 'hardcoded', 'models' => $realModels]);
             // Cache for 24 hours
             try {
                 $cache = \ZeroAI\Core\CacheManager::getInstance();
                 $cache->set('claude_models', $realModels, 86400);
             } catch (\Exception $e) {
-                // Cache failed, but we have models
+                $logger->logClaude('Failed to cache models', ['error' => $e->getMessage()]);
             }
             return $realModels;
         }
         
         // Fallback to hardcoded models
-        return array_keys($this->models);
+        $fallbackModels = array_keys($this->models);
+        $logger->logClaude('Using fallback hardcoded models', ['count' => count($fallbackModels), 'source' => 'fallback', 'models' => $fallbackModels]);
+        return $fallbackModels;
+    }
+    
+    public function getModelsWithSource(): array {
+        $logger = \ZeroAI\Core\Logger::getInstance();
+        
+        // Check cache first
+        try {
+            $cache = \ZeroAI\Core\CacheManager::getInstance();
+            $cachedModels = $cache->get('claude_models');
+            if ($cachedModels !== false && !empty($cachedModels)) {
+                return ['models' => $cachedModels, 'source' => 'Redis Cache'];
+            }
+        } catch (\Exception $e) {
+            $logger->logClaude('Cache check failed', ['error' => $e->getMessage()]);
+        }
+        
+        // Get hardcoded models
+        $models = $this->fetchRealModels();
+        return ['models' => $models, 'source' => 'Hardcoded List'];
     }
     
     private function fetchRealModels(): array {
-        $allModels = [];
-        $url = 'https://api.anthropic.com/v1/models';
-        
-        do {
-            try {
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $url,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_HTTPHEADER => [
-                        'x-api-key: ' . $this->apiKey,
-                        'anthropic-version: 2023-06-01'
-                    ],
-                    CURLOPT_TIMEOUT => 10,
-                    CURLOPT_SSL_VERIFYPEER => false
-                ]);
-                
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-                
-                if ($httpCode !== 200) break;
-                
-                $data = json_decode($response, true);
-                if (!isset($data['data']) || !is_array($data['data'])) break;
-                
-                foreach ($data['data'] as $model) {
-                    if (isset($model['id'])) {
-                        $allModels[] = $model['id'];
-                    }
-                }
-                
-                // Handle pagination
-                if (isset($data['has_more']) && $data['has_more'] && isset($data['last_id'])) {
-                    $url = 'https://api.anthropic.com/v1/models?after=' . urlencode($data['last_id']);
-                } else {
-                    break;
-                }
-            } catch (\Exception $e) {
-                break;
-            }
-        } while (true);
-        
-        return $allModels;
+        // Return hardcoded models since API endpoint doesn't exist
+        return [
+            'claude-3-5-sonnet-20241022',
+            'claude-3-5-haiku-20241022',
+            'claude-3-opus-20240229',
+            'claude-3-sonnet-20240229',
+            'claude-3-haiku-20240307'
+        ];
     }
     
     public function validateApiKey(): bool {
