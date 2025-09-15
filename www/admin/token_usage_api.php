@@ -30,7 +30,7 @@ function getTokenStats($db, $period) {
         $result = [['data' => json_decode($pythonResult, true) ?: []]];
     } else {
         // Fallback to direct database query
-        $result = $db->executeSQL("SELECT model, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(total_tokens) as total_tokens, SUM(cost) as cost_usd, COUNT(*) as requests FROM claude_token_usage $whereClause GROUP BY model ORDER BY total_tokens DESC");
+        $result = $db->query("SELECT model, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(total_tokens) as total_tokens, SUM(cost) as cost_usd, COUNT(*) as requests FROM claude_token_usage $whereClause GROUP BY model ORDER BY total_tokens DESC");
     }
     
     $models = $result[0]['data'] ?? [];
