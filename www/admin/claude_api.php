@@ -45,28 +45,35 @@ try {
             break;
             
         case 'test_connection':
-            // Use basic Claude class for simple connection test
-            $claude = new \ZeroAI\AI\Claude();
-            $result = $claude->testConnection();
-            echo json_encode($result);
+            $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
+            $result = $integration->validateApiKey();
+            echo json_encode(['success' => $result, 'message' => $result ? 'Connected' : 'Failed']);
             break;
             
         case 'save_scratch':
             $content = $input['content'] ?? '';
-            $claude = new \ZeroAI\AI\Claude();
-            $claude->saveScratchPad($content);
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
+            $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $existing = $db->query("SELECT id FROM claude_scratch_pad LIMIT 1");
+            if ($existing && count($existing) > 0) {
+                $db->query("UPDATE claude_scratch_pad SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+            } else {
+                $db->query("INSERT INTO claude_scratch_pad (content) VALUES (?)", [$content]);
+            }
             echo json_encode(['success' => true]);
             break;
             
         case 'get_scratch':
-            $claude = new \ZeroAI\AI\Claude();
-            $content = $claude->getScratchPad();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
+            $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $result = $db->query("SELECT content FROM claude_scratch_pad ORDER BY updated_at DESC LIMIT 1");
+            $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
             echo json_encode(['success' => true, 'content' => $content]);
             break;
             
         case 'get_models':
-            $claude = new \ZeroAI\AI\Claude();
-            $models = $claude->getAvailableModels();
+            $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
+            $models = $integration->getModels();
             echo json_encode(['success' => true, 'models' => $models]);
             break;
             
