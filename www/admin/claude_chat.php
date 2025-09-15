@@ -150,13 +150,92 @@ include __DIR__ . '/includes/header.php';
 function toggleScratchPad() {
     const scratchPad = document.getElementById('scratch-pad-editor');
     if (scratchPad) {
-        if (scratchPad.style.display === 'none' || scratchPad.style.display === '') {
-            scratchPad.style.display = 'block';
-        } else {
-            scratchPad.style.display = 'none';
-        }
+        scratchPad.style.display = scratchPad.style.display === 'none' ? 'block' : 'none';
     }
 }
+
+function togglePromptEditor() {
+    const promptEditor = document.getElementById('prompt-editor');
+    if (promptEditor) {
+        promptEditor.style.display = promptEditor.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function sendMessage() {
+    const input = document.getElementById('user-input');
+    const message = input.value.trim();
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessageToChat('user', message);
+    input.value = '';
+    
+    // Send to backend
+    fetch('/admin/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'chat', message: message})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addMessageToChat('assistant', data.response);
+        } else {
+            addMessageToChat('assistant', 'Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        addMessageToChat('assistant', 'Connection error: ' + error.message);
+    });
+}
+
+function addMessageToChat(sender, message) {
+    const container = document.getElementById('chat-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ' + sender;
+    messageDiv.innerHTML = '<strong>' + (sender === 'user' ? '👤 You:' : '🤖 Claude:') + '</strong> ' + message;
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function insertCommand(command) {
+    const input = document.getElementById('user-input');
+    input.value += command;
+    input.focus();
+}
+
+function clearChat() {
+    const container = document.getElementById('chat-container');
+    container.innerHTML = '<div class="message assistant"><strong>🤖 Claude:</strong> Chat cleared. How can I help you?</div>';
+}
+
+function quickCommand(command) {
+    document.getElementById('user-input').value = command;
+    sendMessage();
+}
+
+function saveScratchPad() {
+    const content = document.getElementById('scratch-pad').value;
+    localStorage.setItem('claude-scratch-pad', content);
+    alert('Scratch pad saved!');
+}
+
+function insertToChat() {
+    const content = document.getElementById('scratch-pad').value;
+    document.getElementById('user-input').value = content;
+}
+
+function clearScratchPad() {
+    document.getElementById('scratch-pad').value = '';
+}
+
+// Load scratch pad on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const saved = localStorage.getItem('claude-scratch-pad');
+    if (saved) {
+        document.getElementById('scratch-pad').value = saved;
+    }
+});
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
