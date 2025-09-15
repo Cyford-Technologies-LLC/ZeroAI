@@ -65,6 +65,20 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
             </div>
+            
+            <!-- Scratch Pad -->
+            <div id="scratch-pad-editor" style="display: none;">
+                <hr>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6>📝 Scratch Pad</h6>
+                    <div class="btn-group" role="group">
+                        <button onclick="saveScratchPad()" class="btn btn-outline-success btn-sm">💾 Save</button>
+                        <button onclick="insertToChat()" class="btn btn-outline-primary btn-sm">➡️ To Chat</button>
+                        <button onclick="clearScratchPad()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
+                    </div>
+                </div>
+                <textarea id="scratch-pad" class="form-control" rows="6" placeholder="Quick notes, code snippets, ideas..."></textarea>
+            </div>
         </div>
     </div>
     
@@ -91,21 +105,6 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     <button onclick="sendMessage()" class="btn btn-primary btn-lg">🚀 Send Message</button>
                 </div>
-            </div>
-            
-            <hr>
-            
-            <!-- Scratch Pad -->
-            <div class="mt-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="form-label mb-0">📝 Scratch Pad</label>
-                    <div class="btn-group" role="group">
-                        <button onclick="saveScratchPad()" class="btn btn-outline-success btn-sm">💾 Save</button>
-                        <button onclick="insertToChat()" class="btn btn-outline-primary btn-sm">➡️ To Chat</button>
-                        <button onclick="clearScratchPad()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
-                    </div>
-                </div>
-                <textarea id="scratch-pad" class="form-control" rows="6" placeholder="Quick notes, code snippets, ideas..."></textarea>
             </div>
         </div>
     </div>
