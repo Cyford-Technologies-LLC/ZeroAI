@@ -91,14 +91,12 @@ $currentPage = $currentPage ?? '';
 
 <!-- Top Navigation -->
 <div style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-    <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <button style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 12px; border-radius: 4px; transition: background 0.2s ease;"
-                    onclick="toggleSidebar()" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">☰
-            </button>
-            <div style="font-size: 1.5rem; font-weight: bold;">🏢 ZeroAI CRM</div>
-        </div>
-        <div style="display: flex; gap: 20px;">
+    <div style="width: 100%; display: flex; align-items: center; padding: 0 20px;">
+        <button style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 12px; border-radius: 4px; transition: background 0.2s ease; margin-right: 20px;"
+                onclick="toggleSidebar()" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">☰
+        </button>
+        <div style="font-size: 1.5rem; font-weight: bold; margin-right: auto;">🏢 ZeroAI CRM</div>
+        <div style="display: flex; gap: 20px; margin-right: 20px;">
             <a href="/web/index.php"
                style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'crm_dashboard' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📊
                 Dashboard</a>
@@ -113,16 +111,15 @@ $currentPage = $currentPage ?? '';
                 Projects</a>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <span style="color: rgba(255,255,255,0.9);">👤 <?= htmlspecialchars($currentUser ?? 'User') ?></span>
-            <?php if (isset($isAdmin) && $isAdmin): ?><a href="/admin/dashboard.php"
-                                                         style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">⚙️
-                Admin</a><?php endif; ?>
             <a href="/web/ai_workshop.php"
                style="background: #0dcaf0; color: black; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">🤖
                 AI</a>
-            <a href="/web/logout.php"
-               style="background: #dc3545; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">🚪
-                Logout</a>
+            <?php if (isset($isAdmin) && $isAdmin): ?><a href="/admin/dashboard.php"
+                                                         style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">⚙️
+                Admin</a><?php endif; ?>
+            <button style="background: #6366f1; color: white; padding: 6px 12px; border-radius: 4px; border: none; font-size: 0.9rem; cursor: pointer;"
+                    onclick="toggleSidebar(); updateSidebarForProfile();">👤
+                Profile</button>
         </div>
     </div>
 </div>
@@ -180,6 +177,21 @@ $currentPage = $currentPage ?? '';
             links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available</p>';
         }
 
+        content.innerHTML = links;
+    }
+
+    function updateSidebarForProfile() {
+        const content = document.getElementById('sidebar-content');
+        if (!content) return;
+
+        const links = `
+            <div style="padding: 12px 0; border-bottom: 1px solid #334155; color: #e2e8f0;">
+                <strong>👤 <?= htmlspecialchars($currentUser ?? 'User') ?></strong>
+            </div>
+            <a href="/web/profile.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">⚙️ Settings</a>
+            <a href="/web/logout.php" style="display: block; color: #f87171; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">🚪 Logout</a>
+        `;
+        
         content.innerHTML = links;
     }
 
