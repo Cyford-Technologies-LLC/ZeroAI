@@ -66,8 +66,10 @@ function updateSidebarForCompanies() {
         <div style="margin-bottom: 20px;">
             <h6 style="color: #94a3b8; margin-bottom: 10px;">Company Actions</h6>
             <a href="#add-company" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Company</a>
-            <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 View Contacts</a>
-            <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 View Projects</a>
+            <a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>
+            <a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>
+            <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>
+            <a href="/web/marketing.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📊 Marketing</a>
         </div>
     `;
     updateSidebarContent(content);
