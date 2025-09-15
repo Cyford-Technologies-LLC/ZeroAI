@@ -19,32 +19,33 @@ if ($_POST) {
         $db = new Database();
         $pdo = $db->getConnection();
         
-        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         
-        if (empty($username) || empty($password)) {
-            $error = "Username and password are required";
+        if (empty($email) || empty($password)) {
+            $error = "Email and password are required";
         } else {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-            $stmt->execute([$username]);
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$email]);
             $user = $stmt->fetch();
             
             if ($user && password_verify($password, $user['password'])) {
                 $_SESSION['web_logged_in'] = true;
-                $_SESSION['web_user'] = $username;
+                $_SESSION['web_user'] = $user['email'];
                 $_SESSION['user_role'] = $user['role'] ?? 'user';
+                $_SESSION['user_id'] = $user['id'];
                 
                 $logger->info('Web login successful', [
-                    'username' => $username,
+                    'email' => $email,
                     'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
                 ]);
                 
                 header('Location: /web/');
                 exit;
             } else {
-                $error = "Invalid username or password";
+                $error = "Invalid email or password";
                 $logger->warning('Web login failed', [
-                    'username' => $username,
+                    'email' => $email,
                     'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
                 ]);
             }

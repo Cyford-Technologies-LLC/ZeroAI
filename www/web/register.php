@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $company_name = trim($_POST['company_name'] ?? '');
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name = trim($_POST['last_name'] ?? '');
+    $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $website = trim($_POST['website'] ?? '');
@@ -17,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'] ?? '';
     
     // Validation
-    if (empty($company_name) || empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
+    if (empty($company_name) || empty($first_name) || empty($last_name) || empty($username) || empty($email) || empty($password)) {
         $error = 'All required fields must be filled';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Invalid email address';
@@ -32,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create users table if not exists
             $db->query("CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
                 company_name TEXT NOT NULL,
                 first_name TEXT NOT NULL,
                 last_name TEXT NOT NULL,
@@ -41,19 +43,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 linkedin TEXT,
                 password TEXT NOT NULL,
                 role TEXT DEFAULT 'user',
+                organization_id INTEGER DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )");
             
-            // Check if email already exists
-            $existing = $db->query("SELECT id FROM users WHERE email = ?", [$email]);
+            // Check if username or email already exists
+            $existing = $db->query("SELECT id FROM users WHERE username = ? OR email = ?", [$username, $email]);
             if (!empty($existing)) {
-                $error = 'Email already registered';
+                $error = 'Username or email already registered';
             } else {
                 // Create user
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $db->query("INSERT INTO users (company_name, first_name, last_name, email, phone, website, linkedin, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user')", 
-                    [$company_name, $first_name, $last_name, $email, $phone, $website, $linkedin, $hashedPassword]);
+                $db->query("INSERT INTO users (username, company_name, first_name, last_name, email, phone, website, linkedin, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user')", 
+                    [$username, $company_name, $first_name, $last_name, $email, $phone, $website, $linkedin, $hashedPassword]);
                 
                 $success = 'Registration successful! You can now login.';
             }
@@ -183,6 +186,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <span class="input-group-text"><i class="bi bi-person"></i></span>
                                         <input type="text" name="last_name" class="form-control" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>" required>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Username *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person-circle"></i></span>
+                                    <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
                                 </div>
                             </div>
                             
