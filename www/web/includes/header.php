@@ -142,7 +142,7 @@ $currentPage = $currentPage ?? '';
      style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; z-index: 999;"></div>
 
 <!-- Top Navigation -->
-<div id="main-header" class="header-responsive" style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; z-index: 1001;">
+<div id="main-header" class="header-responsive" style="background: #2563eb; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     <div style="width: 100%; display: flex; align-items: center; padding: 0 20px;">
         <button style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 12px; border-radius: 4px; transition: background 0.2s ease; margin-right: 20px;"
                 onclick="toggleSidebar()" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">☰
