@@ -1,3 +1,19 @@
+<?php
+// Load logging system
+require_once __DIR__ . '/admin/includes/autoload.php';
+
+// Check for 404 errors and log them
+if (isset($_GET['url']) || strpos($_SERVER['REQUEST_URI'], '404') !== false) {
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->error('404 Not Found - Redirected to Index', [
+        'url' => $_GET['url'] ?? $_SERVER['REQUEST_URI'] ?? 'unknown',
+        'referrer' => $_SERVER['HTTP_REFERER'] ?? 'direct',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+        'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'
+    ]);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
