@@ -105,18 +105,12 @@ $currentPage = $currentPage ?? '';
             <a href="/web/companies.php"
                style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'companies' ? 'background: rgba(255,255,255,0.2);' : '' ?>">🏢
                 Companies</a>
-            <a href="/web/contacts.php"
-               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'contacts' ? 'background: rgba(255,255,255,0.2);' : '' ?>">👥
-                Contacts</a>
             <a href="/web/sales.php"
                style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'sales' ? 'background: rgba(255,255,255,0.2);' : '' ?>">💰
                 Sales</a>
             <a href="/web/projects.php"
                style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'projects' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📋
                 Projects</a>
-            <a href="/web/tasks.php"
-               style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'tasks' ? 'background: rgba(255,255,255,0.2);' : '' ?>">✅
-                Tasks</a>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <span style="color: rgba(255,255,255,0.9);">👤 <?= htmlspecialchars($currentUser ?? 'User') ?></span>
@@ -157,33 +151,33 @@ $currentPage = $currentPage ?? '';
     }
 
     function updateSidebarContent() {
-        const currentPage = '<?= $currentPage ?? '' ?>';
+        const currentPage = window.location.pathname;
         const content = document.getElementById('sidebar-content');
 
         if (!content) return;
 
         let links = '';
 
-        if (currentPage === 'companies') {
+        if (currentPage.includes('/companies') || currentPage.includes('/contacts') || currentPage.includes('/employees') || currentPage.includes('/locations')) {
             links = `
-                <a href="/web/employees.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">👥 Employees</a>
+                <a href="/web/contacts.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">👥 Contacts</a>
+                <a href="/web/employees.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">👨‍💼 Employees</a>
                 <a href="/web/locations.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📍 Locations</a>
-                <a href="/web/social_media.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📱 Social Media</a>
             `;
-        } else if (currentPage === 'projects') {
+        } else if (currentPage.includes('/projects') || currentPage.includes('/tasks') || currentPage.includes('/features') || currentPage.includes('/bugs')) {
             links = `
                 <a href="/web/tasks.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">✅ Tasks</a>
                 <a href="/web/features.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">✨ Features</a>
                 <a href="/web/bugs.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">🐛 Bugs</a>
             `;
-        } else if (currentPage === 'sales') {
+        } else if (currentPage.includes('/sales') || currentPage.includes('/leads') || currentPage.includes('/opportunities') || currentPage.includes('/quotes')) {
             links = `
                 <a href="/web/leads.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📋 Leads</a>
                 <a href="/web/opportunities.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">💰 Opportunities</a>
                 <a href="/web/quotes.php" style="display: block; color: #cbd5e1; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #334155;">📄 Quotes</a>
             `;
         } else {
-            links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available for ' + currentPage + '</p>';
+            links = '<p style="color: #94a3b8; font-size: 0.9rem;">No sub-menu available</p>';
         }
 
         content.innerHTML = links;
