@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/csp.php';
 
 use ZeroAI\Models\Company;
 
