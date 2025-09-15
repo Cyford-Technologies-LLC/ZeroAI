@@ -8,8 +8,9 @@ class ClaudeIntegration extends BaseAIProvider {
     private $baseUrl = 'https://api.anthropic.com/v1/messages';
     private $toolSystem;
     
-    public function __construct($apiKey, array $config = []) {
-        parent::__construct('Claude', $apiKey, $config);
+    public function __construct($apiKey = null, array $config = []) {
+        $this->apiKey = $apiKey ?: $this->getApiKey();
+        parent::__construct('Claude', $this->apiKey, $config);
         $this->toolSystem = new ClaudeToolSystem();
         $this->models = [
             'claude-opus-4-1-20250805' => ['input' => 20.00, 'output' => 100.00],
@@ -500,6 +501,16 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
 
+    
+    private function getApiKey() {
+        if (file_exists('/app/.env')) {
+            $envContent = file_get_contents('/app/.env');
+            if (preg_match('/ANTHROPIC_API_KEY=(.+)/', $envContent, $matches)) {
+                return trim($matches[1]);
+            }
+        }
+        return getenv('ANTHROPIC_API_KEY');
+    }
     
     private function getMainContainer() {
         // Use docker ps --format to get just container names

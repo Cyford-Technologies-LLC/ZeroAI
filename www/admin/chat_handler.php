@@ -42,7 +42,7 @@ $message = $input['message'] ?? '';
 $defaultModel = 'claude-3-5-haiku-20241022'; // fallback
 try {
     if (class_exists('\ZeroAI\Providers\AI\Claude\ClaudeIntegration')) {
-        $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
+        $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration();
         $models = $integration->getModels();
         if (!empty($models)) {
             $defaultModel = $models[0]; // Use first available model

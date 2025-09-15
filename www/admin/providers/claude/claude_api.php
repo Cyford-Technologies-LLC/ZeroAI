@@ -139,7 +139,7 @@ try {
         case 'get_models':
             $logger->logClaude('Get models action started');
             try {
-                $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
+                $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration();
                 $modelsWithSource = $integration->getModelsWithSource();
                 $logger->logClaude('Models retrieved', ['count' => count($modelsWithSource['models']), 'source' => $modelsWithSource['source'], 'models' => $modelsWithSource['models']]);
                 echo json_encode(['success' => true, 'models' => $modelsWithSource['models'], 'source' => $modelsWithSource['source'], 'color' => $modelsWithSource['color']]);
