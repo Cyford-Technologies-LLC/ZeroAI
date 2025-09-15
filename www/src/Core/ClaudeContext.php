@@ -128,7 +128,7 @@ class ClaudeContext extends ChatContext {
     private function cmdAgents(): array {
         try {
             $db = $this->system->getDatabase();
-            $result = $db->executeSQL("SELECT id, name, role, status FROM agents ORDER BY name");
+            $result = $db->query("SELECT id, name, role, status FROM agents ORDER BY name");
             
             if (!empty($result[0]['data'])) {
                 $output = "Agents:\n";
@@ -148,7 +148,7 @@ class ClaudeContext extends ChatContext {
     private function cmdCrews(): array {
         try {
             $db = $this->system->getDatabase();
-            $result = $db->executeSQL("SELECT id, name, status FROM crews ORDER BY name");
+            $result = $db->query("SELECT id, name, status FROM crews ORDER BY name");
             
             if (!empty($result[0]['data'])) {
                 $output = "Crews:\n";

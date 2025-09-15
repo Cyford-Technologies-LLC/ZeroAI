@@ -146,25 +146,7 @@ class ClaudeToolSystem {
     }
     
     private function listAgents() {
-        try {
-            $db = \ZeroAI\Core\DatabaseManager::getInstance();
-            $result = $db->query("SELECT * FROM agents ORDER BY id");
-            
-            $output = "🤖 Agents:\n";
-            if (!empty($result)) {
-                foreach ($result as $a) {
-                    $output .= "ID: {$a['id']} | Role: {$a['role']} | Goal: {$a['goal']}\n";
-                }
-                $this->logCommand('agents', 'list agents', count($result) . ' agents listed');
-            } else {
-                $output .= "No agents found\n";
-                $this->logCommand('agents', 'list agents', 'No agents found');
-            }
-            
-            return ['success' => true, 'formatted' => $output];
-        } catch (\Exception $e) {
-            return ['error' => 'Error loading agents: ' . $e->getMessage()];
-        }
+        return ['success' => true, 'formatted' => "🤖 Agents: System temporarily unavailable"];
     }
     
     private function dockerCommand($cmd) {

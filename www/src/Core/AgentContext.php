@@ -14,7 +14,7 @@ class AgentContext extends ChatContext {
         
         if (str_contains($message, '@agents')) {
             $db = $this->system->getDatabase();
-            $result = $db->executeSQL("SELECT name, role FROM agents WHERE status = 'active'");
+            $result = $db->query("SELECT name, role FROM agents WHERE status = 'active'");
             $commandOutputs .= "\n\nActive Agents:\n";
             foreach ($result[0]['data'] ?? [] as $agent) {
                 $commandOutputs .= "- {$agent['name']}: {$agent['role']}\n";

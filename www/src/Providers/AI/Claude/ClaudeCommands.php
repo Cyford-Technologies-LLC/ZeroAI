@@ -145,7 +145,7 @@ class ClaudeCommands {
     private function listAgents() {
         try {
             $db = new \ZeroAI\Core\DatabaseManager();
-            $result = $db->executeSQL("SELECT * FROM agents ORDER BY id");
+            $result = $db->query("SELECT * FROM agents ORDER BY id");
             
             $output = "\n\n🤖 Agents:\n";
             if (!empty($result[0]['data'])) {

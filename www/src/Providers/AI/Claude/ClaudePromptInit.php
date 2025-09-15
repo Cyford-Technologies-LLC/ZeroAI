@@ -10,7 +10,7 @@ class ClaudePromptInit {
         
         $prompt = $this->getDefaultPrompt();
         
-        $db->executeSQL("INSERT OR REPLACE INTO system_prompts (id, prompt, created_at) VALUES (1, ?, datetime('now'))", [$prompt]);
+        $db->query("INSERT OR REPLACE INTO system_prompts (id, prompt, created_at) VALUES (1, ?, datetime('now'))", [$prompt]);
     }
     
     private function getDefaultPrompt() {
