@@ -119,7 +119,7 @@ class ClaudeProvider {
         } catch (\Exception $e) {
             // Log using proper Logger class
             $logger = \ZeroAI\Core\Logger::getInstance();
-            $logger->error('Claude Provider Error', [
+            $logger->logClaude('Claude Provider Error: ' . $e->getMessage(), [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

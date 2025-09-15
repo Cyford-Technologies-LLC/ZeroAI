@@ -6,6 +6,7 @@ class Logger {
     private $logPath = '/app/logs/errors.log';
     private $securityLogPath = '/app/logs/security.log';
     private $auditLogPath = '/app/logs/audit.log';
+    private $claudeLogPath = '/app/logs/claude_debug.log';
     
     public static function getInstance() {
         if (self::$instance === null) {
@@ -90,6 +91,15 @@ class Logger {
         $this->log('AUDIT', "$action on $resource", $auditContext, $this->auditLogPath);
     }
     
+    public function logClaude($message, $context = []) {
+        $claudeContext = array_merge($context, [
+            'component' => 'claude',
+            'timestamp' => time()
+        ]);
+        
+        $this->log('CLAUDE', $message, $claudeContext, $this->claudeLogPath);
+    }
+    
     public function getRecentLogs($lines = 50, $logType = 'error') {
         $logFile = $this->getLogFile($logType);
         
@@ -120,6 +130,8 @@ class Logger {
                 return $this->securityLogPath;
             case 'audit':
                 return $this->auditLogPath;
+            case 'claude':
+                return $this->claudeLogPath;
             default:
                 return $this->logPath;
         }

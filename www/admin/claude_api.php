@@ -112,7 +112,7 @@ try {
     // Log Claude errors using proper Logger class
     try {
         $logger = \ZeroAI\Core\Logger::getInstance();
-        $logger->error('Claude API Error', [
+        $logger->logClaude('Claude API Error: ' . $e->getMessage(), [
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
             'action' => $input['action'] ?? 'unknown',
