@@ -2,11 +2,21 @@
 namespace ZeroAI\Core;
 
 class DatabaseManager {
+    private static $instance = null;
     private $db;
+    private $cache;
     
-    public function __construct() {
+    private function __construct() {
         require_once __DIR__ . '/../../config/database.php';
         $this->db = new \Database();
+        $this->cache = \ZeroAI\Core\CacheManager::getInstance();
+    }
+    
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
     }
     
     public function select($table, $where = [], $limit = null) {
@@ -25,7 +35,16 @@ class DatabaseManager {
         return $this->db->delete($table, $where);
     }
     
-    public function executeSQL($sql, $params = []) {
+    public function query($sql, $params = []) {
+        // Check cache for SELECT queries
+        if (stripos(trim($sql), 'SELECT') === 0) {
+            $cacheKey = 'db_' . md5($sql . serialize($params));
+            $cached = $this->cache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         $pdo = $this->db->getConnection();
         if (empty($params)) {
             $stmt = $pdo->query($sql);
@@ -33,8 +52,14 @@ class DatabaseManager {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
         }
-        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return [['data' => $result]];
+        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Cache SELECT results for 5 minutes
+        if (stripos(trim($sql), 'SELECT') === 0) {
+            $this->cache->set($cacheKey, $result, 300);
+        }
+        
+        return $result;
     }
     
     public function getTokenUsage() {

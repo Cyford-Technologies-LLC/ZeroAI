@@ -111,4 +111,40 @@ class Claude extends CloudAI {
         
         return $this->chat($prompt);
     }
+    
+    public function saveScratchPad($content) {
+        $db = \ZeroAI\Core\DatabaseManager::getInstance();
+        
+        // Create table if not exists
+        $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+        
+        // Insert or update scratch pad content
+        $existing = $db->query("SELECT id FROM claude_scratch_pad LIMIT 1");
+        if ($existing && count($existing) > 0) {
+            $db->query("UPDATE claude_scratch_pad SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
+        } else {
+            $db->query("INSERT INTO claude_scratch_pad (content) VALUES (?)", [$content]);
+        }
+        
+        return true;
+    }
+    
+    public function getScratchPad() {
+        $db = \ZeroAI\Core\DatabaseManager::getInstance();
+        
+        // Create table if not exists
+        $db->query("CREATE TABLE IF NOT EXISTS claude_scratch_pad (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+        
+        $result = $db->query("SELECT content FROM claude_scratch_pad ORDER BY updated_at DESC LIMIT 1");
+        
+        return ($result && count($result) > 0) ? $result[0]['content'] : '';
+    }
 }
