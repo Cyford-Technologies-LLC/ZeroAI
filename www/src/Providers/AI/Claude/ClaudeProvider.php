@@ -188,18 +188,7 @@ class ClaudeProvider {
     }
     
     private function autoScan($message) {
-        if (!preg_match('/\@(file|list|search|create|edit|append|delete)/', $message)) {
-            $scan = "\n\nAuto-scanning key directories:\n";
-            if (is_dir('/app/src')) {
-                $srcFiles = shell_exec('find /app/src -name "*.py" | head -10');
-                $scan .= "\nSrc files:\n" . ($srcFiles ?: "No Python files found");
-            }
-            if (is_dir('/app/config')) {
-                $configFiles = scandir('/app/config');
-                $scan .= "\nConfig files: " . implode(", ", array_filter($configFiles, function($f) { return $f !== '.' && $f !== '..'; }));
-            }
-            return $scan;
-        }
+        // Disabled auto-scan to prevent cluttering responses
         return '';
     }
     
