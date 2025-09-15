@@ -1,152 +1,232 @@
 <?php
 session_start();
 
-// Load error logging
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-// Log web portal access
-try {
-    $logger = \ZeroAI\Core\Logger::getInstance();
-    $logger->info('Web portal accessed', [
-        'url' => $_SERVER['REQUEST_URI'] ?? 'unknown',
-        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
-        'session_id' => session_id()
-    ]);
-} catch (Exception $e) {
-    error_log('Logger failed: ' . $e->getMessage());
-}
-
-// Check if user is logged in (admin or web session)
-if (!isset($_SESSION['admin_logged_in']) && !isset($_SESSION['web_logged_in'])) {
-    try {
-        $logger->warning('Unauthorized web portal access', [
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-            'redirect_to' => '/web/login.php'
-        ]);
-    } catch (Exception $e) {
-        error_log('Logger failed: ' . $e->getMessage());
-    }
+// Check authentication
+if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
     header('Location: /web/login.php');
     exit;
 }
 
-$currentUser = $_SESSION['admin_user'] ?? $_SESSION['web_user'] ?? 'User';
+$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
 
-$pageTitle = 'ZeroAI User Portal';
+// Get CRM stats
+try {
+    require_once __DIR__ . '/../config/database.php';
+    $db = new Database();
+    $pdo = $db->getConnection();
+    
+    // Get basic stats
+    $stats = [
+        'companies' => $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0,
+        'contacts' => $pdo->query("SELECT COUNT(*) FROM contacts")->fetchColumn() ?: 0,
+        'projects' => $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0,
+        'tasks' => $pdo->query("SELECT COUNT(*) FROM tasks WHERE status != 'completed'")->fetchColumn() ?: 0
+    ];
+    
+    // Recent activities
+    $recentActivities = $pdo->query("
+        SELECT 'project' as type, name as title, created_at, status 
+        FROM projects 
+        ORDER BY created_at DESC 
+        LIMIT 5
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (Exception $e) {
+    $stats = ['companies' => 0, 'contacts' => 0, 'projects' => 0, 'tasks' => 0];
+    $recentActivities = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?></title>
+    <title>ZeroAI CRM Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .navbar-brand { font-weight: bold; }
-        .feature-card { transition: transform 0.3s; height: 100%; }
-        .feature-card:hover { transform: translateY(-5px); }
-        .feature-icon { font-size: 3rem; color: #0d6efd; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .sidebar { min-height: 100vh; background: #f8f9fa; }
+        .main-content { padding: 20px; }
     </style>
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/web">
-                <i class="bi bi-robot"></i> ZeroAI Portal
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/web">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/web/ai_center.php">AI Center</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/">Admin</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar p-3">
+                <h5 class="text-primary mb-4">
+                    <i class="bi bi-robot"></i> ZeroAI CRM
+                </h5>
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="/web/"><i class="bi bi-house"></i> Dashboard</a>
+                    <a class="nav-link" href="/web/companies.php"><i class="bi bi-building"></i> Companies</a>
+                    <a class="nav-link" href="/web/contacts.php"><i class="bi bi-people"></i> Contacts</a>
+                    <a class="nav-link" href="/web/projects.php"><i class="bi bi-folder"></i> Projects</a>
+                    <a class="nav-link" href="/web/tasks.php"><i class="bi bi-check-square"></i> Tasks</a>
+                    <a class="nav-link" href="/web/ai_center.php"><i class="bi bi-robot"></i> AI Center</a>
+                    <hr>
+                    <a class="nav-link" href="/admin/"><i class="bi bi-gear"></i> Admin</a>
+                    <a class="nav-link" href="/web/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                </nav>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-10 main-content">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>CRM Dashboard</h2>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> <?= htmlspecialchars($currentUser) ?>
-                        </a>
+                        </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="/admin/settings.php">Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/admin/logout.php">Logout</a></li>
+                            <li><a class="dropdown-item" href="/web/logout.php">Logout</a></li>
                         </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
-    <div class="container my-5">
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h1 class="card-title">Welcome to ZeroAI User Portal</h1>
-                        <p class="card-text lead">Manage your AI workforce and projects from this central dashboard.</p>
-                        
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="/web/ai_center.php" class="btn btn-primary">
-                                <i class="bi bi-robot"></i> AI Community Center
-                            </a>
-                            <a href="/admin/agents.php" class="btn btn-outline-primary">
-                                <i class="bi bi-gear"></i> Manage Agents
-                            </a>
-                            <a href="/admin/dashboard.php" class="btn btn-outline-secondary">
-                                <i class="bi bi-graph-up"></i> System Dashboard
-                            </a>
+                    </div>
+                </div>
+                
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3><?= $stats['companies'] ?></h3>
+                                        <p class="mb-0">Companies</p>
+                                    </div>
+                                    <i class="bi bi-building display-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3><?= $stats['contacts'] ?></h3>
+                                        <p class="mb-0">Contacts</p>
+                                    </div>
+                                    <i class="bi bi-people display-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3><?= $stats['projects'] ?></h3>
+                                        <p class="mb-0">Projects</p>
+                                    </div>
+                                    <i class="bi bi-folder display-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3><?= $stats['tasks'] ?></h3>
+                                        <p class="mb-0">Active Tasks</p>
+                                    </div>
+                                    <i class="bi bi-check-square display-6"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="row g-4 mt-4">
-            <div class="col-md-4">
-                <div class="card h-100 feature-card shadow-sm">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mb-3">
-                            <i class="bi bi-robot"></i>
+                
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-lightning"></i> Quick Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <a href="/web/companies.php?action=add" class="btn btn-primary w-100 mb-2">
+                                            <i class="bi bi-plus"></i> Add Company
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="/web/contacts.php?action=add" class="btn btn-success w-100 mb-2">
+                                            <i class="bi bi-person-plus"></i> Add Contact
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="/web/projects.php?action=add" class="btn btn-info w-100 mb-2">
+                                            <i class="bi bi-folder-plus"></i> New Project
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="/web/tasks.php?action=add" class="btn btn-warning w-100 mb-2">
+                                            <i class="bi bi-plus-square"></i> Add Task
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <h5 class="card-title">AI Agents</h5>
-                        <p class="card-text">Browse and assign AI agents from the community pool to your projects.</p>
-                        <a href="/web/ai_center.php" class="btn btn-primary">Browse Agents</a>
                     </div>
                 </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card h-100 feature-card shadow-sm">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mb-3">
-                            <i class="bi bi-graph-up"></i>
+                
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-clock-history"></i> Recent Activity</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($recentActivities)): ?>
+                                    <p class="text-muted">No recent activity</p>
+                                <?php else: ?>
+                                    <div class="list-group list-group-flush">
+                                        <?php foreach ($recentActivities as $activity): ?>
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1"><?= htmlspecialchars($activity['title']) ?></h6>
+                                                    <small><?= date('M j, Y', strtotime($activity['created_at'])) ?></small>
+                                                </div>
+                                                <p class="mb-1">
+                                                    <span class="badge bg-secondary"><?= ucfirst($activity['type']) ?></span>
+                                                    <span class="badge bg-primary"><?= ucfirst($activity['status'] ?? 'active') ?></span>
+                                                </p>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <h5 class="card-title">Analytics</h5>
-                        <p class="card-text">Monitor your AI workforce performance and resource usage.</p>
-                        <a href="/admin/dashboard.php" class="btn btn-primary">View Analytics</a>
                     </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card h-100 feature-card shadow-sm">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mb-3">
-                            <i class="bi bi-gear"></i>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-robot"></i> AI Assistant</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Your AI workforce is ready to help with:</p>
+                                <ul class="list-unstyled">
+                                    <li><i class="bi bi-check text-success"></i> Data analysis</li>
+                                    <li><i class="bi bi-check text-success"></i> Report generation</li>
+                                    <li><i class="bi bi-check text-success"></i> Task automation</li>
+                                    <li><i class="bi bi-check text-success"></i> Customer insights</li>
+                                </ul>
+                                <a href="/web/ai_center.php" class="btn btn-primary w-100">
+                                    <i class="bi bi-robot"></i> Launch AI Center
+                                </a>
+                            </div>
                         </div>
-                        <h5 class="card-title">Configuration</h5>
-                        <p class="card-text">Configure your AI agents and system settings.</p>
-                        <a href="/admin/agents.php" class="btn btn-primary">Configure</a>
                     </div>
                 </div>
             </div>
