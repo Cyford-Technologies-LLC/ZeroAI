@@ -64,26 +64,26 @@ try {
     
     switch ($action) {
         case 'chat':
-            $logger->logClaude('Chat action started');
+            $logger->info('Chat action started');
             $message = $input['message'] ?? '';
             $model = $input['model'] ?? 'claude-3-5-sonnet-20241022';
             $mode = $input['mode'] ?? 'hybrid';
             $history = $input['history'] ?? [];
             
-            $logger->logClaude('Chat parameters', ['message_length' => strlen($message), 'model' => $model, 'mode' => $mode, 'history_count' => count($history)]);
+            $logger->debug('Chat parameters', ['message_length' => strlen($message), 'model' => $model, 'mode' => $mode, 'history_count' => count($history)]);
             
             if (empty($message)) {
-                $logger->logClaude('Chat failed: empty message');
+                $logger->warning('Chat failed: empty message');
                 echo json_encode(['success' => false, 'error' => 'Message required']);
                 exit;
             }
             
-            $logger->logClaude('Calling claudeProvider->chat()');
+            $logger->debug('Calling claudeProvider->chat()');
             $response = $claudeProvider->chat($message, $model, $history, $mode);
-            $logger->logClaude('ClaudeProvider chat response', ['response_type' => gettype($response), 'success' => $response['success'] ?? 'unknown']);
+            $logger->debug('ClaudeProvider chat response', ['response_type' => gettype($response), 'success' => $response['success'] ?? 'unknown']);
             
             if ($response['success']) {
-                $logger->logClaude('Chat successful, sending response');
+                $logger->info('Chat successful');
                 echo json_encode([
                     'success' => true, 
                     'response' => $response['response'],
@@ -92,7 +92,7 @@ try {
                     'cost' => $response['cost']
                 ]);
             } else {
-                $logger->logClaude('Chat failed', ['error' => $response['error'] ?? 'unknown error']);
+                $logger->error('Chat failed', ['error' => $response['error'] ?? 'unknown error']);
                 echo json_encode(['success' => false, 'error' => $response['error']]);
             }
             break;
@@ -137,71 +137,72 @@ try {
             break;
             
         case 'save_system_prompt':
-            $logger->logClaude('Save system prompt action started');
+            $logger->info('Save system prompt action started');
             try {
                 $content = $input['content'] ?? '';
-                $logger->logClaude('System prompt content received', ['content_length' => strlen($content), 'content_preview' => substr($content, 0, 100)]);
+                $logger->debug('System prompt content received', ['content_length' => strlen($content), 'content_preview' => substr($content, 0, 100)]);
                 
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
-                $logger->logClaude('Database instance obtained');
+                $logger->debug('Database instance obtained');
                 
                 $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-                $logger->logClaude('Table created/verified');
+                $logger->debug('Table created/verified');
                 
                 $existing = $db->query("SELECT id FROM claude_system_prompt LIMIT 1");
-                $logger->logClaude('Existing check completed', ['existing_count' => count($existing)]);
+                $logger->debug('Existing check completed', ['existing_count' => count($existing)]);
                 
                 if ($existing && count($existing) > 0) {
                     $result = $db->query("UPDATE claude_system_prompt SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1", [$content]);
-                    $logger->logClaude('UPDATE executed', ['result' => $result]);
+                    $logger->debug('UPDATE executed', ['result' => $result]);
                 } else {
                     $result = $db->query("INSERT INTO claude_system_prompt (content) VALUES (?)", [$content]);
-                    $logger->logClaude('INSERT executed', ['result' => $result]);
+                    $logger->debug('INSERT executed', ['result' => $result]);
                 }
                 
                 // Verify save
                 $verify = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
-                $logger->logClaude('Save verification', ['saved_length' => strlen($verify[0]['content'] ?? ''), 'matches' => ($verify[0]['content'] ?? '') === $content]);
+                $saved = ($verify[0]['content'] ?? '') === $content;
+                $logger->info('System prompt saved', ['saved_length' => strlen($verify[0]['content'] ?? ''), 'matches' => $saved]);
                 
-                echo json_encode(['success' => true, 'debug' => 'Saved successfully']);
+                echo json_encode(['success' => true]);
             } catch (\Exception $e) {
-                $logger->logClaude('Save system prompt FAILED', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => $e->getTraceAsString()]);
+                $logger->error('Save system prompt FAILED', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             break;
             
         case 'get_system_prompt':
-            $logger->logClaude('Get system prompt action started');
+            $logger->info('Get system prompt action started');
             try {
                 $db = \ZeroAI\Core\DatabaseManager::getInstance();
-                $logger->logClaude('Database instance obtained for GET');
+                $logger->debug('Database instance obtained for GET');
                 
                 $db->query("CREATE TABLE IF NOT EXISTS claude_system_prompt (id INTEGER PRIMARY KEY, content TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-                $logger->logClaude('Table verified for GET');
+                $logger->debug('Table verified for GET');
                 
                 $result = $db->query("SELECT content FROM claude_system_prompt ORDER BY updated_at DESC LIMIT 1");
-                $logger->logClaude('Query executed for GET', ['result_count' => count($result)]);
+                $logger->debug('Query executed for GET', ['result_count' => count($result)]);
                 
                 $content = ($result && count($result) > 0) ? $result[0]['content'] : '';
-                $logger->logClaude('Content extracted', ['has_content' => !empty($content), 'content_length' => strlen($content)]);
+                $logger->debug('Content extracted', ['has_content' => !empty($content), 'content_length' => strlen($content)]);
                 
                 // If no custom prompt, load default from file
                 if (empty($content)) {
-                    $logger->logClaude('No custom prompt found, loading default');
+                    $logger->warning('No custom prompt found, loading default');
                     $defaultPromptFile = __DIR__ . '/claude_system_prompt.txt';
-                    $logger->logClaude('Default file path', ['path' => $defaultPromptFile, 'exists' => file_exists($defaultPromptFile)]);
+                    $logger->debug('Default file path', ['path' => $defaultPromptFile, 'exists' => file_exists($defaultPromptFile)]);
                     
                     if (file_exists($defaultPromptFile)) {
                         $content = file_get_contents($defaultPromptFile);
-                        $logger->logClaude('Default file loaded', ['content_length' => strlen($content)]);
+                        $logger->info('Default file loaded', ['content_length' => strlen($content)]);
                     } else {
-                        $logger->logClaude('Default file not found');
+                        $logger->warning('Default file not found');
                     }
                 }
                 
-                echo json_encode(['success' => true, 'content' => $content, 'debug' => 'Retrieved successfully']);
+                echo json_encode(['success' => true, 'content' => $content]);
             } catch (\Exception $e) {
-                $logger->logClaude('Get system prompt FAILED', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => $e->getTraceAsString()]);
+                $logger->error('Get system prompt FAILED', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
             break;
