@@ -147,7 +147,7 @@ class ClaudeToolSystem {
     
     private function listAgents() {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             $result = $db->executeSQL("SELECT * FROM agents ORDER BY id", 'main');
             
             $output = "🤖 Agents:\n";
@@ -191,7 +191,7 @@ class ClaudeToolSystem {
     
     private function updateAgent($agentId, $updates) {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             $updateData = [];
             
             // Parse update parameters
@@ -244,7 +244,7 @@ class ClaudeToolSystem {
     
     private function memoryCommand($type, $filter) {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             $memoryData = [];
             
             if ($type === 'chat' && preg_match('/(\d+)min/', $filter, $timeMatch)) {
@@ -344,7 +344,7 @@ class ClaudeToolSystem {
     
     private function logCommand($command, $input, $output) {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
             // Create table if not exists
             $db->executeSQL("CREATE TABLE IF NOT EXISTS command_history (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT NOT NULL, output TEXT, status TEXT NOT NULL, model_used TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, session_id INTEGER)", 'claude');
