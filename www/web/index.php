@@ -17,19 +17,21 @@ try {
     error_log('Logger failed: ' . $e->getMessage());
 }
 
-// Check if user is logged in (from admin session)
-if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
+// Check if user is logged in (admin or web session)
+if (!isset($_SESSION['admin_logged_in']) && !isset($_SESSION['web_logged_in'])) {
     try {
         $logger->warning('Unauthorized web portal access', [
             'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-            'redirect_to' => '/admin/login.php?redirect=/web'
+            'redirect_to' => '/web/login.php'
         ]);
     } catch (Exception $e) {
         error_log('Logger failed: ' . $e->getMessage());
     }
-    header('Location: /admin/login.php?redirect=/web');
+    header('Location: /web/login.php');
     exit;
 }
+
+$currentUser = $_SESSION['admin_user'] ?? $_SESSION['web_user'] ?? 'User';
 
 $pageTitle = 'ZeroAI User Portal';
 ?>
@@ -72,7 +74,7 @@ $pageTitle = 'ZeroAI User Portal';
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> <?= htmlspecialchars($_SESSION['admin_user'] ?? 'User') ?>
+                            <i class="bi bi-person-circle"></i> <?= htmlspecialchars($currentUser) ?>
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="/admin/settings.php">Settings</a></li>
