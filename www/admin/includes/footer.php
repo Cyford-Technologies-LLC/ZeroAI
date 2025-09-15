@@ -1,5 +1,9 @@
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </div> <!-- .container -->
+    
+    <!-- ZeroAI Admin Scripts -->
+    <script src="/assets/js/admin.js"></script>
+    <?php if ($currentPage === 'claude_chat'): ?>
+    <script src="/assets/js/claude.js"></script>
+    <?php endif; ?>
 </body>
 </html>

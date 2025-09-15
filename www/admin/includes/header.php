@@ -13,7 +13,40 @@ if (http_response_code() == 404 || !file_exists($_SERVER['SCRIPT_FILENAME'])) {
         'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'
     ]);
 }
+
+$pageTitle = $pageTitle ?? 'ZeroAI Admin';
+$currentPage = $currentPage ?? '';
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($pageTitle); ?></title>
+    
+    <!-- ZeroAI Admin Styles -->
+    <link rel="stylesheet" href="/assets/css/admin.css">
+    <?php if ($currentPage === 'claude_chat'): ?>
+    <link rel="stylesheet" href="/assets/css/claude.css">
+    <?php endif; ?>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Navigation -->
+        <nav class="nav">
+            <div class="nav-links">
+                <a href="/admin/dashboard.php" class="nav-link <?php echo $currentPage === 'dashboard' ? 'active' : ''; ?>">🏠 Dashboard</a>
+                <a href="/admin/agents.php" class="nav-link <?php echo $currentPage === 'agents' ? 'active' : ''; ?>">🤖 Agents</a>
+                <a href="/admin/crews.php" class="nav-link <?php echo $currentPage === 'crews' ? 'active' : ''; ?>">👥 Crews</a>
+                <a href="/admin/claude_chat.php" class="nav-link <?php echo $currentPage === 'claude_chat' ? 'active' : ''; ?>">💬 Claude</a>
+                <a href="/admin/settings.php" class="nav-link <?php echo $currentPage === 'settings' ? 'active' : ''; ?>">⚙️ Settings</a>
+                <a href="/admin/logout.php" class="nav-link">🚪 Logout</a>
+            </div>
+        </nav>
 <!DOCTYPE html>
 <html>
 <head>
