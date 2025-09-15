@@ -29,9 +29,14 @@ if ($_POST && isset($_POST['name'])) {
 
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5>Add New Company</h5>
+                    <h5>
+                        <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#addCompanyForm" aria-expanded="false">
+                            <i class="fas fa-plus-circle"></i> Add New Company
+                        </button>
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="collapse" id="addCompanyForm">
+                    <div class="card-body">
                     <form method="POST">
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -105,6 +110,7 @@ if ($_POST && isset($_POST['name'])) {
                         </div>
                         <button type="submit" class="btn btn-primary">Add Company</button>
                     </form>
+                    </div>
                 </div>
             </div>
 

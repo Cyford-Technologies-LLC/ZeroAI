@@ -41,9 +41,14 @@ try {
 
 <div class="card mb-4">
     <div class="card-header">
-        <h5>Add New Project</h5>
+        <h5>
+            <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#addProjectForm" aria-expanded="false">
+                <i class="fas fa-plus-circle"></i> Add New Project
+            </button>
+        </h5>
     </div>
-    <div class="card-body">
+    <div class="collapse" id="addProjectForm">
+        <div class="card-body">
         <form method="POST">
             <input type="hidden" name="action" value="add">
             <div class="row">
@@ -87,6 +92,7 @@ try {
             </div>
             <button type="submit" class="btn btn-primary">Add Project</button>
         </form>
+        </div>
     </div>
 </div>
 

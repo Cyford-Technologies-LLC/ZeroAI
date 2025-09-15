@@ -1,43 +1,59 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
-    header('Location: /web/login.php');
-    exit;
-}
-
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'AI Workshop - ZeroAI CRM';
 $currentPage = 'ai_workshop';
 
 include __DIR__ . '/includes/header.php';
 ?>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">🤖 ZeroAI AI Workshop</div>
-            <nav class="nav">
-                <a href="/web/index.php">Dashboard</a>
-                <a href="/web/companies.php">Companies</a>
-                <a href="/web/projects.php">Projects</a>
-            </nav>
-            <div class="user-info">
-                <span>Welcome, <?= htmlspecialchars($currentUser) ?>!</span>
-                <?php if ($isAdmin): ?><a href="/admin/dashboard.php" class="header-btn btn-admin">⚙️ Admin</a><?php endif; ?>
-                <a href="/web/ai_workshop.php" class="header-btn">🤖 AI Workshop</a>
-                <a href="/web/logout.php" class="header-btn btn-logout">Logout</a>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>🤖 AI Workshop</h5>
+    </div>
+    <div class="card-body">
+        <p class="lead">Welcome to the AI Workshop! This is where you can interact with AI agents and create automated workflows.</p>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">🧠 AI Chat</h6>
+                        <p class="card-text">Interact with AI agents for assistance with your CRM tasks.</p>
+                        <button class="btn btn-primary" disabled>Coming Soon</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">⚡ Automation</h6>
+                        <p class="card-text">Create automated workflows for your business processes.</p>
+                        <button class="btn btn-primary" disabled>Coming Soon</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">📊 AI Analytics</h6>
+                        <p class="card-text">Get AI-powered insights from your CRM data.</p>
+                        <button class="btn btn-primary" disabled>Coming Soon</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">🎯 Smart Recommendations</h6>
+                        <p class="card-text">Receive AI recommendations for better customer relationships.</p>
+                        <button class="btn btn-primary" disabled>Coming Soon</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="main-content">
-        <div class="container">
-            <div class="card">
-                <h3>AI Workshop</h3>
-                <p>Welcome to the AI Workshop! This is where you can interact with AI agents and create automated workflows.</p>
-                <p>AI Workshop functionality coming soon...</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+</div>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
