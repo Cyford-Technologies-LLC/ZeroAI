@@ -7,7 +7,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $action = $_GET['action'] ?? $input['action'] ?? '';
 
 try {
-    $db = new \ZeroAI\Core\DatabaseManager();
+    $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     if ($action === 'get') {
         $result = $db->executeSQL("SELECT prompt FROM claude_prompts ORDER BY created_at DESC LIMIT 1", 'claude');

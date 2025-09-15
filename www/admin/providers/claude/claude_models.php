@@ -16,7 +16,7 @@ try {
     echo 'System error';
     exit;
 }
-$db = new \ZeroAI\Core\DatabaseManager();
+$db = \ZeroAI\Core\DatabaseManager::getInstance();
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

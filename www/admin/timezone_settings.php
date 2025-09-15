@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../src/Core/DatabaseManager.php';
 
-$db = new \ZeroAI\Core\DatabaseManager();
+$db = \ZeroAI\Core\DatabaseManager::getInstance();
 
 // Handle form submission
 if ($_POST) {
