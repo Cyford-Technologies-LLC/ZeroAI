@@ -142,7 +142,7 @@ try {
                 $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
                 $modelsWithSource = $integration->getModelsWithSource();
                 $logger->logClaude('Models retrieved', ['count' => count($modelsWithSource['models']), 'source' => $modelsWithSource['source'], 'models' => $modelsWithSource['models']]);
-                echo json_encode(['success' => true, 'models' => $modelsWithSource['models'], 'source' => $modelsWithSource['source']]);
+                echo json_encode(['success' => true, 'models' => $modelsWithSource['models'], 'source' => $modelsWithSource['source'], 'color' => $modelsWithSource['color']]);
             } catch (\Exception $e) {
                 $logger->logClaude('Get models error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
                 // Fallback to basic models

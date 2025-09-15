@@ -35,7 +35,7 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
         <div class="card-body">
             <div class="row mb-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label">Model</label>
+                    <label class="form-label">Model <span id="model-source-indicator"></span></label>
                     <select id="claude-model" class="form-select form-select-sm">
                         <option value="claude-opus-4-1-20250805">Opus 4.1</option>
                         <option value="claude-3-5-sonnet-20241022" selected>Sonnet 3.5</option>

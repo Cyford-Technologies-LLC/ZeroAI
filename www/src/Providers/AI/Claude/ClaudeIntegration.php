@@ -31,44 +31,34 @@ class ClaudeIntegration extends BaseAIProvider {
     public function getModels(): array {
         $logger = \ZeroAI\Core\Logger::getInstance();
         
-        // Clear old cache to force refresh
+        // Try API first, cache only API results
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
-            $cache->delete('claude_models');
-            $logger->logClaude('Cleared old model cache');
-        } catch (\Exception $e) {
-            $logger->logClaude('Cache clear failed', ['error' => $e->getMessage()]);
-        }
-        
-        // Fetch real models from Claude API
-        $realModels = $this->fetchRealModels();
-        if (!empty($realModels)) {
-            $logger->logClaude('Models loaded from hardcoded list', ['count' => count($realModels), 'source' => 'hardcoded', 'models' => $realModels]);
-            // Cache for 24 hours
-            try {
-                $cache = \ZeroAI\Core\CacheManager::getInstance();
-                $cache->set('claude_models', $realModels, 86400);
-            } catch (\Exception $e) {
-                $logger->logClaude('Failed to cache models', ['error' => $e->getMessage()]);
+            $cachedModels = $cache->get('claude_api_models');
+            if ($cachedModels !== false && !empty($cachedModels)) {
+                $logger->logClaude('Models loaded from API cache', ['count' => count($cachedModels), 'source' => 'api_cached']);
+                return $cachedModels;
             }
-            return $realModels;
+        } catch (\Exception $e) {
+            $logger->logClaude('Cache check failed', ['error' => $e->getMessage()]);
         }
         
-        // Fallback to hardcoded models
-        $fallbackModels = array_keys($this->models);
-        $logger->logClaude('Using fallback hardcoded models', ['count' => count($fallbackModels), 'source' => 'fallback', 'models' => $fallbackModels]);
-        return $fallbackModels;
+        // Try real API call (would go here if endpoint existed)
+        // For now, return hardcoded since API doesn't exist
+        $hardcodedModels = $this->fetchRealModels();
+        $logger->logClaude('Using hardcoded models (no API available)', ['count' => count($hardcodedModels), 'source' => 'hardcoded', 'models' => $hardcodedModels]);
+        return $hardcodedModels;
     }
     
     public function getModelsWithSource(): array {
         $logger = \ZeroAI\Core\Logger::getInstance();
         
-        // Check cache first
+        // Check API cache first
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
-            $cachedModels = $cache->get('claude_models');
+            $cachedModels = $cache->get('claude_api_models');
             if ($cachedModels !== false && !empty($cachedModels)) {
-                return ['models' => $cachedModels, 'source' => 'Redis Cache'];
+                return ['models' => $cachedModels, 'source' => 'API', 'color' => 'green'];
             }
         } catch (\Exception $e) {
             $logger->logClaude('Cache check failed', ['error' => $e->getMessage()]);
@@ -76,7 +66,7 @@ class ClaudeIntegration extends BaseAIProvider {
         
         // Get hardcoded models
         $models = $this->fetchRealModels();
-        return ['models' => $models, 'source' => 'Hardcoded List'];
+        return ['models' => $models, 'source' => 'Hardcoded', 'color' => 'red'];
     }
     
     private function fetchRealModels(): array {
