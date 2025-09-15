@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 website TEXT,
                 linkedin TEXT,
                 password TEXT NOT NULL,
-                role TEXT DEFAULT 'user',
+                role TEXT DEFAULT 'frontend',
                 organization_id INTEGER DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Create user
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $db->query("INSERT INTO users (username, company_name, first_name, last_name, email, phone, website, linkedin, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user')", 
+                $db->query("INSERT INTO users (username, company_name, first_name, last_name, email, phone, website, linkedin, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'frontend')", 
                     [$username, $company_name, $first_name, $last_name, $email, $phone, $website, $linkedin, $hashedPassword]);
                 
                 $success = 'Registration successful! You can now login.';
