@@ -109,18 +109,16 @@ $currentPage = $currentPage ?? '';
             <a href="/web/projects.php"
                style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; <?= ($currentPage ?? '') === 'projects' ? 'background: rgba(255,255,255,0.2);' : '' ?>">📋
                 Projects</a>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
             <a href="/web/ai_workshop.php"
-               style="background: #0dcaf0; color: black; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">🤖
+               style="background: #0dcaf0; color: black; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; margin-left: 20px;">🤖
                 AI</a>
             <?php if (isset($isAdmin) && $isAdmin): ?><a href="/admin/dashboard.php"
                                                          style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">⚙️
                 Admin</a><?php endif; ?>
-            <button style="background: #6366f1; color: white; padding: 6px 12px; border-radius: 4px; border: none; font-size: 0.9rem; cursor: pointer;"
-                    onclick="toggleSidebar(); updateSidebarForProfile();">👤
-                Profile</button>
         </div>
+        <button style="background: #6366f1; color: white; padding: 6px 12px; border-radius: 4px; border: none; font-size: 0.9rem; cursor: pointer;"
+                onclick="toggleSidebar(); updateSidebarForProfile();">👤
+            Profile</button>
     </div>
 </div>
 
