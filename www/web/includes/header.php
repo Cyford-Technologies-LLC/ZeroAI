@@ -76,7 +76,7 @@ $currentPage = $currentPage ?? '';
 <body>
 <!-- Left Sidebar -->
 <div id="sidebar"
-     style="position: fixed; left: -250px; top: 0; width: 250px; height: 100vh; background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto;">
+     style="position: fixed; left: -250px; top: 0; width: 250px; height: 100vh; background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
     <div style="padding: 20px; border-bottom: 1px solid #334155;">
         <h6 style="margin: 0; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem;">Menu</h6>
     </div>
@@ -127,6 +127,7 @@ $currentPage = $currentPage ?? '';
         console.log('Toggle sidebar clicked');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
+        const mainContent = document.querySelector('.container-fluid, .container');
 
         if (!sidebar || !overlay) {
             console.log('Sidebar elements not found');
@@ -138,9 +139,17 @@ $currentPage = $currentPage ?? '';
         if (isOpen) {
             sidebar.style.left = '-250px';
             overlay.style.display = 'none';
+            if (mainContent) {
+                mainContent.style.marginLeft = '0';
+                mainContent.style.transition = 'margin-left 0.3s ease';
+            }
         } else {
             sidebar.style.left = '0px';
             overlay.style.display = 'block';
+            if (mainContent) {
+                mainContent.style.marginLeft = '250px';
+                mainContent.style.transition = 'margin-left 0.3s ease';
+            }
             updateSidebarContent();
         }
     }
