@@ -36,7 +36,7 @@ function updateSidebarForProfile() {
     updateSidebarContent(profileContent);
 }
 
-// Close sidebar when clicking overlay
+// Close sidebar when clicking overlay and initialize sidebar content
 document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('sidebar-overlay');
     if (overlay) {
@@ -47,4 +47,62 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Initialize sidebar content based on current page
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('companies')) {
+        updateSidebarForCompanies();
+    } else if (currentPath.includes('projects')) {
+        updateSidebarForProjects();
+    } else if (currentPath.includes('contacts')) {
+        updateSidebarForContacts();
+    } else if (currentPath.includes('tasks')) {
+        updateSidebarForTasks();
+    }
 });
+
+function updateSidebarForCompanies() {
+    const content = `
+        <div style="margin-bottom: 20px;">
+            <h6 style="color: #94a3b8; margin-bottom: 10px;">Company Actions</h6>
+            <a href="#add-company" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Company</a>
+            <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 View Contacts</a>
+            <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 View Projects</a>
+        </div>
+    `;
+    updateSidebarContent(content);
+}
+
+function updateSidebarForProjects() {
+    const content = `
+        <div style="margin-bottom: 20px;">
+            <h6 style="color: #94a3b8; margin-bottom: 10px;">Project Actions</h6>
+            <a href="#add-project" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Project</a>
+            <a href="/web/tasks.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">✅ View Tasks</a>
+            <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 View Companies</a>
+        </div>
+    `;
+    updateSidebarContent(content);
+}
+
+function updateSidebarForContacts() {
+    const content = `
+        <div style="margin-bottom: 20px;">
+            <h6 style="color: #94a3b8; margin-bottom: 10px;">Contact Actions</h6>
+            <a href="#add-contact" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Contact</a>
+            <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 View Companies</a>
+        </div>
+    `;
+    updateSidebarContent(content);
+}
+
+function updateSidebarForTasks() {
+    const content = `
+        <div style="margin-bottom: 20px;">
+            <h6 style="color: #94a3b8; margin-bottom: 10px;">Task Actions</h6>
+            <a href="#add-task" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Task</a>
+            <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 View Projects</a>
+        </div>
+    `;
+    updateSidebarContent(content);
+}

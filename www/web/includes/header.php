@@ -166,7 +166,18 @@ $currentPage = $currentPage ?? '';
             <h6 style="margin: 0; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem;">Menu</h6>
         </div>
         <div id="sidebar-content" style="padding: 20px;">
-            <!-- Dynamic content -->
+            <div style="margin-bottom: 20px;">
+                <h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>
+                <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 Companies</a>
+                <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Contacts</a>
+                <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 Projects</a>
+                <a href="/web/tasks.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">✅ Tasks</a>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <h6 style="color: #94a3b8; margin-bottom: 10px;">Quick Actions</h6>
+                <a href="/web/companies.php#add" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Company</a>
+                <a href="/web/projects.php#add" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Project</a>
+            </div>
         </div>
     </div>
     <!-- RIGHT SECTION -->
