@@ -7,10 +7,10 @@ chmod +x /app/git
 cp /app/git /usr/local/bin/git
 chmod +x /usr/local/bin/git
 
-# Create directories and fix ownership
+# Create directories and fix ownership (AFTER volumes are mounted)
 mkdir -p /app/data /app/logs /app/knowledge/internal_crew/agent_learning/self/claude/sessions_data
-chown -R www-data:www-data /app/data /app/www /app/logs /app/knowledge
-chmod -R 775 /app/data /app/logs /app/knowledge
+chown -R www-data:www-data /app
+chmod -R 775 /app/data /app/logs /app/knowledge /app/www
 
 # Start Redis
 echo "Starting Redis..."
