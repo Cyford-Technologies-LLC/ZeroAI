@@ -87,44 +87,54 @@ include __DIR__ . '/includes/header.php';
                 <div class="alert alert-error"><?= $error ?></div>
             <?php endif; ?>
 
-            <div class="card">
-                <h3>Add New Task</h3>
-                <form method="POST">
-                    <input type="hidden" name="action" value="add">
-                    <div class="form-group">
-                        <label>Task Description</label>
-                        <textarea name="description" required></textarea>
-                    </div>
-                    <button type="submit" class="btn">Add Task</button>
-                </form>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Add New Task</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="add">
+                        <div class="mb-3">
+                            <label class="form-label">Task Description</label>
+                            <textarea class="form-control" name="description" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Task</button>
+                    </form>
+                </div>
             </div>
 
             <div class="card">
-                <h3>Tasks List</h3>
-                <?php if (empty($tasks)): ?>
-                    <p>No tasks found. Add your first task above.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Completed</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($tasks as $task): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($task['description']) ?></td>
-                                    <td><?= htmlspecialchars($task['status']) ?></td>
-                                    <td><?= $task['created_at'] ? date('M j, Y', strtotime($task['created_at'])) : '' ?></td>
-                                    <td><?= $task['completed_at'] ? date('M j, Y', strtotime($task['completed_at'])) : '' ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
+                <div class="card-header">
+                    <h5>Tasks List</h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($tasks)): ?>
+                        <p>No tasks found. Add your first task above.</p>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Completed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($tasks as $task): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($task['description']) ?></td>
+                                            <td><?= htmlspecialchars($task['status']) ?></td>
+                                            <td><?= $task['created_at'] ? date('M j, Y', strtotime($task['created_at'])) : '' ?></td>
+                                            <td><?= $task['completed_at'] ? date('M j, Y', strtotime($task['completed_at'])) : '' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
