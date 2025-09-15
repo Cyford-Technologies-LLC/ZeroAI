@@ -36,17 +36,7 @@ $currentPage = $currentPage ?? '';
 <body>
     <div class="container">
         
-        <!-- Navigation -->
-        <nav class="nav">
-            <div class="nav-links">
-                <a href="/admin/dashboard.php" class="nav-link <?php echo $currentPage === 'dashboard' ? 'active' : ''; ?>">🏠 Dashboard</a>
-                <a href="/admin/agents.php" class="nav-link <?php echo $currentPage === 'agents' ? 'active' : ''; ?>">🤖 Agents</a>
-                <a href="/admin/crews.php" class="nav-link <?php echo $currentPage === 'crews' ? 'active' : ''; ?>">👥 Crews</a>
-                <a href="/admin/claude_chat.php" class="nav-link <?php echo $currentPage === 'claude_chat' ? 'active' : ''; ?>">💬 Claude</a>
-                <a href="/admin/settings.php" class="nav-link <?php echo $currentPage === 'settings' ? 'active' : ''; ?>">⚙️ Settings</a>
-                <a href="/admin/logout.php" class="nav-link">🚪 Logout</a>
-            </div>
-        </nav>
+
 <!DOCTYPE html>
 <html>
 <head>

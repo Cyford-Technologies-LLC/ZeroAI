@@ -2,15 +2,17 @@
 $pageTitle = 'Test Dynamic Agents - ZeroAI';
 $currentPage = 'agents';
 include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/agent_db.php';
+require_once __DIR__ . '/includes/autoload.php';
 
-$agentDB = new AgentDB();
+use ZeroAI\Core\DatabaseManager;
+
+$db = DatabaseManager::getInstance();
 
 // Test dynamic agent loading
 $testResults = [];
 
 // Test 1: Check database agents
-$agents = $agentDB->getAllAgents();
+$agents = $db->select('agents') ?: [];
 $testResults['database_agents'] = [
     'count' => count($agents),
     'agents' => array_slice($agents, 0, 3) // Show first 3 for brevity
@@ -31,8 +33,20 @@ if ($sampleAgent) {
 
 // Test 3: Import agents to ensure database is populated
 if (isset($_POST['import_agents'])) {
-    $imported = $agentDB->importExistingAgents();
-    $testResults['import_result'] = count($imported) . ' agents imported';
+    // Sample agents to import
+    $sampleAgents = [
+        ['name' => 'Research Specialist', 'role' => 'Senior Researcher', 'goal' => 'Conduct thorough research and analysis', 'backstory' => 'Expert in data gathering and analysis'],
+        ['name' => 'Code Developer', 'role' => 'Senior Developer', 'goal' => 'Write clean, efficient code', 'backstory' => 'Experienced full-stack developer'],
+        ['name' => 'QA Engineer', 'role' => 'Quality Assurance', 'goal' => 'Ensure software quality', 'backstory' => 'Meticulous testing specialist']
+    ];
+    
+    $imported = 0;
+    foreach ($sampleAgents as $agent) {
+        if ($db->insert('agents', $agent)) {
+            $imported++;
+        }
+    }
+    $testResults['import_result'] = $imported . ' agents imported';
 }
 
 ?>

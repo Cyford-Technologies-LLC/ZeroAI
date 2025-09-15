@@ -97,54 +97,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $agents = $db->select('agents') ?: [];
 ?>
 
-<h1>Agent Management</h1>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>🤖 Agent Management</h1>
+    <div>
+        <a href="/web/ai_center.php" class="btn btn-primary">AI Community Center</a>
+        <button onclick="showCreateForm()" class="btn btn-success">+ Create Agent</button>
+    </div>
+</div>
 
 <?php if ($message): ?>
-    <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
+    <div style="padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; margin-bottom: 15px;">
+        ✅ <?= htmlspecialchars($message) ?>
+    </div>
 <?php endif; ?>
 
 <?php if ($error): ?>
-    <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+    <div style="padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; margin-bottom: 15px;">
+        ❌ <?= htmlspecialchars($error) ?>
+    </div>
 <?php endif; ?>
+
+<div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card">
+        <div class="stat-value"><?= count($agents) ?></div>
+        <div class="stat-label">Total Agents</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value"><?= count(array_filter($agents, fn($a) => $a['status'] === 'active')) ?></div>
+        <div class="stat-label">Active Agents</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value"><?= count(array_unique(array_column($agents, 'role'))) ?></div>
+        <div class="stat-label">Unique Roles</div>
+    </div>
+</div>
     
-<div class="card">
+<div id="createForm" class="card" style="display: none;">
     <h3>Create New Agent</h3>
     <form method="POST">
         <input type="hidden" name="action" value="create_agent">
-        <input type="text" name="name" placeholder="Agent Name" required style="width: 100%; margin-bottom: 10px;">
-        <input type="text" name="role" placeholder="Agent Role" required style="width: 100%; margin-bottom: 10px;">
-        <textarea name="goal" placeholder="Agent Goal" rows="2" required style="width: 100%; margin-bottom: 10px;"></textarea>
-        <textarea name="backstory" placeholder="Agent Backstory" rows="3" style="width: 100%; margin-bottom: 10px;"></textarea>
-        <button type="submit" class="btn-success">Create Agent</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <input type="text" name="name" placeholder="Agent Name" required class="form-input">
+            <input type="text" name="role" placeholder="Agent Role" required class="form-input">
+        </div>
+        <textarea name="goal" placeholder="Agent Goal" rows="2" required class="form-input" style="margin-bottom: 15px;"></textarea>
+        <textarea name="backstory" placeholder="Agent Backstory" rows="3" class="form-input" style="margin-bottom: 15px;"></textarea>
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">Create Agent</button>
+            <button type="button" onclick="hideCreateForm()" class="btn btn-secondary">Cancel</button>
+        </div>
     </form>
 </div>
 
 <div class="card">
-    <h3>Active Agents (<?= count($agents) ?>)</h3>
-    
-    <?php foreach ($agents as $agent): ?>
-        <div class="agent-item" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; <?= $agent['is_core'] ? 'border-left: 4px solid #007bff;' : '' ?>">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <h4><?= htmlspecialchars($agent['name']) ?> 
-                        <?= $agent['is_core'] ? '<span style="color: #007bff; font-size: 0.8em;">(Core Agent)</span>' : '' ?>
-                    </h4>
-                    <p><strong>Role:</strong> <?= htmlspecialchars($agent['role']) ?></p>
-                    <p><strong>Goal:</strong> <?= htmlspecialchars($agent['goal']) ?></p>
-                    <p><strong>Backstory:</strong> <?= htmlspecialchars(substr($agent['backstory'], 0, 100)) ?>...</p>
-                    <p><strong>Status:</strong> <span style="color: #28a745;"><?= ucfirst($agent['status']) ?></span></p>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <button onclick="editAgent(<?= $agent['id'] ?>)" class="btn-warning">Edit</button>
-                    <button onclick="chatWithAgent(<?= $agent['id'] ?>)" class="btn-success">Chat</button>
-                    <button onclick="viewTasks(<?= $agent['id'] ?>)">View Tasks</button>
-                </div>
-            </div>
-        </div>
-    <?php endforeach; ?>
+    <h3>🤖 AI Agents (<?= count($agents) ?>)</h3>
     
     <?php if (empty($agents)): ?>
-        <p>No agents found. Click "Import All Existing Agents" to load your ZeroAI internal crew.</p>
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h4>No agents found</h4>
+            <p>Create your first AI agent to get started.</p>
+            <button onclick="showCreateForm()" class="btn btn-primary">Create First Agent</button>
+        </div>
+    <?php else: ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-top: 15px;">
+            <?php foreach ($agents as $agent): ?>
+                <div class="agent-card" style="border: 1px solid #ddd; padding: 20px; border-radius: 12px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); <?= $agent['is_core'] ? 'border-left: 4px solid #007cba;' : '' ?>">
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 5px 0; color: #007cba; display: flex; align-items: center; gap: 8px;">
+                            🤖 <?= htmlspecialchars($agent['name']) ?>
+                            <?php if ($agent['is_core']): ?>
+                                <span style="background: #007cba; color: white; padding: 2px 6px; border-radius: 12px; font-size: 10px;">CORE</span>
+                            <?php endif; ?>
+                        </h4>
+                        <p style="margin: 0; font-weight: 600; color: #666; font-size: 14px;"><?= htmlspecialchars($agent['role']) ?></p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <p style="margin: 0 0 8px 0; font-size: 13px; line-height: 1.4;">
+                            <strong>Goal:</strong> <?= htmlspecialchars(substr($agent['goal'], 0, 80)) ?><?= strlen($agent['goal']) > 80 ? '...' : '' ?>
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: #888; line-height: 1.3;">
+                            <?= htmlspecialchars(substr($agent['backstory'], 0, 100)) ?><?= strlen($agent['backstory']) > 100 ? '...' : '' ?>
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="background: <?= $agent['status'] === 'active' ? '#28a745' : '#6c757d' ?>; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                            <?= strtoupper($agent['status']) ?>
+                        </span>
+                        <span style="font-size: 11px; color: #999;">
+                            Model: <?= htmlspecialchars($agent['llm_model'] ?? 'local') ?>
+                        </span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <button onclick="editAgent(<?= $agent['id'] ?>)" class="btn btn-warning btn-sm" style="font-size: 11px; padding: 6px 8px;">✏️ Edit</button>
+                        <button onclick="chatWithAgent(<?= $agent['id'] ?>)" class="btn btn-success btn-sm" style="font-size: 11px; padding: 6px 8px;">💬 Chat</button>
+                        <button onclick="deleteAgent(<?= $agent['id'] ?>)" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 6px 8px;">🗑️ Delete</button>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 </div>
 
@@ -214,6 +267,15 @@ $agents = $db->select('agents') ?: [];
 </div>
 
 <script>
+function showCreateForm() {
+    document.getElementById('createForm').style.display = 'block';
+    document.getElementById('createForm').scrollIntoView({behavior: 'smooth'});
+}
+
+function hideCreateForm() {
+    document.getElementById('createForm').style.display = 'none';
+}
+
 function editAgent(agentId) {
     fetch(`/api/admin/agents?id=${agentId}`)
         .then(r => r.json())
@@ -242,6 +304,19 @@ function editAgent(agentId) {
                 document.getElementById('editModal').style.display = 'block';
             }
         });
+}
+
+function deleteAgent(agentId) {
+    if (confirm('Are you sure you want to delete this agent?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="delete_agent">
+            <input type="hidden" name="agent_id" value="${agentId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 function closeEditModal() {

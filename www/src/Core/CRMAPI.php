@@ -74,6 +74,10 @@ class CRMAPI {
                 echo json_encode($this->getCompanyAgents());
                 break;
                 
+            case 'remove-agent':
+                echo json_encode($this->removeAgentFromCompany());
+                break;
+                
             case 'ai-chat':
                 echo json_encode($this->handleAIChat());
                 break;
@@ -354,16 +358,52 @@ class CRMAPI {
         return ['success' => true, 'agents' => $agents];
     }
     
+    private function removeAgentFromCompany() {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $db = DatabaseManager::getInstance();
+        
+        $result = $db->delete('company_agents', [
+            'company_id' => $data['company_id'],
+            'agent_id' => $data['agent_id']
+        ]);
+        
+        return ['success' => $result, 'message' => $result ? 'Agent removed from company' : 'Failed to remove agent'];
+    }
+    
     private function handleAIChat() {
         $data = json_decode(file_get_contents('php://input'), true);
         $companyId = $data['company_id'] ?? null;
+        $agentId = $data['agent_id'] ?? null;
         $query = $data['query'] ?? '';
         
-        if (!$companyId || !$query) {
-            return ['success' => false, 'error' => 'Company ID and query required'];
+        if (!$companyId || !$agentId || !$query) {
+            return ['success' => false, 'error' => 'Company ID, Agent ID and query required'];
         }
         
-        $companyAI = new CompanyAI();
-        return $companyAI->processQuery($companyId, $query);
+        // Get agent info
+        $db = DatabaseManager::getInstance();
+        $agent = $db->select('agents', ['id' => $agentId]);
+        
+        if (!$agent) {
+            return ['success' => false, 'error' => 'Agent not found'];
+        }
+        
+        $agent = $agent[0];
+        
+        // Build company context
+        $company = (new Company())->findById($companyId);
+        $context = "Company: {$company['name']} | Industry: {$company['industry']}\n";
+        $context .= "Agent Role: {$agent['role']}\n";
+        $context .= "Agent Goal: {$agent['goal']}\n";
+        
+        // Simple AI response (integrate with your crew system later)
+        $response = "Hello! I'm {$agent['name']}, your {$agent['role']}. I understand you're asking: '{$query}'. Based on my role and your company context, I'm here to help with {$agent['goal']}. How can I assist you further?";
+        
+        return [
+            'success' => true,
+            'response' => $response,
+            'agent' => $agent['name'],
+            'context_used' => true
+        ];
     }
 }
