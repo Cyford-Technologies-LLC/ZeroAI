@@ -33,21 +33,6 @@ try {
 
 <div class="container-fluid mt-4">
     <div class="content-wrapper">
-        <div class="sidebar">
-            <div class="sidebar-group">
-                <h3>CRM</h3>
-                <a href="/web/companies.php">Companies</a>
-                <a href="/web/contacts.php">Contacts</a>
-                <a href="/web/projects.php" class="active">Projects</a>
-                <?php if (isset($_GET['project_id'])): ?>
-                    <a href="/web/tasks.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">📋 Tasks</a>
-                    <a href="/web/features.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">✨ Features</a>
-                    <a href="/web/bugs.php?project_id=<?= $_GET['project_id'] ?>" style="padding-left: 40px;">🐛 Bugs</a>
-                <?php else: ?>
-                    <a href="/web/tasks.php">Tasks</a>
-                <?php endif; ?>
-            </div>
-        </div>
         <div class="main-content">
             <div class="container">
             <?php if (isset($success)): ?>
