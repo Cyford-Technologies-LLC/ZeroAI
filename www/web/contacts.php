@@ -1,20 +1,5 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
-    header('Location: /web/login.php');
-    exit;
-}
-
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
-$pageTitle = 'Contacts - ZeroAI CRM';
-$currentPage = 'contacts';
-
-require_once __DIR__ . '/../config/database.php';
-$db = new Database();
-$pdo = $db->getConnection();
+include __DIR__ . '/includes/header.php';
 
 // Handle form submissions
 if ($_POST && isset($_POST['action']) && $_POST['action'] == 'add') {
@@ -46,7 +31,7 @@ try {
     $error = "Database error: " . $e->getMessage();
 }
 
-include __DIR__ . '/includes/header.php';
+
 ?>
 
 <nav class="navbar navbar-expand-lg" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
