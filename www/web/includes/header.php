@@ -21,6 +21,13 @@ $currentPage = $currentPage ?? '';
         .btn-admin:hover { background: linear-gradient(135deg, #5a6268, #3d4142); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .btn-logout { background: linear-gradient(135deg, #dc3545, #e74c3c); color: white; }
         .btn-logout:hover { background: linear-gradient(135deg, #c82333, #dc2626); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .content-wrapper { display: flex; flex: 1; }
+        .sidebar { width: 250px; background: #343a40; color: white; padding: 20px 0; overflow-y: auto; }
+        .sidebar-group { margin-bottom: 20px; }
+        .sidebar-group h3 { color: #adb5bd; font-size: 12px; text-transform: uppercase; margin: 0 20px 10px; font-weight: bold; }
+        .sidebar a { display: block; color: #dee2e6; text-decoration: none; padding: 10px 20px; transition: background 0.3s; }
+        .sidebar a:hover { background: #495057; }
+        .sidebar a.active { background: #007bff; color: white; }
         .main-content { flex: 1; padding: 20px; overflow-y: auto; }
         .container { max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
