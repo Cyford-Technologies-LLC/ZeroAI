@@ -128,7 +128,7 @@ $currentPage = $currentPage ?? '';
 <body>
 <!-- Left Sidebar -->
 <div id="sidebar"
-     style="position: fixed; left: -250px; top: 0; width: 250px; height: 100vh; background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
+     style="position: fixed; left: -250px; top: 70px; width: 250px; height: calc(100vh - 70px); background: #1e293b; color: white; transition: left 0.3s ease; z-index: 1000; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
     <div style="padding: 20px; border-bottom: 1px solid #334155;">
         <h6 style="margin: 0; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem;">Menu</h6>
     </div>
