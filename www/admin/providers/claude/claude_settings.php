@@ -34,10 +34,10 @@ if ($_POST['action'] ?? '' === 'update_tool_system') {
     
     try {
         require_once __DIR__ . '/includes/autoload.php';
-        $db = new \ZeroAI\Core\DatabaseManager();
+        $db = \ZeroAI\Core\DatabaseManager::getInstance();
         
-        $db->executeSQL("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)", 'main');
-        $db->executeSQL("INSERT OR REPLACE INTO claude_settings (setting_name, setting_value, updated_at) VALUES (?, ?, datetime('now'))", 'main', ['unified_tools', $unifiedTools]);
+        $db->query("CREATE TABLE IF NOT EXISTS claude_settings (id INTEGER PRIMARY KEY, setting_name TEXT UNIQUE, setting_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+        $db->query("INSERT OR REPLACE INTO claude_settings (setting_name, setting_value, updated_at) VALUES (?, ?, datetime('now'))", ['unified_tools', $unifiedTools]);
         
         $toolMessage = "Tool system updated to: " . ($unifiedTools === 'true' ? 'New Unified System' : 'Legacy System');
     } catch (Exception $e) {

@@ -27,7 +27,69 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
     public function getModels(): array {
+        // Try to get cached models from Redis first
+        try {
+            $cache = \ZeroAI\Core\CacheManager::getInstance();
+            $cachedModels = $cache->get('claude_models');
+            if ($cachedModels !== false && !empty($cachedModels)) {
+                return $cachedModels;
+            }
+        } catch (\Exception $e) {
+            // Cache failed, continue to API
+        }
+        
+        // Fetch real models from Claude API
+        $realModels = $this->fetchRealModels();
+        if (!empty($realModels)) {
+            // Cache for 24 hours
+            try {
+                $cache = \ZeroAI\Core\CacheManager::getInstance();
+                $cache->set('claude_models', $realModels, 86400);
+            } catch (\Exception $e) {
+                // Cache failed, but we have models
+            }
+            return $realModels;
+        }
+        
+        // Fallback to hardcoded models
         return array_keys($this->models);
+    }
+    
+    private function fetchRealModels(): array {
+        try {
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://api.anthropic.com/v1/models',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'x-api-key: ' . $this->apiKey,
+                    'anthropic-version: 2023-06-01'
+                ],
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => false
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($httpCode === 200) {
+                $data = json_decode($response, true);
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $models = [];
+                    foreach ($data['data'] as $model) {
+                        if (isset($model['id'])) {
+                            $models[] = $model['id'];
+                        }
+                    }
+                    return $models;
+                }
+            }
+        } catch (\Exception $e) {
+            // API failed, return empty to use fallback
+        }
+        
+        return [];
     }
     
     public function validateApiKey(): bool {

@@ -137,9 +137,17 @@ try {
             break;
             
         case 'get_models':
-            $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
-            $models = $integration->getModels();
-            echo json_encode(['success' => true, 'models' => $models]);
+            $logger->logClaude('Get models action started');
+            try {
+                $integration = new \ZeroAI\Providers\AI\Claude\ClaudeIntegration(getenv('ANTHROPIC_API_KEY'));
+                $models = $integration->getModels();
+                $logger->logClaude('Models retrieved', ['count' => count($models), 'models' => $models]);
+                echo json_encode(['success' => true, 'models' => $models]);
+            } catch (\Exception $e) {
+                $logger->logClaude('Get models error: ' . $e->getMessage(), ['error' => $e->getMessage()]);
+                // Fallback to basic models
+                echo json_encode(['success' => true, 'models' => ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']]);
+            }
             break;
             
         case 'execute_background':

@@ -308,9 +308,40 @@ function addUsageInfo(model, usage) {
     container.appendChild(usageDiv);
 }
 
-// Load scratch pad on page load
+// Load models and scratch pad on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Try to load from server first
+    // Load real Claude models
+    fetch('/admin/providers/claude/claude_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'get_models'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.models) {
+            const modelSelect = document.getElementById('claude-model');
+            const currentValue = modelSelect.value;
+            
+            // Clear existing options
+            modelSelect.innerHTML = '';
+            
+            // Add real models
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                if (model === currentValue || model === 'claude-3-5-sonnet-20241022') {
+                    option.selected = true;
+                }
+                modelSelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.log('Failed to load models, using defaults');
+    });
+    
+    // Load scratch pad
     fetch('/admin/providers/claude/claude_api.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
