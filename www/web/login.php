@@ -181,11 +181,7 @@ if ($_POST) {
                             </button>
                         </form>
                         
-                        <div class="text-center">
-                            <a href="/admin/login.php" class="text-decoration-none">
-                                <i class="bi bi-gear"></i> Admin Login
-                            </a>
-                        </div>
+
                         
                         <div class="alert alert-info mt-3" role="alert">
                             <small>

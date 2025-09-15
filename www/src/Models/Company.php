@@ -1,5 +1,5 @@
 <?php
-namespace ZeroAI\Core;
+namespace ZeroAI\Models;
 
 class Company {
     private $db;

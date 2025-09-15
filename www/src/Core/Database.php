@@ -88,7 +88,29 @@ class Database {
         ('admin', '" . password_hash('admin123', PASSWORD_DEFAULT) . "', 'admin'),
         ('user', '" . password_hash('user123', PASSWORD_DEFAULT) . "', 'user');
         
-        ALTER TABLE users ADD COLUMN tenant_id INTEGER DEFAULT 1;
+        ALTER TABLE users ADD COLUMN organization_id INTEGER DEFAULT 1;
+        
+        CREATE TABLE IF NOT EXISTS organizations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            domain TEXT,
+            settings TEXT DEFAULT '{}',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS user_company_access (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            company_id INTEGER NOT NULL,
+            role TEXT DEFAULT 'viewer',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (company_id) REFERENCES companies(id),
+            UNIQUE(user_id, company_id)
+        );
+        
+        INSERT OR IGNORE INTO organizations (id, name) VALUES (1, 'Default Organization');
         
         INSERT OR IGNORE INTO agents (name, role, goal, backstory, config, is_core) VALUES 
         ('Team Manager', 'Team Coordination', 'Coordinate team activities and manage workflow', 'Expert team coordinator with years of experience managing AI crews', '{"tools": ["task_manager", "communication"], "memory": true, "planning": true}', 1),
@@ -111,7 +133,7 @@ class Database {
             address TEXT,
             website TEXT,
             industry TEXT,
-            tenant_id INTEGER DEFAULT 1,
+            organization_id INTEGER DEFAULT 1,
             created_by TEXT,
             status TEXT DEFAULT 'active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -127,7 +149,7 @@ class Database {
             phone TEXT,
             position TEXT,
             department TEXT,
-            tenant_id INTEGER DEFAULT 1,
+            organization_id INTEGER DEFAULT 1,
             created_by TEXT,
             status TEXT DEFAULT 'active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -145,14 +167,14 @@ class Database {
             start_date DATE,
             end_date DATE,
             budget DECIMAL(10,2),
-            tenant_id INTEGER DEFAULT 1,
+            organization_id INTEGER DEFAULT 1,
             created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (company_id) REFERENCES companies(id)
         );
         
-        INSERT OR IGNORE INTO companies (name, email, phone, industry, tenant_id, created_by) VALUES 
+        INSERT OR IGNORE INTO companies (name, email, phone, industry, organization_id, created_by) VALUES 
         ('Sample Company', 'contact@sample.com', '555-0123', 'Technology', 1, 'admin');
         ";
         

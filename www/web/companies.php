@@ -43,7 +43,7 @@ if ($_POST && isset($_POST['name'])) {
 // Use existing Company model
 try {
     require_once __DIR__ . '/../src/Models/Company.php';
-    $companyModel = new \ZeroAI\Core\Company();
+    $companyModel = new \ZeroAI\Models\Company();
     
     if ($isAdmin) {
         $companies = $companyModel->getAll();
