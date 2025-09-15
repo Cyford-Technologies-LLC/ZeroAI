@@ -28,8 +28,9 @@ RUN python -m venv /app/venv && \
 COPY . .
 
 # Fix ownership and git wrapper after copying code
-RUN chown -R www-data:www-data /app/www /app/data /app/logs /app/scripts \
-    && chmod -R 775 /app/www /app/data /app/logs \
+RUN mkdir -p /app/data /app/logs /app/knowledge \
+    && chown -R www-data:www-data /app \
+    && chmod -R 775 /app/www /app/data /app/logs /app/knowledge \
     && chmod +x /app/git
 
 # Configure PHP-FPM and PHP optimizations
@@ -51,9 +52,7 @@ RUN ln -sf /etc/nginx/sites-available/zeroai /etc/nginx/sites-enabled/default
 # Create necessary directories and set permissions
 RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /var/lib/nginx/scgi /var/lib/nginx/uwsgi \
     && mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
-    && mkdir -p /app/data /app/logs \
-    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run /tmp/nginx /app/data /app/logs /app/www \
-    && chmod -R 775 /app/data /app/logs /app/www
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run /tmp/nginx
 
 # Configure git
 RUN git config --global --add safe.directory /app \
