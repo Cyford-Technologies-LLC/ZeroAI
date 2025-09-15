@@ -14,7 +14,7 @@ if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) 
 $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
 $isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'Companies - ZeroAI CRM';
-$currentPage = 'companies';
+$currentPage = '/';
 
 // Get user's organization_id
 $userOrgId = 1; // Default
@@ -34,7 +34,7 @@ try {
 }
 
 
-// Use existing Company model
+// Use an existing Company model
 try {
     require_once __DIR__ . '/../../src/Models/Company.php';
     $companyModel = new Company();
@@ -49,6 +49,18 @@ try {
     $error = "Database error: " . $e->getMessage();
 }
 
+$companyId = $_GET['company_id'] ?? null;
+// Get company info
+$company = null;
+if ($companyId) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM companies WHERE id = ?");
+        $stmt->execute([$companyId]);
+        $company = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $error = "Company not found";
+    }
+}
 
 $pageTitle = $pageTitle ?? 'ZeroAI CRM';
 $currentPage = $currentPage ?? '';

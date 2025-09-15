@@ -11,7 +11,7 @@ $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
 $isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'Employees - ZeroAI CRM';
 $currentPage = 'employees';
-$companyId = $_GET['company_id'] ?? null;
+
 
 require_once __DIR__ . '/../config/database.php';
 $db = new Database();
@@ -29,7 +29,7 @@ if ($companyId) {
     }
 }
 
-include __DIR__ . '/includes/header.php';
+
 ?>
     <div class="header">
         <div class="header-content">

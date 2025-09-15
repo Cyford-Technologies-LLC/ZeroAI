@@ -1,6 +1,5 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
+include __DIR__ . '/includes/header.php';
 
 // Initialize with safe defaults
 $tenants = [];
@@ -29,7 +28,13 @@ $pageTitle = 'CRM Dashboard - ZeroAI';
 $currentPage = 'crm_dashboard';
 $currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
 $isAdmin = isset($_SESSION['admin_logged_in']);
-include __DIR__ . '/includes/header.php';
+
+
+
+
+
+
+
 ?>
 
 <div class="container-fluid mt-4">
