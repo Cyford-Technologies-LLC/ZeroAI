@@ -49,7 +49,7 @@ class ClaudeIntegration extends BaseAIProvider {
             // Cache API models
             try {
                 $cache = \ZeroAI\Core\CacheManager::getInstance();
-                $cache->set('claude_api_models', $apiModels, 86400);
+                $cache->set('claude_api_models', $apiModels, 3600);
                 $logger->logClaude('API models fetched and cached', ['count' => count($apiModels), 'source' => 'api_fresh']);
             } catch (\Exception $e) {
                 $logger->logClaude('Failed to cache API models', ['error' => $e->getMessage()]);
@@ -64,28 +64,21 @@ class ClaudeIntegration extends BaseAIProvider {
     }
     
     public function getModelsWithSource(): array {
-        $logger = \ZeroAI\Core\Logger::getInstance();
+        $models = $this->getModels();
         
-        // Check API cache first
+        // Check if these are cached API models
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
             $cachedModels = $cache->get('claude_api_models');
-            if ($cachedModels !== false && !empty($cachedModels)) {
-                return ['models' => $cachedModels, 'source' => 'API', 'color' => 'green'];
+            if ($cachedModels !== false && !empty($cachedModels) && $models === $cachedModels) {
+                return ['models' => $models, 'source' => 'API', 'color' => 'green'];
             }
         } catch (\Exception $e) {
-            $logger->logClaude('Cache check failed', ['error' => $e->getMessage()]);
+            // Continue
         }
         
-        // Try API call
-        $apiModels = $this->fetchRealModels();
-        if (!empty($apiModels)) {
-            return ['models' => $apiModels, 'source' => 'API', 'color' => 'green'];
-        }
-        
-        // API failed, use hardcoded
-        $hardcodedModels = array_keys($this->models);
-        return ['models' => $hardcodedModels, 'source' => 'Hardcoded', 'color' => 'red'];
+        // Must be hardcoded models
+        return ['models' => $models, 'source' => 'Hardcoded', 'color' => 'red'];
     }
     
     private function fetchRealModels(): array {
