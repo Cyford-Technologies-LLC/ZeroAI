@@ -19,7 +19,7 @@ $currentPage = 'companies';
 // Get user's organization_id
 $userOrgId = 1; // Default
 try {
-    require_once __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../../config/database.php';
     $db = new Database();
     $pdo = $db->getConnection();
 
@@ -36,7 +36,7 @@ try {
 
 // Use existing Company model
 try {
-    require_once __DIR__ . '/../src/Models/Company.php';
+    require_once __DIR__ . '/../../src/Models/Company.php';
     $companyModel = new Company();
 
     if ($isAdmin) {
