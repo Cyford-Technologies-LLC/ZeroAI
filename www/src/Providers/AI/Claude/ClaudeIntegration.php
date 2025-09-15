@@ -31,7 +31,7 @@ class ClaudeIntegration extends BaseAIProvider {
     public function getModels(): array {
         $logger = \ZeroAI\Core\Logger::getInstance();
         
-        // Try API first, cache only API results
+        // Check cache first
         try {
             $cache = \ZeroAI\Core\CacheManager::getInstance();
             $cachedModels = $cache->get('claude_api_models');
@@ -43,10 +43,23 @@ class ClaudeIntegration extends BaseAIProvider {
             $logger->logClaude('Cache check failed', ['error' => $e->getMessage()]);
         }
         
-        // Try real API call (would go here if endpoint existed)
-        // For now, return hardcoded since API doesn't exist
-        $hardcodedModels = $this->fetchRealModels();
-        $logger->logClaude('Using hardcoded models (no API available)', ['count' => count($hardcodedModels), 'source' => 'hardcoded', 'models' => $hardcodedModels]);
+        // Try API call
+        $apiModels = $this->fetchRealModels();
+        if (!empty($apiModels)) {
+            // Cache API models
+            try {
+                $cache = \ZeroAI\Core\CacheManager::getInstance();
+                $cache->set('claude_api_models', $apiModels, 86400);
+                $logger->logClaude('API models fetched and cached', ['count' => count($apiModels), 'source' => 'api_fresh']);
+            } catch (\Exception $e) {
+                $logger->logClaude('Failed to cache API models', ['error' => $e->getMessage()]);
+            }
+            return $apiModels;
+        }
+        
+        // API failed, return hardcoded (never cache these)
+        $hardcodedModels = array_keys($this->models);
+        $logger->logClaude('API failed, using hardcoded models', ['count' => count($hardcodedModels), 'source' => 'hardcoded', 'models' => $hardcodedModels]);
         return $hardcodedModels;
     }
     
@@ -64,20 +77,52 @@ class ClaudeIntegration extends BaseAIProvider {
             $logger->logClaude('Cache check failed', ['error' => $e->getMessage()]);
         }
         
-        // Get hardcoded models
-        $models = $this->fetchRealModels();
-        return ['models' => $models, 'source' => 'Hardcoded', 'color' => 'red'];
+        // Try API call
+        $apiModels = $this->fetchRealModels();
+        if (!empty($apiModels)) {
+            return ['models' => $apiModels, 'source' => 'API', 'color' => 'green'];
+        }
+        
+        // API failed, use hardcoded
+        $hardcodedModels = array_keys($this->models);
+        return ['models' => $hardcodedModels, 'source' => 'Hardcoded', 'color' => 'red'];
     }
     
     private function fetchRealModels(): array {
-        // Return current Claude models with snapshot dates
-        return [
-            'claude-opus-4-1-20250805',
-            'claude-opus-4-20250514',
-            'claude-sonnet-4-20250514',
-            'claude-3-7-sonnet-20250219',
-            'claude-3-5-haiku-20241022'
-        ];
+        try {
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://api.anthropic.com/v1/models',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'x-api-key: ' . $this->apiKey,
+                    'anthropic-version: 2023-06-01'
+                ],
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => false
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($httpCode === 200) {
+                $data = json_decode($response, true);
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $models = [];
+                    foreach ($data['data'] as $model) {
+                        if (isset($model['id'])) {
+                            $models[] = $model['id'];
+                        }
+                    }
+                    return $models;
+                }
+            }
+        } catch (\Exception $e) {
+            // API failed, return empty to trigger hardcoded fallback
+        }
+        
+        return [];
     }
     
     public function validateApiKey(): bool {
