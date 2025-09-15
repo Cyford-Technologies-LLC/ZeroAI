@@ -45,7 +45,6 @@ include __DIR__ . '/includes/header.php';
                     <div class="d-flex gap-2">
                         <button onclick="togglePromptEditor()" class="btn btn-outline-primary btn-sm">✏️ Prompt</button>
                         <button onclick="toggleScratchPad()" class="btn btn-outline-info btn-sm">📝 Scratch</button>
-                        <button onclick="clearChat()" class="btn btn-outline-danger btn-sm">🗑️ Clear</button>
                         <a href="/admin/claude_settings.php" class="btn btn-outline-secondary btn-sm">⚙️ Settings</a>
                     </div>
                 </div>
