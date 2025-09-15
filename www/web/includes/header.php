@@ -3,7 +3,7 @@
 use ZeroAI\Models\Company;
 
 session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
+require_once __DIR__ . '/../../src/autoload.php';
 
 
 if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {

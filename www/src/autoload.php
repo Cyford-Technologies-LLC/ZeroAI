@@ -1,20 +1,13 @@
 <?php
-/**
- * Simple autoloader for ZeroAI classes
- */
-
-spl_autoload_register(function ($className) {
+// ZeroAI Autoloader
+spl_autoload_register(function ($class) {
     // Convert namespace to file path
-    $className = str_replace('ZeroAI\\', '', $className);
-    $className = str_replace('\\', DIRECTORY_SEPARATOR, $className);
-    
-    $file = __DIR__ . DIRECTORY_SEPARATOR . $className . '.php';
+    $file = __DIR__ . '/' . str_replace('\\', '/', $class) . '.php';
     
     if (file_exists($file)) {
         require_once $file;
-        return true;
     }
-    
-    return false;
 });
-?>
+
+// Load common classes
+require_once __DIR__ . '/../config/database.php';
