@@ -5,162 +5,200 @@ include __DIR__ . '/includes/header.php';
 
 require_once '../src/Core/DatabaseManager.php';
 
+// Handle AJAX requests first
+if (isset($_GET['action'])) {
+    $db = \ZeroAI\Core\DatabaseManager::getInstance();
+    
+    if ($_GET['action'] === 'get_tables' && isset($_GET['db'])) {
+        try {
+            $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+            echo json_encode($tables);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    if ($_GET['action'] === 'get_table_info' && isset($_GET['table'])) {
+        try {
+            $tableName = $_GET['table'];
+            $columns = $db->query("PRAGMA table_info($tableName)");
+            $rowCount = $db->query("SELECT COUNT(*) as count FROM $tableName")[0]['count'] ?? 0;
+            echo json_encode(['columns' => $columns, 'row_count' => $rowCount]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    if ($_GET['action'] === 'get_table_data' && isset($_GET['table'])) {
+        try {
+            $tableName = $_GET['table'];
+            $data = $db->query("SELECT * FROM $tableName LIMIT 10");
+            echo json_encode($data);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+}
+
 $db = \ZeroAI\Core\DatabaseManager::getInstance();
 $databases = $db->getAvailableDatabases();
-$selectedDb = $_GET['db'] ?? array_keys($databases)[0];
-$tables = [];
-$tableData = [];
-
-try {
-    // Get all tables
-    $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
-    
-    // Get structure for each table
-    foreach ($tables as $table) {
-        $tableName = $table['name'];
-        $columns = $db->query("PRAGMA table_info($tableName)");
-        $rowCount = $db->query("SELECT COUNT(*) as count FROM $tableName")[0]['count'] ?? 0;
-        
-        $tableData[$tableName] = [
-            'columns' => $columns,
-            'row_count' => $rowCount
-        ];
-    }
-} catch (Exception $e) {
-    $error = $e->getMessage();
-}
 ?>
 
 <h1 class="mb-4">🛠️ DB Tools</h1>
 
-<div class="card mb-4">
-    <div class="card-header">
-        <h5>📊 Database Selection</h5>
-    </div>
-    <div class="card-body">
-        <form method="GET" class="d-flex gap-2">
-            <select name="db" class="form-select" style="width: auto;">
-                <?php foreach ($databases as $path => $info): ?>
-                    <option value="<?= $path ?>" <?= $selectedDb === $path ? 'selected' : '' ?>><?= $info['name'] ?> (<?= number_format($info['size']/1024, 1) ?>KB)</option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit" class="btn btn-primary">Switch Database</button>
-        </form>
-    </div>
-</div>
-
-<?php if (isset($error)): ?>
-    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-<?php endif; ?>
-
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card">
             <div class="card-header">
-                <h5>📋 Tables (<?= count($tables) ?>)</h5>
+                <h6>📊 Databases</h6>
             </div>
-            <div class="card-body">
-                <?php foreach ($tables as $table): ?>
-                    <div class="mb-2">
-                        <a href="#table-<?= $table['name'] ?>" class="btn btn-outline-primary btn-sm w-100 text-start">
-                            📊 <?= $table['name'] ?> 
-                            <span class="badge bg-secondary float-end"><?= $tableData[$table['name']]['row_count'] ?></span>
-                        </a>
-                    </div>
+            <div class="card-body p-2">
+                <?php foreach ($databases as $path => $info): ?>
+                    <button class="btn btn-outline-primary btn-sm w-100 mb-2 text-start" onclick="selectDatabase('<?= $path ?>')">
+                        <?= $info['name'] ?><br>
+                        <small class="text-muted"><?= number_format($info['size']/1024, 1) ?>KB</small>
+                    </button>
                 <?php endforeach; ?>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>📋 Tables</h6>
+            </div>
+            <div class="card-body p-2" id="tables-list">
+                <p class="text-muted">Select a database first</p>
             </div>
         </div>
     </div>
     
-    <div class="col-md-8">
-        <?php foreach ($tables as $table): ?>
-            <div class="card mb-4" id="table-<?= $table['name'] ?>">
-                <div class="card-header">
-                    <h5>📊 <?= $table['name'] ?> (<?= $tableData[$table['name']]['row_count'] ?> rows)</h5>
-                </div>
-                <div class="card-body">
-                    <h6>Columns:</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Null</th>
-                                    <th>Default</th>
-                                    <th>PK</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($tableData[$table['name']]['columns'] as $col): ?>
-                                <tr>
-                                    <td><strong><?= $col['name'] ?></strong></td>
-                                    <td><?= $col['type'] ?></td>
-                                    <td><?= $col['notnull'] ? 'No' : 'Yes' ?></td>
-                                    <td><?= $col['dflt_value'] ?? 'NULL' ?></td>
-                                    <td><?= $col['pk'] ? '✓' : '' ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <?php if ($tableData[$table['name']]['row_count'] > 0): ?>
-                        <button class="btn btn-sm btn-info" onclick="loadTableData('<?= $table['name'] ?>')">View Data</button>
-                        <div id="data-<?= $table['name'] ?>" class="mt-3" style="display:none;"></div>
-                    <?php endif; ?>
+    <div class="col-md-9">
+        <div id="content-area">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h5 class="text-muted">Select a database and table to view details</h5>
                 </div>
             </div>
-        <?php endforeach; ?>
+        </div>
     </div>
 </div>
 
 <script>
-function loadTableData(tableName) {
-    const container = document.getElementById('data-' + tableName);
-    if (container.style.display === 'none') {
-        fetch('/admin/database.php?action=get_table_data&table=' + tableName)
-            .then(response => response.text())
-            .then(data => {
-                container.innerHTML = data;
-                container.style.display = 'block';
-            })
-            .catch(error => {
-                container.innerHTML = '<div class="alert alert-danger">Error loading data: ' + error + '</div>';
-                container.style.display = 'block';
+let currentDb = null;
+let currentTable = null;
+
+function selectDatabase(dbPath) {
+    currentDb = dbPath;
+    document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><div class="spinner-border"></div><p>Loading tables...</p></div></div>';
+    
+    fetch(`?action=get_tables&db=${encodeURIComponent(dbPath)}`)
+        .then(response => response.json())
+        .then(tables => {
+            if (tables.error) {
+                document.getElementById('tables-list').innerHTML = `<div class="alert alert-danger">${tables.error}</div>`;
+                return;
+            }
+            
+            let html = '';
+            tables.forEach(table => {
+                html += `<button class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start" onclick="selectTable('${table.name}')">${table.name}</button>`;
             });
-    } else {
-        container.style.display = 'none';
-    }
+            document.getElementById('tables-list').innerHTML = html;
+            document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><h5 class="text-muted">Select a table to view details</h5></div></div>';
+        })
+        .catch(error => {
+            document.getElementById('tables-list').innerHTML = `<div class="alert alert-danger">Error: ${error}</div>`;
+        });
+}
+
+function selectTable(tableName) {
+    currentTable = tableName;
+    document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><div class="spinner-border"></div><p>Loading table info...</p></div></div>';
+    
+    fetch(`?action=get_table_info&table=${encodeURIComponent(tableName)}`)
+        .then(response => response.json())
+        .then(info => {
+            if (info.error) {
+                document.getElementById('content-area').innerHTML = `<div class="alert alert-danger">${info.error}</div>`;
+                return;
+            }
+            
+            let html = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between">
+                        <h5>📊 ${tableName} (${info.row_count} rows)</h5>
+                        <button class="btn btn-sm btn-primary" onclick="loadTableData()">View Data</button>
+                    </div>
+                    <div class="card-body">
+                        <h6>Columns:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr><th>Name</th><th>Type</th><th>Null</th><th>Default</th><th>PK</th></tr>
+                                </thead>
+                                <tbody>`;
+            
+            info.columns.forEach(col => {
+                html += `<tr>
+                    <td><strong>${col.name}</strong></td>
+                    <td>${col.type}</td>
+                    <td>${col.notnull ? 'No' : 'Yes'}</td>
+                    <td>${col.dflt_value || 'NULL'}</td>
+                    <td>${col.pk ? '✓' : ''}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div></div></div>
+                <div id="table-data" class="mt-3"></div>`;
+            
+            document.getElementById('content-area').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('content-area').innerHTML = `<div class="alert alert-danger">Error: ${error}</div>`;
+        });
+}
+
+function loadTableData() {
+    document.getElementById('table-data').innerHTML = '<div class="card"><div class="card-body text-center"><div class="spinner-border"></div><p>Loading data...</p></div></div>';
+    
+    fetch(`?action=get_table_data&table=${encodeURIComponent(currentTable)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('table-data').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            if (data.length === 0) {
+                document.getElementById('table-data').innerHTML = '<div class="card"><div class="card-body text-center">No data found</div></div>';
+                return;
+            }
+            
+            let html = '<div class="card"><div class="card-header"><h6>Sample Data (First 10 rows)</h6></div><div class="card-body"><div class="table-responsive"><table class="table table-striped table-sm"><thead><tr>';
+            
+            Object.keys(data[0]).forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                html += '<tr>';
+                Object.values(row).forEach(value => {
+                    html += `<td>${value || 'NULL'}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div></div></div>';
+            document.getElementById('table-data').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('table-data').innerHTML = `<div class="alert alert-danger">Error: ${error}</div>`;
+        });
 }
 </script>
-
-<?php
-// Handle AJAX request for table data
-if (isset($_GET['action']) && $_GET['action'] === 'get_table_data' && isset($_GET['table'])) {
-    $tableName = $_GET['table'];
-    try {
-        $data = $db->query("SELECT * FROM $tableName LIMIT 10");
-        if ($data) {
-            echo '<div class="table-responsive"><table class="table table-striped table-sm"><thead><tr>';
-            foreach (array_keys($data[0]) as $col) {
-                echo '<th>' . htmlspecialchars($col) . '</th>';
-            }
-            echo '</tr></thead><tbody>';
-            foreach ($data as $row) {
-                echo '<tr>';
-                foreach ($row as $value) {
-                    echo '<td>' . htmlspecialchars($value ?? 'NULL') . '</td>';
-                }
-                echo '</tr>';
-            }
-            echo '</tbody></table></div>';
-        }
-    } catch (Exception $e) {
-        echo '<div class="alert alert-danger">Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
-    }
-    exit;
-}
-?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
