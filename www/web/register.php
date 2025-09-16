@@ -82,6 +82,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 $success = 'Registration successful! You can now login.';
+                
+                // Debug logging
+                $logger->debug('Registration completed', [
+                    'user_id' => $userId,
+                    'username' => $username,
+                    'company_name' => $company_name
+                ]);
+                
+                // Check if company was created and add debug info if debug mode is enabled
+                $companyCheck = $db->query("SELECT id, name FROM companies WHERE user_id = ?", [$userId]);
+                if ($logger->isDebugEnabled()) {
+                    if (!empty($companyCheck)) {
+                        $success .= "<br><small>Debug: Company created - {$companyCheck[0]['name']} (ID: {$companyCheck[0]['id']})</small>";
+                    } else {
+                        $success .= "<br><small style='color:red'>Debug: No company found for user ID: $userId</small>";
+                    }
+                }
             }
         } catch (Exception $e) {
             $logger->error('Registration failed', [
