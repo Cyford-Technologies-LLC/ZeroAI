@@ -157,21 +157,23 @@ $currentPage = $currentPage ?? '';
         </div>
     </div>
     <div class="content-wrapper">
+        <?php 
+        $currentSection = 'dashboard';
+        if (in_array($currentPage ?? '', ['crews', 'agents', 'tasks', 'knowledge'])) {
+            $currentSection = 'crewai';
+        } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
+            $currentSection = 'chat';
+        } elseif (in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics', 'db_tools'])) {
+            $currentSection = 'tools';
+        } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
+            $currentSection = 'system';
+        } elseif (in_array($currentPage ?? '', ['settings', 'config', 'cloud_settings', 'claude_settings', 'users'])) {
+            $currentSection = 'settings';
+        }
+        ?>
+        
+        <?php if ($currentSection !== 'dashboard'): ?>
         <div class="sidebar">
-            <?php 
-            $currentSection = 'dashboard';
-            if (in_array($currentPage ?? '', ['crews', 'agents', 'tasks', 'knowledge'])) {
-                $currentSection = 'crewai';
-            } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
-                $currentSection = 'chat';
-            } elseif (in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics', 'db_tools'])) {
-                $currentSection = 'tools';
-            } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
-                $currentSection = 'system';
-            } elseif (in_array($currentPage ?? '', ['settings', 'config', 'cloud_settings', 'claude_settings', 'users'])) {
-                $currentSection = 'settings';
-            }
-            ?>
             
             <?php if ($currentSection === 'crewai'): ?>
                 <div class="sidebar-group">
@@ -269,15 +271,10 @@ $currentPage = $currentPage ?? '';
                     <a href="/admin/system_health">💚 Health Check</a>
                     <a href="/admin/resource_usage">📊 Resource Usage</a>
                 </div>
-            <?php else: ?>
-                <div class="sidebar-group">
-                    <h3>Quick Actions</h3>
-                    <a href="/admin/crew_chat">💬 Start Crew Chat</a>
-                    <a href="/admin/agents">🤖 View Agents</a>
-                    <a href="/admin/monitoring">📊 System Status</a>
-                </div>
             <?php endif; ?>
         </div>
-        <div class="main-content">
+        <?php endif; ?>
+        
+        <div class="main-content" <?= $currentSection === 'dashboard' ? 'style="margin-left: 0; width: 100%;"' : '' ?>>
 
 

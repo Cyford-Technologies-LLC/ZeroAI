@@ -6,10 +6,10 @@ include __DIR__ . '/includes/header.php';
 require_once '../src/Core/DatabaseManager.php';
 
 // Handle AJAX requests first
-if (isset($_GET['action']) || isset($_POST['action'])) {
+if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $_POST['action'])) {
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
-    if ($_GET['action'] === 'get_tables' && isset($_GET['db'])) {
+    if (isset($_GET['action']) && $_GET['action'] === 'get_tables' && isset($_GET['db'])) {
         try {
             $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
             echo json_encode($tables);
@@ -19,7 +19,7 @@ if (isset($_GET['action']) || isset($_POST['action'])) {
         exit;
     }
     
-    if ($_GET['action'] === 'get_table_info' && isset($_GET['table'])) {
+    if (isset($_GET['action']) && $_GET['action'] === 'get_table_info' && isset($_GET['table'])) {
         try {
             $tableName = $_GET['table'];
             $columns = $db->query("PRAGMA table_info($tableName)");
@@ -31,7 +31,7 @@ if (isset($_GET['action']) || isset($_POST['action'])) {
         exit;
     }
     
-    if ($_GET['action'] === 'get_table_data' && isset($_GET['table'])) {
+    if (isset($_GET['action']) && $_GET['action'] === 'get_table_data' && isset($_GET['table'])) {
         try {
             $tableName = $_GET['table'];
             $data = $db->query("SELECT * FROM $tableName LIMIT 10");
@@ -42,7 +42,7 @@ if (isset($_GET['action']) || isset($_POST['action'])) {
         exit;
     }
     
-    if ($_POST['action'] === 'execute_sql' && isset($_POST['sql'])) {
+    if (isset($_POST['action']) && $_POST['action'] === 'execute_sql' && isset($_POST['sql'])) {
         try {
             $sql = trim($_POST['sql']);
             if (empty($sql)) {
@@ -58,7 +58,7 @@ if (isset($_GET['action']) || isset($_POST['action'])) {
         exit;
     }
     
-    if ($_GET['action'] === 'backup_db' && isset($_GET['db'])) {
+    if (isset($_GET['action']) && $_GET['action'] === 'backup_db' && isset($_GET['db'])) {
         try {
             $dbPath = $_GET['db'];
             $backupDir = '../data/backups/';
