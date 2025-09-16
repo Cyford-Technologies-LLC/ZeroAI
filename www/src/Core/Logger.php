@@ -46,7 +46,7 @@ class Logger {
         }
     }
     
-    private function isDebugEnabled() {
+    public function isDebugEnabled() {
         // Check system setting first
         try {
             $db = \ZeroAI\Core\DatabaseManager::getInstance();
