@@ -56,147 +56,147 @@ if (isset($_GET['success'])) {
     <div class="alert alert-danger"><?= $error ?></div>
 <?php endif; ?>
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>
-                        <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#addCompanyForm" aria-expanded="false">
-                            <i class="fas fa-plus-circle"></i> Add New Company
-                        </button>
-                    </h5>
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>
+            <button class="btn btn-link p-0 text-decoration-none" type="button" onclick="toggleCollapse('addCompanyForm')" aria-expanded="false">
+                <i class="fas fa-plus-circle"></i> Add New Company
+            </button>
+        </h5>
+    </div>
+    <div class="collapse" id="addCompanyForm" style="display: none;">
+        <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="action" value="create">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Company Name</label>
+                    <input type="text" class="form-control" name="name" required>
                 </div>
-                <div class="collapse" id="addCompanyForm">
-                    <div class="card-body">
-                    <form method="POST">
-                        <input type="hidden" name="action" value="create">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Company Name</label>
-                                <input type="text" class="form-control" name="name" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">EIN</label>
-                                <input type="text" class="form-control" name="ein" placeholder="XX-XXXXXXX">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Business ID</label>
-                                <input type="text" class="form-control" name="business_id">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" name="email">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone</label>
-                                <input type="text" class="form-control" name="phone">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Website</label>
-                                <input type="url" class="form-control" name="website" placeholder="https://">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">LinkedIn</label>
-                                <input type="url" class="form-control" name="linkedin" placeholder="https://linkedin.com/company/">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Industry</label>
-                                <select class="form-select" name="industry">
-                                    <option value="">Select Industry</option>
-                                    <option value="Technology">Technology</option>
-                                    <option value="Healthcare">Healthcare</option>
-                                    <option value="Finance">Finance</option>
-                                    <option value="Manufacturing">Manufacturing</option>
-                                    <option value="Retail">Retail</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">About the Company</label>
-                                <textarea class="form-control" name="about" rows="3"></textarea>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Street Address</label>
-                                <input type="text" class="form-control" name="street">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Street Address 2</label>
-                                <input type="text" class="form-control" name="street2">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">City</label>
-                                <input type="text" class="form-control" name="city">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">State</label>
-                                <input type="text" class="form-control" name="state">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">ZIP Code</label>
-                                <input type="text" class="form-control" name="zip">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Country</label>
-                                <input type="text" class="form-control" name="country" value="USA">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add Company</button>
-                    </form>
-                    </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">EIN</label>
+                    <input type="text" class="form-control" name="ein" placeholder="XX-XXXXXXX">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Business ID</label>
+                    <input type="text" class="form-control" name="business_id">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Phone</label>
+                    <input type="text" class="form-control" name="phone">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Website</label>
+                    <input type="url" class="form-control" name="website" placeholder="https://">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">LinkedIn</label>
+                    <input type="url" class="form-control" name="linkedin" placeholder="https://linkedin.com/company/">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Industry</label>
+                    <select class="form-select" name="industry">
+                        <option value="">Select Industry</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label">About the Company</label>
+                    <textarea class="form-control" name="about" rows="3"></textarea>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Street Address</label>
+                    <input type="text" class="form-control" name="street">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Street Address 2</label>
+                    <input type="text" class="form-control" name="street2">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">City</label>
+                    <input type="text" class="form-control" name="city">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">State</label>
+                    <input type="text" class="form-control" name="state">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">ZIP Code</label>
+                    <input type="text" class="form-control" name="zip">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Country</label>
+                    <input type="text" class="form-control" name="country" value="USA">
                 </div>
             </div>
+            <button type="submit" class="btn btn-primary">Add Company</button>
+        </form>
+        </div>
+    </div>
+</div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h5>Companies List</h5>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($companies)): ?>
-                        <p>No companies found. Add your first company above.</p>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Company Name</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
-                                        <th>Industry</th>
-                                        <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($companies as $company): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($company['id']) ?></td>
-                                            <td><?= htmlspecialchars($company['name']) ?></td>
-                                            <td><?= htmlspecialchars($company['email']) ?></td>
-                                            <td><?= htmlspecialchars($company['phone']) ?></td>
-                                            <td><?= htmlspecialchars($company['industry']) ?></td>
-                                            <?php if ($isAdmin): ?>
-                                                <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
-                                                <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
-                                            <?php endif; ?>
-                                            <td>
-                                                <button onclick="editCompany(<?= $company['id'] ?>, '<?= htmlspecialchars($company['name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($company['ein'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['business_id'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['email'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['phone'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['website'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['linkedin'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['industry'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['about'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['street'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['street2'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['city'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['state'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['zip'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['country'] ?? '', ENT_QUOTES) ?>')" class="btn btn-sm btn-warning">Edit</button>
-                                                <button onclick="deleteCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
-                </div>
+<div class="card">
+    <div class="card-header">
+        <h5>Companies List</h5>
+    </div>
+    <div class="card-body">
+        <?php if (empty($companies)): ?>
+            <p>No companies found. Add your first company above.</p>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Company Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Industry</th>
+                            <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($companies as $company): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($company['id']) ?></td>
+                                <td><?= htmlspecialchars($company['name']) ?></td>
+                                <td><?= htmlspecialchars($company['email']) ?></td>
+                                <td><?= htmlspecialchars($company['phone']) ?></td>
+                                <td><?= htmlspecialchars($company['industry']) ?></td>
+                                <?php if ($isAdmin): ?>
+                                    <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
+                                    <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
+                                <?php endif; ?>
+                                <td>
+                                    <button onclick="editCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-warning" data-company='<?= json_encode($company) ?>'>Edit</button>
+                                    <button onclick="deleteCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
+        <?php endif; ?>
+    </div>
+</div>
 
 <!-- Edit Company Modal -->
-<div class="modal fade" id="editCompanyModal" tabindex="-1">
+<div class="modal fade" id="editCompanyModal" tabindex="-1" style="display: none;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Company</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" onclick="closeModal('editCompanyModal')"></button>
             </div>
             <form method="POST" id="editCompanyForm">
                 <input type="hidden" name="action" value="update">
@@ -274,7 +274,7 @@ if (isset($_GET['success'])) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editCompanyModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update Company</button>
                 </div>
             </form>
@@ -283,25 +283,44 @@ if (isset($_GET['success'])) {
 </div>
 
 <script>
-function editCompany(id, name, ein, businessId, email, phone, website, linkedin, industry, about, street, street2, city, state, zip, country) {
-    document.getElementById('editCompanyId').value = id;
-    document.getElementById('editName').value = name;
-    document.getElementById('editEin').value = ein;
-    document.getElementById('editBusinessId').value = businessId;
-    document.getElementById('editEmail').value = email;
-    document.getElementById('editPhone').value = phone;
-    document.getElementById('editWebsite').value = website;
-    document.getElementById('editLinkedin').value = linkedin;
-    document.getElementById('editIndustry').value = industry;
-    document.getElementById('editAbout').value = about;
-    document.getElementById('editStreet').value = street;
-    document.getElementById('editStreet2').value = street2;
-    document.getElementById('editCity').value = city;
-    document.getElementById('editState').value = state;
-    document.getElementById('editZip').value = zip;
-    document.getElementById('editCountry').value = country;
+function toggleCollapse(id) {
+    const element = document.getElementById(id);
+    if (element.style.display === 'none') {
+        element.style.display = 'block';
+    } else {
+        element.style.display = 'none';
+    }
+}
+
+function editCompany(id) {
+    // Find the button that was clicked to get company data
+    const button = event.target;
+    const companyData = JSON.parse(button.getAttribute('data-company'));
     
-    new bootstrap.Modal(document.getElementById('editCompanyModal')).show();
+    // Populate form fields
+    document.getElementById('editCompanyId').value = companyData.id;
+    document.getElementById('editName').value = companyData.name || '';
+    document.getElementById('editEin').value = companyData.ein || '';
+    document.getElementById('editBusinessId').value = companyData.business_id || '';
+    document.getElementById('editEmail').value = companyData.email || '';
+    document.getElementById('editPhone').value = companyData.phone || '';
+    document.getElementById('editWebsite').value = companyData.website || '';
+    document.getElementById('editLinkedin').value = companyData.linkedin || '';
+    document.getElementById('editIndustry').value = companyData.industry || '';
+    document.getElementById('editAbout').value = companyData.about || '';
+    document.getElementById('editStreet').value = companyData.street || '';
+    document.getElementById('editStreet2').value = companyData.street2 || '';
+    document.getElementById('editCity').value = companyData.city || '';
+    document.getElementById('editState').value = companyData.state || '';
+    document.getElementById('editZip').value = companyData.zip || '';
+    document.getElementById('editCountry').value = companyData.country || '';
+    
+    // Show modal
+    document.getElementById('editCompanyModal').style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
 }
 
 function deleteCompany(id) {
@@ -313,7 +332,14 @@ function deleteCompany(id) {
         form.submit();
     }
 }
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('editCompanyModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
-
