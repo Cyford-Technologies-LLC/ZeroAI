@@ -22,7 +22,14 @@ services:
       - "0.0.0.0:3940:3939"
       - "0.0.0.0:334:333"
     volumes:
-      - .:/app
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
+      - ./logs:/app/logs
+      - ./www:/app/www
+      - ./scripts:/app/scripts
       - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
@@ -55,7 +62,14 @@ services:
     ports:
       - "0.0.0.0:8081:8080"
     volumes:
-      - .:/app
+      - ./src:/app/src
+      - ./API:/app/API
+      - ./run:/app/run
+      - ./config:/app/config
+      - ./examples:/app/examples
+      - ./logs:/app/logs
+      - ./www:/app/www
+      - ./scripts:/app/scripts
       - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/.env:/app/.env:ro
