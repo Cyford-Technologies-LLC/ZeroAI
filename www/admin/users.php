@@ -73,7 +73,21 @@ if ($_POST) {
     }
 }
 
+// Get users from both admin users table and registration users
 $users = $userManager->getAllUsers() ?: [];
+
+// Also check for users from registration (web users)
+try {
+    $db = new \Database();
+    $pdo = $db->getConnection();
+    $stmt = $pdo->query("SELECT id, username, email, 'frontend' as role, 'active' as status, created_at, NULL as last_login FROM users WHERE role IS NULL OR role = 'frontend'");
+    $webUsers = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    $users = array_merge($users, $webUsers);
+    $logger->info('Users Page: Retrieved ' . count($users) . ' total users (' . count($webUsers) . ' from web registration)');
+} catch (Exception $e) {
+    $logger->error('Users Page: Error getting web users: ' . $e->getMessage());
+}
+
 $logger->info('Users Page: Retrieved ' . count($users) . ' users for display');
 
 $pageTitle = 'User Management - ZeroAI';
@@ -81,137 +95,278 @@ $currentPage = 'users';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<link rel="stylesheet" href="/assets/admin/css/modals.css">
-
-<h1>👥 User Management</h1>
-
-<?php if ($message): ?>
-    <div class="message"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div>
-<?php endif; ?>
-
-<?php if ($error): ?>
-    <div class="error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
-<?php endif; ?>
-
-<div class="card">
-    <h3>Create New User</h3>
-    <form method="POST">
-        <input type="hidden" name="action" value="create_user">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
-        
-        <label>Username:</label>
-        <input type="text" name="username" required>
-        
-        <label>Email (Optional):</label>
-        <input type="email" name="email">
-        
-        <label>Password:</label>
-        <input type="password" name="password" required>
-        
-        <label>Role:</label>
-        <select name="role" required>
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-            <option value="demo">Demo (View Only)</option>
-            <option value="frontend">Frontend User</option>
-        </select>
-        
-        <label>Permissions:</label>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0;">
-            <label><input type="checkbox" name="permissions[]" value="view_agents"> View Agents</label>
-            <label><input type="checkbox" name="permissions[]" value="manage_agents"> Manage Agents</label>
-            <label><input type="checkbox" name="permissions[]" value="view_crews"> View Crews</label>
-            <label><input type="checkbox" name="permissions[]" value="manage_crews"> Manage Crews</label>
-            <label><input type="checkbox" name="permissions[]" value="view_logs"> View Logs</label>
-            <label><input type="checkbox" name="permissions[]" value="system_config"> System Config</label>
-        </div>
-        
-        <button type="submit" class="btn-success">Create User</button>
-    </form>
-</div>
-
-<div class="card">
-    <h3>Existing Users</h3>
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background: #f8f9fa;">
-                <th style="padding: 10px; border: 1px solid #ddd;">Username</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Email</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Role</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Last Login</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (!empty($users)): ?>
-                <?php foreach ($users as $user): ?>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;"><?= htmlspecialchars($user['username']) ?></td>
-                <td style="padding: 10px; border: 1px solid #ddd;"><?= htmlspecialchars($user['email'] ?? '') ?></td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; 
-                        background: <?= $user['role'] === 'admin' ? '#dc3545' : ($user['role'] === 'demo' ? '#6c757d' : '#007bff') ?>; 
-                        color: white;">
-                        <?= ucfirst($user['role']) ?>
-                    </span>
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                    <?= ($user['status'] ?? 'active') === 'active' ? '✅ Active' : '❌ Inactive' ?>
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                    <?= $user['last_login'] ? date('M j, Y g:i A', strtotime($user['last_login'])) : 'Never' ?>
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                    <?php if ($user['username'] !== 'admin' || $_SESSION['user_name'] === 'admin'): ?>
-                        <button onclick="editUser(<?= $user['id'] ?>, '<?= $user['username'] ?>', '<?= htmlspecialchars($user['email'] ?? '') ?>', '<?= $user['role'] ?>', '<?= $user['status'] ?? 'active' ?>')" 
-                                class="btn-warning" style="font-size: 12px; padding: 4px 8px;">Edit</button>
-                        <button onclick="changePassword(<?= $user['id'] ?>, '<?= $user['username'] ?>')" 
-                                class="btn-secondary" style="font-size: 12px; padding: 4px 8px;">Password</button>
-                    <?php endif; ?>
-                </td>
-            </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-            <tr>
-                <td colspan="6" style="padding: 20px; text-align: center; color: #666;">No users found. There may be a database connection issue.</td>
-            </tr>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">👥 User Management</h1>
+            
+            <?php if ($message): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
-        </tbody>
-    </table>
+            
+            <?php if ($error): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">➕ Create New User</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="create_user">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" name="username" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Email (Optional)</label>
+                                    <input type="email" name="email" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" name="password" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Role</label>
+                                    <select name="role" class="form-select" required>
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="demo">Demo (View Only)</option>
+                                        <option value="frontend">Frontend User</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Permissions</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="view_agents" id="perm1">
+                                        <label class="form-check-label" for="perm1">View Agents</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="manage_agents" id="perm2">
+                                        <label class="form-check-label" for="perm2">Manage Agents</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="view_crews" id="perm3">
+                                        <label class="form-check-label" for="perm3">View Crews</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="manage_crews" id="perm4">
+                                        <label class="form-check-label" for="perm4">Manage Crews</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="view_logs" id="perm5">
+                                        <label class="form-check-label" for="perm5">View Logs</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="system_config" id="perm6">
+                                        <label class="form-check-label" for="perm6">System Config</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">✅ Create User</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">👥 Existing Users (<?= count($users) ?>)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($users)): ?>
+                                    <?php foreach ($users as $user): ?>
+                                <tr>
+                                    <td><strong><?= htmlspecialchars($user['username']) ?></strong></td>
+                                    <td><?= htmlspecialchars($user['email'] ?? 'No email') ?></td>
+                                    <td>
+                                        <span class="badge bg-<?= $user['role'] === 'admin' ? 'danger' : ($user['role'] === 'demo' ? 'secondary' : 'primary') ?>">
+                                            <?= ucfirst($user['role'] ?? 'user') ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<?= ($user['status'] ?? 'active') === 'active' ? 'success' : 'warning' ?>">
+                                            <?= ($user['status'] ?? 'active') === 'active' ? '✅ Active' : '❌ Inactive' ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <?= $user['last_login'] ? date('M j, Y g:i A', strtotime($user['last_login'])) : 'Never' ?>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <?php if ($user['username'] !== 'admin' || $_SESSION['user_name'] === 'admin'): ?>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button onclick="editUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>', '<?= htmlspecialchars($user['email'] ?? '') ?>', '<?= $user['role'] ?? 'user' ?>', '<?= $user['status'] ?? 'active' ?>')" 
+                                                        class="btn btn-outline-warning btn-sm">✏️ Edit</button>
+                                                <button onclick="changePassword(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>')" 
+                                                        class="btn btn-outline-secondary btn-sm">🔑 Password</button>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <em>No users found. There may be a database connection issue.</em>
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Edit User Modal -->
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <h3>Edit User</h3>
-        <form method="POST">
-            <input type="hidden" name="action" value="update_user">
-            <input type="hidden" name="user_id" id="edit_user_id">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
-            
-            <label>Username:</label>
-            <input type="text" id="edit_username" readonly>
-            
-            <label>Email:</label>
-            <input type="email" name="email" id="edit_email">
-            
-            <label>Role:</label>
-            <select name="role" id="edit_role">
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-                <option value="demo">Demo (View Only)</option>
-            </select>
-            
-            <label>Status:</label>
-            <select name="status" id="edit_status">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-            </select>
-            
-            <div class="modal-buttons">
-                <button type="submit" class="btn-success">Update User</button>
-                <button type="button" onclick="closeModal()" class="btn-secondary">Cancel</button>
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">✏️ Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="update_user">
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="edit_username" class="form-control" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="edit_email" class="form-control">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" id="edit_role" class="form-select">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="demo">Demo (View Only)</option>
+                            <option value="frontend">Frontend User</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" id="edit_status" class="form-select">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">✅ Update User</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Password Change Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🔑 Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="change_password">
+                    <input type="hidden" name="user_id" id="password_user_id">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="password_username" class="form-control" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" name="new_password" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">✅ Change Password</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editUser(id, username, email, role, status) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_role').value = role;
+    document.getElementById('edit_status').value = status;
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+function changePassword(id, username) {
+    document.getElementById('password_user_id').value = id;
+    document.getElementById('password_username').value = username;
+    new bootstrap.Modal(document.getElementById('passwordModal')).show();
+}
+</script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>ype="button" onclick="closeModal()" class="btn-secondary">Cancel</button>
             </div>
         </form>
     </div>
