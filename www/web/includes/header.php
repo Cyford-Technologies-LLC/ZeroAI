@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/csp.php';
 
-use ZeroAI\Models\Company;
+
 
 session_start();
 require_once __DIR__ . '/../../src/autoload.php';
@@ -35,15 +35,15 @@ try {
 }
 
 
-// Use an existing Company model
+// Get companies directly from database
 try {
-    require_once __DIR__ . '/../../src/Models/Company.php';
-    $companyModel = new Company();
-
     if ($isAdmin) {
-        $companies = $companyModel->getAll();
+        $stmt = $pdo->query("SELECT * FROM companies ORDER BY created_at DESC");
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        $companies = $companyModel->findByTenant($userOrgId);
+        $stmt = $pdo->prepare("SELECT * FROM companies WHERE organization_id = ?");
+        $stmt->execute([$userOrgId]);
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Exception $e) {
     $companies = [];
