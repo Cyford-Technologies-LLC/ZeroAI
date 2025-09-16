@@ -1,16 +1,24 @@
 <?php
 $pageTitle = 'DB Tools - ZeroAI';
-$currentPage = 'db_tools';
+$currentPage = 'tools';
 include __DIR__ . '/includes/header.php';
 
 require_once '../src/Core/DatabaseManager.php';
 
+// Available databases
+$databases = [
+    'main' => 'Main Database',
+    'crm' => 'CRM Database',
+    'logs' => 'Logs Database'
+];
+
+$selectedDb = $_GET['db'] ?? 'main';
 $db = \ZeroAI\Core\DatabaseManager::getInstance();
 $tables = [];
 $tableData = [];
 
 try {
-    // Get all tables
+    // Get all tables from selected database
     $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
     
     // Get structure for each table
@@ -30,6 +38,22 @@ try {
 ?>
 
 <h1 class="mb-4">🛠️ DB Tools</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>📊 Database Selection</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="d-flex gap-2">
+            <select name="db" class="form-select" style="width: auto;">
+                <?php foreach ($databases as $key => $name): ?>
+                    <option value="<?= $key ?>" <?= $selectedDb === $key ? 'selected' : '' ?>><?= $name ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn-primary">Switch Database</button>
+        </form>
+    </div>
+</div>
 
 <?php if (isset($error)): ?>
     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
