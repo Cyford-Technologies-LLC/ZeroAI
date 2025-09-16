@@ -69,7 +69,7 @@ if ($_POST) {
     }
 }
 
-$users = $userManager->getAllUsers();
+$users = $userManager->getAllUsers() ?: [];
 
 $pageTitle = 'User Management - ZeroAI';
 $currentPage = 'users';
@@ -137,7 +137,8 @@ include __DIR__ . '/includes/header.php';
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($users as $user): ?>
+            <?php if (!empty($users)): ?>
+                <?php foreach ($users as $user): ?>
             <tr>
                 <td style="padding: 10px; border: 1px solid #ddd;"><?= htmlspecialchars($user['username']) ?></td>
                 <td style="padding: 10px; border: 1px solid #ddd;"><?= htmlspecialchars($user['email'] ?? '') ?></td>
@@ -163,7 +164,12 @@ include __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                 </td>
             </tr>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
+            <?php else: ?>
+            <tr>
+                <td colspan="6" style="padding: 20px; text-align: center; color: #666;">No users found. There may be a database connection issue.</td>
+            </tr>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>
