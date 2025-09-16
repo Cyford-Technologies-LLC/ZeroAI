@@ -1,11 +1,29 @@
-# Database directories and files
+# Database directories and files - CRITICAL: DO NOT TRACK
+data/
+data/**
 data/*.db
 data/*.sqlite
+data/*.db-*
+data/zeroai.db*
+data/main.db*
 data/databases/
+# Database files - NEVER COMMIT THESE
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-*
+
+
+
+
+db/
+/data/
+./data/
+
 knowledge/*.db
 knowledge/*.sqlite
 knowledge/internal_crew/cyford/*
-
 
 # Python cache files
 __pycache__/
@@ -18,11 +36,6 @@ __pycache__/
 venv/
 env/
 .venv/
-
-# Database files
-*.db
-*.sqlite
-db/
 
 # Output and cache
 output/
@@ -53,8 +66,3 @@ knowledge/internal_crew/default/
 # User data
 config/local/
 tools/logs/
-
-# Remove problematic ignores that prevent code updates
-# app/ - REMOVED so web portal updates work
-
-# www/ - REMOVED so web files update
