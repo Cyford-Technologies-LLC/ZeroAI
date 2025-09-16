@@ -108,7 +108,7 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
                 $statement = trim($statement);
                 if (!empty($statement) && !preg_match('/^\s*--/', $statement)) {
                     try {
-                        $db->execute($statement);
+                        $db->query($statement);
                         $executed++;
                     } catch (Exception $e) {
                         $errors[] = substr($statement, 0, 50) . '... - ' . $e->getMessage();
