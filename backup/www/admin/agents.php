@@ -116,7 +116,7 @@ $agents = $agentDB->getActiveAgents();
                     <option value="claude">Claude</option>
                 </select>
             </div>
-            
+
             <!-- CrewAI Core Options -->
             <div class="form-section">
                 <h4>CrewAI Core Options</h4>
