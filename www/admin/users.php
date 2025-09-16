@@ -1,28 +1,10 @@
 <?php
-session_start();
+include __DIR__ . '/includes/header.php';
 
-if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
-    header('Location: /admin/login.php');
-    exit;
-}
 
-// Block demo users from user management
-if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
-    header('Location: /admin/dashboard.php?error=Demo users cannot access user management');
-    exit;
-}
-
-require_once '../src/Core/UserManager.php';
-require_once '../src/Core/Logger.php';
-
-$logger = \ZeroAI\Core\Logger::getInstance();
-$logger->info('Users Page: Loading user management page');
-
-$userManager = new \ZeroAI\Core\UserManager();
 $message = '';
 $error = '';
 
-// Handle form submissions
 if ($_POST) {
     try {
         if ($_POST['action'] === 'create_user') {
@@ -73,26 +55,10 @@ if ($_POST) {
     }
 }
 
-// Get users from both admin users table and registration users
 $users = $userManager->getAllUsers() ?: [];
-
-// Also check for users from registration (web users)
-try {
-    $db = new \Database();
-    $pdo = $db->getConnection();
-    $stmt = $pdo->query("SELECT id, username, email, 'frontend' as role, 'active' as status, created_at, NULL as last_login FROM users WHERE role IS NULL OR role = 'frontend'");
-    $webUsers = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    $users = array_merge($users, $webUsers);
-    $logger->info('Users Page: Retrieved ' . count($users) . ' total users (' . count($webUsers) . ' from web registration)');
-} catch (Exception $e) {
-    $logger->error('Users Page: Error getting web users: ' . $e->getMessage());
-}
-
-$logger->info('Users Page: Retrieved ' . count($users) . ' users for display');
 
 $pageTitle = 'User Management - ZeroAI';
 $currentPage = 'users';
-include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="container-fluid">
@@ -121,7 +87,6 @@ include __DIR__ . '/includes/header.php';
                 <div class="card-body">
                     <form method="POST">
                         <input type="hidden" name="action" value="create_user">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
                         
                         <div class="row">
                             <div class="col-md-6">
@@ -277,7 +242,6 @@ include __DIR__ . '/includes/header.php';
                 <div class="modal-body">
                     <input type="hidden" name="action" value="update_user">
                     <input type="hidden" name="user_id" id="edit_user_id">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
                     
                     <div class="mb-3">
                         <label class="form-label">Username</label>
@@ -328,7 +292,6 @@ include __DIR__ . '/includes/header.php';
                 <div class="modal-body">
                     <input type="hidden" name="action" value="change_password">
                     <input type="hidden" name="user_id" id="password_user_id">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
                     
                     <div class="mb-3">
                         <label class="form-label">Username</label>
@@ -346,74 +309,6 @@ include __DIR__ . '/includes/header.php';
                 </div>
             </form>
         </div>
-    </div>
-</div>
-
-<script>
-function editUser(id, username, email, role, status) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_username').value = username;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_role').value = role;
-    document.getElementById('edit_status').value = status;
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-}
-
-function changePassword(id, username) {
-    document.getElementById('password_user_id').value = id;
-    document.getElementById('password_username').value = username;
-    new bootstrap.Modal(document.getElementById('passwordModal')).show();
-}
-</script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>ype="button" onclick="closeModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Password Change Modal -->
-<div id="passwordModal" class="modal">
-    <div class="modal-content">
-        <h3>Change Password</h3>
-        <form method="POST">
-            <input type="hidden" name="action" value="change_password">
-            <input type="hidden" name="user_id" id="password_user_id">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
-            
-            <label>Username:</label>
-            <input type="text" id="password_username" readonly>
-            
-            <label>New Password:</label>
-            <input type="password" name="new_password" required>
-            
-            <div class="modal-buttons">
-                <button type="submit" class="btn-success">Change Password</button>
-                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script src="/assets/admin/js/users.js"></script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>nt">
-        <h3>Change Password</h3>
-        <form method="POST">
-            <input type="hidden" name="action" value="change_password">
-            <input type="hidden" name="user_id" id="password_user_id">
-            
-            <label>Username:</label>
-            <input type="text" id="password_username" readonly>
-            
-            <label>New Password:</label>
-            <input type="password" name="new_password" id="new_password" required>
-            
-            <div class="modal-buttons">
-                <button type="submit" class="btn-success">Change Password</button>
-                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
     </div>
 </div>
 
