@@ -225,20 +225,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-</script>elector('[data-bs-toggle="collapse"]');
-        const target = document.querySelector('#createUserForm');
-        
-        if (toggleBtn && target) {
-            toggleBtn.addEventListener('click', function() {
-                if (target.style.display === 'none' || target.style.display === '') {
-                    target.style.display = 'block';
-                } else {
-                    target.style.display = 'none';
-                }
-            });
-        }
-    });
-}
 </script>
 <script src="/assets/admin/js/users.js"></script>
 
