@@ -62,7 +62,7 @@ try {
         <div class="col-md-3 col-sm-6 mb-2">
             <div class="card text-center py-2">
                 <div class="card-body p-2">
-                    <h4 class="text-primary mb-1"><?= htmlspecialchars(count($companies)) ?></h4>
+                    <h4 class="text-primary mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
                     <small class="text-muted">Companies</small>
                 </div>
             </div>
