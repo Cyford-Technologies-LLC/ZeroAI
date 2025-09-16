@@ -6,7 +6,7 @@ include __DIR__ . '/includes/header.php';
 require_once '../src/Core/DatabaseManager.php';
 
 // Handle AJAX requests first
-if (isset($_GET['action'])) {
+if (isset($_GET['action']) || isset($_POST['action'])) {
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     if ($_GET['action'] === 'get_tables' && isset($_GET['db'])) {
@@ -36,6 +36,40 @@ if (isset($_GET['action'])) {
             $tableName = $_GET['table'];
             $data = $db->query("SELECT * FROM $tableName LIMIT 10");
             echo json_encode($data);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    if ($_POST['action'] === 'execute_sql' && isset($_POST['sql'])) {
+        try {
+            $sql = trim($_POST['sql']);
+            if (empty($sql)) {
+                echo json_encode(['error' => 'SQL query cannot be empty']);
+                exit;
+            }
+            
+            $result = $db->query($sql);
+            echo json_encode(['success' => true, 'data' => $result, 'rows' => count($result)]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    if ($_GET['action'] === 'backup_db' && isset($_GET['db'])) {
+        try {
+            $dbPath = $_GET['db'];
+            $backupDir = '../data/backups/';
+            if (!is_dir($backupDir)) mkdir($backupDir, 0755, true);
+            
+            $backupFile = $backupDir . basename($dbPath, '.db') . '_' . date('Y-m-d_H-i-s') . '.db';
+            if (copy($dbPath, $backupFile)) {
+                echo json_encode(['success' => true, 'backup' => basename($backupFile)]);
+            } else {
+                echo json_encode(['error' => 'Failed to create backup']);
+            }
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
         }
@@ -76,6 +110,25 @@ $databases = $db->getAvailableDatabases();
     </div>
     
     <div class="col-md-9">
+        <div class="mb-3">
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-success" onclick="showSqlQuery()">🔍 SQL Query</button>
+                <button class="btn btn-outline-warning" onclick="backupDatabase()" id="backup-btn" disabled>💾 Backup DB</button>
+            </div>
+        </div>
+        
+        <div id="sql-query-area" class="card mb-3" style="display:none;">
+            <div class="card-header">
+                <h6>🔍 SQL Query</h6>
+            </div>
+            <div class="card-body">
+                <textarea id="sql-input" class="form-control mb-2" rows="4" placeholder="Enter SQL query...">SELECT * FROM users LIMIT 5;</textarea>
+                <button class="btn btn-primary" onclick="executeSql()">Execute</button>
+                <button class="btn btn-secondary" onclick="hideSqlQuery()">Cancel</button>
+            </div>
+            <div id="sql-results"></div>
+        </div>
+        
         <div id="content-area">
             <div class="card">
                 <div class="card-body text-center py-5">
@@ -90,8 +143,93 @@ $databases = $db->getAvailableDatabases();
 let currentDb = null;
 let currentTable = null;
 
+function showSqlQuery() {
+    document.getElementById('sql-query-area').style.display = 'block';
+    document.getElementById('sql-input').focus();
+}
+
+function hideSqlQuery() {
+    document.getElementById('sql-query-area').style.display = 'none';
+    document.getElementById('sql-results').innerHTML = '';
+}
+
+function executeSql() {
+    const sql = document.getElementById('sql-input').value.trim();
+    if (!sql) {
+        alert('Please enter a SQL query');
+        return;
+    }
+    
+    document.getElementById('sql-results').innerHTML = '<div class="card-body text-center"><div class="spinner-border"></div><p>Executing query...</p></div>';
+    
+    const formData = new FormData();
+    formData.append('action', 'execute_sql');
+    formData.append('sql', sql);
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            document.getElementById('sql-results').innerHTML = `<div class="card-body"><div class="alert alert-danger">${result.error}</div></div>`;
+            return;
+        }
+        
+        if (!result.data || result.data.length === 0) {
+            document.getElementById('sql-results').innerHTML = '<div class="card-body"><div class="alert alert-info">Query executed successfully. No data returned.</div></div>';
+            return;
+        }
+        
+        let html = `<div class="card-body"><div class="alert alert-success">Query executed successfully. ${result.rows} rows returned.</div><div class="table-responsive"><table class="table table-striped table-sm"><thead><tr>`;
+        
+        Object.keys(result.data[0]).forEach(col => {
+            html += `<th>${col}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        result.data.forEach(row => {
+            html += '<tr>';
+            Object.values(row).forEach(value => {
+                html += `<td>${value || 'NULL'}</td>`;
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div></div>';
+        document.getElementById('sql-results').innerHTML = html;
+    })
+    .catch(error => {
+        document.getElementById('sql-results').innerHTML = `<div class="card-body"><div class="alert alert-danger">Error: ${error}</div></div>`;
+    });
+}
+
+function backupDatabase() {
+    if (!currentDb) {
+        alert('Please select a database first');
+        return;
+    }
+    
+    if (!confirm('Create backup of current database?')) return;
+    
+    fetch(`?action=backup_db&db=${encodeURIComponent(currentDb)}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Backup failed: ' + result.error);
+                return;
+            }
+            alert('Backup created: ' + result.backup);
+        })
+        .catch(error => {
+            alert('Backup failed: ' + error);
+        });
+}
+
 function selectDatabase(dbPath) {
     currentDb = dbPath;
+    document.getElementById('backup-btn').disabled = false;
     document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><div class="spinner-border"></div><p>Loading tables...</p></div></div>';
     
     fetch(`?action=get_tables&db=${encodeURIComponent(dbPath)}`)

@@ -1,3 +1,12 @@
+# Database directories and files
+data/*.db
+data/*.sqlite
+data/databases/
+knowledge/*.db
+knowledge/*.sqlite
+knowledge/internal_crew/cyford/*
+
+
 # Python cache files
 __pycache__/
 *.py[cod]
@@ -47,5 +56,5 @@ tools/logs/
 
 # Remove problematic ignores that prevent code updates
 # app/ - REMOVED so web portal updates work
-# data/ - REMOVED so database updates work  
+
 # www/ - REMOVED so web files update
