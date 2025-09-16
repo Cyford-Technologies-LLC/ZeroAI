@@ -78,14 +78,6 @@ $currentPage = $currentPage ?? '';
     <?php endif; ?>
 </head>
 <body>
-    <div class="container">
-        
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title><?= $pageTitle ?? 'ZeroAI Admin' ?></title>
-    <!-- Bootstrap and icons moved to local assets -->
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
         .header { background: #007bff; color: white; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -137,8 +129,6 @@ $currentPage = $currentPage ?? '';
             .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
-</head>
-<body>
     <div class="header">
         <div class="header-content">
             <div class="logo">ZeroAI Admin</div>

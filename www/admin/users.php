@@ -193,6 +193,29 @@ $users = $userManager->getAllUsers() ?: [];
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Test if Bootstrap loaded
+console.log('Bootstrap loaded:', typeof bootstrap !== 'undefined');
+
+// Fallback collapse functionality if Bootstrap fails
+if (typeof bootstrap === 'undefined') {
+    console.log('Bootstrap failed to load, using fallback');
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleBtn = document.querySelector('[data-bs-toggle="collapse"]');
+        const target = document.querySelector('#createUserForm');
+        
+        if (toggleBtn && target) {
+            toggleBtn.addEventListener('click', function() {
+                if (target.style.display === 'none' || target.style.display === '') {
+                    target.style.display = 'block';
+                } else {
+                    target.style.display = 'none';
+                }
+            });
+        }
+    });
+}
+</script>
 <script src="/assets/admin/js/users.js"></script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

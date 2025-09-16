@@ -9,51 +9,51 @@ class FormBuilder {
     }
     
     public function renderTable($table, $data, $columns, $actions = ['edit', 'delete']) {
-        $html = '<div class="table-responsive"><table class="table table-striped"><thead><tr>';
+        $html = '<div class="crm-table-wrapper"><table class="crm-table"><thead><tr>';
         
         // Add ID column first
-        $html .= '<th>ID</th>';
+        $html .= '<th class="crm-th">ID</th>';
         
         // Add other columns
         foreach ($columns as $key => $label) {
-            $html .= "<th>{$label}</th>";
+            $html .= "<th class='crm-th'>{$label}</th>";
         }
         
         // Add actions column
         if (!empty($actions)) {
-            $html .= '<th>Actions</th>';
+            $html .= '<th class="crm-th">Actions</th>';
         }
         
-        $html .= '</tr></thead><tbody>';
+        $html .= '</tr></thead><tbody class="crm-tbody">';
         
         // Add rows
         foreach ($data as $row) {
-            $html .= '<tr>';
-            $html .= "<td>{$row['id']}</td>";
+            $html .= '<tr class="crm-tr">';
+            $html .= "<td class='crm-td'>{$row['id']}</td>";
             
             foreach ($columns as $key => $label) {
                 $value = htmlspecialchars($row[$key] ?? '');
-                $html .= "<td>{$value}</td>";
+                $html .= "<td class='crm-td'>{$value}</td>";
             }
             
             // Add action buttons
             if (!empty($actions)) {
-                $html .= '<td>';
+                $html .= '<td class="crm-td">';
                 foreach ($actions as $action) {
                     if ($action === 'edit') {
-                        $html .= "<button class='btn btn-sm btn-warning' onclick='editRecord(\"{$table}\", {$row['id']})'>Edit</button> ";
+                        $html .= "<button class='crm-btn crm-btn-edit' onclick='editRecord(\"{$table}\", {$row['id']})'>Edit</button> ";
                     } elseif ($action === 'delete') {
                         // Show Archive for protected tables, Delete for others
                         $protectedTables = ['companies', 'contacts', 'users'];
                         if (in_array($table, $protectedTables)) {
                             $status = $row['status'] ?? 'active';
                             if ($status !== 'archived') {
-                                $html .= "<button class='btn btn-sm btn-secondary' onclick='archiveRecord(\"{$table}\", {$row['id']})'>Archive</button>";
+                                $html .= "<button class='crm-btn crm-btn-archive' onclick='archiveRecord(\"{$table}\", {$row['id']})'>Archive</button>";
                             } else {
-                                $html .= "<button class='btn btn-sm btn-success' onclick='unarchiveRecord(\"{$table}\", {$row['id']})'>Restore</button>";
+                                $html .= "<button class='crm-btn crm-btn-restore' onclick='unarchiveRecord(\"{$table}\", {$row['id']})'>Restore</button>";
                             }
                         } else {
-                            $html .= "<button class='btn btn-sm btn-danger' onclick='deleteRecord(\"{$table}\", {$row['id']})'>Delete</button>";
+                            $html .= "<button class='crm-btn crm-btn-delete' onclick='deleteRecord(\"{$table}\", {$row['id']})'>Delete</button>";
                         }
                     }
                 }
@@ -68,7 +68,7 @@ class FormBuilder {
     }
     
     public function renderForm($table, $fields, $action = 'add', $data = []) {
-        $html = "<form method='POST' class='crud-form'>";
+        $html = "<form method='POST' class='crm-form'>";
         $html .= "<input type='hidden' name='action' value='{$action}'>";
         $html .= "<input type='hidden' name='table' value='{$table}'>";
         
@@ -82,27 +82,27 @@ class FormBuilder {
             $type = $config['type'] ?? 'text';
             $label = $config['label'] ?? ucfirst($name);
             
-            $html .= "<div class='mb-3'>";
-            $html .= "<label class='form-label'>{$label}</label>";
+            $html .= "<div class='crm-field'>";
+            $html .= "<label class='crm-label'>{$label}</label>";
             
             if ($type === 'select') {
-                $html .= "<select name='{$name}' class='form-select'" . ($required ? ' required' : '') . ">";
+                $html .= "<select name='{$name}' class='crm-select'" . ($required ? ' required' : '') . ">";
                 foreach ($config['options'] as $optValue => $optLabel) {
                     $selected = $value == $optValue ? ' selected' : '';
                     $html .= "<option value='{$optValue}'{$selected}>{$optLabel}</option>";
                 }
                 $html .= "</select>";
             } elseif ($type === 'textarea') {
-                $html .= "<textarea name='{$name}' class='form-control'" . ($required ? ' required' : '') . ">{$value}</textarea>";
+                $html .= "<textarea name='{$name}' class='crm-textarea'" . ($required ? ' required' : '') . ">{$value}</textarea>";
             } else {
-                $html .= "<input type='{$type}' name='{$name}' class='form-control' value='{$value}'" . ($required ? ' required' : '') . ">";
+                $html .= "<input type='{$type}' name='{$name}' class='crm-input' value='{$value}'" . ($required ? ' required' : '') . ">";
             }
             
             $html .= "</div>";
         }
         
         $submitText = $action === 'edit' ? 'Update' : 'Add';
-        $html .= "<button type='submit' class='btn btn-primary'>{$submitText}</button>";
+        $html .= "<button type='submit' class='crm-btn crm-btn-primary'>{$submitText}</button>";
         $html .= "</form>";
         
         return $html;
