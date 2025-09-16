@@ -22,19 +22,12 @@ services:
       - "0.0.0.0:3939:3939"
       - "0.0.0.0:333:333"
     volumes:
-      - ./src:/app/src:ro
-      - ./API:/app/API:ro
-      - ./run:/app/run:ro
-      - ./config:/app/config
-      - ./examples:/app/examples:ro
+      - .:/app
       - /etc/cyford/zeroai/knowledge:/app/knowledge
-      - ./logs:/app/logs
-      - ./www:/app/www
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
       - /etc/cyford/zeroai/.env:/app/.env:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./scripts:/app/scripts:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
@@ -62,16 +55,10 @@ services:
     ports:
       - "0.0.0.0:8080:8080"
     volumes:
-      - ./src:/app/src:ro
-      - ./API:/app/API:ro
-      - ./run:/app/run:ro
-      - ./config:/app/config
-      - ./examples:/app/examples:ro
-      - /etc/cyford/zeroai/knowledge:/app/knowledge:ro
-      - ./logs:/app/logs
+      - .:/app
+      - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/.env:/app/.env:ro
-      - ./scripts:/app/scripts:ro
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434

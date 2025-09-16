@@ -5,28 +5,17 @@
 /usr/bin/git "$@"
 GIT_EXIT_CODE=$?
 
-# Fix permissions after git operations that might affect files
+# Fix permissions after git operations - only for non-mounted directories
 case "$1" in
     pull|checkout|reset|merge|rebase|clone)
         echo "Fixing permissions after git $1..."
         
-        # Fix data directory permissions
-        if [ -d "/app/data" ]; then
-            chown -R www-data:www-data /app/data 2>/dev/null || true
-            chmod 775 /app/data 2>/dev/null || true
-            chmod 664 /app/data/*.db 2>/dev/null || true
-        fi
+        # Only fix permissions on directories that are NOT volume mounts
+        # Skip /app/data, /app/knowledge, /app/backup as they are mounted volumes
         
-        # Fix log permissions
-        if [ -d "/app/logs" ]; then
-            chown -R www-data:www-data /app/logs 2>/dev/null || true
-            chmod 775 /app/logs 2>/dev/null || true
-        fi
-        
-        # Fix www permissions
-        if [ -d "/app/www" ]; then
-            chown -R www-data:www-data /app/www 2>/dev/null || true
-        fi
+        # Fix source code permissions (these are bind mounts, should be writable)
+        find /app/src /app/API /app/run /app/scripts -type f -exec chmod 644 {} \; 2>/dev/null || true
+        find /app/src /app/API /app/run /app/scripts -type d -exec chmod 755 {} \; 2>/dev/null || true
         
         echo "Permissions fixed."
         ;;

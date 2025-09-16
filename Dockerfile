@@ -54,10 +54,11 @@ RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy /va
     && mkdir -p /var/log/nginx /var/lib/nginx /run /tmp/nginx \
     && chown -R www-data:www-data /var/lib/nginx /var/log/nginx /run /tmp/nginx
 
-# Configure git
+# Configure git and prevent read-only filesystem issues
 RUN git config --global --add safe.directory /app \
     && git config --global user.name "www-data" \
-    && git config --global user.email "www-data@zeroai.local"
+    && git config --global user.email "www-data@zeroai.local" \
+    && echo 'tmpfs /tmp tmpfs rw,nodev,nosuid,size=1G 0 0' >> /etc/fstab
 
 # Git wrapper will be installed after code copy
 
