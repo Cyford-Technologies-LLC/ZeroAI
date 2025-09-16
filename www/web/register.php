@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($existing)) {
                 $error = 'Username or email already registered';
             } else {
-                // Step 1: Create user using DatabaseManager
+                // Step 1: Create user using DatabaseManager with bypass queue
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $userId = $db->insert('users', [
                     'username' => $username,
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'password' => $hashedPassword,
                     'role' => 'frontend',
                     'organization_id' => 1
-                ]);
+                ], true); // Force immediate write
                 
                 // Step 2: Get real user ID by selecting from database
                 $userResult = $db->select('users', ['username' => $username, 'email' => $email], 1);
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'organization_id' => 1,
                             'user_id' => $realUserId,
                             'created_by' => $realUserId
-                        ]);
+                        ], true); // Force immediate write
                         
                         $logger->info('Company created during registration', [
                             'company_id' => $companyId,
