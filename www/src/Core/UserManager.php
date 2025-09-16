@@ -34,6 +34,12 @@ class UserManager {
             // Column already exists
         }
         
+        try {
+            $pdo->exec("ALTER TABLE users ADD COLUMN email TEXT");
+        } catch (\PDOException $e) {
+            // Column already exists
+        }
+        
         // Create demo user if not exists
         $this->createUserIfNotExists('demo', 'demo123', 'demo', []);
         
@@ -59,8 +65,8 @@ class UserManager {
     
     public function authenticate($username, $password) {
         $pdo = $this->db->getConnection();
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND (status IS NULL OR status = 'active')");
-        $stmt->execute([$username]);
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE (username = ? OR email = ?) AND (status IS NULL OR status = 'active')");
+        $stmt->execute([$username, $username]);
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
         
         if ($user && password_verify($password, $user['password'])) {
@@ -92,7 +98,7 @@ class UserManager {
         
         if ($users === false) {
             $pdo = $this->db->getConnection();
-            $stmt = $pdo->query("SELECT id, username, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
+            $stmt = $pdo->query("SELECT id, username, email, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
             $users = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             $this->cache->set($cacheKey, $users, 300); // Cache for 5 minutes
         }
@@ -105,7 +111,7 @@ class UserManager {
         $fields = [];
         $values = [];
         
-        $allowedFields = ['username', 'role', 'permissions', 'status'];
+        $allowedFields = ['username', 'email', 'role', 'permissions', 'status'];
         foreach ($data as $key => $value) {
             if (in_array($key, $allowedFields)) {
                 $fields[] = "$key = ?";
@@ -144,14 +150,23 @@ class UserManager {
         return $stmt->execute([password_hash($newPassword, PASSWORD_DEFAULT), $userId]);
     }
     
-    public function createUser($username, $password, $role = 'user', $permissions = []) {
+    public function createUser($username, $password, $role = 'user', $permissions = [], $email = null) {
         $pdo = $this->db->getConnection();
-        $stmt = $pdo->prepare("INSERT INTO users (username, password, role, permissions) VALUES (?, ?, ?, ?)");
+        
+        // Check for duplicate username or email
+        $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ? OR (email IS NOT NULL AND email = ?)");
+        $checkStmt->execute([$username, $email]);
+        if ($checkStmt->fetchColumn() > 0) {
+            throw new \Exception('Username or email already exists');
+        }
+        
+        $stmt = $pdo->prepare("INSERT INTO users (username, password, role, permissions, email) VALUES (?, ?, ?, ?, ?)");
         return $stmt->execute([
             $username, 
             password_hash($password, PASSWORD_DEFAULT), 
             $role,
-            json_encode($permissions)
+            json_encode($permissions),
+            $email
         ]);
     }
 }
