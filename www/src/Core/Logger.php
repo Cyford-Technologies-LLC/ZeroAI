@@ -96,8 +96,8 @@ class Logger {
         $ip = $this->getClientIP();
         $user = $_SESSION['admin_user'] ?? 'anonymous';
         
-        // Sanitize message and context to prevent log injection
-        $message = InputValidator::sanitize($message);
+        // Sanitize message to prevent log injection
+        $message = str_replace(["\n", "\r", "\t"], ' ', $message);
         $contextStr = !empty($context) ? ' ' . json_encode($context, JSON_UNESCAPED_SLASHES) : '';
         
         $logEntry = "[$timestamp] [$ip] [$user] $level: $message$contextStr" . PHP_EOL;
