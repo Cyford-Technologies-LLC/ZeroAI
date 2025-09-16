@@ -1,4 +1,8 @@
 <?php
+$pageTitle = 'User Management - ZeroAI';
+$currentPage = 'users';
+include __DIR__ . '/includes/header.php';
+
 // Block demo users from user management
 if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
     header('Location: /admin/dashboard.php?error=Demo users cannot access user management');
@@ -208,6 +212,20 @@ $users = $userManager->getAllUsers() ?: [];
                     <tr>
                         <td colspan="6" class="text-center text-muted py-4">
                             <em>No users found.</em>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/admin/js/users.js"></script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
                         </td>
                     </tr>
                     <?php endif; ?>
