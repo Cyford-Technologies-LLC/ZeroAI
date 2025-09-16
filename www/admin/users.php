@@ -7,9 +7,11 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
 
 require_once '../src/Core/UserManager.php';
 require_once '../src/Core/Logger.php';
+require_once '../src/Core/FormBuilder.php';
 
 $logger = \ZeroAI\Core\Logger::getInstance();
 $userManager = new \ZeroAI\Core\UserManager();
+$formBuilder = new \ZeroAI\Core\FormBuilder();
 $message = '';
 $error = '';
 
@@ -64,10 +66,6 @@ if ($_POST) {
 }
 
 $users = $userManager->getAllUsers() ?: [];
-
-$pageTitle = 'User Management - ZeroAI';
-$currentPage = 'users';
-include __DIR__ . '/includes/header.php';
 ?>
 
 <h1 class="mb-4">👥 User Management</h1>
@@ -88,9 +86,14 @@ include __DIR__ . '/includes/header.php';
 
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0">➕ Create New User</h5>
+        <h5 class="mb-0">
+            <button class="btn btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#createUserForm" aria-expanded="false">
+                ➕ Create New User
+            </button>
+        </h5>
     </div>
-    <div class="card-body">
+    <div class="collapse" id="createUserForm">
+        <div class="card-body">
         <form method="POST">
             <input type="hidden" name="action" value="create_user">
             
@@ -167,153 +170,24 @@ include __DIR__ . '/includes/header.php';
             
             <button type="submit" class="btn btn-success">✅ Create User</button>
         </form>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">👥 Existing Users (<?= count($users) ?>)</h5>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Last Login</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($users)): ?>
-                        <?php foreach ($users as $user): ?>
-                    <tr>
-                        <td><strong><?= htmlspecialchars($user['username']) ?></strong></td>
-                        <td><?= htmlspecialchars($user['email'] ?? 'No email') ?></td>
-                        <td>
-                            <span class="badge bg-<?= $user['role'] === 'admin' ? 'danger' : ($user['role'] === 'demo' ? 'secondary' : 'primary') ?>">
-                                <?= ucfirst($user['role'] ?? 'user') ?>
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-<?= ($user['status'] ?? 'active') === 'active' ? 'success' : 'warning' ?>">
-                                <?= ($user['status'] ?? 'active') === 'active' ? '✅ Active' : '❌ Inactive' ?>
-                            </span>
-                        </td>
-                        <td>
-                            <small class="text-muted">
-                                <?= $user['last_login'] ? date('M j, Y g:i A', strtotime($user['last_login'])) : 'Never' ?>
-                            </small>
-                        </td>
-                        <td>
-                            <?php if ($user['username'] !== 'admin' || $_SESSION['user_name'] === 'admin'): ?>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button onclick="editUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>', '<?= htmlspecialchars($user['email'] ?? '') ?>', '<?= $user['role'] ?? 'user' ?>', '<?= $user['status'] ?? 'active' ?>')" 
-                                            class="btn btn-outline-warning btn-sm">✏️ Edit</button>
-                                    <button onclick="changePassword(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>')" 
-                                            class="btn btn-outline-secondary btn-sm">🔑 Password</button>
-                                </div>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <em>No users found. There may be a database connection issue.</em>
-                        </td>
-                    </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 
-<!-- Edit User Modal -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">✏️ Edit User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="update_user">
-                    <input type="hidden" name="user_id" id="edit_user_id">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" id="edit_username" class="form-control" readonly>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" id="edit_email" class="form-control">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select name="role" id="edit_role" class="form-select">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                            <option value="demo">Demo (View Only)</option>
-                            <option value="frontend">Frontend User</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" id="edit_status" class="form-select">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">✅ Update User</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<?php
+$columns = ['id', 'username', 'email', 'role', 'status', 'last_login'];
+$columnLabels = [
+    'id' => 'ID',
+    'username' => 'Username', 
+    'email' => 'Email',
+    'role' => 'Role',
+    'status' => 'Status',
+    'last_login' => 'Last Login'
+];
+echo $formBuilder->renderTable('users', $users, $columns, $columnLabels, '👥 Existing Users (' . count($users) . ')', false);
+?>
 
-<!-- Password Change Modal -->
-<div class="modal fade" id="passwordModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">🔑 Change Password</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="change_password">
-                    <input type="hidden" name="user_id" id="password_user_id">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" id="password_username" class="form-control" readonly>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">New Password</label>
-                        <input type="password" name="new_password" class="form-control" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">✅ Change Password</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
