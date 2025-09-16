@@ -74,6 +74,7 @@ if ($_POST) {
 }
 
 $users = $userManager->getAllUsers() ?: [];
+$logger->info('Users Page: Retrieved ' . count($users) . ' users for display');
 
 $pageTitle = 'User Management - ZeroAI';
 $currentPage = 'users';
@@ -219,6 +220,29 @@ include __DIR__ . '/includes/header.php';
 <!-- Password Change Modal -->
 <div id="passwordModal" class="modal">
     <div class="modal-content">
+        <h3>Change Password</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="change_password">
+            <input type="hidden" name="user_id" id="password_user_id">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
+            
+            <label>Username:</label>
+            <input type="text" id="password_username" readonly>
+            
+            <label>New Password:</label>
+            <input type="password" name="new_password" required>
+            
+            <div class="modal-buttons">
+                <button type="submit" class="btn-success">Change Password</button>
+                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/assets/admin/js/users.js"></script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>nt">
         <h3>Change Password</h3>
         <form method="POST">
             <input type="hidden" name="action" value="change_password">

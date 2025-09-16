@@ -42,6 +42,15 @@ class UserManager {
             // Column already exists
         }
         
+        $this->ensureDefaultUsers();
+    }
+    
+    public function ensureDefaultUsers() {
+        $this->logger->info('UserManager: Ensuring default users exist');
+        
+        // Create admin user if not exists
+        $this->createUserIfNotExists('admin', 'admin123', 'admin', ['system_config', 'manage_agents', 'manage_crews', 'view_logs'], 'admin@zeroai.local');
+        
         // Create demo user if not exists
         $this->createUserIfNotExists('demo', 'demo123', 'demo', []);
         
@@ -49,18 +58,20 @@ class UserManager {
         $this->createUserIfNotExists('frontend', 'frontend123', 'frontend', ['view_public']);
     }
     
-    private function createUserIfNotExists($username, $password, $role, $permissions) {
+    private function createUserIfNotExists($username, $password, $role, $permissions, $email = null) {
         $pdo = $this->db->getConnection();
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
         $stmt->execute([$username]);
         
         if ($stmt->fetchColumn() == 0) {
-            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, permissions) VALUES (?, ?, ?, ?)");
+            $this->logger->info("UserManager: Creating default user '$username'");
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, permissions, email, status, created_at) VALUES (?, ?, ?, ?, ?, 'active', datetime('now'))");
             $stmt->execute([
                 $username, 
                 password_hash($password, PASSWORD_DEFAULT), 
                 $role,
-                json_encode($permissions)
+                json_encode($permissions),
+                $email
             ]);
         }
     }
