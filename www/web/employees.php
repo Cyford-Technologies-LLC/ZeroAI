@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
 
 if (!isset($_SESSION['web_logged_in']) && !isset($_SESSION['admin_logged_in'])) {
     header('Location: /web/login.php');
@@ -12,6 +11,12 @@ $isAdmin = isset($_SESSION['admin_logged_in']);
 $pageTitle = 'Employees - ZeroAI CRM';
 $currentPage = 'employees';
 
+include __DIR__ . '/includes/header.php';
+
+// Override companyId from URL parameter if provided
+if (isset($_GET['company_id'])) {
+    $companyId = $_GET['company_id'];
+}
 
 require_once __DIR__ . '/../config/database.php';
 $db = new Database();
@@ -31,7 +36,7 @@ if ($companyId) {
 
 
 ?>
-    <div class="header">
+<div class="header">
         <div class="header-content">
             <div class="logo">🏢 ZeroAI CRM - Employees<?= $company ? ' - ' . htmlspecialchars($company['name']) : '' ?></div>
             <nav class="nav">

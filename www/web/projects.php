@@ -108,23 +108,30 @@ try {
                 <table class="table table-striped">
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Name</th>
                             <th>Company</th>
                             <th>Status</th>
                             <th>Priority</th>
                             <th>Budget</th>
                             <th>Start Date</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($projects as $project): ?>
                             <tr>
+                                <td><?= htmlspecialchars($project['id']) ?></td>
                                 <td><?= htmlspecialchars($project['name']) ?></td>
                                 <td><?= htmlspecialchars($project['company_id'] ?? 'No Company') ?></td>
                                 <td><?= htmlspecialchars($project['status'] ?? 'active') ?></td>
                                 <td><?= htmlspecialchars($project['priority'] ?? 'medium') ?></td>
                                 <td><?= isset($project['budget']) && $project['budget'] ? '$' . number_format($project['budget'], 2) : '' ?></td>
                                 <td><?= isset($project['start_date']) && $project['start_date'] ? date('M j, Y', strtotime($project['start_date'])) : '' ?></td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="editProject(<?= $project['id'] ?>)">Edit</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteProject(<?= $project['id'] ?>)">Delete</button>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
