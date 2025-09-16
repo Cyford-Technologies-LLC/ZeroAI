@@ -1,4 +1,6 @@
 <?php
+$pageTitle = 'CRM Dashboard - ZeroAI';
+$currentPage = 'crm_dashboard';
 include __DIR__ . '/includes/header.php';
 
 // Initialize with safe defaults
@@ -8,42 +10,21 @@ $totalProjects = 0;
 $totalUsers = 0;
 
 try {
-    require_once __DIR__ . '/../config/database.php';
-    require_once __DIR__ . '/../src/Core/Logger.php';
-    require_once __DIR__ . '/../src/Core/UserManager.php';
-    
-    $logger = \ZeroAI\Core\Logger::getInstance();
-    $logger->info('CRM Dashboard: Loading dashboard data');
-    
-    $db = new Database();
-    $pdo = $db->getConnection();
-    
-    // Get tenants
-    $stmt = $pdo->query("SELECT * FROM tenants ORDER BY name");
-    $tenants = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-    $logger->info('CRM Dashboard: Found ' . count($tenants) . ' tenants');
-    
-    // Get totals
+    // Use existing $pdo from header
     $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies WHERE archived = 0")->fetchColumn() ?: 0;
     $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
+    $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
     
-    // Get user count
-    $userManager = new \ZeroAI\Core\UserManager();
-    $allUsers = $userManager->getAllUsers();
-    $totalUsers = count($allUsers);
-    
-    $logger->info('CRM Dashboard: Found ' . $totalCompanies . ' companies, ' . $totalProjects . ' projects, ' . $totalUsers . ' users');
-    
+    // Get tenants if table exists
+    try {
+        $stmt = $pdo->query("SELECT * FROM tenants ORDER BY name");
+        $tenants = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Exception $e) {
+        $tenants = [];
+    }
 } catch (Exception $e) {
-    $logger = \ZeroAI\Core\Logger::getInstance();
-    $logger->error('CRM Dashboard Error: ' . $e->getMessage());
-    $tenants = [];
+    // Use defaults
 }
-
-$pageTitle = 'CRM Dashboard - ZeroAI';
-$currentPage = 'crm_dashboard';
-$currentUser = $_SESSION['web_user'] ?? $_SESSION['admin_user'] ?? 'User';
-$isAdmin = isset($_SESSION['admin_logged_in']);
 
 
 
@@ -57,7 +38,7 @@ $isAdmin = isset($_SESSION['admin_logged_in']);
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2 mb-0"><i class="fas fa-tachometer-alt text-primary"></i> CRM Dashboard</h1>
+                <h1 class="h2 mb-0"><i class="fas fa-chart-line text-primary"></i> Welcome to ZeroAI CRM</h1>
                 <div class="d-flex gap-2">
                     <a href="/web/companies.php" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Add Company
@@ -70,24 +51,41 @@ $isAdmin = isset($_SESSION['admin_logged_in']);
         </div>
     </div>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value"><?= count($tenants) ?></div>
-        <div class="stat-label">Tenants</div>
+    <!-- Compact Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-primary mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
+                    <small class="text-muted">Companies</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-success mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
+                    <small class="text-muted">Projects</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-info mb-1"><?= htmlspecialchars($totalUsers) ?></h4>
+                    <small class="text-muted">Users</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-warning mb-1"><?= htmlspecialchars(count($tenants)) ?></h4>
+                    <small class="text-muted">Tenants</small>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value"><?= $totalCompanies ?></div>
-        <div class="stat-label">Companies</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value"><?= $totalProjects ?></div>
-        <div class="stat-label">Projects</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value"><?= $totalUsers ?></div>
-        <div class="stat-label">Users</div>
-    </div>
-</div>
 
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -125,23 +123,39 @@ $isAdmin = isset($_SESSION['admin_logged_in']);
     </table>
 </div>
 
-<div class="card">
-    <h3>🚀 Quick Actions</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
-        <a href="tenant_create.php" style="padding: 15px; background: #007cba; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
-            🏢 Create Tenant
-        </a>
-        <a href="company_create.php" style="padding: 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
-            🏭 Add Company
-        </a>
-        <a href="project_create.php" style="padding: 15px; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
-            📋 New Project
-        </a>
-        <a href="employee_create.php" style="padding: 15px; background: #6f42c1; color: white; text-decoration: none; border-radius: 4px; text-align: center;">
-            👥 Add Employee
-        </a>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">🚀 Quick Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/companies.php" class="btn btn-outline-primary w-100 py-3">
+                        <i class="fas fa-building fa-2x d-block mb-2"></i>
+                        Add Company
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/projects.php" class="btn btn-outline-success w-100 py-3">
+                        <i class="fas fa-project-diagram fa-2x d-block mb-2"></i>
+                        New Project
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/contacts.php" class="btn btn-outline-info w-100 py-3">
+                        <i class="fas fa-users fa-2x d-block mb-2"></i>
+                        Add Contact
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/employees.php" class="btn btn-outline-warning w-100 py-3">
+                        <i class="fas fa-user-tie fa-2x d-block mb-2"></i>
+                        Add Employee
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
         </div>
     </div>

@@ -1,9 +1,14 @@
 <?php
-// Include header first to get database connection
-include __DIR__ . '/includes/header.php';
+$pageTitle = 'Companies - ZeroAI CRM';
+$currentPage = 'companies';
 
 // Handle form submission
-if ($_POST) {
+if ($_POST && isset($_POST['action'])) {
+    // Start output buffering to prevent header issues
+    ob_start();
+    
+    // Include header after form processing
+    include __DIR__ . '/includes/header.php';
     try {
         if ($_POST['action'] === 'create') {
             // Check for duplicate name or email
@@ -15,6 +20,7 @@ if ($_POST) {
             
             $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, street, street2, city, state, zip, country, website, linkedin, industry, about, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $userOrgId, $currentUser]);
+            ob_end_clean();
             header('Location: /web/companies.php?success=added');
             exit;
         }
@@ -22,6 +28,7 @@ if ($_POST) {
         if ($_POST['action'] === 'update') {
             $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=?");
             $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id']]);
+            ob_end_clean();
             header('Location: /web/companies.php?success=updated');
             exit;
         }
@@ -29,12 +36,17 @@ if ($_POST) {
         if ($_POST['action'] === 'delete') {
             $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ?");
             $stmt->execute([$_POST['company_id']]);
+            ob_end_clean();
             header('Location: /web/companies.php?success=deleted');
             exit;
         }
     } catch (Exception $e) {
+        ob_end_clean();
         $error = "Error: " . $e->getMessage();
     }
+} else {
+    // Include header for normal page load
+    include __DIR__ . '/includes/header.php';
 }
 
 // Handle success messages from redirects
