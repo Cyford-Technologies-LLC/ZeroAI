@@ -2,11 +2,32 @@
 include __DIR__ . '/includes/header.php';
 
 // Handle form submission
-if ($_POST && isset($_POST['name'])) {
+if ($_POST) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, street, street2, city, state, zip, country, website, linkedin, industry, about, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $userOrgId, $currentUser]);
-        $success = "Company added successfully!";
+        if ($_POST['action'] === 'create') {
+            // Check for duplicate name or email
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE name = ? OR email = ?");
+            $checkStmt->execute([$_POST['name'], $_POST['email']]);
+            if ($checkStmt->fetchColumn() > 0) {
+                throw new Exception('Company name or email already exists');
+            }
+            
+            $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, street, street2, city, state, zip, country, website, linkedin, industry, about, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $userOrgId, $currentUser]);
+            $success = "Company added successfully!";
+        }
+        
+        if ($_POST['action'] === 'update') {
+            $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=?");
+            $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id']]);
+            $success = "Company updated successfully!";
+        }
+        
+        if ($_POST['action'] === 'delete') {
+            $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ?");
+            $stmt->execute([$_POST['company_id']]);
+            $success = "Company deleted successfully!";
+        }
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
     }
@@ -35,6 +56,7 @@ if ($_POST && isset($_POST['name'])) {
                 <div class="collapse" id="addCompanyForm">
                     <div class="card-body">
                     <form method="POST">
+                        <input type="hidden" name="action" value="create">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Company Name</label>
@@ -128,6 +150,7 @@ if ($_POST && isset($_POST['name'])) {
                                         <th>Phone</th>
                                         <th>Industry</th>
                                         <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -141,6 +164,10 @@ if ($_POST && isset($_POST['name'])) {
                                                 <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
                                                 <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
                                             <?php endif; ?>
+                                            <td>
+                                                <button onclick="editCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-warning">Edit</button>
+                                                <button onclick="deleteCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -149,6 +176,23 @@ if ($_POST && isset($_POST['name'])) {
                     <?php endif; ?>
                 </div>
             </div>
+
+<script>
+function editCompany(id) {
+    // Redirect to edit form or show modal
+    window.location.href = '/web/companies.php?edit=' + id;
+}
+
+function deleteCompany(id) {
+    if (confirm('Are you sure you want to delete this company?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = '<input type="hidden" name="action" value="delete"><input type="hidden" name="company_id" value="' + id + '">';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
