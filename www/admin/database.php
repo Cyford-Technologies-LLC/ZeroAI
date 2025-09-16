@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'DB Tools - ZeroAI';
-$currentPage = 'tools';
+$currentPage = 'db_tools';
 include __DIR__ . '/includes/header.php';
 
 require_once '../src/Core/DatabaseManager.php';
