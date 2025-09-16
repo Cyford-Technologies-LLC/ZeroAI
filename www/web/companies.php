@@ -1,6 +1,4 @@
 <?php
-include __DIR__ . '/includes/header.php';
-
 // Handle form submission
 if ($_POST) {
     try {
@@ -14,30 +12,43 @@ if ($_POST) {
             
             $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, street, street2, city, state, zip, country, website, linkedin, industry, about, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $userOrgId, $currentUser]);
-            $success = "Company added successfully!";
+            header('Location: /web/companies.php?success=added');
+            exit;
         }
         
         if ($_POST['action'] === 'update') {
             $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=?");
             $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id']]);
-            $success = "Company updated successfully!";
+            header('Location: /web/companies.php?success=updated');
+            exit;
         }
         
         if ($_POST['action'] === 'delete') {
             $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ?");
             $stmt->execute([$_POST['company_id']]);
-            $success = "Company deleted successfully!";
+            header('Location: /web/companies.php?success=deleted');
+            exit;
         }
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
     }
 }
 
+// Include header after form processing
+include __DIR__ . '/includes/header.php';
 
-
+// Handle success messages from redirects
+$success = '';
+if (isset($_GET['success'])) {
+    switch ($_GET['success']) {
+        case 'added': $success = 'Company added successfully!'; break;
+        case 'updated': $success = 'Company updated successfully!'; break;
+        case 'deleted': $success = 'Company deleted successfully!'; break;
+    }
+}
 ?>
 
-<?php if (isset($success)): ?>
+<?php if ($success): ?>
     <div class="alert alert-success"><?= $success ?></div>
 <?php endif; ?>
 

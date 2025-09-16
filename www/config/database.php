@@ -12,6 +12,9 @@ class Database {
         try {
             $this->pdo = new PDO("sqlite:" . $this->db_path);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->pdo->setAttribute(PDO::ATTR_TIMEOUT, 30);
+            $this->pdo->exec('PRAGMA busy_timeout = 30000');
+            $this->pdo->exec('PRAGMA journal_mode = WAL');
             $this->cache = \ZeroAI\Core\CacheManager::getInstance();
             $this->queue = \ZeroAI\Core\QueueManager::getInstance();
             $this->initTables();

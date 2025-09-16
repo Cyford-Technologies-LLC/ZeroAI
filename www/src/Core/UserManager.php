@@ -70,9 +70,8 @@ class UserManager {
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
         
         if ($user && password_verify($password, $user['password'])) {
-            // Update last login
-            $updateStmt = $pdo->prepare("UPDATE users SET last_login = datetime('now') WHERE id = ?");
-            $updateStmt->execute([$user['id']]);
+            // Use Database class update method with queue
+            $this->db->update('users', ['last_login' => date('Y-m-d H:i:s')], ['id' => $user['id']]);
             return $user;
         }
         return false;
