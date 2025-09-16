@@ -28,11 +28,28 @@ try {
     $companies = [];
 }
 
+// Handle edit mode
+$editProject = null;
+if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
+        $stmt->execute([$_GET['id']]);
+        $editProject = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $error = "Project not found";
+    }
+}
+
 // Handle form submissions
 $result = $formBuilder->handleRequest('projects', $projectFields);
 if ($result) {
     $success = $result['success'] ?? null;
     $error = $result['error'] ?? null;
+    // Redirect after successful operation to prevent resubmission
+    if ($success) {
+        header('Location: /web/projects.php?success=1');
+        exit;
+    }
 }
 
 // Get projects with company info
@@ -46,6 +63,10 @@ try {
 }
 
 ?>
+
+<?php if (isset($_GET['success'])): ?>
+    <div class="alert alert-success">Operation completed successfully!</div>
+<?php endif; ?>
 
 <?php if (isset($success)): ?>
     <div class="alert alert-success"><?= $success ?></div>
@@ -65,7 +86,7 @@ try {
     </div>
     <div class="collapse" id="addProjectForm">
         <div class="card-body">
-        <?= $formBuilder->renderForm('projects', $projectFields) ?>
+        <?= $formBuilder->renderForm('projects', $projectFields, $editProject ? 'edit' : 'add', $editProject ?: []) ?>
         </div>
     </div>
 </div>

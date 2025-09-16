@@ -98,7 +98,12 @@ class FormBuilder {
     }
     
     public function handleRequest($table, $fields) {
-        if (!$_POST || !isset($_POST['action'])) {
+        if (!$_POST || !isset($_POST['action']) || !isset($_POST['table'])) {
+            return null;
+        }
+        
+        // Only handle requests specifically for this table
+        if ($_POST['table'] !== $table) {
             return null;
         }
         
