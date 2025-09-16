@@ -176,6 +176,14 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 include __DIR__ . '/includes/header.php';
 ?>
 
+<?php if ($message): ?>
+    <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
+<?php endif; ?>
+
+<?php if ($error): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+<?php endif; ?>
+
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h1>👥 Role & Permission Management</h1>
     <div>
@@ -216,27 +224,79 @@ include __DIR__ . '/includes/header.php';
                 <div style="display: flex; gap: 8px;">
                     <button onclick="editRole(<?= $role['id'] ?>)" class="btn btn-warning btn-sm">Edit</button>
                     <button onclick="managePermissions(<?= $role['id'] ?>)" class="btn btn-primary btn-sm">Permissions</button>
+                    <?php if (!in_array($role['name'], ['super_admin', 'admin'])): ?>
+                        <button onclick="deleteRole(<?= $role['id'] ?>)" class="btn btn-danger btn-sm">Delete</button>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>
     </div>
 </div>
 
+<!-- Create/Edit Role Modal -->
+<div id="roleModal" style="display: <?= $editRole ? 'block' : 'none' ?>; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 500px;">
+        <h3><?= $editRole ? 'Edit Role' : 'Create New Role' ?></h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="<?= $editRole ? 'update_role' : 'create_role' ?>">
+            <?php if ($editRole): ?>
+                <input type="hidden" name="role_id" value="<?= $editRole['id'] ?>">
+            <?php endif; ?>
+            
+            <?php if (!$editRole): ?>
+                <label>Role Name (Internal):</label>
+                <input type="text" name="name" placeholder="e.g., sales_manager" required>
+            <?php endif; ?>
+            
+            <label>Display Name:</label>
+            <input type="text" name="display_name" value="<?= htmlspecialchars($editRole['display_name'] ?? '') ?>" required>
+            
+            <label>Description:</label>
+            <textarea name="description" rows="3"><?= htmlspecialchars($editRole['description'] ?? '') ?></textarea>
+            
+            <label>Level (1-10):</label>
+            <input type="number" name="level" min="1" max="10" value="<?= $editRole['level'] ?? 3 ?>" required>
+            
+            <div style="margin-top: 15px;">
+                <button type="submit" class="btn btn-success"><?= $editRole ? 'Update' : 'Create' ?> Role</button>
+                <button type="button" onclick="closeRoleModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function showCreateRoleForm() {
-    alert('Create role form - to be implemented');
-}
-
-function showPermissionMatrix() {
-    alert('Permission matrix - to be implemented');
+    document.getElementById('roleModal').style.display = 'block';
 }
 
 function editRole(roleId) {
-    alert('Edit role ' + roleId + ' - to be implemented');
+    window.location.href = '/admin/roles.php?edit=' + roleId;
+}
+
+function deleteRole(roleId) {
+    if (confirm('Are you sure you want to delete this role?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="delete_role">
+            <input type="hidden" name="role_id" value="${roleId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function closeRoleModal() {
+    window.location.href = '/admin/roles.php';
+}
+
+function showPermissionMatrix() {
+    alert('Permission matrix feature coming soon!');
 }
 
 function managePermissions(roleId) {
-    alert('Manage permissions for role ' + roleId + ' - to be implemented');
+    alert('Permission management for role ' + roleId + ' coming soon!');
 }
 </script>
 
