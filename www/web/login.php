@@ -15,9 +15,6 @@ $success = '';
 
 if ($_POST) {
     try {
-        require_once '../config/database.php';
-        $db = new Database();
-        $pdo = $db->getConnection();
         
         $login = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -25,11 +22,12 @@ if ($_POST) {
         if (empty($login) || empty($password)) {
             $error = "Username/Email and password are required";
         } else {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
-            $stmt->execute([$login, $login]);
-            $user = $stmt->fetch();
+            // Use UserManager for authentication to handle email column properly
+            require_once '../src/Core/UserManager.php';
+            $userManager = new \ZeroAI\Core\UserManager();
+            $user = $userManager->authenticate($login, $password);
             
-            if ($user && password_verify($password, $user['password'])) {
+            if ($user) {
                 $_SESSION['web_logged_in'] = true;
                 $_SESSION['web_user'] = $user['username'];
                 $_SESSION['user_role'] = $user['role'] ?? 'user';
