@@ -10,14 +10,8 @@ $totalProjects = 0;
 $totalUsers = 0;
 
 try {
-    // Use same logic as header for company count
-    if ($isAdmin) {
-        $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
-    } else {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE organization_id = ?");
-        $stmt->execute([$userOrgId]);
-        $totalCompanies = $stmt->fetchColumn() ?: 0;
-    }
+    // Use existing $pdo from header
+    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
     $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
     $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
     
