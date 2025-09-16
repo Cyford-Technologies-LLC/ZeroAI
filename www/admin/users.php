@@ -1,4 +1,49 @@
 <?php
+// Handle AJAX requests first
+if (isset($_POST['action']) && in_array($_POST['action'], ['edit_user', 'delete_user'])) {
+    header('Content-Type: application/json');
+    require_once '../src/Core/UserManager.php';
+    
+    $userManager = new \ZeroAI\Core\UserManager();
+    
+    if ($_POST['action'] === 'delete_user') {
+        $userId = (int)$_POST['user_id'];
+        if ($userManager->deleteUser($userId)) {
+            echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to delete user']);
+        }
+        exit;
+    }
+    
+    if ($_POST['action'] === 'edit_user') {
+        $userId = (int)$_POST['user_id'];
+        $username = trim($_POST['username']);
+        $email = trim($_POST['email']) ?: null;
+        $role = $_POST['role'];
+        $status = $_POST['status'];
+        
+        if ($userManager->updateUser($userId, $username, $email, $role, $status)) {
+            echo json_encode(['success' => true, 'message' => 'User updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update user']);
+        }
+        exit;
+    }
+    
+    if ($_POST['action'] === 'toggle_status') {
+        $userId = (int)$_POST['user_id'];
+        $newStatus = $_POST['status'] === 'active' ? 'inactive' : 'active';
+        
+        if ($userManager->updateUserStatus($userId, $newStatus)) {
+            echo json_encode(['success' => true, 'status' => $newStatus, 'message' => 'User status updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update user status']);
+        }
+        exit;
+    }
+}
+
 $pageTitle = 'User Management - ZeroAI';
 $currentPage = 'users';
 include __DIR__ . '/includes/header.php';
@@ -17,24 +62,22 @@ $userManager = new \ZeroAI\Core\UserManager();
 $message = '';
 $error = '';
 
-if ($_POST) {
+if ($_POST && $_POST['action'] === 'create_user') {
     try {
-        if ($_POST['action'] === 'create_user') {
-            $username = trim($_POST['username']);
-            $password = $_POST['password'];
-            $role = $_POST['role'];
-            $email = trim($_POST['email']) ?: null;
-            $permissions = $_POST['permissions'] ?? [];
-            
-            if (empty($username) || empty($password)) {
-                throw new Exception('Username and password are required');
-            }
-            
-            if ($userManager->createUser($username, $password, $role, $permissions, $email)) {
-                $message = "User '$username' created successfully";
-            } else {
-                $error = "Failed to create user";
-            }
+        $username = trim($_POST['username']);
+        $password = $_POST['password'];
+        $role = $_POST['role'];
+        $email = trim($_POST['email']) ?: null;
+        $permissions = $_POST['permissions'] ?? [];
+        
+        if (empty($username) || empty($password)) {
+            throw new Exception('Username and password are required');
+        }
+        
+        if ($userManager->createUser($username, $password, $role, $permissions, $email)) {
+            $message = "User '$username' created successfully";
+        } else {
+            $error = "Failed to create user";
         }
     } catch (Exception $e) {
         $error = $e->getMessage();
@@ -166,23 +209,43 @@ $users = $userManager->getAllUsers() ?: [];
                         <th>Role</th>
                         <th>Status</th>
                         <th>Last Login</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($users)): ?>
                         <?php foreach ($users as $user): ?>
-                    <tr>
+                    <tr id="user-<?= $user['id'] ?>">
                         <td><?= htmlspecialchars($user['id'] ?? '') ?></td>
                         <td><strong><?= htmlspecialchars($user['username'] ?? '') ?></strong></td>
                         <td><?= htmlspecialchars($user['email'] ?? 'No email') ?></td>
                         <td><span class="badge bg-primary"><?= ucfirst($user['role'] ?? 'user') ?></span></td>
-                        <td><span class="badge bg-success"><?= ($user['status'] ?? 'active') === 'active' ? 'Active' : 'Inactive' ?></span></td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="status-<?= $user['id'] ?>" 
+                                       <?= ($user['status'] ?? 'active') === 'active' ? 'checked' : '' ?>
+                                       onchange="toggleUserStatus(<?= $user['id'] ?>, '<?= $user['status'] ?? 'active' ?>')">
+                                <label class="form-check-label" for="status-<?= $user['id'] ?>">
+                                    <span class="badge <?= ($user['status'] ?? 'active') === 'active' ? 'bg-success' : 'bg-secondary' ?>">
+                                        <?= ($user['status'] ?? 'active') === 'active' ? 'Active' : 'Inactive' ?>
+                                    </span>
+                                </label>
+                            </div>
+                        </td>
                         <td><small><?= $user['last_login'] ? date('M j, Y g:i A', strtotime($user['last_login'])) : 'Never' ?></small></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES) ?>', '<?= $user['role'] ?>', '<?= $user['status'] ?? 'active' ?>')">
+                                ✏️ Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')">
+                                🗑️ Delete
+                            </button>
+                        </td>
                     </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             <em>No users found.</em>
                         </td>
                     </tr>
@@ -193,14 +256,58 @@ $users = $userManager->getAllUsers() ?: [];
     </div>
 </div>
 
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">✏️ Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="user_id">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="editUsername" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="editEmail" name="email" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select id="editRole" name="role" class="form-select" required>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="demo">Demo (View Only)</option>
+                            <option value="frontend">Frontend User</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select id="editStatus" name="status" class="form-select" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Simple collapse functionality without Bootstrap
+// Simple collapse functionality
 document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.querySelector('[data-bs-toggle="collapse"]');
     const target = document.querySelector('#createUserForm');
     
     if (toggleBtn && target) {
-        // Initially hide the form
         target.style.display = 'none';
         
         toggleBtn.addEventListener('click', function(e) {
@@ -215,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Simple alert dismiss functionality
+    // Alert dismiss functionality
     const alertCloses = document.querySelectorAll('.btn-close');
     alertCloses.forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -226,7 +333,189 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function editUser(id, username, email, role, status) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editStatus').value = status;
+    
+    // Show modal
+    document.getElementById('editUserModal').style.display = 'block';
+    document.getElementById('editUserModal').classList.add('show');
+}
+
+function saveUser() {
+    const formData = new FormData(document.getElementById('editUserForm'));
+    formData.append('action', 'edit_user');
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('User updated successfully');
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    })
+    .catch(error => {
+        alert('Error updating user: ' + error);
+    });
+}
+
+function deleteUser(id, username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'delete_user');
+    formData.append('user_id', id);
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            document.getElementById('user-' + id).remove();
+            alert('User deleted successfully');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    })
+    .catch(error => {
+        alert('Error deleting user: ' + error);
+    });
+}
+
+function toggleUserStatus(id, currentStatus) {
+    const formData = new FormData();
+    formData.append('action', 'toggle_status');
+    formData.append('user_id', id);
+    formData.append('status', currentStatus);
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Update the badge
+            const label = document.querySelector(`label[for="status-${id}"] .badge`);
+            if (result.status === 'active') {
+                label.className = 'badge bg-success';
+                label.textContent = 'Active';
+            } else {
+                label.className = 'badge bg-secondary';
+                label.textContent = 'Inactive';
+            }
+        } else {
+            // Revert the switch if failed
+            const checkbox = document.getElementById(`status-${id}`);
+            checkbox.checked = !checkbox.checked;
+            alert('Error: ' + result.message);
+        }
+    })
+    .catch(error => {
+        // Revert the switch if failed
+        const checkbox = document.getElementById(`status-${id}`);
+        checkbox.checked = !checkbox.checked;
+        alert('Error updating status: ' + error);
+    });
+}
+
+// Simple modal functionality
+document.addEventListener('click', function(e) {
+    if (e.target.matches('[data-bs-dismiss="modal"]')) {
+        const modal = e.target.closest('.modal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        }
+    }
+});
 </script>
-<script src="/assets/admin/js/users.js"></script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal.show {
+    display: block;
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+    max-width: 500px;
+}
+
+.modal-content {
+    background-color: #fff;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.form-switch .form-check-input {
+    width: 2em;
+    height: 1em;
+    margin-top: 0.25em;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280,0,0,.25%29'/%3e%3c/svg%3e");
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    border: 1px solid rgba(0,0,0,.25);
+    border-radius: 2em;
+    transition: background-position .15s ease-in-out;
+}
+
+.form-switch .form-check-input:checked {
+    background-position: right center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255,255,255,1.0%29'/%3e%3c/svg%3e");
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-label {
+    margin-left: 0.5rem;
+}
+</style>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
