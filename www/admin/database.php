@@ -7,8 +7,15 @@ require_once '../src/Core/DatabaseManager.php';
 
 // Handle AJAX requests first
 if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $_POST['action'])) {
+    ob_clean();
     header('Content-Type: application/json');
-    $db = \ZeroAI\Core\DatabaseManager::getInstance();
+    
+    try {
+        $db = \ZeroAI\Core\DatabaseManager::getInstance();
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]);
+        exit;
+    }
     
     if (isset($_GET['action']) && $_GET['action'] === 'get_tables' && isset($_GET['db'])) {
         try {
@@ -99,28 +106,42 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
                 exit;
             }
             
-            // Split SQL statements by semicolon and filter empty ones
-            $statements = array_filter(array_map('trim', preg_split('/;\s*\n/', $sqlContent)));
+            // Remove SQL comments and split statements properly
+            $lines = explode("\n", $sqlContent);
+            $cleanedLines = [];
+            
+            foreach ($lines as $line) {
+                $line = trim($line);
+                // Skip empty lines and comment lines
+                if (!empty($line) && !preg_match('/^\s*--/', $line)) {
+                    $cleanedLines[] = $line;
+                }
+            }
+            
+            $cleanedSql = implode(" ", $cleanedLines);
+            $statements = explode(';', $cleanedSql);
             $executed = 0;
             $errors = [];
             
             foreach ($statements as $statement) {
                 $statement = trim($statement);
-                if (!empty($statement) && !preg_match('/^\s*--/', $statement)) {
+                if (!empty($statement) && strlen($statement) > 10) {
                     try {
-                        $db->query($statement);
+                        $result = $db->query($statement);
                         $executed++;
                     } catch (Exception $e) {
-                        $errors[] = substr($statement, 0, 50) . '... - ' . $e->getMessage();
+                        $errors[] = 'SQL Error: ' . $e->getMessage();
+                        if (count($errors) > 10) break; // Limit error reporting
                     }
                 }
             }
             
-            if (empty($errors)) {
-                echo json_encode(['success' => true, 'executed' => $executed, 'message' => "Successfully executed {$executed} SQL statements"]);
-            } else {
-                echo json_encode(['success' => true, 'executed' => $executed, 'errors' => $errors, 'message' => "Executed {$executed} statements with " . count($errors) . " errors"]);
-            }
+            echo json_encode([
+                'success' => true, 
+                'executed' => $executed, 
+                'errors' => $errors,
+                'message' => $executed > 0 ? "Executed {$executed} SQL statements" : "No valid SQL statements found"
+            ]);
         } catch (Exception $e) {
             echo json_encode(['error' => 'Upload failed: ' . $e->getMessage()]);
         }
