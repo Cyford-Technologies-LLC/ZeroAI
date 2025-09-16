@@ -1,13 +1,7 @@
 <?php
-$pageTitle = 'DB Tools - ZeroAI';
-$currentPage = 'db_tools';
-include __DIR__ . '/includes/header.php';
-
-require_once '../src/Core/DatabaseManager.php';
-
-// Handle AJAX requests first
+// Handle AJAX requests FIRST - before any output
 if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $_POST['action'])) {
-    ob_clean();
+    require_once '../src/Core/DatabaseManager.php';
     header('Content-Type: application/json');
     
     try {
@@ -147,8 +141,16 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
         }
         exit;
     }
+    
+    echo json_encode(['error' => 'Invalid action']);
+    exit;
 }
 
+$pageTitle = 'DB Tools - ZeroAI';
+$currentPage = 'db_tools';
+include __DIR__ . '/includes/header.php';
+
+require_once '../src/Core/DatabaseManager.php';
 $db = \ZeroAI\Core\DatabaseManager::getInstance();
 $databases = $db->getAvailableDatabases();
 ?>
