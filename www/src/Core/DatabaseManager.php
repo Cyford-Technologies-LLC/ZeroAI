@@ -1,6 +1,12 @@
 <?php
 namespace ZeroAI\Core;
 
+// Load trait files
+require_once __DIR__ . '/AgentMethods.php';
+require_once __DIR__ . '/UserMethods.php';
+require_once __DIR__ . '/CompanyMethods.php';
+require_once __DIR__ . '/TaskMethods.php';
+
 class DatabaseManager {
     // Load database extensions
     use AgentMethods;
