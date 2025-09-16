@@ -231,7 +231,7 @@ $currentPage = $currentPage ?? '';
                 <div class="sidebar-group">
                     <h3>Development Tools</h3>
                     <a href="/admin/api_tester">🧪 API Tester</a>
-                    <a href="/admin/database_viewer">🗄️ Database Viewer</a>
+                    <a href="/admin/database.php" <?= ($currentPage ?? '') === 'db_tools' ? 'class="active"' : '' ?>>🛠️ DB Tools</a>
                     <a href="/admin/file_manager">📁 File Manager</a>
                 </div>
 
