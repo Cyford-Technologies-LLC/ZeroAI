@@ -56,16 +56,6 @@ else
     echo "  ⚠️ Knowledge base exists - skipping to preserve data"
 fi
 
-# Copy existing data only if destination doesn't have database
-echo "💾 Copying existing data..."
-if [ -f data/agents.db ] && [ ! -f /etc/cyford/zeroai/data/agents.db ]; then
-    cp data/* /etc/cyford/zeroai/data/ 2>/dev/null || true
-    echo "  ✅ Database copied"
-elif [ -f /etc/cyford/zeroai/data/agents.db ]; then
-    echo "  ⚠️ Database exists - skipping to preserve data"
-else
-    echo "  ℹ️ No source database found"
-fi
 
 # Set proper permissions
 echo "🔐 Setting permissions..."
