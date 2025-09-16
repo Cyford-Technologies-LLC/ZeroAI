@@ -1,22 +1,38 @@
 <?php
 include __DIR__ . '/includes/header.php';
-
+require_once __DIR__ . '/../src/Core/FormBuilder.php';
 
 $pageTitle = 'Projects - ZeroAI CRM';
 $currentPage = 'projects';
 
-// Handle form submissions
-if ($_POST && isset($_POST['action']) && $_POST['action'] == 'add') {
-    try {
-        $stmt = $pdo->prepare("INSERT INTO projects (company_id, name, description, status, priority, start_date, end_date, budget, organization_id, created_by) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, 1, ?)");
-        $stmt->execute([
-            $_POST['company_id'], $_POST['name'], $_POST['description'],
-            $_POST['priority'], $_POST['start_date'], $_POST['end_date'], $_POST['budget'], $currentUser
-        ]);
-        $success = "Project added successfully!";
-    } catch (Exception $e) {
-        $error = "Error: " . $e->getMessage();
+$formBuilder = new \ZeroAI\Core\FormBuilder();
+
+// Define project fields
+$projectFields = [
+    'name' => ['label' => 'Project Name', 'type' => 'text', 'required' => true],
+    'company_id' => ['label' => 'Company', 'type' => 'select', 'options' => []],
+    'description' => ['label' => 'Description', 'type' => 'textarea'],
+    'priority' => ['label' => 'Priority', 'type' => 'select', 'options' => ['low' => 'Low', 'medium' => 'Medium', 'high' => 'High']],
+    'budget' => ['label' => 'Budget', 'type' => 'number'],
+    'start_date' => ['label' => 'Start Date', 'type' => 'date'],
+    'end_date' => ['label' => 'End Date', 'type' => 'date']
+];
+
+// Get companies for dropdown
+try {
+    $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($companies as $company) {
+        $projectFields['company_id']['options'][$company['id']] = $company['name'];
     }
+} catch (Exception $e) {
+    $companies = [];
+}
+
+// Handle form submissions
+$result = $formBuilder->handleRequest('projects', $projectFields);
+if ($result) {
+    $success = $result['success'] ?? null;
+    $error = $result['error'] ?? null;
 }
 
 // Get projects with company info
@@ -49,49 +65,7 @@ try {
     </div>
     <div class="collapse" id="addProjectForm">
         <div class="card-body">
-        <form method="POST">
-            <input type="hidden" name="action" value="add">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Project Name</label>
-                    <input type="text" class="form-control" name="name" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Company</label>
-                    <select class="form-select" name="company_id">
-                        <option value="">Select Company</option>
-                        <?php foreach ($companies as $company): ?>
-                            <option value="<?= $company['id'] ?>"><?= htmlspecialchars($company['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Priority</label>
-                    <select class="form-select" name="priority">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Budget</label>
-                    <input type="number" class="form-control" name="budget" step="0.01">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" class="form-control" name="start_date">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">End Date</label>
-                    <input type="date" class="form-control" name="end_date">
-                </div>
-                <div class="col-12 mb-3">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-control" name="description" rows="3"></textarea>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Add Project</button>
-        </form>
+        <?= $formBuilder->renderForm('projects', $projectFields) ?>
         </div>
     </div>
 </div>
@@ -105,41 +79,20 @@ try {
             <p>No projects found. Add your first project above.</p>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Company</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Budget</th>
-                            <th>Start Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($projects as $project): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($project['id']) ?></td>
-                                <td><?= htmlspecialchars($project['name']) ?></td>
-                                <td><?= htmlspecialchars($project['company_id'] ?? 'No Company') ?></td>
-                                <td><?= htmlspecialchars($project['status'] ?? 'active') ?></td>
-                                <td><?= htmlspecialchars($project['priority'] ?? 'medium') ?></td>
-                                <td><?= isset($project['budget']) && $project['budget'] ? '$' . number_format($project['budget'], 2) : '' ?></td>
-                                <td><?= isset($project['start_date']) && $project['start_date'] ? date('M j, Y', strtotime($project['start_date'])) : '' ?></td>
-                                <td>
-                                    <button class="btn btn-sm btn-warning" onclick="editProject(<?= $project['id'] ?>)">Edit</button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteProject(<?= $project['id'] ?>)">Delete</button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <?= $formBuilder->renderTable('projects', $projects, [
+                    'name' => 'Name',
+                    'company_id' => 'Company',
+                    'status' => 'Status',
+                    'priority' => 'Priority',
+                    'budget' => 'Budget',
+                    'start_date' => 'Start Date'
+                ]) ?>
             </div>
         <?php endif; ?>
     </div>
 </div>
+
+<?= $formBuilder->renderScript() ?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
