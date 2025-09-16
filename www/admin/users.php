@@ -41,7 +41,21 @@ if ($_POST) {
     }
 }
 
+// Get admin users
 $users = $userManager->getAllUsers() ?: [];
+
+// Also get registration users from the main users table
+try {
+    $db = \ZeroAI\Core\DatabaseManager::getInstance();
+    $registrationUsers = $db->query("SELECT id, COALESCE(first_name || ' ' || last_name, company_name) as username, email, 'frontend' as role, 'active' as status, created_at, NULL as last_login FROM users WHERE company_name IS NOT NULL");
+    
+    if ($registrationUsers) {
+        $users = array_merge($users, $registrationUsers);
+        $logger->info('Users Page: Added ' . count($registrationUsers) . ' registration users');
+    }
+} catch (Exception $e) {
+    $logger->error('Users Page: Error getting registration users: ' . $e->getMessage());
+}
 ?>
 
 <h1 class="mb-4">👥 User Management</h1>
