@@ -43,24 +43,34 @@ function getOllamaStatus() {
 $ollamaStatus = getOllamaStatus();
 
 try {
-    if (class_exists('ZeroAI\Core\System')) {
-        $systemInfo = ZeroAI\Core\System::getSystemInfo();
-    } else {
-        $systemInfo = [];
+    require_once '../src/Core/UserManager.php';
+    require_once '../src/Core/Logger.php';
+    
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->info('Admin Dashboard: Loading dashboard data');
+    
+    $userManager = new \ZeroAI\Core\UserManager();
+    $allUsers = $userManager->getAllUsers();
+    
+    $adminCount = 0;
+    foreach ($allUsers as $user) {
+        if ($user['role'] === 'admin') {
+            $adminCount++;
+        }
     }
     
-    if (class_exists('ZeroAI\Core\DatabaseManager')) {
-        $db = ZeroAI\Core\DatabaseManager::getInstance();
-        $userResult = $db->select('users');
-        $userStats = ['total' => is_array($userResult) ? count($userResult) : 0, 'admin' => 1];
-    } else {
-        $userStats = ['total' => 0, 'admin' => 1];
-    }
+    $userStats = [
+        'total' => count($allUsers),
+        'admin' => $adminCount
+    ];
+    
+    $logger->info('Admin Dashboard: Found ' . $userStats['total'] . ' total users, ' . $userStats['admin'] . ' admins');
     
     $agentStats = ['total' => 0, 'active' => 0];
     $recentLogs = [];
     
 } catch (Exception $e) {
+    $logger->error('Admin Dashboard: Error loading data: ' . $e->getMessage());
     $userStats = ['total' => 0, 'admin' => 1];
     $agentStats = ['total' => 0, 'active' => 0];
     $recentLogs = [];

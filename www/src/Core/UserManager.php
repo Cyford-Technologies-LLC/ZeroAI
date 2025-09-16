@@ -4,11 +4,13 @@ namespace ZeroAI\Core;
 class UserManager {
     private $db;
     private $cache;
+    private $logger;
     
     public function __construct() {
         require_once __DIR__ . '/../../config/database.php';
         $this->db = new \Database();
         $this->cache = \ZeroAI\Core\CacheManager::getInstance();
+        $this->logger = \ZeroAI\Core\Logger::getInstance();
         $this->initializeUserSchema();
     }
     
@@ -92,17 +94,22 @@ class UserManager {
     }
     
     public function getAllUsers() {
-        $cacheKey = 'users_all';
-        $users = $this->cache->get($cacheKey);
+        $this->logger->info('UserManager: getAllUsers() called');
         
-        if ($users === false) {
+        try {
             $pdo = $this->db->getConnection();
+            $this->logger->info('UserManager: Database connection established');
+            
             $stmt = $pdo->query("SELECT id, username, email, role, status, last_login, created_at FROM users ORDER BY created_at DESC");
             $users = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            $this->cache->set($cacheKey, $users, 300); // Cache for 5 minutes
+            
+            $this->logger->info('UserManager: Retrieved ' . count($users) . ' users from database');
+            
+            return $users;
+        } catch (\Exception $e) {
+            $this->logger->error('UserManager: Error in getAllUsers(): ' . $e->getMessage());
+            return [];
         }
-        
-        return $users;
     }
     
     public function updateUser($id, $data) {
@@ -150,23 +157,39 @@ class UserManager {
     }
     
     public function createUser($username, $password, $role = 'user', $permissions = [], $email = null) {
-        $pdo = $this->db->getConnection();
+        $this->logger->info("UserManager: Creating user '$username' with role '$role'");
         
-        // Check for duplicate username or email
-        $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ? OR (email IS NOT NULL AND email = ?)");
-        $checkStmt->execute([$username, $email]);
-        if ($checkStmt->fetchColumn() > 0) {
-            throw new \Exception('Username or email already exists');
+        try {
+            $pdo = $this->db->getConnection();
+            
+            // Check for duplicate username or email
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ? OR (email IS NOT NULL AND email = ?)");
+            $checkStmt->execute([$username, $email]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $this->logger->warning("UserManager: Duplicate username or email for '$username'");
+                throw new \Exception('Username or email already exists');
+            }
+            
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, permissions, email, status, created_at) VALUES (?, ?, ?, ?, ?, 'active', datetime('now'))");
+            $result = $stmt->execute([
+                $username, 
+                password_hash($password, PASSWORD_DEFAULT), 
+                $role,
+                json_encode($permissions),
+                $email
+            ]);
+            
+            if ($result) {
+                $this->logger->info("UserManager: Successfully created user '$username'");
+            } else {
+                $this->logger->error("UserManager: Failed to create user '$username'");
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            $this->logger->error('UserManager: Error creating user: ' . $e->getMessage());
+            throw $e;
         }
-        
-        $stmt = $pdo->prepare("INSERT INTO users (username, password, role, permissions, email) VALUES (?, ?, ?, ?, ?)");
-        return $stmt->execute([
-            $username, 
-            password_hash($password, PASSWORD_DEFAULT), 
-            $role,
-            json_encode($permissions),
-            $email
-        ]);
     }
 }
 

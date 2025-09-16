@@ -13,6 +13,10 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
 }
 
 require_once '../src/Core/UserManager.php';
+require_once '../src/Core/Logger.php';
+
+$logger = \ZeroAI\Core\Logger::getInstance();
+$logger->info('Users Page: Loading user management page');
 
 $userManager = new \ZeroAI\Core\UserManager();
 $message = '';

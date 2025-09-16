@@ -5,22 +5,38 @@ include __DIR__ . '/includes/header.php';
 $tenants = [];
 $totalCompanies = 0;
 $totalProjects = 0;
+$totalUsers = 0;
 
 try {
     require_once __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../src/Core/Logger.php';
+    require_once __DIR__ . '/../src/Core/UserManager.php';
+    
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->info('CRM Dashboard: Loading dashboard data');
+    
     $db = new Database();
     $pdo = $db->getConnection();
     
     // Get tenants
     $stmt = $pdo->query("SELECT * FROM tenants ORDER BY name");
     $tenants = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    $logger->info('CRM Dashboard: Found ' . count($tenants) . ' tenants');
     
     // Get totals
-    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
+    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies WHERE archived = 0")->fetchColumn() ?: 0;
     $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
     
+    // Get user count
+    $userManager = new \ZeroAI\Core\UserManager();
+    $allUsers = $userManager->getAllUsers();
+    $totalUsers = count($allUsers);
+    
+    $logger->info('CRM Dashboard: Found ' . $totalCompanies . ' companies, ' . $totalProjects . ' projects, ' . $totalUsers . ' users');
+    
 } catch (Exception $e) {
-    error_log('CRM Dashboard Error: ' . $e->getMessage());
+    $logger = \ZeroAI\Core\Logger::getInstance();
+    $logger->error('CRM Dashboard Error: ' . $e->getMessage());
     $tenants = [];
 }
 
@@ -66,6 +82,10 @@ $isAdmin = isset($_SESSION['admin_logged_in']);
     <div class="stat-card">
         <div class="stat-value"><?= $totalProjects ?></div>
         <div class="stat-label">Projects</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value"><?= $totalUsers ?></div>
+        <div class="stat-label">Users</div>
     </div>
 </div>
 
