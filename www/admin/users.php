@@ -7,6 +7,7 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
 
 require_once '../src/Core/UserManager.php';
 require_once '../src/Core/Logger.php';
+require_once '../src/Core/DatabaseManager.php';
 require_once '../src/Core/FormBuilder.php';
 
 $logger = \ZeroAI\Core\Logger::getInstance();
