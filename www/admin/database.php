@@ -75,6 +75,56 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
         }
         exit;
     }
+    
+    if (isset($_POST['action']) && $_POST['action'] === 'upload_dump') {
+        try {
+            if (!isset($_FILES['dump_file']) || $_FILES['dump_file']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['error' => 'No file uploaded or upload error']);
+                exit;
+            }
+            
+            $file = $_FILES['dump_file'];
+            $allowedTypes = ['text/plain', 'application/sql', 'text/sql'];
+            $allowedExts = ['sql', 'txt', 'dump'];
+            
+            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (!in_array($fileExt, $allowedExts)) {
+                echo json_encode(['error' => 'Invalid file type. Only .sql, .txt, .dump files allowed']);
+                exit;
+            }
+            
+            $sqlContent = file_get_contents($file['tmp_name']);
+            if (empty($sqlContent)) {
+                echo json_encode(['error' => 'File is empty']);
+                exit;
+            }
+            
+            // Split SQL statements by semicolon
+            $statements = array_filter(array_map('trim', explode(';', $sqlContent)));
+            $executed = 0;
+            $errors = [];
+            
+            foreach ($statements as $statement) {
+                if (!empty($statement)) {
+                    try {
+                        $db->query($statement);
+                        $executed++;
+                    } catch (Exception $e) {
+                        $errors[] = 'Statement error: ' . $e->getMessage();
+                    }
+                }
+            }
+            
+            if (empty($errors)) {
+                echo json_encode(['success' => true, 'executed' => $executed, 'message' => "Successfully executed {$executed} SQL statements"]);
+            } else {
+                echo json_encode(['success' => true, 'executed' => $executed, 'errors' => $errors, 'message' => "Executed {$executed} statements with some errors"]);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
 
 $db = \ZeroAI\Core\DatabaseManager::getInstance();
@@ -113,6 +163,7 @@ $databases = $db->getAvailableDatabases();
         <div class="mb-3">
             <div class="btn-group" role="group">
                 <button class="btn btn-outline-success" onclick="showSqlQuery()">🔍 SQL Query</button>
+                <button class="btn btn-outline-info" onclick="showUploadDump()">📁 Upload Dump</button>
                 <button class="btn btn-outline-warning" onclick="backupDatabase()" id="backup-btn" disabled>💾 Backup DB</button>
             </div>
         </div>
@@ -127,6 +178,26 @@ $databases = $db->getAvailableDatabases();
                 <button class="btn btn-secondary" onclick="hideSqlQuery()">Cancel</button>
             </div>
             <div id="sql-results"></div>
+        </div>
+        
+        <div id="upload-dump-area" class="card mb-3" style="display:none;">
+            <div class="card-header">
+                <h6>📁 Upload & Execute SQL Dump</h6>
+            </div>
+            <div class="card-body">
+                <form id="dump-upload-form" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="dump-file" class="form-label">Select SQL Dump File (.sql, .txt, .dump)</label>
+                        <input type="file" class="form-control" id="dump-file" name="dump_file" accept=".sql,.txt,.dump" required>
+                    </div>
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> This will execute all SQL statements in the file. Make sure to backup your database first!
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="uploadDump()">Upload & Execute</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideUploadDump()">Cancel</button>
+                </form>
+            </div>
+            <div id="upload-results"></div>
         </div>
         
         <div id="content-area">
@@ -151,6 +222,68 @@ function showSqlQuery() {
 function hideSqlQuery() {
     document.getElementById('sql-query-area').style.display = 'none';
     document.getElementById('sql-results').innerHTML = '';
+}
+
+function showUploadDump() {
+    document.getElementById('upload-dump-area').style.display = 'block';
+    document.getElementById('dump-file').focus();
+}
+
+function hideUploadDump() {
+    document.getElementById('upload-dump-area').style.display = 'none';
+    document.getElementById('upload-results').innerHTML = '';
+    document.getElementById('dump-upload-form').reset();
+}
+
+function uploadDump() {
+    const fileInput = document.getElementById('dump-file');
+    if (!fileInput.files[0]) {
+        alert('Please select a file first');
+        return;
+    }
+    
+    if (!confirm('This will execute all SQL statements in the file. Continue?')) {
+        return;
+    }
+    
+    document.getElementById('upload-results').innerHTML = '<div class="card-body text-center"><div class="spinner-border"></div><p>Uploading and executing dump...</p></div>';
+    
+    const formData = new FormData();
+    formData.append('action', 'upload_dump');
+    formData.append('dump_file', fileInput.files[0]);
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            document.getElementById('upload-results').innerHTML = `<div class="card-body"><div class="alert alert-danger">${result.error}</div></div>`;
+            return;
+        }
+        
+        let html = `<div class="card-body"><div class="alert alert-success">${result.message}</div>`;
+        
+        if (result.errors && result.errors.length > 0) {
+            html += '<div class="alert alert-warning"><strong>Errors encountered:</strong><ul>';
+            result.errors.forEach(error => {
+                html += `<li>${error}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        html += '</div>';
+        document.getElementById('upload-results').innerHTML = html;
+        
+        // Refresh the current view if a table is selected
+        if (currentTable) {
+            setTimeout(() => selectTable(currentTable), 1000);
+        }
+    })
+    .catch(error => {
+        document.getElementById('upload-results').innerHTML = `<div class="card-body"><div class="alert alert-danger">Upload failed: ${error}</div></div>`;
+    });
 }
 
 function executeSql() {
