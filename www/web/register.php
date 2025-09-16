@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($existing)) {
                 $error = 'Username or email already registered';
             } else {
-                // Create user with email support
+                // Step 1: Create user using DatabaseManager
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $userId = $db->insert('users', [
                     'username' => $username,
@@ -53,8 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'organization_id' => 1
                 ]);
                 
-                // Create company record for CRM
-                if ($userId && !empty($company_name)) {
+                // Step 2: Get real user ID by selecting from database
+                $userResult = $db->select('users', ['username' => $username, 'email' => $email], 1);
+                $realUserId = $userResult[0]['id'] ?? $userId;
+                
+                // Step 3: Create company record with real user ID
+                if ($realUserId && !empty($company_name)) {
                     try {
                         $companyId = $db->insert('companies', [
                             'name' => $company_name,
@@ -63,25 +67,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'website' => $website,
                             'linkedin' => $linkedin,
                             'organization_id' => 1,
-                            'user_id' => $userId,
-                            'created_by' => $userId
+                            'user_id' => $realUserId,
+                            'created_by' => $realUserId
                         ]);
+                        
                         $logger->info('Company created during registration', [
                             'company_id' => $companyId,
                             'company_name' => $company_name,
-                            'user_id' => $userId,
+                            'user_id' => $realUserId,
                             'username' => $username
                         ]);
                     } catch (Exception $companyError) {
                         $logger->error('Company creation failed during registration', [
                             'error' => $companyError->getMessage(),
                             'company_name' => $company_name,
-                            'user_id' => $userId
+                            'user_id' => $realUserId
                         ]);
                     }
                 }
                 
                 $success = 'Registration successful! You can now login.';
+                
+                $logger->debug('User created with ID', ['user_id' => $realUserId, 'username' => $username]);
                 
                 // Debug logging
                 $logger->debug('Registration completed', [
@@ -91,12 +98,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 
                 // Check if company was created and add debug info if debug mode is enabled
-                $companyCheck = $db->query("SELECT id, name FROM companies WHERE user_id = ?", [$userId]);
                 if ($logger->isDebugEnabled()) {
+                    $companyCheck = $db->select('companies', ['user_id' => $realUserId]);
+                    
                     if (!empty($companyCheck)) {
                         $success .= "<br><small>Debug: Company created - {$companyCheck[0]['name']} (ID: {$companyCheck[0]['id']})</small>";
                     } else {
-                        $success .= "<br><small style='color:red'>Debug: No company found for user ID: $userId</small>";
+                        $success .= "<br><small style='color:red'>Debug: No company found for user ID: $realUserId</small>";
                     }
                 }
             }

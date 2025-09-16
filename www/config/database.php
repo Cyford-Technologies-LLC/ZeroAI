@@ -179,27 +179,22 @@ class Database {
     
     // Enhanced write with Redis + Queue
     public function insert($table, $data) {
-        // Try queue first
-        $queued = $this->queue->push($table, $data, 'INSERT');
+        // Always do direct database write to get real ID
+        $sql = "INSERT INTO {$table} (" . implode(',', array_keys($data)) . ") VALUES (" . str_repeat('?,', count($data) - 1) . "?)";
+        $stmt = $this->pdo->prepare($sql);
+        $result = $stmt->execute(array_values($data));
         
-        if (!$queued) {
-            // Fallback to direct database write
-            $sql = "INSERT INTO {$table} (" . implode(',', array_keys($data)) . ") VALUES (" . str_repeat('?,', count($data) - 1) . "?)";
-            $stmt = $this->pdo->prepare($sql);
-            $result = $stmt->execute(array_values($data));
+        if ($result) {
+            $insertId = $this->pdo->lastInsertId();
+            $data['id'] = $insertId;
             
-            if ($result) {
-                $data['id'] = $this->pdo->lastInsertId();
-            }
-        } else {
-            // Simulate ID for immediate use
-            $data['id'] = time() . rand(1000, 9999);
+            // Update Redis cache immediately
+            $this->updateCacheAfterWrite($table, $data, 'INSERT');
+            
+            return $insertId;
         }
         
-        // Update Redis cache immediately
-        $this->updateCacheAfterWrite($table, $data, 'INSERT');
-        
-        return $data['id'] ?? true;
+        return false;
     }
     
     public function update($table, $data, $where) {

@@ -24,7 +24,11 @@ class DatabaseManager {
     }
     
     public function insert($table, $data) {
-        return $this->db->insert($table, $data);
+        $result = $this->db->insert($table, $data);
+        // Clear cache for this table after insert
+        $cacheKey = 'db_' . $table . '_*';
+        $this->cache->clearPattern($cacheKey);
+        return $result;
     }
     
     public function update($table, $data, $where) {
