@@ -1,6 +1,7 @@
 <?php
 // Ensure Claude is in the database
-require_once __DIR__ . '/../api/agent_db.php';
+require_once __DIR__ . '/../src/Core/DatabaseManager.php';
+require_once __DIR__ . '/../src/Core/AgentMethods.php';
 
 $agentDB = new AgentDB();
 

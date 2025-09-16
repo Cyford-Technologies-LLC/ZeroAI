@@ -294,7 +294,7 @@ function toggleCollapse(id) {
 
 function editCompany(id) {
     // Find the button that was clicked to get company data
-    const button = event.target;
+    const button = document.querySelector(`button[onclick="editCompany(${id})"]`);
     const companyData = JSON.parse(button.getAttribute('data-company'));
     
     // Populate form fields

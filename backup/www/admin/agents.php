@@ -2,13 +2,17 @@
 $pageTitle = 'Agent Management - ZeroAI';
 $currentPage = 'agents';
 include __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/../api/agent_db.php';
+require_once __DIR__ . '/../src/Core/DatabaseManager.php';
+require_once __DIR__ . '/../src/Core/AgentMethods.php';
+require_once __DIR__ . '/../src/Core/UserMethods.php';
+require_once __DIR__ . '/../src/Core/CompanyMethods.php';
+require_once __DIR__ . '/../src/Core/TaskMethods.php';
 
-$agentDB = new AgentDB();
+$db = \ZeroAI\Core\DatabaseManager::getInstance();
 
 // Handle actions
 if ($_POST['action'] ?? '' === 'import_agents') {
-    $imported = $agentDB->importExistingAgents();
+    $imported = $db->importExistingAgents();
     $message = count($imported) . ' agents imported successfully';
 } elseif ($_POST['action'] ?? '' === 'update_agent') {
     $updates = [
@@ -41,11 +45,11 @@ if ($_POST['action'] ?? '' === 'import_agents') {
         'knowledge' => $_POST['knowledge'] ?? null,
         'coworkers' => $_POST['coworkers'] ?? null
     ];
-    $agentDB->updateAgent($_POST['agent_id'], $updates);
+    $db->updateAgent($_POST['agent_id'], $updates);
     $message = 'Agent updated successfully';
 }
 
-$agents = $agentDB->getActiveAgents();
+$agents = $db->getActiveAgents();
 ?>
 
 <h1>Agent Management</h1>

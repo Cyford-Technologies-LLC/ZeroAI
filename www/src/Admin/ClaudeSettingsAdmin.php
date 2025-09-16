@@ -22,7 +22,8 @@ class ClaudeSettingsAdmin extends BaseAdmin {
             'supervisor_model' => $_POST['supervisor_model'] ?? 'claude-sonnet-4-20250514'
         ];
         
-        require_once __DIR__ . '/../../api/agent_db.php';
+        require_once __DIR__ . '/../../src/Core/DatabaseManager.php';
+        require_once __DIR__ . '/../../src/Core/AgentMethods.php';
         $agentDB = new \AgentDB();
         
         $agents = $agentDB->getAllAgents();

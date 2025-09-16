@@ -2,6 +2,11 @@
 namespace ZeroAI\Core;
 
 class DatabaseManager {
+    // Load database extensions
+    use AgentMethods;
+    use UserMethods;
+    use CompanyMethods;
+    use TaskMethods;
     private static $instance = null;
     private $db;
     private $cache;
@@ -19,11 +24,17 @@ class DatabaseManager {
         return self::$instance;
     }
     
-    public function select($table, $where = [], $limit = null) {
+    public function select($table, $where = [], $limit = null, $bypassCache = false) {
         return $this->db->select($table, $where, $limit);
     }
     
-    public function insert($table, $data) {
+    public function insert($table, $data, $bypassQueue = false) {
+        if ($bypassQueue) {
+            // Force immediate database write, skip queue
+            return $this->db->insert($table, $data);
+        }
+        
+        // Normal flow - may use queue if configured
         $result = $this->db->insert($table, $data);
         // Clear cache for this table after insert
         $cacheKey = 'db_' . $table . '_*';
@@ -31,17 +42,23 @@ class DatabaseManager {
         return $result;
     }
     
-    public function update($table, $data, $where) {
+    public function update($table, $data, $where, $bypassQueue = false) {
+        if ($bypassQueue) {
+            // Force immediate database write, skip queue
+            return $this->db->update($table, $data, $where);
+        }
+        
+        // Normal flow - may use queue if configured
         return $this->db->update($table, $data, $where);
     }
     
-    public function delete($table, $where) {
+    public function delete($table, $where, $bypassQueue = false) {
         return $this->db->delete($table, $where);
     }
     
-    public function query($sql, $params = []) {
+    public function query($sql, $params = [], $bypassCache = false) {
         // Check cache for SELECT queries
-        if (stripos(trim($sql), 'SELECT') === 0) {
+        if (!$bypassCache && stripos(trim($sql), 'SELECT') === 0) {
             $cacheKey = 'db_' . hash('sha256', $sql . serialize($params));
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null && $cached !== false) {
@@ -59,16 +76,16 @@ class DatabaseManager {
         $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         
         // Cache SELECT results for 5 minutes
-        if (stripos(trim($sql), 'SELECT') === 0) {
+        if (!$bypassCache && stripos(trim($sql), 'SELECT') === 0) {
             $this->cache->set($cacheKey, $result, 300);
         }
         
         return $result;
     }
     
-    public function executeSQL($sql, $dbName = 'main', $params = []) {
+    public function executeSQL($sql, $dbName = 'main', $params = [], $bypassCache = false) {
         // Compatibility method - ignore dbName for now
-        return $this->query($sql, $params);
+        return $this->query($sql, $params, $bypassCache);
     }
     
     public function fetchColumn() {

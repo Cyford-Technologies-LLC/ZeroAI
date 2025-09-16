@@ -3,17 +3,18 @@
 namespace ZeroAI\Admin;
 
 class AgentsAdmin extends BaseAdmin {
-    private $agentDB;
+    private $db;
     
     protected function handleRequest() {
-        require_once __DIR__ . '/../../api/agent_db.php';
-        $this->agentDB = new \AgentDB();
+        require_once __DIR__ . '/../../src/Core/DatabaseManager.php';
+        require_once __DIR__ . '/../../src/Core/AgentMethods.php';
+        $this->db = \ZeroAI\Core\DatabaseManager::getInstance();
         
         if ($_POST['action'] ?? '' === 'update_agent') {
             $this->updateAgent();
         }
         
-        $this->data['agents'] = $this->agentDB->getAllAgents();
+        $this->data['agents'] = $this->db->getAllAgents();
     }
     
     private function updateAgent() {
@@ -25,7 +26,7 @@ class AgentsAdmin extends BaseAdmin {
             'status' => $_POST['status']
         ];
         
-        $this->agentDB->updateAgent($id, $data);
+        $this->db->updateAgent($id, $data);
         $this->data['message'] = 'Agent updated successfully!';
     }
     

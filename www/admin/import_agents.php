@@ -1,8 +1,12 @@
 <?php
 session_start();
-require_once __DIR__ . '/../api/agent_db.php';
+require_once __DIR__ . '/../src/Core/DatabaseManager.php';
+require_once __DIR__ . '/../src/Core/AgentMethods.php';
+require_once __DIR__ . '/../src/Core/UserMethods.php';
+require_once __DIR__ . '/../src/Core/CompanyMethods.php';
+require_once __DIR__ . '/../src/Core/TaskMethods.php';
 
-$agentDB = new AgentDB();
+$db = \ZeroAI\Core\DatabaseManager::getInstance();
 $message = '';
 $error = '';
 
@@ -12,11 +16,11 @@ if (file_exists($sqlFile)) {
     $sql = file_get_contents($sqlFile);
     
     try {
-        // Execute SQL directly on agents.db
-        $agentDB->db->exec($sql);
+        // Execute SQL directly
+        $db->query($sql);
         
         // Count imported agents
-        $agents = $agentDB->getAllAgents();
+        $agents = $db->getAllAgents();
         $agentCount = count($agents);
         
         $message = "✅ Agents imported successfully! Total agents: {$agentCount}";
