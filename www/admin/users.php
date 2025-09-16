@@ -175,18 +175,47 @@ $users = $userManager->getAllUsers() ?: [];
     </div>
 </div>
 
-<?php
-$columns = ['id', 'username', 'email', 'role', 'status', 'last_login'];
-$columnLabels = [
-    'id' => 'ID',
-    'username' => 'Username', 
-    'email' => 'Email',
-    'role' => 'Role',
-    'status' => 'Status',
-    'last_login' => 'Last Login'
-];
-echo $formBuilder->renderTable('users', $users, $columns, $columnLabels, '👥 Existing Users (' . count($users) . ')', false);
-?>
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">👥 Existing Users (<?= count($users) ?>)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($users)): ?>
+                        <?php foreach ($users as $user): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($user['id'] ?? '') ?></td>
+                        <td><strong><?= htmlspecialchars($user['username'] ?? '') ?></strong></td>
+                        <td><?= htmlspecialchars($user['email'] ?? 'No email') ?></td>
+                        <td><span class="badge bg-primary"><?= ucfirst($user['role'] ?? 'user') ?></span></td>
+                        <td><span class="badge bg-success"><?= ($user['status'] ?? 'active') === 'active' ? 'Active' : 'Inactive' ?></span></td>
+                        <td><small><?= $user['last_login'] ? date('M j, Y g:i A', strtotime($user['last_login'])) : 'Never' ?></small></td>
+                    </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <em>No users found.</em>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 
 
