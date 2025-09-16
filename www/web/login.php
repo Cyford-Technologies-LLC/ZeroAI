@@ -19,33 +19,34 @@ if ($_POST) {
         $db = new Database();
         $pdo = $db->getConnection();
         
-        $email = trim($_POST['username'] ?? '');
+        $login = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         
-        if (empty($email) || empty($password)) {
-            $error = "Email and password are required";
+        if (empty($login) || empty($password)) {
+            $error = "Username/Email and password are required";
         } else {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-            $stmt->execute([$email]);
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
+            $stmt->execute([$login, $login]);
             $user = $stmt->fetch();
             
             if ($user && password_verify($password, $user['password'])) {
                 $_SESSION['web_logged_in'] = true;
-                $_SESSION['web_user'] = $user['email'];
+                $_SESSION['web_user'] = $user['username'];
                 $_SESSION['user_role'] = $user['role'] ?? 'user';
                 $_SESSION['user_id'] = $user['id'];
                 
                 $logger->info('Web login successful', [
-                    'email' => $email,
+                    'username' => $user['username'],
+                    'login_field' => $login,
                     'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
                 ]);
                 
                 header('Location: /web/');
                 exit;
             } else {
-                $error = "Invalid email or password";
+                $error = "Invalid username/email or password";
                 $logger->warning('Web login failed', [
-                    'email' => $email,
+                    'login_field' => $login,
                     'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
                 ]);
             }
@@ -161,7 +162,7 @@ if ($_POST) {
                         
                         <form method="POST">
                             <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
+                                <label for="username" class="form-label">Username or Email</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-person"></i></span>
                                     <input type="text" class="form-control" id="username" name="username" 

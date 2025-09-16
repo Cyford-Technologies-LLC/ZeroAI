@@ -19,8 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'] ?? '';
     
     // Validation
-    if (empty($company_name) || empty($first_name) || empty($last_name) || empty($username) || empty($email) || empty($password)) {
-        $error = 'All required fields must be filled';
+    if (empty($username) || empty($email) || empty($password)) {
+        $error = 'Username, email and password are required';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Invalid email address';
     } elseif (strlen($password) < 6) {
@@ -31,33 +31,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $db = \ZeroAI\Core\DatabaseManager::getInstance();
             
-            // Create users table if not exists
-            $db->query("CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                company_name TEXT NOT NULL,
-                first_name TEXT NOT NULL,
-                last_name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                phone TEXT,
-                website TEXT,
-                linkedin TEXT,
-                password TEXT NOT NULL,
-                role TEXT DEFAULT 'frontend',
-                organization_id INTEGER DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )");
+            // Add email column if it doesn't exist
+            try {
+                $db->query("ALTER TABLE users ADD COLUMN email TEXT");
+            } catch (Exception $e) {
+                // Column already exists, ignore
+            }
             
             // Check if username or email already exists
             $existing = $db->query("SELECT id FROM users WHERE username = ? OR email = ?", [$username, $email]);
             if (!empty($existing)) {
                 $error = 'Username or email already registered';
             } else {
-                // Create user
+                // Create user with email support
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $db->query("INSERT INTO users (username, company_name, first_name, last_name, email, phone, website, linkedin, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'frontend')", 
-                    [$username, $company_name, $first_name, $last_name, $email, $phone, $website, $linkedin, $hashedPassword]);
+                $db->query("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'frontend')", 
+                    [$username, $email, $hashedPassword]);
                 
                 $success = 'Registration successful! You can now login.';
             }
@@ -70,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'email' => $email ?? 'unknown',
                 'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
             ]);
-            $error = 'Registration failed. Please try again.';
+            $error = 'Registration failed: ' . $e->getMessage();
         }
     }
 }
