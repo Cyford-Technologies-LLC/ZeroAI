@@ -22,14 +22,8 @@ services:
       - "0.0.0.0:3939:3939"
       - "0.0.0.0:333:333"
     volumes:
-      - ./src:/app/src
-      - ./API:/app/API
-      - ./run:/app/run
-      - ./config:/app/config
-      - ./examples:/app/examples
-      - ./logs:/app/logs
-      - ./www:/app/www
-      - ./scripts:/app/scripts
+      - .:/app
+      - zeroai_venv:/app/venv
       - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
@@ -63,6 +57,7 @@ services:
       - "0.0.0.0:8080:8080"
     volumes:
       - .:/app
+      - zeroai_venv:/app/venv
       - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
