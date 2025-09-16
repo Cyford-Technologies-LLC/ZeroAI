@@ -192,16 +192,40 @@ $users = $userManager->getAllUsers() ?: [];
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Test if Bootstrap loaded
-console.log('Bootstrap loaded:', typeof bootstrap !== 'undefined');
-
-// Fallback collapse functionality if Bootstrap fails
-if (typeof bootstrap === 'undefined') {
-    console.log('Bootstrap failed to load, using fallback');
-    document.addEventListener('DOMContentLoaded', function() {
-        const toggleBtn = document.querySelector('[data-bs-toggle="collapse"]');
+// Simple collapse functionality without Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.querySelector('[data-bs-toggle="collapse"]');
+    const target = document.querySelector('#createUserForm');
+    
+    if (toggleBtn && target) {
+        // Initially hide the form
+        target.style.display = 'none';
+        
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (target.style.display === 'none') {
+                target.style.display = 'block';
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                target.style.display = 'none';
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+    
+    // Simple alert dismiss functionality
+    const alertCloses = document.querySelectorAll('.btn-close');
+    alertCloses.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const alert = this.closest('.alert');
+            if (alert) {
+                alert.style.display = 'none';
+            }
+        });
+    });
+});
+</script>elector('[data-bs-toggle="collapse"]');
         const target = document.querySelector('#createUserForm');
         
         if (toggleBtn && target) {
