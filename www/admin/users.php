@@ -76,6 +76,8 @@ $currentPage = 'users';
 include __DIR__ . '/includes/header.php';
 ?>
 
+<link rel="stylesheet" href="/assets/admin/css/modals.css">
+
 <h1>👥 User Management</h1>
 
 <?php if ($message): ?>
@@ -175,8 +177,8 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Edit User Modal -->
-<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
+<div id="editModal" class="modal">
+    <div class="modal-content">
         <h3>Edit User</h3>
         <form method="POST">
             <input type="hidden" name="action" value="update_user">
@@ -184,7 +186,7 @@ include __DIR__ . '/includes/header.php';
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
             
             <label>Username:</label>
-            <input type="text" id="edit_username" readonly style="background: #f8f9fa;">
+            <input type="text" id="edit_username" readonly>
             
             <label>Email:</label>
             <input type="email" name="email" id="edit_email">
@@ -202,7 +204,7 @@ include __DIR__ . '/includes/header.php';
                 <option value="inactive">Inactive</option>
             </select>
             
-            <div style="margin-top: 15px;">
+            <div class="modal-buttons">
                 <button type="submit" class="btn-success">Update User</button>
                 <button type="button" onclick="closeModal()" class="btn-secondary">Cancel</button>
             </div>
@@ -211,20 +213,20 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Password Change Modal -->
-<div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
         <h3>Change Password</h3>
-        <form method="POST" onsubmit="return handlePasswordSubmit(event)">
+        <form method="POST">
             <input type="hidden" name="action" value="change_password">
             <input type="hidden" name="user_id" id="password_user_id">
             
             <label>Username:</label>
-            <input type="text" id="password_username" readonly style="background: #f8f9fa;">
+            <input type="text" id="password_username" readonly>
             
             <label>New Password:</label>
             <input type="password" name="new_password" id="new_password" required>
             
-            <div style="margin-top: 15px;">
+            <div class="modal-buttons">
                 <button type="submit" class="btn-success">Change Password</button>
                 <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
             </div>
@@ -232,274 +234,6 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<script>
-function editUser(id, username, email, role, status) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_username').value = username;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_role').value = role;
-    document.getElementById('edit_status').value = status;
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function changePassword(id, username) {
-    document.getElementById('password_user_id').value = id;
-    document.getElementById('password_username').value = username;
-    document.getElementById('new_password').value = '';
-    document.getElementById('passwordModal').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function closePasswordModal() {
-    document.getElementById('passwordModal').style.display = 'none';
-    document.getElementById('password_user_id').value = '';
-    document.getElementById('password_username').value = '';
-    document.getElementById('new_password').value = '';
-}
-
-function handlePasswordSubmit(event) {
-    // Close modal after form submission
-    setTimeout(function() {
-        closePasswordModal();
-    }, 100);
-    return true;
-}
-
-// Close modals when clicking outside
-document.addEventListener('click', function(e) {
-    if (e.target.id === 'editModal') {
-        closeModal();
-    }
-    if (e.target.id === 'passwordModal') {
-        closePasswordModal();
-    }
-});
-
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-        closePasswordModal();
-    }
-});
-</script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>n" onclick="closeModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Password Change Modal -->
-<div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
-        <h3>Change Password</h3>
-        <form method="POST">
-            <input type="hidden" name="action" value="change_password">
-            <input type="hidden" name="user_id" id="password_user_id">
-            
-            <label>Username:</label>
-            <input type="text" id="password_username" readonly style="background: #f8f9fa;">
-            
-            <label>New Password:</label>
-            <input type="password" name="new_password" required>
-            
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn-success">Change Password</button>
-                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Modal Overlay Click Handler -->
-<script>
-// Close modals when clicking outside
-document.getElementById('editModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
-
-document.getElementById('passwordModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closePasswordModal();
-    }
-});
-
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-        closePasswordModal();
-    }
-});
-
-function editUser(id, username, email, role, status) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_username').value = username;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_role').value = role;
-    document.getElementById('edit_status').value = status;
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function changePassword(id, username) {
-    document.getElementById('password_user_id').value = id;
-    document.getElementById('password_username').value = username;
-    document.getElementById('passwordModal').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function closePasswordModal() {
-    document.getElementById('passwordModal').style.display = 'none';
-    // Clear form
-    document.getElementById('password_user_id').value = '';
-    document.getElementById('password_username').value = '';
-    document.querySelector('#passwordModal input[name="new_password"]').value = '';
-}
-</script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>0;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
-        <h3>Change Password</h3>
-        <form method="POST">
-            <input type="hidden" name="action" value="change_password">
-            <input type="hidden" name="user_id" id="password_user_id">
-            
-            <label>Username:</label>
-            <input type="text" id="password_username" readonly style="background: #f8f9fa;">
-            
-            <label>New Password:</label>
-            <input type="password" name="new_password" required>
-            
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn-success">Change Password</button>
-                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function editUser(id, username, email, role, status) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_username').value = username;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_role').value = role;
-    document.getElementById('edit_status').value = status;
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function changePassword(id, username) {
-    document.getElementById('password_user_id').value = id;
-    document.getElementById('password_username').value = username;
-    document.getElementById('passwordModal').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function closePasswordModal() {
-    document.getElementById('passwordModal').style.display = 'none';
-}
-</script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>0;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
-        <h3>Change Password</h3>
-        <form method="POST">
-            <input type="hidden" name="action" value="change_password">
-            <input type="hidden" name="user_id" id="password_user_id">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
-            
-            <label>Username:</label>
-            <input type="text" id="password_username" readonly style="background: #f8f9fa;">
-            
-            <label>New Password:</label>
-            <input type="password" name="new_password" required>
-            
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn-success">Change Password</button>
-                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function editUser(id, username, email, role, status) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_username').value = username;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_role').value = role;
-    document.getElementById('edit_status').value = status;
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function changePassword(id, username) {
-    document.getElementById('password_user_id').value = id;
-    document.getElementById('password_username').value = username;
-    document.getElementById('passwordModal').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function closePasswordModal() {
-    document.getElementById('passwordModal').style.display = 'none';
-}
-</script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>         <input type="hidden" name="user_id" id="password_user_id">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(bin2hex(random_bytes(16)), ENT_QUOTES, 'UTF-8') ?>">
-            
-            <label>Username:</label>
-            <input type="text" id="password_username" readonly style="background: #f8f9fa;">
-            
-            <label>New Password:</label>
-            <input type="password" name="new_password" required>
-            
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn-success">Change Password</button>
-                <button type="button" onclick="closePasswordModal()" class="btn-secondary">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function editUser(id, username, role, status) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_username').value = username;
-    document.getElementById('edit_role').value = role;
-    document.getElementById('edit_status').value = status;
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function changePassword(id, username) {
-    document.getElementById('password_user_id').value = id;
-    document.getElementById('password_username').value = username;
-    document.getElementById('passwordModal').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-function closePasswordModal() {
-    document.getElementById('passwordModal').style.display = 'none';
-}
-</script>
+<script src="/assets/admin/js/users.js"></script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
-
-
