@@ -7,6 +7,7 @@ require_once '../src/Core/DatabaseManager.php';
 
 // Handle AJAX requests first
 if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $_POST['action'])) {
+    header('Content-Type: application/json');
     $db = \ZeroAI\Core\DatabaseManager::getInstance();
     
     if (isset($_GET['action']) && $_GET['action'] === 'get_tables' && isset($_GET['db'])) {
@@ -84,7 +85,6 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
             }
             
             $file = $_FILES['dump_file'];
-            $allowedTypes = ['text/plain', 'application/sql', 'text/sql'];
             $allowedExts = ['sql', 'txt', 'dump'];
             
             $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -99,18 +99,19 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
                 exit;
             }
             
-            // Split SQL statements by semicolon
-            $statements = array_filter(array_map('trim', explode(';', $sqlContent)));
+            // Split SQL statements by semicolon and filter empty ones
+            $statements = array_filter(array_map('trim', preg_split('/;\s*\n/', $sqlContent)));
             $executed = 0;
             $errors = [];
             
             foreach ($statements as $statement) {
-                if (!empty($statement)) {
+                $statement = trim($statement);
+                if (!empty($statement) && !preg_match('/^\s*--/', $statement)) {
                     try {
-                        $db->query($statement);
+                        $db->execute($statement);
                         $executed++;
                     } catch (Exception $e) {
-                        $errors[] = 'Statement error: ' . $e->getMessage();
+                        $errors[] = substr($statement, 0, 50) . '... - ' . $e->getMessage();
                     }
                 }
             }
@@ -118,10 +119,10 @@ if ((isset($_GET['action']) && $_GET['action']) || (isset($_POST['action']) && $
             if (empty($errors)) {
                 echo json_encode(['success' => true, 'executed' => $executed, 'message' => "Successfully executed {$executed} SQL statements"]);
             } else {
-                echo json_encode(['success' => true, 'executed' => $executed, 'errors' => $errors, 'message' => "Executed {$executed} statements with some errors"]);
+                echo json_encode(['success' => true, 'executed' => $executed, 'errors' => $errors, 'message' => "Executed {$executed} statements with " . count($errors) . " errors"]);
             }
         } catch (Exception $e) {
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['error' => 'Upload failed: ' . $e->getMessage()]);
         }
         exit;
     }
@@ -141,7 +142,7 @@ $databases = $db->getAvailableDatabases();
             </div>
             <div class="card-body p-2">
                 <?php foreach ($databases as $path => $info): ?>
-                    <button class="btn btn-outline-primary btn-sm w-100 mb-2 text-start" onclick="selectDatabase('<?= $path ?>')">
+                    <button class="btn btn-outline-primary btn-sm w-100 mb-2 text-start db-btn" data-db="<?= htmlspecialchars($path) ?>" onclick="selectDatabase('<?= htmlspecialchars($path) ?>')">
                         <?= $info['name'] ?><br>
                         <small class="text-muted"><?= number_format($info['size']/1024, 1) ?>KB</small>
                     </button>
@@ -161,10 +162,16 @@ $databases = $db->getAvailableDatabases();
     
     <div class="col-md-9">
         <div class="mb-3">
-            <div class="btn-group" role="group">
-                <button class="btn btn-outline-success" onclick="showSqlQuery()">🔍 SQL Query</button>
-                <button class="btn btn-outline-info" onclick="showUploadDump()">📁 Upload Dump</button>
-                <button class="btn btn-outline-warning" onclick="backupDatabase()" id="backup-btn" disabled>💾 Backup DB</button>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-success" onclick="showSqlQuery()">🔍 SQL Query</button>
+                    <button class="btn btn-outline-info" onclick="showUploadDump()">📁 Upload Dump</button>
+                    <button class="btn btn-outline-warning" onclick="backupDatabase()" id="backup-btn" disabled>💾 Backup DB</button>
+                </div>
+                <div id="current-selection" class="text-muted small">
+                    <span id="selected-db">No database selected</span>
+                    <span id="selected-table" style="display:none;"> > <strong id="table-name"></strong></span>
+                </div>
             </div>
         </div>
         
@@ -362,7 +369,17 @@ function backupDatabase() {
 
 function selectDatabase(dbPath) {
     currentDb = dbPath;
+    currentTable = null;
+    
+    // Update visual indicators
+    document.querySelectorAll('.db-btn').forEach(btn => btn.classList.remove('btn-primary'));
+    document.querySelectorAll('.db-btn').forEach(btn => btn.classList.add('btn-outline-primary'));
+    document.querySelector(`[data-db="${dbPath}"]`).classList.remove('btn-outline-primary');
+    document.querySelector(`[data-db="${dbPath}"]`).classList.add('btn-primary');
+    
     document.getElementById('backup-btn').disabled = false;
+    document.getElementById('selected-db').textContent = dbPath.split('/').pop();
+    document.getElementById('selected-table').style.display = 'none';
     document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><div class="spinner-border"></div><p>Loading tables...</p></div></div>';
     
     fetch(`?action=get_tables&db=${encodeURIComponent(dbPath)}`)
@@ -375,7 +392,7 @@ function selectDatabase(dbPath) {
             
             let html = '';
             tables.forEach(table => {
-                html += `<button class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start" onclick="selectTable('${table.name}')">${table.name}</button>`;
+                html += `<button class="btn btn-outline-secondary btn-sm w-100 mb-1 text-start table-btn" data-table="${table.name}" onclick="selectTable('${table.name}')">${table.name}</button>`;
             });
             document.getElementById('tables-list').innerHTML = html;
             document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><h5 class="text-muted">Select a table to view details</h5></div></div>';
@@ -387,6 +404,15 @@ function selectDatabase(dbPath) {
 
 function selectTable(tableName) {
     currentTable = tableName;
+    
+    // Update visual indicators
+    document.querySelectorAll('.table-btn').forEach(btn => btn.classList.remove('btn-secondary'));
+    document.querySelectorAll('.table-btn').forEach(btn => btn.classList.add('btn-outline-secondary'));
+    document.querySelector(`[data-table="${tableName}"]`).classList.remove('btn-outline-secondary');
+    document.querySelector(`[data-table="${tableName}"]`).classList.add('btn-secondary');
+    
+    document.getElementById('selected-table').style.display = 'inline';
+    document.getElementById('table-name').textContent = tableName;
     document.getElementById('content-area').innerHTML = '<div class="card"><div class="card-body text-center py-5"><div class="spinner-border"></div><p>Loading table info...</p></div></div>';
     
     fetch(`?action=get_table_info&table=${encodeURIComponent(tableName)}`)

@@ -163,7 +163,7 @@ $currentPage = $currentPage ?? '';
             $currentSection = 'crewai';
         } elseif (in_array($currentPage ?? '', ['crew_chat', 'claude', 'chat', 'claude_chat'])) {
             $currentSection = 'chat';
-        } elseif (in_array($currentPage ?? '', ['monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics', 'db_tools'])) {
+        } elseif (in_array($currentPage ?? '', ['tools', 'monitoring', 'error_logs', 'performance', 'backup', 'restore', 'diagnostics', 'db_tools'])) {
             $currentSection = 'tools';
         } elseif (in_array($currentPage ?? '', ['localhost', 'peers'])) {
             $currentSection = 'system';
