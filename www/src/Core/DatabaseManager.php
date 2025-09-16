@@ -88,6 +88,44 @@ class DatabaseManager {
     public function logTokenUsage($tokens, $cost = 0) {
         return true;
     }
+    
+    public function getAvailableDatabases() {
+        $databases = [];
+        $dataPaths = [
+            '/app/data/',
+            '../data/',
+            './data/',
+            __DIR__ . '/../../data/',
+            __DIR__ . '/../../knowledge/'
+        ];
+        
+        foreach ($dataPaths as $path) {
+            if (is_dir($path)) {
+                $files = glob($path . '*.db');
+                foreach ($files as $file) {
+                    $name = basename($file, '.db');
+                    $databases[$file] = [
+                        'name' => ucfirst($name),
+                        'path' => $file,
+                        'size' => filesize($file),
+                        'modified' => filemtime($file)
+                    ];
+                }
+            }
+        }
+        
+        // Always include main database if no files found
+        if (empty($databases)) {
+            $mainDb = '/app/data/zeroai.db';
+            $databases[$mainDb] = [
+                'name' => 'Main Database',
+                'path' => $mainDb,
+                'size' => file_exists($mainDb) ? filesize($mainDb) : 0,
+                'modified' => file_exists($mainDb) ? filemtime($mainDb) : time()
+            ];
+        }
+        
+        return $databases;
+    }
 }
-
 

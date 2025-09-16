@@ -5,20 +5,14 @@ include __DIR__ . '/includes/header.php';
 
 require_once '../src/Core/DatabaseManager.php';
 
-// Available databases
-$databases = [
-    'main' => 'Main Database',
-    'crm' => 'CRM Database',
-    'logs' => 'Logs Database'
-];
-
-$selectedDb = $_GET['db'] ?? 'main';
 $db = \ZeroAI\Core\DatabaseManager::getInstance();
+$databases = $db->getAvailableDatabases();
+$selectedDb = $_GET['db'] ?? array_keys($databases)[0];
 $tables = [];
 $tableData = [];
 
 try {
-    // Get all tables from selected database
+    // Get all tables
     $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
     
     // Get structure for each table
@@ -46,8 +40,8 @@ try {
     <div class="card-body">
         <form method="GET" class="d-flex gap-2">
             <select name="db" class="form-select" style="width: auto;">
-                <?php foreach ($databases as $key => $name): ?>
-                    <option value="<?= $key ?>" <?= $selectedDb === $key ? 'selected' : '' ?>><?= $name ?></option>
+                <?php foreach ($databases as $path => $info): ?>
+                    <option value="<?= $path ?>" <?= $selectedDb === $path ? 'selected' : '' ?>><?= $info['name'] ?> (<?= number_format($info['size']/1024, 1) ?>KB)</option>
                 <?php endforeach; ?>
             </select>
             <button type="submit" class="btn btn-primary">Switch Database</button>
