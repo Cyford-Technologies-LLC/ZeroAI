@@ -3,10 +3,10 @@ namespace ZeroAI\Core;
 
 class Logger {
     private static $instance = null;
-    private $logPath = '/app/logs/errors.log';
-    private $securityLogPath = '/app/logs/security.log';
-    private $auditLogPath = '/app/logs/audit.log';
-    private $claudeLogPath = '/app/logs/claude_debug.log';
+    private $logPath;
+    private $securityLogPath;
+    private $auditLogPath;
+    private $claudeLogPath;
     
     public static function getInstance() {
         if (self::$instance === null) {
@@ -16,14 +16,32 @@ class Logger {
     }
     
     private function __construct() {
+        $this->initializePaths();
         $this->ensureLogDirectory();
     }
     
+    private function initializePaths() {
+        $logDir = $this->getLogDirectory();
+        $this->logPath = $logDir . '/errors.log';
+        $this->securityLogPath = $logDir . '/security.log';
+        $this->auditLogPath = $logDir . '/audit.log';
+        $this->claudeLogPath = $logDir . '/claude_debug.log';
+    }
+    
+    private function getLogDirectory() {
+        // Check if running in Docker
+        if (file_exists('/app')) {
+            return '/app/logs';
+        }
+        // Local development
+        return __DIR__ . '/../../logs';
+    }
+    
     private function ensureLogDirectory() {
-        $logDir = '/app/logs';
+        $logDir = $this->getLogDirectory();
         if (!is_dir($logDir)) {
             if (!mkdir($logDir, 0755, true)) {
-                error_log('Cannot create log directory');
+                error_log('Cannot create log directory: ' . $logDir);
             }
         }
     }
