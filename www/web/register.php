@@ -97,15 +97,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'company_name' => $company_name
                 ]);
                 
-                // Check if company was created and add debug info if debug mode is enabled
-                if ($logger->isDebugEnabled()) {
-                    $companyCheck = $db->select('companies', ['user_id' => $realUserId]);
-                    
-                    if (!empty($companyCheck)) {
-                        $success .= "<br><small>Debug: Company created - {$companyCheck[0]['name']} (ID: {$companyCheck[0]['id']})</small>";
-                    } else {
-                        $success .= "<br><small style='color:red'>Debug: No company found for user ID: $realUserId</small>";
-                    }
+                // Log company creation status for debugging (no user output)
+                $companyCheck = $db->select('companies', ['user_id' => $realUserId]);
+                
+                if (!empty($companyCheck)) {
+                    $logger->debug('Company created successfully', [
+                        'company_name' => $companyCheck[0]['name'],
+                        'company_id' => $companyCheck[0]['id'],
+                        'user_id' => $realUserId
+                    ]);
+                } else {
+                    $logger->warning('No company found after registration', [
+                        'user_id' => $realUserId,
+                        'username' => $username
+                    ]);
                 }
             }
         } catch (Exception $e) {

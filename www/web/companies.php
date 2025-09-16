@@ -1,4 +1,7 @@
 <?php
+// Include header first to get database connection
+include __DIR__ . '/includes/header.php';
+
 // Handle form submission
 if ($_POST) {
     try {
@@ -33,9 +36,6 @@ if ($_POST) {
         $error = "Error: " . $e->getMessage();
     }
 }
-
-// Include header after form processing
-include __DIR__ . '/includes/header.php';
 
 // Handle success messages from redirects
 $success = '';
@@ -156,7 +156,8 @@ if (isset($_GET['success'])) {
                             <table class="table table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
+                                        <th>ID</th>
+                                        <th>Company Name</th>
                                         <th>Email</th>
                                         <th>Phone</th>
                                         <th>Industry</th>
@@ -167,6 +168,7 @@ if (isset($_GET['success'])) {
                                 <tbody>
                                     <?php foreach ($companies as $company): ?>
                                         <tr>
+                                            <td><?= htmlspecialchars($company['id']) ?></td>
                                             <td><?= htmlspecialchars($company['name']) ?></td>
                                             <td><?= htmlspecialchars($company['email']) ?></td>
                                             <td><?= htmlspecialchars($company['phone']) ?></td>
@@ -176,7 +178,7 @@ if (isset($_GET['success'])) {
                                                 <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
                                             <?php endif; ?>
                                             <td>
-                                                <button onclick="editCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-warning">Edit</button>
+                                                <button onclick="editCompany(<?= $company['id'] ?>, '<?= htmlspecialchars($company['name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($company['ein'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['business_id'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['email'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['phone'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['website'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['linkedin'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['industry'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['about'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['street'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['street2'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['city'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['state'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['zip'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($company['country'] ?? '', ENT_QUOTES) ?>')" class="btn btn-sm btn-warning">Edit</button>
                                                 <button onclick="deleteCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
                                             </td>
                                         </tr>
@@ -188,10 +190,118 @@ if (isset($_GET['success'])) {
                 </div>
             </div>
 
+<!-- Edit Company Modal -->
+<div class="modal fade" id="editCompanyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Company</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editCompanyForm">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="company_id" id="editCompanyId">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" class="form-control" name="name" id="editName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">EIN</label>
+                            <input type="text" class="form-control" name="ein" id="editEin">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Business ID</label>
+                            <input type="text" class="form-control" name="business_id" id="editBusinessId">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" id="editEmail">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" name="phone" id="editPhone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Website</label>
+                            <input type="url" class="form-control" name="website" id="editWebsite">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">LinkedIn</label>
+                            <input type="url" class="form-control" name="linkedin" id="editLinkedin">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Industry</label>
+                            <select class="form-select" name="industry" id="editIndustry">
+                                <option value="">Select Industry</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">About the Company</label>
+                            <textarea class="form-control" name="about" id="editAbout" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Street Address</label>
+                            <input type="text" class="form-control" name="street" id="editStreet">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Street Address 2</label>
+                            <input type="text" class="form-control" name="street2" id="editStreet2">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-control" name="city" id="editCity">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">State</label>
+                            <input type="text" class="form-control" name="state" id="editState">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">ZIP Code</label>
+                            <input type="text" class="form-control" name="zip" id="editZip">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Country</label>
+                            <input type="text" class="form-control" name="country" id="editCountry">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-function editCompany(id) {
-    // Redirect to edit form or show modal
-    window.location.href = '/web/companies.php?edit=' + id;
+function editCompany(id, name, ein, businessId, email, phone, website, linkedin, industry, about, street, street2, city, state, zip, country) {
+    document.getElementById('editCompanyId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editEin').value = ein;
+    document.getElementById('editBusinessId').value = businessId;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editPhone').value = phone;
+    document.getElementById('editWebsite').value = website;
+    document.getElementById('editLinkedin').value = linkedin;
+    document.getElementById('editIndustry').value = industry;
+    document.getElementById('editAbout').value = about;
+    document.getElementById('editStreet').value = street;
+    document.getElementById('editStreet2').value = street2;
+    document.getElementById('editCity').value = city;
+    document.getElementById('editState').value = state;
+    document.getElementById('editZip').value = zip;
+    document.getElementById('editCountry').value = country;
+    
+    new bootstrap.Modal(document.getElementById('editCompanyModal')).show();
 }
 
 function deleteCompany(id) {

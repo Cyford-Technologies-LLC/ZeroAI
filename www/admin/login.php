@@ -172,14 +172,6 @@ if ($_POST) {
                                 <i class="bi bi-person"></i> User Login
                             </a>
                         </div>
-                        
-                        <div class="alert alert-info mt-3" role="alert">
-                            <small>
-                                <strong>Demo Login:</strong><br>
-                                Username: <code>demo</code><br>
-                                Password: <code>demo123</code>
-                            </small>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -52,6 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$company_name, $first_name, $last_name, $email, $phone, $hashedPassword]);
                 
                 $success = 'Registration successful! You can now login.';
+                // Prevent any additional output after successful registration
+                if (isset($_POST['ajax'])) {
+                    echo json_encode(['success' => true, 'message' => $success]);
+                    exit;
+                }
             }
         } catch (Exception $e) {
             $error = 'Registration failed. Please try again.';
@@ -89,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                     
                     <?php if ($success): ?>
-                        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+                        <div class="alert alert-success"><?= $success ?></div>
                         <div class="text-center">
                             <a href="/admin/login.php" class="btn btn-primary">Login Now</a>
                         </div>
