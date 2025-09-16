@@ -145,10 +145,11 @@ if ($_POST) {
                         
                         <form method="POST">
                             <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
+                                <label for="username" class="form-label">Username or Email</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-person"></i></span>
                                     <input type="text" class="form-control" id="username" name="username" 
+                                           placeholder="Enter username or email" 
                                            value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
                                 </div>
                             </div>

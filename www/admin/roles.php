@@ -1,5 +1,17 @@
 <?php 
 session_start();
+
+if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
+    header('Location: /admin/login.php');
+    exit;
+}
+
+// Block demo users from role management
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
+    header('Location: /admin/dashboard.php?error=Demo users cannot access role management');
+    exit;
+}
+
 $pageTitle = 'Role Management - ZeroAI';
 $currentPage = 'roles';
 
@@ -7,6 +19,54 @@ require_once __DIR__ . '/includes/autoload.php';
 use ZeroAI\Core\DatabaseManager;
 
 $db = DatabaseManager::getInstance();
+$message = '';
+$error = '';
+
+// Handle form submissions
+if ($_POST) {
+    try {
+        if ($_POST['action'] === 'create_role') {
+            $name = trim($_POST['name']);
+            $displayName = trim($_POST['display_name']);
+            $description = trim($_POST['description']);
+            $level = (int)$_POST['level'];
+            
+            if (empty($name) || empty($displayName)) {
+                throw new Exception('Name and display name are required');
+            }
+            
+            $db->insert('roles', [
+                'name' => $name,
+                'display_name' => $displayName,
+                'description' => $description,
+                'level' => $level
+            ]);
+            
+            $message = "Role '$displayName' created successfully";
+        }
+        
+        if ($_POST['action'] === 'update_role') {
+            $roleId = $_POST['role_id'];
+            $db->update('roles', [
+                'display_name' => $_POST['display_name'],
+                'description' => $_POST['description'],
+                'level' => (int)$_POST['level']
+            ], ['id' => $roleId]);
+            
+            $message = "Role updated successfully";
+        }
+        
+        if ($_POST['action'] === 'delete_role') {
+            $roleId = $_POST['role_id'];
+            $db->delete('role_permissions', ['role_id' => $roleId]);
+            $db->delete('roles', ['id' => $roleId]);
+            
+            $message = "Role deleted successfully";
+        }
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
 
 // Initialize roles and permissions tables
 $db->query("CREATE TABLE IF NOT EXISTS roles (
@@ -101,8 +161,17 @@ foreach ($defaultPermissions as $perm) {
     }
 }
 
-$roles = $db->select('roles', [], null, 'level DESC');
-$permissions = $db->select('permissions', [], null, 'category, display_name');
+$roles = $db->query("SELECT * FROM roles ORDER BY level DESC");
+$permissions = $db->query("SELECT * FROM permissions ORDER BY category, display_name");
+
+// Get edit role data if editing
+$editRole = null;
+if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
+    $editRoleData = $db->select('roles', ['id' => $_GET['edit']]);
+    if (!empty($editRoleData)) {
+        $editRole = $editRoleData[0];
+    }
+}
 
 include __DIR__ . '/includes/header.php';
 ?>
