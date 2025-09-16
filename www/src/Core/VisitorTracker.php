@@ -51,12 +51,13 @@ class VisitorTracker {
         // Companies/organizations table
         $this->db->query("CREATE TABLE IF NOT EXISTS visitor_companies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ip_address TEXT NOT NULL,
+            ip_address TEXT NOT NULL UNIQUE,
             company_name TEXT,
             organization TEXT,
             isp TEXT,
+            lookup_count INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(ip_address)
+            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
         )");
     }
     
@@ -65,22 +66,16 @@ class VisitorTracker {
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $sessionId = session_id();
         
-        // Update or insert IP record
-        $existing = $this->db->select('visitor_ips', ['ip_address' => $ip]);
-        if ($existing) {
-            $this->db->update('visitor_ips', [
-                'username' => $username,
-                'last_seen' => date('Y-m-d H:i:s'),
-                'visit_count' => $existing[0]['visit_count'] + 1
-            ], ['ip_address' => $ip]);
-        } else {
-            $this->db->insert('visitor_ips', [
-                'ip_address' => $ip,
-                'username' => $username,
-                'user_agent' => $userAgent,
-                'visit_count' => 1
-            ]);
-        }
+        // Upsert IP record with count tracking
+        $this->db->query("
+            INSERT INTO visitor_ips (ip_address, username, user_agent, visit_count, first_seen, last_seen) 
+            VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(ip_address) DO UPDATE SET
+                username = COALESCE(excluded.username, username),
+                user_agent = excluded.user_agent,
+                visit_count = visit_count + 1,
+                last_seen = CURRENT_TIMESTAMP
+        ", [$ip, $username, $userAgent]);
         
         // Track page visit
         $this->db->insert('page_visits', [
@@ -135,6 +130,22 @@ class VisitorTracker {
                                 WHERE success = 0 AND attempt_time > datetime('now', '-$hours hours') 
                                 GROUP BY ip_address, username 
                                 ORDER BY attempts DESC");
+    }
+    
+    public function trackCompanyLookup($companyName = null, $organization = null, $isp = null) {
+        $ip = $this->getClientIP();
+        
+        // Upsert company record with count tracking
+        $this->db->query("
+            INSERT INTO visitor_companies (ip_address, company_name, organization, isp, lookup_count, created_at, last_updated) 
+            VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(ip_address) DO UPDATE SET
+                company_name = COALESCE(excluded.company_name, company_name),
+                organization = COALESCE(excluded.organization, organization),
+                isp = COALESCE(excluded.isp, isp),
+                lookup_count = lookup_count + 1,
+                last_updated = CURRENT_TIMESTAMP
+        ", [$ip, $companyName, $organization, $isp]);
     }
     
     private function getClientIP() {

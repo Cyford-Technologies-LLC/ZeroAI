@@ -43,7 +43,18 @@ class FormBuilder {
                     if ($action === 'edit') {
                         $html .= "<button class='btn btn-sm btn-warning' onclick='editRecord(\"{$table}\", {$row['id']})'>Edit</button> ";
                     } elseif ($action === 'delete') {
-                        $html .= "<button class='btn btn-sm btn-danger' onclick='deleteRecord(\"{$table}\", {$row['id']})'>Delete</button>";
+                        // Show Archive for protected tables, Delete for others
+                        $protectedTables = ['companies', 'contacts', 'users'];
+                        if (in_array($table, $protectedTables)) {
+                            $status = $row['status'] ?? 'active';
+                            if ($status !== 'archived') {
+                                $html .= "<button class='btn btn-sm btn-secondary' onclick='archiveRecord(\"{$table}\", {$row['id']})'>Archive</button>";
+                            } else {
+                                $html .= "<button class='btn btn-sm btn-success' onclick='unarchiveRecord(\"{$table}\", {$row['id']})'>Restore</button>";
+                            }
+                        } else {
+                            $html .= "<button class='btn btn-sm btn-danger' onclick='deleteRecord(\"{$table}\", {$row['id']})'>Delete</button>";
+                        }
                     }
                 }
                 $html .= '</td>';
@@ -134,9 +145,22 @@ class FormBuilder {
             }
             
             if ($action === 'delete') {
+                // SAFETY: Prevent deletion of critical CRM data
+                $protectedTables = ['companies', 'contacts', 'users'];
+                if (in_array($table, $protectedTables)) {
+                    return ['error' => 'Deletion of ' . $table . ' is disabled for data protection. Use archive/deactivate instead.'];
+                }
+                
                 $id = $_POST['id'];
                 $this->db->delete($table, ['id' => $id]);
                 return ['success' => ucfirst($table) . ' deleted successfully!'];
+            }
+            
+            if ($action === 'archive') {
+                // Safe alternative to delete - just mark as inactive
+                $id = $_POST['id'];
+                $this->db->update($table, ['status' => 'archived'], ['id' => $id]);
+                return ['success' => ucfirst($table) . ' archived successfully!'];
             }
             
         } catch (Exception $e) {
@@ -165,6 +189,33 @@ class FormBuilder {
                 document.body.appendChild(form);
                 form.submit();
             }
+        }
+        
+        function archiveRecord(table, id) {
+            if (confirm('Archive this record? It will be hidden but can be restored later.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type=\"hidden\" name=\"action\" value=\"archive\">
+                    <input type=\"hidden\" name=\"table\" value=\"\${table}\">
+                    <input type=\"hidden\" name=\"id\" value=\"\${id}\">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function unarchiveRecord(table, id) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type=\"hidden\" name=\"action\" value=\"edit\">
+                <input type=\"hidden\" name=\"table\" value=\"\${table}\">
+                <input type=\"hidden\" name=\"id\" value=\"\${id}\">
+                <input type=\"hidden\" name=\"status\" value=\"active\">
+            `;
+            document.body.appendChild(form);
+            form.submit();
         }
         </script>";
     }
