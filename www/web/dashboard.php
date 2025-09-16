@@ -10,8 +10,14 @@ $totalProjects = 0;
 $totalUsers = 0;
 
 try {
-    // Use existing $pdo from header
-    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies WHERE archived = 0")->fetchColumn() ?: 0;
+    // Use same logic as header for company count
+    if ($isAdmin) {
+        $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE organization_id = ?");
+        $stmt->execute([$userOrgId]);
+        $totalCompanies = $stmt->fetchColumn() ?: 0;
+    }
     $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
     $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
     
@@ -56,7 +62,7 @@ try {
         <div class="col-md-3 col-sm-6 mb-2">
             <div class="card text-center py-2">
                 <div class="card-body p-2">
-                    <h4 class="text-primary mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
+                    <h4 class="text-primary mb-1"><?= htmlspecialchars(count($companies)) ?></h4>
                     <small class="text-muted">Companies</small>
                 </div>
             </div>
