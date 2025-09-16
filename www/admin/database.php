@@ -101,10 +101,14 @@ try {
 function loadTableData(tableName) {
     const container = document.getElementById('data-' + tableName);
     if (container.style.display === 'none') {
-        fetch('?action=get_table_data&table=' + tableName)
+        fetch('/admin/database.php?action=get_table_data&table=' + tableName)
             .then(response => response.text())
             .then(data => {
                 container.innerHTML = data;
+                container.style.display = 'block';
+            })
+            .catch(error => {
+                container.innerHTML = '<div class="alert alert-danger">Error loading data: ' + error + '</div>';
                 container.style.display = 'block';
             });
     } else {
