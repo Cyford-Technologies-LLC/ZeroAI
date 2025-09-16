@@ -55,16 +55,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Create company record for CRM
                 if ($userId && !empty($company_name)) {
-                    $db->insert('companies', [
-                        'name' => $company_name,
-                        'email' => $email,
-                        'phone' => $phone,
-                        'website' => $website,
-                        'linkedin' => $linkedin,
-                        'organization_id' => 1,
-                        'user_id' => $userId,
-                        'created_by' => $userId
-                    ]);
+                    try {
+                        $companyId = $db->insert('companies', [
+                            'name' => $company_name,
+                            'email' => $email,
+                            'phone' => $phone,
+                            'website' => $website,
+                            'linkedin' => $linkedin,
+                            'organization_id' => 1,
+                            'user_id' => $userId,
+                            'created_by' => $userId
+                        ]);
+                        $logger->info('Company created during registration', [
+                            'company_id' => $companyId,
+                            'company_name' => $company_name,
+                            'user_id' => $userId,
+                            'username' => $username
+                        ]);
+                    } catch (Exception $companyError) {
+                        $logger->error('Company creation failed during registration', [
+                            'error' => $companyError->getMessage(),
+                            'company_name' => $company_name,
+                            'user_id' => $userId
+                        ]);
+                    }
                 }
                 
                 $success = 'Registration successful! You can now login.';
