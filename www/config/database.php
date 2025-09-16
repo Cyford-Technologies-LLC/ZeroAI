@@ -30,6 +30,7 @@ class Database {
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             role TEXT DEFAULT 'user',
+            organization_id INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         
@@ -65,11 +66,14 @@ class Database {
             linkedin TEXT,
             industry TEXT,
             about TEXT,
+            address TEXT,
             organization_id INTEGER DEFAULT 1,
-            created_by TEXT,
+            user_id INTEGER,
+            created_by INTEGER,
             status TEXT DEFAULT 'active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
         );
         
         CREATE TABLE IF NOT EXISTS contacts (

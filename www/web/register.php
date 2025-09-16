@@ -45,8 +45,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Create user with email support
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $db->query("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'frontend')", 
-                    [$username, $email, $hashedPassword]);
+                $userId = $db->insert('users', [
+                    'username' => $username,
+                    'email' => $email,
+                    'password' => $hashedPassword,
+                    'role' => 'frontend',
+                    'organization_id' => 1
+                ]);
+                
+                // Create company record for CRM
+                if ($userId && !empty($company_name)) {
+                    $db->insert('companies', [
+                        'name' => $company_name,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'website' => $website,
+                        'linkedin' => $linkedin,
+                        'organization_id' => 1,
+                        'user_id' => $userId,
+                        'created_by' => $userId
+                    ]);
+                }
                 
                 $success = 'Registration successful! You can now login.';
             }

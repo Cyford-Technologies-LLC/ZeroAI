@@ -4,12 +4,8 @@ include __DIR__ . '/includes/header.php';
 // Handle form submission
 if ($_POST && isset($_POST['name'])) {
     try {
-        // Combine address fields
-        $address = trim(($_POST['street'] ?? '') . ' ' . ($_POST['street2'] ?? '') . ', ' . ($_POST['city'] ?? '') . ', ' . ($_POST['state'] ?? '') . ' ' . ($_POST['zip'] ?? ''));
-        $address = trim($address, ', ');
-        
-        $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, address, industry, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $address, $_POST['industry'], $userOrgId, $currentUser]);
+        $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, street, street2, city, state, zip, country, website, linkedin, industry, about, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $userOrgId, $currentUser]);
         $success = "Company added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
