@@ -39,10 +39,10 @@ include __DIR__ . '/includes/header.php';
             </div>
         </a>
         
-        <a href="/admin/database_viewer" style="text-decoration: none; color: inherit;">
+        <a href="/admin/database.php" style="text-decoration: none; color: inherit;">
             <div style="border: 2px solid #dc3545; border-radius: 8px; padding: 20px; text-align: center; transition: background 0.3s;">
-                <h4 style="margin: 0 0 10px 0; color: #dc3545;">🗄️ Database Viewer</h4>
-                <p style="margin: 0; color: #666;">Browse and manage database tables and records</p>
+                <h4 style="margin: 0 0 10px 0; color: #dc3545;">🛠️ DB Tools</h4>
+                <p style="margin: 0; color: #666;">Browse database tables, view structures and data</p>
             </div>
         </a>
         
