@@ -42,6 +42,23 @@ if (isset($_POST['action']) && in_array($_POST['action'], ['edit_user', 'delete_
         }
         exit;
     }
+    
+    if ($_POST['action'] === 'reset_password') {
+        $userId = (int)$_POST['user_id'];
+        $newPassword = $_POST['new_password'];
+        
+        if (empty($newPassword)) {
+            echo json_encode(['success' => false, 'message' => 'Password cannot be empty']);
+            exit;
+        }
+        
+        if ($userManager->resetPassword($userId, $newPassword)) {
+            echo json_encode(['success' => true, 'message' => 'Password reset successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to reset password']);
+        }
+        exit;
+    }
 }
 
 $pageTitle = 'User Management - ZeroAI';
@@ -234,12 +251,17 @@ $users = $userManager->getAllUsers() ?: [];
                         </td>
                         <td><small><?= $user['last_login'] ? date('M j, Y g:i A', strtotime($user['last_login'])) : 'Never' ?></small></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES) ?>', '<?= $user['role'] ?>', '<?= $user['status'] ?? 'active' ?>')">
-                                ✏️ Edit
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')">
-                                🗑️ Delete
-                            </button>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>', '<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES) ?>', '<?= $user['role'] ?>', '<?= $user['status'] ?? 'active' ?>')">
+                                    ✏️ Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="resetPassword(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')">
+                                    🔑 Reset
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')">
+                                    🗑️ Delete
+                                </button>
+                            </div>
                         </td>
                     </tr>
                         <?php endforeach; ?>
@@ -296,6 +318,37 @@ $users = $userManager->getAllUsers() ?: [];
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveUser()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🔑 Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Reset password for user: <strong id="resetUsername"></strong></p>
+                <form id="resetPasswordForm">
+                    <input type="hidden" id="resetUserId" name="user_id">
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="newPassword" name="new_password" class="form-control" required minlength="6">
+                        <div class="form-text">Password must be at least 6 characters long.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" id="confirmPassword" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="saveNewPassword()">Reset Password</button>
             </div>
         </div>
     </div>
@@ -429,6 +482,57 @@ function toggleUserStatus(id, currentStatus) {
         const checkbox = document.getElementById(`status-${id}`);
         checkbox.checked = !checkbox.checked;
         alert('Error updating status: ' + error);
+    });
+}
+
+function resetPassword(id, username) {
+    document.getElementById('resetUserId').value = id;
+    document.getElementById('resetUsername').textContent = username;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    
+    // Show modal
+    document.getElementById('resetPasswordModal').style.display = 'block';
+    document.getElementById('resetPasswordModal').classList.add('show');
+}
+
+function saveNewPassword() {
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const userId = document.getElementById('resetUserId').value;
+    
+    if (newPassword.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'reset_password');
+    formData.append('user_id', userId);
+    formData.append('new_password', newPassword);
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('Password reset successfully');
+            // Close modal
+            document.getElementById('resetPasswordModal').style.display = 'none';
+            document.getElementById('resetPasswordModal').classList.remove('show');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    })
+    .catch(error => {
+        alert('Error resetting password: ' + error);
     });
 }
 
