@@ -11,7 +11,7 @@ class AvatarProvider
 
     public function __construct()
     {
-        $this->logger = new Logger();
+        $this->logger = Logger::getInstance();
         $this->avatarServiceUrl = 'http://avatar:7860';
     }
 
