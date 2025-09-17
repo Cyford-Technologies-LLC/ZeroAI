@@ -53,6 +53,16 @@ if ($_POST) {
                 $message = $result ? "Model '{$model}' installation started!" : "Model installation failed!";
                 $messageType = $result ? 'success' : 'error';
                 break;
+                
+            case 'save_model_rules':
+                $rules = [
+                    'essential' => $_POST['essential'] ?? [],
+                    'medium_memory' => $_POST['medium_memory'] ?? [],
+                    'gpu_models' => $_POST['gpu_models'] ?? []
+                ];
+                $peerManager->saveModelRules($rules);
+                $message = "Model auto-install rules saved successfully!";
+                break;
         }
     } catch (Exception $e) {
         $message = 'Error: ' . $e->getMessage();
@@ -103,6 +113,48 @@ include __DIR__ . '/includes/header.php';
                         </button>
                     </div>
                 </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Model Auto-Install Rules -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Model Auto-Install Rules</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <input type="hidden" name="action" value="save_model_rules">
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label><strong>All Peers (Essential Models):</strong></label>
+                        <div>
+                            <label><input type="checkbox" name="essential[]" value="llama3.2:1b" checked> llama3.2:1b (1.3GB)</label><br>
+                            <label><input type="checkbox" name="essential[]" value="llama3.2:3b" checked> llama3.2:3b (2GB)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label><strong>If RAM >= 8GB:</strong></label>
+                        <div>
+                            <label><input type="checkbox" name="medium_memory[]" value="llama3.1:8b"> llama3.1:8b (4.7GB)</label><br>
+                            <label><input type="checkbox" name="medium_memory[]" value="mistral:7b"> mistral:7b (4.1GB)</label><br>
+                            <label><input type="checkbox" name="medium_memory[]" value="codellama:7b"> codellama:7b (3.8GB)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label><strong>If GPU Available:</strong></label>
+                        <div>
+                            <label><input type="checkbox" name="gpu_models[]" value="llama3.1:8b-instruct-fp16"> llama3.1:8b-instruct-fp16 (16GB)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    Save Auto-Install Rules
+                </button>
             </form>
         </div>
     </div>
@@ -172,12 +224,14 @@ include __DIR__ . '/includes/header.php';
                                         </div>
                                     </td>
                                 </tr>
-                                <?php if ($peer['status'] === 'online'): ?>
-                                    <tr>
-                                        <td colspan="8" style="background: #f8f9fa; padding: 10px;">
-                                            <strong>Recommended Models:</strong><br>
-                                            <?php 
-                                            $recommended = $peerManager->getRecommendedModels($peer['memory_gb'], $peer['gpu_available'], $peer['gpu_memory_gb']);
+                                <tr>
+                                    <td colspan="8" style="background: #f8f9fa; padding: 10px;">
+                                        <strong>Recommended Models (RAM: <?= $peer['memory_gb'] ?>GB, GPU: <?= $peer['gpu_available'] ? 'Yes' : 'No' ?>):</strong><br>
+                                        <?php 
+                                        $recommended = $peerManager->getRecommendedModels($peer['memory_gb'], $peer['gpu_available'], $peer['gpu_memory_gb']);
+                                        if (empty($recommended)): ?>
+                                            <small class="text-muted">No models recommended for this peer's specs</small>
+                                        <?php else:
                                             foreach ($recommended as $modelName => $specs): 
                                                 if (!in_array($modelName, $installedModels)): ?>
                                                     <form method="POST" style="display: inline-block; margin: 2px;">
@@ -189,11 +243,13 @@ include __DIR__ . '/includes/header.php';
                                                             + <?= htmlspecialchars($modelName) ?>
                                                         </button>
                                                     </form>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary" style="margin: 2px; font-size: 10px;"><?= htmlspecialchars($modelName) ?> ✓</span>
                                                 <?php endif;
-                                            endforeach; ?>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
+                                            endforeach;
+                                        endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>

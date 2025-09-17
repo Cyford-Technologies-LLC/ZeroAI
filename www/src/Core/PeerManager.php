@@ -238,6 +238,33 @@ class PeerManager {
             return [];
         }
     }
+    
+    public function saveModelRules($rules) {
+        $rulesPath = __DIR__ . '/../../../config/model_rules.json';
+        $configDir = dirname($rulesPath);
+        
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0755, true);
+        }
+        
+        file_put_contents($rulesPath, json_encode($rules, JSON_PRETTY_PRINT));
+        $this->logger->info('Model rules saved', $rules);
+    }
+    
+    public function getModelRules() {
+        $rulesPath = __DIR__ . '/../../../config/model_rules.json';
+        
+        if (!file_exists($rulesPath)) {
+            return [
+                'essential' => ['llama3.2:1b', 'llama3.2:3b'],
+                'medium_memory' => [],
+                'gpu_models' => []
+            ];
+        }
+        
+        $content = file_get_contents($rulesPath);
+        return json_decode($content, true) ?: [];
+    }
 }
 
 
