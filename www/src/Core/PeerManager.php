@@ -43,7 +43,7 @@ class PeerManager {
         
         return [
             'name' => 'Local Ollama',
-            'ip' => 'localhost',
+            'ip' => 'ollama',
             'port' => 11434,
             'ollama_port' => 11434,
             'status' => $capabilities['available'] ? 'online' : 'offline',
