@@ -28,15 +28,25 @@ sudo mkdir -p /etc/cyford/zeroai/{data,backup,knowledge,logs}
 sudo chown -R $USER:$USER /opt/cyford
 sudo chown -R $USER:$USER /etc/cyford
 
-# Install Docker if not present
+# Check if Docker is installed
 if ! command -v docker &> /dev/null; then
-    echo "🐳 Installing Docker..."
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    sudo usermod -aG docker $USER
-    rm get-docker.sh
+    echo "🐳 Docker not found. Running setup-docker.sh..."
+    if [ -f "./setup-docker.sh" ]; then
+        chmod +x ./setup-docker.sh
+        ./setup-docker.sh
+        echo "✅ Docker setup complete"
+    else
+        echo "❌ setup-docker.sh not found. Installing Docker manually..."
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sudo sh get-docker.sh
+        sudo usermod -aG docker $USER
+        rm get-docker.sh
+    fi
+else
+    echo "✅ Docker already installed"
 fi
-chown -R www-data:www-data .
+
+# Fix permissions
 chmod +x start_services.sh
 
 # Docker Compose is now built into Docker
@@ -106,10 +116,6 @@ if [ -f "./setup-docker.sh" ]; then
     echo "  - Production Web: http://localhost:333"
 else
     echo "❌ setup-docker.sh not found. Manual Docker setup required."
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
-            sudo usermod -aG docker $USER
-            rm get-docker.sh
     exit 1
 fi
 
