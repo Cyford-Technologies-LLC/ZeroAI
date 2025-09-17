@@ -25,6 +25,14 @@ try {
 }
 ?>
 
+<style>
+.text-primary { color: #0d6efd !important; }
+.text-success { color: #198754 !important; }
+.text-info { color: #0dcaf0 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-muted { color: #6c757d !important; }
+</style>
+
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-12">
@@ -114,9 +122,6 @@ try {
 
         </div>
     </div>
-</div>
-</body>
-</html>
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

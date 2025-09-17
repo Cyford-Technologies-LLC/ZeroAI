@@ -161,7 +161,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         <button style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 12px; border-radius: 4px; margin-right: 20px;"
                 onclick="toggleSidebar()">☰</button>
         <div style="font-size: 1.5rem; font-weight: bold; margin-right: auto;">
-            <i class="fas fa-chart-line"></i> ZeroAI CRM
+            <img src="/assets/frontend/images/icons/logo.svg" width="24" height="24" style="margin-right: 8px;"> ZeroAI CRM
         </div>
         <div style="display: flex; gap: 20px; margin-right: 20px;">
             <a href="/web/index.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">📊 Dashboard</a>
