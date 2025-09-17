@@ -95,7 +95,7 @@ include __DIR__ . '/includes/header.php';
                         <input type="text" name="peer_ip" class="form-control" placeholder="IP Address" required>
                     </div>
                     <div class="col-md-2">
-                        <input type="number" name="peer_port" class="form-control" placeholder="Port" value="11434">
+                        <input type="number" name="peer_port" class="form-control" placeholder="Port" value="8080">
                     </div>
                     <div class="col-md-2">
                         <button type="submit" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 8px 16px; border-radius: 4px; cursor: pointer;">

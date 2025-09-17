@@ -33,7 +33,7 @@ class PeerManager {
         return array_map([$this, 'formatPeer'], $data['peers']);
     }
     
-    public function addPeer($name, $ip, $port = 11434) {
+    public function addPeer($name, $ip, $port = 8080) {
         try {
             $peers = $this->loadPeersConfig();
             
