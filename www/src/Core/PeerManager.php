@@ -347,8 +347,12 @@ class PeerManager {
     
     public function getInstalledModels($peerIp) {
         try {
-            // Handle localhost/local container
-            $url = ($peerIp === 'localhost') ? 'http://localhost:11434/api/tags' : "http://{$peerIp}:11434/api/tags";
+            // Handle localhost/local container - use ollama container name
+            if ($peerIp === 'localhost') {
+                $url = 'http://ollama:11434/api/tags';
+            } else {
+                $url = "http://{$peerIp}:11434/api/tags";
+            }
             
             $result = @file_get_contents($url, false, stream_context_create([
                 'http' => ['timeout' => 5]
