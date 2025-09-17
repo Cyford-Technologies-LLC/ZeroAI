@@ -81,35 +81,71 @@ try {
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">🚀 Quick Actions</h5>
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <img src="/assets/frontend/images/icons/rocket.svg" width="20" height="20" class="me-2"> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="/web/companies.php" class="btn btn-primary w-100 py-3">
+                                <img src="/assets/frontend/images/icons/building.svg" width="32" height="32" class="d-block mb-2 mx-auto">
+                                <strong>Manage Companies</strong>
+                                <small class="d-block">Add and manage your business clients</small>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="/web/contacts.php" class="btn btn-success w-100 py-3">
+                                <img src="/assets/frontend/images/icons/users.svg" width="32" height="32" class="d-block mb-2 mx-auto">
+                                <strong>Manage Contacts</strong>
+                                <small class="d-block">Track your business relationships</small>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="/web/projects.php" class="btn btn-info w-100 py-3">
+                                <img src="/assets/frontend/images/icons/project.svg" width="32" height="32" class="d-block mb-2 mx-auto">
+                                <strong>Manage Projects</strong>
+                                <small class="d-block">Organize your work and deliverables</small>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="/web/tasks.php" class="btn btn-warning w-100 py-3">
+                                <img src="/assets/frontend/images/icons/tasks.svg" width="32" height="32" class="d-block mb-2 mx-auto">
+                                <strong>Manage Tasks</strong>
+                                <small class="d-block">Track your daily activities</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <a href="/web/companies.php" class="btn btn-outline-primary w-100 py-3">
-                        <img src="/assets/frontend/images/icons/building.svg" width="48" height="48" class="d-block mb-2 mx-auto">
-                        Add Company
-                    </a>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog text-secondary"></i> System
+                    </h5>
                 </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <a href="/web/projects.php" class="btn btn-outline-success w-100 py-3">
-                        <img src="/assets/frontend/images/icons/project.svg" width="48" height="48" class="d-block mb-2 mx-auto">
-                        New Project
-                    </a>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <a href="/web/contacts.php" class="btn btn-outline-info w-100 py-3">
-                        <img src="/assets/frontend/images/icons/users.svg" width="48" height="48" class="d-block mb-2 mx-auto">
-                        Add Contact
-                    </a>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <a href="/web/employees.php" class="btn btn-outline-warning w-100 py-3">
-                        <img src="/assets/frontend/images/icons/users.svg" width="48" height="48" class="d-block mb-2 mx-auto">
-                        Add Employee
-                    </a>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/web/init.php" class="btn btn-outline-primary">
+                            <i class="fas fa-database"></i> Setup Database
+                        </a>
+                        <a href="/web/ai_workshop.php" class="btn btn-outline-info">
+                            <i class="fas fa-robot"></i> AI Workshop
+                        </a>
+                        <?php if ($isAdmin): ?>
+                            <a href="/admin/dashboard.php" class="btn btn-outline-secondary">
+                                <i class="fas fa-shield-alt"></i> Admin Panel
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
