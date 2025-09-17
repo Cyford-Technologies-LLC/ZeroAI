@@ -73,7 +73,7 @@ services:
     command: >
       bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
       python /app/scripts/cron_runner.py & 
-      gunicorn API.persistent_crew_api:app --bind 0.0.0.0:8080 --worker-class uvicorn.workers.UvicornWorker --workers 2 --preload --timeout 300"
+      uvicorn API.persistent_crew_api:app --host 0.0.0.0 --port 8080 --workers 2"
     depends_on:
       - ollama
       - redis
