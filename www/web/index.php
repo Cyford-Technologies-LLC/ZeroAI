@@ -37,50 +37,45 @@ try {
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2 mb-0"><img src="/assets/frontend/images/icons/dashboard.svg" width="24" height="24" class="text-primary me-2"> Welcome to ZeroAI CRM</h1>
-                <div class="d-flex gap-2">
-                    <a href="/web/companies.php" class="btn btn-primary">
-                        <img src="/assets/frontend/images/icons/building.svg" width="16" height="16" class="me-1"> Add Company
-                    </a>
-                    <a href="/web/projects.php" class="btn btn-success">
-                        <img src="/assets/frontend/images/icons/project.svg" width="16" height="16" class="me-1"> New Project
-                    </a>
-                </div>
+                <h1 class="h2 mb-0">
+                    <img src="/assets/frontend/images/icons/logo.svg" width="24" height="24" class="text-primary me-2"> 
+                    Welcome to ZeroAI CRM
+                </h1>
             </div>
         </div>
     </div>
     
-    <!-- Compact Stats Row -->
-    <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2 bg-primary text-white">
-                <div class="card-body p-2">
-                    <h4 class="mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
-                    <small>Companies</small>
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;"><?= htmlspecialchars($totalCompanies) ?></div>
+                    <div>📢 Companies</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2 bg-success text-white">
-                <div class="card-body p-2">
-                    <h4 class="mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
-                    <small>Projects</small>
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;"><?= htmlspecialchars($totalContacts) ?></div>
+                    <div>👥 Contacts</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2 bg-info text-white">
-                <div class="card-body p-2">
-                    <h4 class="mb-1"><?= htmlspecialchars($totalUsers) ?></h4>
-                    <small>Users</small>
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;"><?= htmlspecialchars($totalProjects) ?></div>
+                    <div>📋 Projects</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2 bg-warning text-white">
-                <div class="card-body p-2">
-                    <h4 class="mb-1">0</h4>
-                    <small>Tasks</small>
+        <div class="col-md-3">
+            <div class="card text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <div class="card-body text-center">
+                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div>✅ Tasks</div>
                 </div>
             </div>
         </div>
