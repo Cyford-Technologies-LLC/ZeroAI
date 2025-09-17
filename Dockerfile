@@ -2,10 +2,10 @@ FROM python:3.11-slim
 
 # Install ALL system dependencies in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg git nano sudo cron \
+    curl gnupg git nano sudo cron bash dos2unix procps \
     nginx php-fpm php-sqlite3 php-curl php-json php-mbstring php-xml php-zip php-gd php-intl \
     php-apcu php-opcache php-redis \
-    redis-server \
+    redis-server redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Docker CLI
@@ -71,4 +71,4 @@ RUN sed -i 's/\r$//' /app/start_services.sh && \
     chmod +x /app/start_services.sh && \
     chown root:root /app/start_services.sh
 
-CMD ["/app/start_services.sh"]
+CMD ["/bin/bash", "/app/start_services.sh"]

@@ -36,6 +36,8 @@ if ! command -v docker &> /dev/null; then
     sudo usermod -aG docker $USER
     rm get-docker.sh
 fi
+chown -R www-data:www-data .
+chmod +x start_services.sh
 
 # Docker Compose is now built into Docker
 echo "✅ Using Docker Compose (built-in)"
