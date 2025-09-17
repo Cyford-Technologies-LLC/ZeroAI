@@ -228,12 +228,19 @@ class PeerManager {
             // Suppress all errors and warnings
             $result = @file_get_contents($url, false, $context);
             
-            $success = $result !== false;
+            if ($result === false) {
+                $this->logger->debug('Peer connection result', ['url' => $url, 'success' => false, 'response' => 'failed']);
+                return false;
+            }
+            
+            // Check if response is valid JSON with status
+            $data = json_decode($result, true);
+            $success = $data && isset($data['status']) && $data['status'] === 'healthy';
             
             $this->logger->debug('Peer connection result', [
                 'url' => $url,
                 'success' => $success,
-                'response' => $success ? substr($result, 0, 100) : 'failed'
+                'response' => $success ? 'healthy' : substr($result, 0, 100)
             ]);
             
             return $success;
