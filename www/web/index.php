@@ -55,16 +55,16 @@ try {
         <div class="col-md-3 col-sm-6 mb-2">
             <div class="card text-center py-2">
                 <div class="card-body p-2">
-                    <h4 class="text-success mb-1"><?= htmlspecialchars($totalContacts) ?></h4>
-                    <small class="text-muted">Contacts</small>
+                    <h4 class="text-success mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
+                    <small class="text-muted">Projects</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-2">
             <div class="card text-center py-2">
                 <div class="card-body p-2">
-                    <h4 class="text-info mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
-                    <small class="text-muted">Projects</small>
+                    <h4 class="text-info mb-1"><?= htmlspecialchars($totalUsers) ?></h4>
+                    <small class="text-muted">Users</small>
                 </div>
             </div>
         </div>
