@@ -73,7 +73,7 @@ services:
     command: >
       bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && chmod -R 775 /app/data && 
       python /app/scripts/cron_runner.py & 
-      python -m uvicorn API.persistent_crew_api:app --host 0.0.0.0 --port 8080"
+      cd /app && python -c 'import sys; sys.path.append(\"/app\"); from API.persistent_crew_api import app; import uvicorn; uvicorn.run(app, host=\"0.0.0.0\", port=8080)'"
     depends_on:
       - ollama
       - redis
