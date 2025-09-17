@@ -1,31 +1,15 @@
 <?php
+require_once '../../src/autoload.php';
+
+use ZeroAI\Providers\AI\Local\AvatarProvider;
+
 header('Content-Type: application/json');
 
-// Test avatar service connectivity
-$avatarUrl = 'http://avatar:7860/health';
-
-$context = stream_context_create([
-    'http' => [
-        'method' => 'GET',
-        'timeout' => 10
-    ]
-]);
-
-$result = @file_get_contents($avatarUrl, false, $context);
-
-if ($result === false) {
-    $error = error_get_last();
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Avatar service not reachable',
-        'error' => $error['message'] ?? 'Unknown error',
-        'url' => $avatarUrl
-    ]);
-} else {
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Avatar service is running',
-        'response' => $result
-    ]);
+try {
+    $avatarProvider = new AvatarProvider();
+    $result = $avatarProvider->testConnection();
+    echo json_encode($result);
+} catch (Exception $e) {
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>
