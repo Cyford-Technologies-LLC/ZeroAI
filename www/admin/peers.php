@@ -71,8 +71,8 @@ include __DIR__ . '/includes/header.php';
             <h3>Add New Peer</h3>
             <form method="POST" style="display: inline;">
                 <input type="hidden" name="action" value="refresh_peers">
-                <button type="submit" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-sync"></i> Refresh Status
+                <button type="submit" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    🔄 Refresh Status
                 </button>
             </form>
         </div>
@@ -90,8 +90,8 @@ include __DIR__ . '/includes/header.php';
                         <input type="number" name="peer_port" class="form-control" placeholder="Port" value="8080">
                     </div>
                     <div class="col-md-2">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add Peer
+                        <button type="submit" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                            + Add Peer
                         </button>
                     </div>
                 </div>
@@ -145,19 +145,19 @@ include __DIR__ . '/includes/header.php';
                                     </td>
                                     <td><small><?= $peer['last_check'] ?></small></td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
+                                        <div style="display: flex; gap: 5px;">
                                             <form method="POST" style="display: inline;">
                                                 <input type="hidden" name="action" value="test_peer">
                                                 <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                <button type="submit" class="btn btn-outline-info" title="Test Peer">
-                                                    <i class="fas fa-vial"></i>
+                                                <button type="submit" style="background: #17a2b8; color: white; border: 1px solid #17a2b8; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Test Peer">
+                                                    🧪
                                                 </button>
                                             </form>
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this peer?')">
                                                 <input type="hidden" name="action" value="delete_peer">
                                                 <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                <button type="submit" class="btn btn-outline-danger" title="Delete Peer">
-                                                    <i class="fas fa-trash"></i>
+                                                <button type="submit" style="background: #dc3545; color: white; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Delete Peer">
+                                                    🗑️
                                                 </button>
                                             </form>
                                         </div>
