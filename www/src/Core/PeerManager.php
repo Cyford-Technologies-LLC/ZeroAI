@@ -317,6 +317,42 @@ class PeerManager {
             ];
         }
     }
+    
+    public function exportModels() {
+        try {
+            $rules = $this->getModelRules();
+            $peers = $this->getPeers();
+            
+            $export = [
+                'timestamp' => date('Y-m-d H:i:s'),
+                'model_rules' => $rules,
+                'peers' => $peers,
+                'model_specs' => $this->getModelSpecs()
+            ];
+            
+            $this->logger->info('Models exported');
+            return json_encode($export, JSON_PRETTY_PRINT);
+        } catch (\Exception $e) {
+            $this->logger->error('Export failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+    
+    public function importModels($jsonData) {
+        try {
+            $data = json_decode($jsonData, true);
+            if (!$data) throw new \Exception('Invalid JSON data');
+            
+            if (isset($data['model_rules'])) {
+                $this->saveModelRules($data['model_rules']);
+            }
+            
+            $this->logger->info('Models imported', ['timestamp' => $data['timestamp'] ?? 'unknown']);
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Import failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
 }
-
 
