@@ -54,6 +54,14 @@ if ($_POST) {
                 $messageType = $result ? 'success' : 'error';
                 break;
                 
+            case 'remove_model':
+                $ip = $_POST['peer_ip'];
+                $model = $_POST['model_name'];
+                $result = $peerManager->removeModel($ip, $model);
+                $message = $result ? "Model '{$model}' removed successfully!" : "Model removal failed!";
+                $messageType = $result ? 'success' : 'error';
+                break;
+                
             case 'save_model_rules':
                 $rules = [
                     'all_peers' => $_POST['all_peers'] ?? [],
@@ -353,7 +361,15 @@ include __DIR__ . '/includes/header.php';
                                                         </button>
                                                     </form>
                                                 <?php else: ?>
-                                                    <span class="badge bg-secondary" style="margin: 2px; font-size: 10px;"><?= htmlspecialchars($modelName) ?> ✓</span>
+                                                    <span class="badge bg-secondary" style="margin: 2px; font-size: 10px;">
+                                                        <?= htmlspecialchars($modelName) ?> ✓
+                                                        <form method="POST" style="display: inline; margin-left: 5px;" onsubmit="return confirm('Remove model <?= $modelName ?>?')">
+                                                            <input type="hidden" name="action" value="remove_model">
+                                                            <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                            <input type="hidden" name="model_name" value="<?= $modelName ?>">
+                                                            <button type="submit" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 10px;" title="Remove model">×</button>
+                                                        </form>
+                                                    </span>
                                                 <?php endif;
                                             endforeach;
                                         endif; ?>

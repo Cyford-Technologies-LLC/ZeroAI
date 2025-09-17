@@ -1,0 +1,8 @@
+{
+    "peer_manager_key": "zeroai_secure_key_2024",
+    "api_version": "1.0",
+    "model_management": {
+        "timeout": 300,
+        "max_concurrent_installs": 3
+    }
+}

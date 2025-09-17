@@ -2,10 +2,12 @@
 
 import sys
 import os
+import json
 from pathlib import Path
 import argparse
 import requests
 import time
+import hashlib
 
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -15,6 +17,20 @@ from peer_discovery import peer_discovery, PeerNode
 from rich.console import Console
 
 console = Console()
+
+# Authentication
+def verify_auth_key(provided_key):
+    """Verify authentication key from config"""
+    try:
+        config_path = Path(__file__).parent.parent.parent / "config" / "zeroai.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                config = json.load(f)
+                expected_key = config.get("peer_manager_key", "default_key_change_me")
+                return provided_key == expected_key
+    except:
+        pass
+    return provided_key == "default_key_change_me"
 def add_peer(self, ip: str, port: int, name: str) -> (bool, str):
     try:
         # Read existing peers or initialize if the file doesn't exist
@@ -38,6 +54,56 @@ def add_peer(self, ip: str, port: int, name: str) -> (bool, str):
         return True, f"Successfully added peer {name} at {ip}:{port}."
     except Exception as e:
         return False, f"Failed to add peer: {e}"
+
+def install_model(ip, model, auth_key=None):
+    """Install a model on a specific peer"""
+    if not verify_auth_key(auth_key):
+        console.print("❌ Authentication failed", style="red")
+        return False
+        
+    try:
+        ollama_url = f"http://{ip}:11434"
+        console.print(f"📥 Installing model '{model}' on peer {ip}...", style="yellow")
+        
+        response = requests.post(f"{ollama_url}/api/pull", 
+                               json={"name": model}, 
+                               timeout=300)
+        
+        if response.status_code == 200:
+            console.print(f"✅ Model '{model}' installed successfully on {ip}", style="green")
+            return True
+        else:
+            console.print(f"❌ Failed to install model: {response.text}", style="red")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        console.print(f"❌ Failed to reach peer {ip}: {e}", style="red")
+        return False
+
+def remove_model(ip, model, auth_key=None):
+    """Remove a model from a specific peer"""
+    if not verify_auth_key(auth_key):
+        console.print("❌ Authentication failed", style="red")
+        return False
+        
+    try:
+        ollama_url = f"http://{ip}:11434"
+        console.print(f"🗑️ Removing model '{model}' from peer {ip}...", style="yellow")
+        
+        response = requests.delete(f"{ollama_url}/api/delete", 
+                                 json={"name": model}, 
+                                 timeout=30)
+        
+        if response.status_code == 200:
+            console.print(f"✅ Model '{model}' removed successfully from {ip}", style="green")
+            return True
+        else:
+            console.print(f"❌ Failed to remove model: {response.text}", style="red")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        console.print(f"❌ Failed to reach peer {ip}: {e}", style="red")
+        return False
 
 def test_peer(ip, port, model):
     """Test connectivity to a specific peer and model."""
@@ -95,7 +161,8 @@ def main():
     distributed_router_instance = DistributedRouter(peer_discovery_instance)
 
     parser = argparse.ArgumentParser(description="Manage ZeroAI peer network")
-    parser.add_argument("command", choices=["add", "list", "test", "status"], help="Command to execute")
+    parser.add_argument("command", choices=["add", "list", "test", "status", "install", "remove"], help="Command to execute")
+    parser.add_argument("--auth-key", help="Authentication key for secure operations")
     parser.add_argument("--ip", help="IP address of peer to add")
     parser.add_argument("--port", type=int, default=8080, help="Port of peer (default: 8080)")
     parser.add_argument("--name", help="Name for the peer")
@@ -138,6 +205,18 @@ def main():
         else:
             console.print(f"🧪 Testing specific peer: {args.ip} with model: {args.model}")
             test_peer(args.ip, args.port, args.model)
+            
+    elif args.command == "install":
+        if not args.ip or not args.model:
+            console.print("❌ IP and model required for install command", style="red")
+            return
+        install_model(args.ip, args.model, args.auth_key)
+        
+    elif args.command == "remove":
+        if not args.ip or not args.model:
+            console.print("❌ IP and model required for remove command", style="red")
+            return
+        remove_model(args.ip, args.model, args.auth_key)
 
 
 if __name__ == "__main__":

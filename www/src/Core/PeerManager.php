@@ -213,7 +213,10 @@ class PeerManager {
     
     public function installModel($peerIp, $modelName) {
         try {
-            $cmd = "curl -X POST http://{$peerIp}:11434/api/pull -d '{\"name\":\"{$modelName}\"}'";
+            $authKey = $this->getAuthKey();
+            $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
+            
+            $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py install --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
             exec($cmd . " 2>&1", $output, $returnCode);
             
             $this->logger->info('Model installation', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
@@ -222,6 +225,31 @@ class PeerManager {
             $this->logger->error('Model installation failed', ['error' => $e->getMessage()]);
             return false;
         }
+    }
+    
+    public function removeModel($peerIp, $modelName) {
+        try {
+            $authKey = $this->getAuthKey();
+            $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
+            
+            $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py remove --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
+            exec($cmd . " 2>&1", $output, $returnCode);
+            
+            $this->logger->info('Model removal', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
+            return $returnCode === 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Model removal failed', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+    
+    private function getAuthKey() {
+        $configPath = __DIR__ . '/../../../config/zeroai.json';
+        if (file_exists($configPath)) {
+            $config = json_decode(file_get_contents($configPath), true);
+            return $config['peer_manager_key'] ?? 'default_key_change_me';
+        }
+        return 'default_key_change_me';
     }
     
     public function getInstalledModels($peerIp) {
