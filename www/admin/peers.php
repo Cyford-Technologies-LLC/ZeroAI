@@ -66,6 +66,22 @@ if ($_POST) {
                 $peerManager->saveModelRules($rules);
                 $message = "Model auto-install rules saved successfully!";
                 break;
+                
+            case 'export_models':
+                $exportData = $peerManager->exportModels();
+                header('Content-Type: application/json');
+                header('Content-Disposition: attachment; filename="zeroai-models-' . date('Y-m-d-H-i-s') . '.json"');
+                echo $exportData;
+                exit;
+                
+            case 'import_models':
+                if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+                    throw new Exception('No file uploaded or upload error');
+                }
+                $jsonData = file_get_contents($_FILES['import_file']['tmp_name']);
+                $peerManager->importModels($jsonData);
+                $message = "Models imported successfully!";
+                break;
         }
     } catch (Exception $e) {
         $message = 'Error: ' . $e->getMessage();
@@ -122,8 +138,23 @@ include __DIR__ . '/includes/header.php';
     
     <!-- Model Auto-Install Rules -->
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h3>Model Auto-Install Rules</h3>
+            <div>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="export_models">
+                    <button type="submit" style="background: #6c757d; color: white; border: 1px solid #6c757d; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 5px;">
+                        📥 Export
+                    </button>
+                </form>
+                <button onclick="document.getElementById('importFile').click()" style="background: #6c757d; color: white; border: 1px solid #6c757d; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    📤 Import
+                </button>
+                <form method="POST" enctype="multipart/form-data" style="display: none;">
+                    <input type="hidden" name="action" value="import_models">
+                    <input type="file" id="importFile" name="import_file" accept=".json" onchange="this.form.submit()">
+                </form>
+            </div>
         </div>
         <div class="card-body">
             <form method="POST">
@@ -228,9 +259,11 @@ include __DIR__ . '/includes/header.php';
                 }
                 </script>
                 
-                <button type="submit" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                    Save Auto-Install Rules
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="submit" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        Save Auto-Install Rules
+                    </button>
+                </div>
             </form>
         </div>
     </div>

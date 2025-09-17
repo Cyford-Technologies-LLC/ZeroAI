@@ -46,6 +46,20 @@ else
     echo "✅ Docker already installed"
 fi
 
+# Configure GPU support if NVIDIA GPU detected
+if nvidia-smi > /dev/null 2>&1; then
+    echo "🎮 NVIDIA GPU detected. Configuring Docker GPU support..."
+    if ! docker info | grep -q nvidia; then
+        sudo nvidia-ctk runtime configure --runtime=docker
+        sudo systemctl restart docker
+        echo "✅ Docker GPU support configured"
+    else
+        echo "✅ Docker GPU support already configured"
+    fi
+else
+    echo "ℹ️ No NVIDIA GPU detected - using CPU-only mode"
+fi
+
 # Fix permissions
 chmod +x start_services.sh
 
