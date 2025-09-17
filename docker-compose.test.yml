@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   redis:
     image: redis:7-alpine
@@ -5,7 +7,7 @@ services:
     ports:
       - "127.0.0.1:6380:6379"
     volumes:
-      - redis_data:/data
+      - redis_data_test:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     restart: unless-stopped
     deploy:
@@ -22,14 +24,7 @@ services:
       - "0.0.0.0:3940:3939"
       - "0.0.0.0:334:333"
     volumes:
-      - ./src:/app/src
-      - ./API:/app/API
-      - ./run:/app/run
-      - ./config:/app/config
-      - ./examples:/app/examples
-      - ./logs:/app/logs
-      - ./www:/app/www
-      - ./scripts:/app/scripts
+      - .:/app
       - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
@@ -54,7 +49,6 @@ services:
           memory: 3G
         reservations:
           memory: 1.5G
-
 
   peer:
     build: .
@@ -95,15 +89,36 @@ services:
     ports:
       - "0.0.0.0:11435:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ollama_data_test:/root/.ollama
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 2G
+          memory: 4G
+
+  avatar:
+    build: ./avatar
+    container_name: zeroai_avatar-test
+    ports:
+      - "7861:7860"
+    volumes:
+      - ./avatars:/app/avatars
+      - avatar_models_test:/app/checkpoints
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 3G
 
 volumes:
-  ollama_data:
-  redis_data:
+  ollama_data_test:
+  redis_data_test:
+  avatar_models_test:
