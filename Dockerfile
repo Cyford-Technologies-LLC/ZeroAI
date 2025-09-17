@@ -66,7 +66,7 @@ RUN git config --global --add safe.directory /app \
 ENV PATH="/app/venv/bin:$PATH"
 
 # Copy and setup startup script
-COPY start_services.sh /app/start.sh
-RUN chmod +x /app/start.sh
+COPY start_services.sh /app/start_services.sh
+RUN chmod +x /app/start_services.sh
 
-CMD ["/app/start.sh"]
+CMD ["/app/start_services.sh"]

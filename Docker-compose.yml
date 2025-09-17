@@ -99,6 +99,25 @@ services:
         reservations:
           memory: 2G
 
+  avatar:
+    build: ./avatar
+    container_name: zeroai_avatar
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./avatars:/app/avatars
+      - avatar_models:/app/checkpoints
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 3G
+
 volumes:
   ollama_data:
   redis_data:
+  avatar_models:
