@@ -214,17 +214,34 @@ class PeerManager {
     
     private function testPeerConnection($ip, $port = 8080) {
         try {
-            $url = "http://{$ip}:{$port}/health";
+            $url = "http://{$ip}:{$port}/health/";
             $context = stream_context_create([
                 'http' => [
-                    'timeout' => 5,
-                    'method' => 'GET'
+                    'timeout' => 3,
+                    'method' => 'GET',
+                    'ignore_errors' => true
                 ]
             ]);
             
+            $this->logger->debug('Testing peer connection', ['url' => $url]);
+            
+            // Suppress all errors and warnings
             $result = @file_get_contents($url, false, $context);
-            return $result !== false;
+            
+            $success = $result !== false;
+            
+            $this->logger->debug('Peer connection result', [
+                'url' => $url,
+                'success' => $success,
+                'response' => $success ? substr($result, 0, 100) : 'failed'
+            ]);
+            
+            return $success;
         } catch (\Exception $e) {
+            $this->logger->debug('Peer connection exception', ['url' => $url ?? 'unknown', 'error' => $e->getMessage()]);
+            return false;
+        } catch (\Error $e) {
+            $this->logger->debug('Peer connection error', ['url' => $url ?? 'unknown', 'error' => $e->getMessage()]);
             return false;
         }
     }
@@ -383,15 +400,24 @@ class PeerManager {
                 $url = "http://{$peerIp}:11434/api/tags";
             }
             
-            $result = @file_get_contents($url, false, stream_context_create([
-                'http' => ['timeout' => 5]
-            ]));
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 3,
+                    'ignore_errors' => true
+                ]
+            ]);
             
-            if ($result === false) return [];
+            $result = @file_get_contents($url, false, $context);
+            
+            if ($result === false) {
+                $this->logger->debug('Failed to get models from peer', ['ip' => $peerIp, 'url' => $url]);
+                return [];
+            }
             
             $data = json_decode($result, true);
             return array_column($data['models'] ?? [], 'name');
         } catch (\Exception $e) {
+            $this->logger->debug('Exception getting models from peer', ['ip' => $peerIp, 'error' => $e->getMessage()]);
             return [];
         }
     }
