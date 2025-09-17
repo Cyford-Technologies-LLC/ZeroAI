@@ -149,7 +149,8 @@ class PeerManager {
         return [
             'name' => $peer['name'] ?? 'Unknown',
             'ip' => $peer['ip'] ?? '127.0.0.1',
-            'port' => $peer['port'] ?? 11434,
+            'port' => $peer['port'] ?? 8080,
+            'ollama_port' => $peer['ollama_port'] ?? 11434,
             'status' => ($peer['available'] ?? false) ? 'online' : 'offline',
             'models' => $peer['models'] ?? [],
             'memory_gb' => $peer['memory_gb'] ?? 0,
@@ -161,6 +162,81 @@ class PeerManager {
     
     public function runPeerDiscovery() {
         return $this->runPeerManager('status');
+    }
+    
+    // Model Management Methods
+    private function getModelSpecs() {
+        return [
+            'essential' => [
+                'llama3.2:1b' => ['size_gb' => 1.3, 'min_memory_gb' => 2, 'description' => 'Lightweight model'],
+                'llama3.2:3b' => ['size_gb' => 2.0, 'min_memory_gb' => 4, 'description' => 'Balanced model']
+            ],
+            'medium_memory' => [
+                'llama3.1:8b' => ['size_gb' => 4.7, 'min_memory_gb' => 8, 'description' => 'High-quality model'],
+                'mistral:7b' => ['size_gb' => 4.1, 'min_memory_gb' => 8, 'description' => 'Fast model'],
+                'codellama:7b' => ['size_gb' => 3.8, 'min_memory_gb' => 8, 'description' => 'Code model']
+            ],
+            'gpu_models' => [
+                'llama3.1:8b-instruct-fp16' => ['size_gb' => 16, 'min_memory_gb' => 8, 'min_gpu_memory_gb' => 8, 'description' => 'GPU-optimized']
+            ]
+        ];
+    }
+    
+    public function getRecommendedModels($memoryGb, $gpuAvailable = false, $gpuMemoryGb = 0) {
+        $specs = $this->getModelSpecs();
+        $recommended = [];
+        
+        foreach ($specs['essential'] as $model => $spec) {
+            if ($memoryGb >= $spec['min_memory_gb']) {
+                $recommended[$model] = $spec;
+            }
+        }
+        
+        if ($memoryGb >= 8) {
+            foreach ($specs['medium_memory'] as $model => $spec) {
+                if ($memoryGb >= $spec['min_memory_gb']) {
+                    $recommended[$model] = $spec;
+                }
+            }
+        }
+        
+        if ($gpuAvailable && $gpuMemoryGb >= 8) {
+            foreach ($specs['gpu_models'] as $model => $spec) {
+                if ($memoryGb >= $spec['min_memory_gb'] && $gpuMemoryGb >= ($spec['min_gpu_memory_gb'] ?? 0)) {
+                    $recommended[$model] = $spec;
+                }
+            }
+        }
+        
+        return $recommended;
+    }
+    
+    public function installModel($peerIp, $modelName) {
+        try {
+            $cmd = "curl -X POST http://{$peerIp}:11434/api/pull -d '{\"name\":\"{$modelName}\"}'";
+            exec($cmd . " 2>&1", $output, $returnCode);
+            
+            $this->logger->info('Model installation', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
+            return $returnCode === 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Model installation failed', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+    
+    public function getInstalledModels($peerIp) {
+        try {
+            $result = @file_get_contents("http://{$peerIp}:11434/api/tags", false, stream_context_create([
+                'http' => ['timeout' => 5]
+            ]));
+            
+            if ($result === false) return [];
+            
+            $data = json_decode($result, true);
+            return array_column($data['models'] ?? [], 'name');
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 }
 

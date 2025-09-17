@@ -45,6 +45,14 @@ if ($_POST) {
                 $message = $result ? "Peer test successful!" : "Peer test failed!";
                 $messageType = $result ? 'success' : 'error';
                 break;
+                
+            case 'install_model':
+                $ip = $_POST['peer_ip'];
+                $model = $_POST['model_name'];
+                $result = $peerManager->installModel($ip, $model);
+                $message = $result ? "Model '{$model}' installation started!" : "Model installation failed!";
+                $messageType = $result ? 'success' : 'error';
+                break;
         }
     } catch (Exception $e) {
         $message = 'Error: ' . $e->getMessage();
@@ -140,8 +148,9 @@ include __DIR__ . '/includes/header.php';
                                     </td>
                                     <td><?= $peer['memory_gb'] ?>GB</td>
                                     <td>
-                                        <small><?= implode(', ', array_slice($peer['models'], 0, 2)) ?>
-                                        <?= count($peer['models']) > 2 ? '...' : '' ?></small>
+                                        <?php $installedModels = $peerManager->getInstalledModels($peer['ip']); ?>
+                                        <small><?= implode(', ', array_slice($installedModels, 0, 2)) ?>
+                                        <?= count($installedModels) > 2 ? '...' : '' ?></small>
                                     </td>
                                     <td><small><?= $peer['last_check'] ?></small></td>
                                     <td>
@@ -163,6 +172,28 @@ include __DIR__ . '/includes/header.php';
                                         </div>
                                     </td>
                                 </tr>
+                                <?php if ($peer['status'] === 'online'): ?>
+                                    <tr>
+                                        <td colspan="8" style="background: #f8f9fa; padding: 10px;">
+                                            <strong>Recommended Models:</strong><br>
+                                            <?php 
+                                            $recommended = $peerManager->getRecommendedModels($peer['memory_gb'], $peer['gpu_available'], $peer['gpu_memory_gb']);
+                                            foreach ($recommended as $modelName => $specs): 
+                                                if (!in_array($modelName, $installedModels)): ?>
+                                                    <form method="POST" style="display: inline-block; margin: 2px;">
+                                                        <input type="hidden" name="action" value="install_model">
+                                                        <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                        <input type="hidden" name="model_name" value="<?= $modelName ?>">
+                                                        <button type="submit" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 12px;" 
+                                                                title="<?= htmlspecialchars($specs['description']) ?> (<?= $specs['size_gb'] ?>GB)">
+                                                            + <?= htmlspecialchars($modelName) ?>
+                                                        </button>
+                                                    </form>
+                                                <?php endif;
+                                            endforeach; ?>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
