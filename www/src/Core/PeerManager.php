@@ -214,7 +214,7 @@ class PeerManager {
     
     private function testPeerConnection($ip, $port = 8080) {
         try {
-            $url = "http://{$ip}:{$port}/health/";
+            $url = "http://{$ip}:{$port}/health";
             $context = stream_context_create([
                 'http' => [
                     'timeout' => 3,
