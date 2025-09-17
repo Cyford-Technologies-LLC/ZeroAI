@@ -57,7 +57,7 @@ services:
       - "0.0.0.0:8080:8080"
     volumes:
       - .:/app
-      - zeroai_venv:/app/venv
+#      - zeroai_venv:/app/venv
       - /etc/cyford/zeroai/knowledge:/app/knowledge
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
