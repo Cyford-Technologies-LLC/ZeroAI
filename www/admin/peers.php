@@ -134,54 +134,99 @@ include __DIR__ . '/includes/header.php';
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label><strong>All Peers:</strong></label>
-                        <div>
-                            <label><input type="checkbox" name="all_peers[]" value="llama3.2:1b" <?= in_array('llama3.2:1b', $rules['all_peers'] ?? []) ? 'checked' : '' ?>> llama3.2:1b (1.3GB)</label><br>
-                            <label><input type="checkbox" name="all_peers[]" value="llama3.2:3b" <?= in_array('llama3.2:3b', $rules['all_peers'] ?? []) ? 'checked' : '' ?>> llama3.2:3b (2GB)</label>
+                        <div id="all_peers_models">
+                            <?php foreach ($rules['all_peers'] ?? [] as $model): ?>
+                                <div class="mb-1">
+                                    <input type="text" name="all_peers[]" value="<?= htmlspecialchars($model) ?>" style="width: 200px; padding: 2px;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                        <button type="button" onclick="addModel('all_peers')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Model</button>
                     </div>
                     
                     <div class="col-md-6">
                         <label><strong>Memory < 4GB:</strong></label>
-                        <div>
-                            <label><input type="checkbox" name="memory_low[]" value="llama3.2:1b" <?= in_array('llama3.2:1b', $rules['memory_low'] ?? []) ? 'checked' : '' ?>> llama3.2:1b (1.3GB)</label>
+                        <div id="memory_low_models">
+                            <?php foreach ($rules['memory_low'] ?? [] as $model): ?>
+                                <div class="mb-1">
+                                    <input type="text" name="memory_low[]" value="<?= htmlspecialchars($model) ?>" style="width: 200px; padding: 2px;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                        <button type="button" onclick="addModel('memory_low')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Model</button>
                     </div>
                 </div>
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label><strong>Memory 4-8GB:</strong></label>
-                        <div>
-                            <label><input type="checkbox" name="memory_medium[]" value="llama3.2:3b" <?= in_array('llama3.2:3b', $rules['memory_medium'] ?? []) ? 'checked' : '' ?>> llama3.2:3b (2GB)</label><br>
-                            <label><input type="checkbox" name="memory_medium[]" value="mistral:7b" <?= in_array('mistral:7b', $rules['memory_medium'] ?? []) ? 'checked' : '' ?>> mistral:7b (4.1GB)</label>
+                        <div id="memory_medium_models">
+                            <?php foreach ($rules['memory_medium'] ?? [] as $model): ?>
+                                <div class="mb-1">
+                                    <input type="text" name="memory_medium[]" value="<?= htmlspecialchars($model) ?>" style="width: 200px; padding: 2px;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                        <button type="button" onclick="addModel('memory_medium')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Model</button>
                     </div>
                     
                     <div class="col-md-6">
                         <label><strong>Memory > 8GB:</strong></label>
-                        <div>
-                            <label><input type="checkbox" name="memory_high[]" value="llama3.1:8b" <?= in_array('llama3.1:8b', $rules['memory_high'] ?? []) ? 'checked' : '' ?>> llama3.1:8b (4.7GB)</label><br>
-                            <label><input type="checkbox" name="memory_high[]" value="codellama:7b" <?= in_array('codellama:7b', $rules['memory_high'] ?? []) ? 'checked' : '' ?>> codellama:7b (3.8GB)</label><br>
-                            <label><input type="checkbox" name="memory_high[]" value="mixtral:8x7b" <?= in_array('mixtral:8x7b', $rules['memory_high'] ?? []) ? 'checked' : '' ?>> mixtral:8x7b (26GB)</label>
+                        <div id="memory_high_models">
+                            <?php foreach ($rules['memory_high'] ?? [] as $model): ?>
+                                <div class="mb-1">
+                                    <input type="text" name="memory_high[]" value="<?= htmlspecialchars($model) ?>" style="width: 200px; padding: 2px;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                        <button type="button" onclick="addModel('memory_high')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Model</button>
                     </div>
                 </div>
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label><strong>GPU VRAM <= 16GB:</strong></label>
-                        <div>
-                            <label><input type="checkbox" name="gpu_low[]" value="llama3.1:8b-instruct-fp16" <?= in_array('llama3.1:8b-instruct-fp16', $rules['gpu_low'] ?? []) ? 'checked' : '' ?>> llama3.1:8b-instruct-fp16 (8GB)</label>
+                        <div id="gpu_low_models">
+                            <?php foreach ($rules['gpu_low'] ?? [] as $model): ?>
+                                <div class="mb-1">
+                                    <input type="text" name="gpu_low[]" value="<?= htmlspecialchars($model) ?>" style="width: 200px; padding: 2px;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                        <button type="button" onclick="addModel('gpu_low')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Model</button>
                     </div>
                     
                     <div class="col-md-6">
                         <label><strong>GPU VRAM > 16GB:</strong></label>
-                        <div>
-                            <label><input type="checkbox" name="gpu_high[]" value="llama3.1:70b-instruct-fp16" <?= in_array('llama3.1:70b-instruct-fp16', $rules['gpu_high'] ?? []) ? 'checked' : '' ?>> llama3.1:70b-instruct-fp16 (40GB)</label>
+                        <div id="gpu_high_models">
+                            <?php foreach ($rules['gpu_high'] ?? [] as $model): ?>
+                                <div class="mb-1">
+                                    <input type="text" name="gpu_high[]" value="<?= htmlspecialchars($model) ?>" style="width: 200px; padding: 2px;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                        <button type="button" onclick="addModel('gpu_high')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">+ Add Model</button>
                     </div>
                 </div>
+                
+                <script>
+                function addModel(category) {
+                    const container = document.getElementById(category + '_models');
+                    const div = document.createElement('div');
+                    div.className = 'mb-1';
+                    div.innerHTML = `
+                        <input type="text" name="${category}[]" placeholder="model:tag" style="width: 200px; padding: 2px;">
+                        <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                    `;
+                    container.appendChild(div);
+                }
+                </script>
                 
                 <button type="submit" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                     Save Auto-Install Rules
