@@ -39,13 +39,55 @@ class AvatarProvider
 
     private function callAvatarService($prompt, $image)
     {
+        // Try peer system first, fallback to local
+        try {
+            return $this->callPeerAvatarService($prompt, $image);
+        } catch (\Exception $e) {
+            $this->logger->warning('Peer avatar service failed, trying local', ['error' => $e->getMessage()]);
+            return $this->callLocalAvatarService($prompt, $image);
+        }
+    }
+
+    private function callPeerAvatarService($prompt, $image)
+    {
+        // Use peer system for GPU-accelerated avatar generation
+        $peerUrl = 'http://peer:8080/avatar/generate';
+        $data = json_encode([
+            'prompt' => $prompt,
+            'image' => $image,
+            'use_gpu' => true
+        ]);
+
+        $this->logger->debug('Calling peer avatar service', ['url' => $peerUrl]);
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => 'Content-Type: application/json',
+                'content' => $data,
+                'timeout' => 300
+            ]
+        ]);
+
+        $result = @file_get_contents($peerUrl, false, $context);
+
+        if ($result === false) {
+            $error = error_get_last();
+            throw new \Exception('Peer avatar service failed: ' . ($error['message'] ?? 'Unknown error'));
+        }
+
+        return json_decode($result, true);
+    }
+
+    private function callLocalAvatarService($prompt, $image)
+    {
         $url = $this->avatarServiceUrl . '/generate';
         $data = json_encode([
             'prompt' => $prompt,
             'image' => $image
         ]);
 
-        $this->logger->debug('Calling avatar service', ['url' => $url]);
+        $this->logger->debug('Calling local avatar service', ['url' => $url]);
 
         $context = stream_context_create([
             'http' => [
@@ -61,8 +103,8 @@ class AvatarProvider
         if ($result === false) {
             $error = error_get_last();
             $errorMsg = $error['message'] ?? 'Unknown error';
-            $this->logger->error('Avatar service call failed', ['error' => $errorMsg]);
-            throw new \Exception('Failed to call avatar service: ' . $errorMsg);
+            $this->logger->error('Local avatar service call failed', ['error' => $errorMsg]);
+            throw new \Exception('Failed to call local avatar service: ' . $errorMsg);
         }
 
         return json_decode($result, true);
