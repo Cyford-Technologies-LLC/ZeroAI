@@ -41,6 +41,7 @@ services:
     depends_on:
       - ollama
       - redis
+      - avatar
     restart: unless-stopped
     deploy:
       resources:

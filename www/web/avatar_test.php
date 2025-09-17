@@ -14,8 +14,12 @@
                             <textarea class="form-control" id="prompt" rows="3" placeholder="Enter text for avatar to speak...">Hello! Welcome to ZeroAI. I'm your AI assistant ready to help you with any task.</textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="image" class="form-label">Source Image (optional)</label>
+                            <label for="image" class="form-label">Source Image Preview</label>
+                            <div class="mb-2">
+                                <img src="https://via.placeholder.com/200x200/007bff/ffffff?text=Avatar" alt="Avatar Preview" class="img-thumbnail" style="width: 150px; height: 150px;">
+                            </div>
                             <input type="text" class="form-control" id="image" placeholder="examples/source_image/art_0.png" value="examples/source_image/art_0.png">
+                            <small class="form-text text-muted">This is a placeholder. The actual avatar image will be used during generation.</small>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-play"></i> Generate Avatar
