@@ -55,7 +55,15 @@ document.getElementById('avatarForm').addEventListener('submit', async function(
     document.getElementById('error').style.display = 'none';
     
     try {
-        const response = await fetch('http://localhost:7861/generate', {
+        // Try test port first, fallback to production port
+        let avatarUrl = 'http://localhost:7861/generate';
+        try {
+            await fetch('http://localhost:7861/health');
+        } catch {
+            avatarUrl = 'http://localhost:7860/generate';
+        }
+        
+        const response = await fetch(avatarUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import os
 import subprocess
 import tempfile
@@ -7,6 +8,7 @@ import base64
 from pathlib import Path
 
 app = Flask(__name__)
+CORS(app)
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
 
 @app.route('/generate', methods=['POST'])
