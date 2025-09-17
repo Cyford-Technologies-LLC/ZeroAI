@@ -14,7 +14,7 @@
     
     <div class="debug">
         <h3>1. Avatar Icon Test</h3>
-        <img src="../assets/frontend/images/icons/avatar.svg" alt="Avatar" style="width: 100px; height: 100px; border: 1px solid #ccc;">
+        <img src="/assets/frontend/images/icons/avatar.svg" alt="Avatar" style="width: 100px; height: 100px; border: 1px solid #ccc;">
         <p>Icon path: assets/frontend/images/icons/avatar.svg</p>
     </div>
     
