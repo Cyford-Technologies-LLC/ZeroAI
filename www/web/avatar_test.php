@@ -104,12 +104,22 @@ document.getElementById('avatarForm').addEventListener('submit', async function(
 async function testConnection() {
     try {
         const response = await fetch('api/avatar_test.php');
-        const result = await response.json();
+        const text = await response.text();
+        console.log('Test response:', text);
         
-        if (result.status === 'success') {
-            alert('✅ Avatar service is running: ' + result.message);
+        if (text.trim()) {
+            try {
+                const result = JSON.parse(text);
+                if (result.status === 'success') {
+                    alert('✅ Avatar service is running: ' + result.message);
+                } else {
+                    alert('❌ Avatar service error: ' + result.message);
+                }
+            } catch (e) {
+                alert('❌ Invalid JSON response: ' + text);
+            }
         } else {
-            alert('❌ Avatar service error: ' + result.message + '\nDetails: ' + result.error);
+            alert('❌ Empty response from server');
         }
     } catch (error) {
         alert('❌ Connection test failed: ' + error.message);
