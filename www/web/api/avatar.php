@@ -56,8 +56,7 @@ if ($result === false) {
 
 error_log('Avatar API: Successfully received response from avatar service');
 
-// Return the video file
-header('Content-Type: video/mp4');
-header('Content-Disposition: attachment; filename="avatar.mp4"');
+// Return JSON response for now
+header('Content-Type: application/json');
 echo $result;
 ?>

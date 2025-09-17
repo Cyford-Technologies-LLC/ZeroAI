@@ -74,11 +74,10 @@ document.getElementById('avatarForm').addEventListener('submit', async function(
         });
         
         if (response.ok) {
-            const blob = await response.blob();
-            const videoUrl = URL.createObjectURL(blob);
+            const result = await response.json();
             
-            document.getElementById('avatarVideo').src = videoUrl;
-            document.getElementById('result').style.display = 'block';
+            document.getElementById('error').innerHTML = `<div class="alert alert-success">✅ ${result.message}<br><small>${result.note}</small></div>`;
+            document.getElementById('error').style.display = 'block';
         } else {
             const errorText = await response.text();
             throw new Error(`Failed to generate avatar: ${errorText}`);
