@@ -240,30 +240,82 @@ class PeerManager {
     }
     
     public function saveModelRules($rules) {
-        $rulesPath = __DIR__ . '/../../../config/model_rules.json';
-        $configDir = dirname($rulesPath);
-        
-        if (!is_dir($configDir)) {
-            mkdir($configDir, 0755, true);
+        try {
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
+            
+            // Create table if not exists
+            $db->query("
+                CREATE TABLE IF NOT EXISTS model_rules (
+                    category TEXT PRIMARY KEY,
+                    models TEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ");
+            
+            // Clear existing rules
+            $db->query("DELETE FROM model_rules");
+            
+            // Insert new rules
+            foreach ($rules as $category => $models) {
+                if (!empty($models)) {
+                    $db->query(
+                        "INSERT INTO model_rules (category, models) VALUES (?, ?)",
+                        [$category, json_encode($models)]
+                    );
+                }
+            }
+            
+            $this->logger->info('Model rules saved to database', $rules);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to save model rules', ['error' => $e->getMessage()]);
+            throw $e;
         }
-        
-        file_put_contents($rulesPath, json_encode($rules, JSON_PRETTY_PRINT));
-        $this->logger->info('Model rules saved', $rules);
     }
     
     public function getModelRules() {
-        $rulesPath = __DIR__ . '/../../../config/model_rules.json';
-        
-        if (!file_exists($rulesPath)) {
+        try {
+            $db = \ZeroAI\Core\DatabaseManager::getInstance();
+            
+            // Create table if not exists
+            $db->query("
+                CREATE TABLE IF NOT EXISTS model_rules (
+                    category TEXT PRIMARY KEY,
+                    models TEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ");
+            
+            $results = $db->query("SELECT category, models FROM model_rules");
+            
+            $rules = [
+                'all_peers' => [],
+                'memory_low' => [],
+                'memory_medium' => [],
+                'memory_high' => [],
+                'gpu_low' => [],
+                'gpu_high' => []
+            ];
+            
+            foreach ($results as $row) {
+                $models = json_decode($row['models'], true);
+                if ($models) {
+                    $rules[$row['category']] = $models;
+                }
+            }
+            
+            return $rules;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to load model rules', ['error' => $e->getMessage()]);
+            // Return defaults on error
             return [
-                'essential' => ['llama3.2:1b', 'llama3.2:3b'],
-                'medium_memory' => [],
-                'gpu_models' => []
+                'all_peers' => ['llama3.2:1b'],
+                'memory_low' => [],
+                'memory_medium' => [],
+                'memory_high' => [],
+                'gpu_low' => [],
+                'gpu_high' => []
             ];
         }
-        
-        $content = file_get_contents($rulesPath);
-        return json_decode($content, true) ?: [];
     }
 }
 
