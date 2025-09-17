@@ -60,3 +60,34 @@ async def get_project_status(project_id: str):
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "crews": len(crew_pool.crews)}
+
+@app.get("/capabilities")
+async def get_capabilities():
+    """Get system capabilities for peer discovery."""
+    import psutil
+    import subprocess
+    
+    # Get system memory
+    memory_gb = psutil.virtual_memory().total / (1024**3)
+    load_avg = psutil.cpu_percent(interval=0.1)
+    cpu_cores = psutil.cpu_count(logical=True)
+    
+    # Check for GPU
+    gpu_available = False
+    gpu_memory_gb = 0.0
+    try:
+        result = subprocess.run(['nvidia-smi', '--query-gpu=memory.total', '--format=csv,noheader,nounits'], 
+                              capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 and result.stdout.strip():
+            gpu_memory_gb = float(result.stdout.strip()) / 1024  # Convert MB to GB
+            gpu_available = True
+    except:
+        pass
+    
+    return {
+        "load_avg": load_avg,
+        "memory_gb": round(memory_gb, 1),
+        "gpu_available": gpu_available,
+        "gpu_memory_gb": round(gpu_memory_gb, 1),
+        "cpu_cores": cpu_cores
+    }

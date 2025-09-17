@@ -78,7 +78,33 @@ class PeerDiscovery:
                 if not isinstance(data, dict) or "peers" not in data or not isinstance(data["peers"], list):
                     log_peer(f"Error: {PEERS_CONFIG_PATH} is not in the correct format.", 1, "red")
                     return []
-                return data.get('peers', [])
+                
+                # Normalize peer format - handle both old and new formats
+                normalized_peers = []
+                for peer in data.get('peers', []):
+                    # Handle nested capabilities format
+                    if 'capabilities' in peer:
+                        caps = peer['capabilities']
+                        normalized_peer = {
+                            'name': peer.get('name', 'unknown'),
+                            'ip': peer.get('ip'),
+                            'port': peer.get('port', 8080),
+                            'available': caps.get('available', False),
+                            'models': caps.get('models', []),
+                            'load_avg': caps.get('load_avg', 0.0),
+                            'memory_gb': caps.get('memory_gb', 0.0),
+                            'gpu_available': caps.get('gpu_available', False),
+                            'gpu_memory_gb': caps.get('gpu_memory_gb', 0.0),
+                            'cpu_cores': caps.get('cpu_cores', 0),
+                            'last_updated': caps.get('last_seen', peer.get('last_updated', 0))
+                        }
+                    else:
+                        # Handle flat format
+                        normalized_peer = peer
+                    
+                    normalized_peers.append(normalized_peer)
+                
+                return normalized_peers
         except Exception as e:
             log_peer(f"Error loading {PEERS_CONFIG_PATH}: {e}", 1, "red")
             return []
@@ -87,25 +113,78 @@ class PeerDiscovery:
         """Save peer details with full capabilities to config file"""
         try:
             PEERS_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-            peers_data = []
+            
+            # Load existing config to preserve any manually added peers
+            existing_peers = []
+            if PEERS_CONFIG_PATH.exists():
+                try:
+                    with open(PEERS_CONFIG_PATH, 'r') as f:
+                        existing_data = json.load(f)
+                        existing_peers = existing_data.get('peers', [])
+                except:
+                    pass
+            
+            # Update existing peers with new data
+            updated_peers = []
+            existing_ips = set()
+            
+            for existing_peer in existing_peers:
+                peer_ip = existing_peer.get('ip')
+                existing_ips.add(peer_ip)
+                
+                # Find matching discovered peer
+                matching_peer = None
+                for peer in peers.values():
+                    if peer.ip == peer_ip:
+                        matching_peer = peer
+                        break
+                
+                if matching_peer:
+                    # Update with fresh data
+                    updated_peer = {
+                        "name": existing_peer.get('name', matching_peer.name),
+                        "ip": peer_ip,
+                        "port": existing_peer.get('port', 8080),
+                        "available": matching_peer.capabilities.available,
+                        "models": matching_peer.capabilities.models or [],
+                        "load_avg": matching_peer.capabilities.load_avg,
+                        "memory_gb": matching_peer.capabilities.memory,
+                        "gpu_available": matching_peer.capabilities.gpu_available,
+                        "gpu_memory_gb": matching_peer.capabilities.gpu_memory,
+                        "cpu_cores": matching_peer.capabilities.cpu_cores,
+                        "last_updated": time.time()
+                    }
+                else:
+                    # Keep existing peer but mark as unavailable
+                    updated_peer = existing_peer.copy()
+                    updated_peer['available'] = False
+                    updated_peer['last_updated'] = time.time()
+                
+                updated_peers.append(updated_peer)
+            
+            # Add any new discovered peers
             for peer in peers.values():
-                peer_dict = {
-                    "name": peer.name,
-                    "ip": peer.ip,
-                    "port": 11434,
-                    "available": peer.capabilities.available,
-                    "models": peer.capabilities.models or [],
-                    "load_avg": peer.capabilities.load_avg,
-                    "memory_gb": peer.capabilities.memory,
-                    "gpu_available": peer.capabilities.gpu_available,
-                    "gpu_memory_gb": peer.capabilities.gpu_memory,
-                    "cpu_cores": peer.capabilities.cpu_cores,
-                    "last_updated": time.time()
-                }
-                peers_data.append(peer_dict)
+                if peer.ip not in existing_ips:
+                    peer_dict = {
+                        "name": peer.name,
+                        "ip": peer.ip,
+                        "port": 8080,  # Default to peer service port
+                        "available": peer.capabilities.available,
+                        "models": peer.capabilities.models or [],
+                        "load_avg": peer.capabilities.load_avg,
+                        "memory_gb": peer.capabilities.memory,
+                        "gpu_available": peer.capabilities.gpu_available,
+                        "gpu_memory_gb": peer.capabilities.gpu_memory,
+                        "cpu_cores": peer.capabilities.cpu_cores,
+                        "last_updated": time.time()
+                    }
+                    updated_peers.append(peer_dict)
             
             with open(PEERS_CONFIG_PATH, 'w') as f:
-                json.dump({"peers": peers_data}, f, indent=2)
+                json.dump({"peers": updated_peers}, f, indent=2)
+                
+            log_peer(f"Updated {len(updated_peers)} peers in config", 3, "green")
+            
         except Exception as e:
             log_peer(f"Error saving peers config: {e}", 1, "red")
 

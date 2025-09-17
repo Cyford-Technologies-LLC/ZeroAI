@@ -201,7 +201,7 @@ class PeerManager {
                 return false;
             }
             
-            $cmd = "cd " . dirname($scriptPath) . " && python -c 'from peer_discovery import peer_discovery; peer_discovery._discovery_cycle()'";
+            $cmd = "cd /app && /app/venv/bin/python -c 'import sys; sys.path.append(\"/app\"); from src.peer_discovery import peer_discovery; peer_discovery._discovery_cycle()'";
             
             $this->logger->debug('Running Python peer discovery', ['command' => $cmd]);
             
@@ -220,28 +220,10 @@ class PeerManager {
     }
     
     private function updatePeerStatuses() {
-        try {
-            $peers = $this->loadPeersConfig();
-            $updated = false;
-            
-            foreach ($peers as &$peer) {
-                $isOnline = $this->testPeerConnection($peer['ip'], $peer['port'] ?? 8080);
-                if ($peer['available'] !== $isOnline) {
-                    $peer['available'] = $isOnline;
-                    $peer['last_updated'] = time();
-                    $updated = true;
-                }
-            }
-            
-            if ($updated) {
-                $this->savePeersConfig($peers);
-            }
-            
-            return true;
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to update peer statuses', ['error' => $e->getMessage()]);
-            return false;
-        }
+        // Just trigger Python peer discovery - don't do direct HTTP checks
+        // The Python script will update the JSON with fresh data
+        $this->logger->debug('Peer status update requested - data will be read from JSON');
+        return true;
     }
     
     private function testPeerConnection($ip, $port = 8080) {
@@ -286,18 +268,36 @@ class PeerManager {
     }
     
     private function formatPeer($peer) {
-        return [
-            'name' => $peer['name'] ?? 'Unknown',
-            'ip' => $peer['ip'] ?? '127.0.0.1',
-            'port' => $peer['port'] ?? 8080,
-            'ollama_port' => $peer['ollama_port'] ?? 11434,
-            'status' => ($peer['available'] ?? false) ? 'online' : 'offline',
-            'models' => $peer['models'] ?? [],
-            'memory_gb' => $peer['memory_gb'] ?? 0,
-            'gpu_available' => $peer['gpu_available'] ?? false,
-            'gpu_memory_gb' => $peer['gpu_memory_gb'] ?? 0,
-            'last_check' => isset($peer['last_updated']) ? date('Y-m-d H:i:s', $peer['last_updated']) : 'Never'
-        ];
+        // Handle both nested capabilities format and flat format
+        if (isset($peer['capabilities'])) {
+            $caps = $peer['capabilities'];
+            return [
+                'name' => $peer['name'] ?? 'Unknown',
+                'ip' => $peer['ip'] ?? '127.0.0.1',
+                'port' => $peer['port'] ?? 8080,
+                'ollama_port' => 11434,
+                'status' => ($caps['available'] ?? false) ? 'online' : 'offline',
+                'models' => $caps['models'] ?? [],
+                'memory_gb' => $caps['memory_gb'] ?? 0,
+                'gpu_available' => $caps['gpu_available'] ?? false,
+                'gpu_memory_gb' => $caps['gpu_memory_gb'] ?? 0,
+                'last_check' => isset($caps['last_seen']) ? date('Y-m-d H:i:s', $caps['last_seen']) : 'Never'
+            ];
+        } else {
+            // Flat format
+            return [
+                'name' => $peer['name'] ?? 'Unknown',
+                'ip' => $peer['ip'] ?? '127.0.0.1',
+                'port' => $peer['port'] ?? 8080,
+                'ollama_port' => $peer['ollama_port'] ?? 11434,
+                'status' => ($peer['available'] ?? false) ? 'online' : 'offline',
+                'models' => $peer['models'] ?? [],
+                'memory_gb' => $peer['memory_gb'] ?? 0,
+                'gpu_available' => $peer['gpu_available'] ?? false,
+                'gpu_memory_gb' => $peer['gpu_memory_gb'] ?? 0,
+                'last_check' => isset($peer['last_updated']) ? date('Y-m-d H:i:s', $peer['last_updated']) : 'Never'
+            ];
+        }
     }
     
     public function runPeerDiscovery() {
