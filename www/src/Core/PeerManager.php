@@ -175,8 +175,13 @@ class PeerManager {
     }
     
     private function runPeerManager($command, $args = []) {
-        // Simple HTTP-based peer checking instead of Python script
+        // Try Python script first for hardware discovery
         if ($command === 'status') {
+            $pythonResult = $this->runPythonPeerDiscovery();
+            if ($pythonResult) {
+                return true;
+            }
+            // Fallback to simple HTTP checks
             return $this->updatePeerStatuses();
         }
         
@@ -185,6 +190,33 @@ class PeerManager {
         }
         
         return false;
+    }
+    
+    private function runPythonPeerDiscovery() {
+        try {
+            $scriptPath = __DIR__ . '/../../../src/peer_discovery.py';
+            
+            if (!file_exists($scriptPath)) {
+                $this->logger->debug('Python peer discovery script not found', ['path' => $scriptPath]);
+                return false;
+            }
+            
+            $cmd = "cd " . dirname($scriptPath) . " && python -c 'from peer_discovery import peer_discovery; peer_discovery._discovery_cycle()'";
+            
+            $this->logger->debug('Running Python peer discovery', ['command' => $cmd]);
+            
+            exec($cmd . " 2>&1", $output, $returnCode);
+            
+            $this->logger->debug('Python peer discovery result', [
+                'return_code' => $returnCode,
+                'output' => implode("\n", $output)
+            ]);
+            
+            return $returnCode === 0;
+        } catch (\Exception $e) {
+            $this->logger->debug('Python peer discovery failed', ['error' => $e->getMessage()]);
+            return false;
+        }
     }
     
     private function updatePeerStatuses() {
