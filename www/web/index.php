@@ -29,10 +29,15 @@ try {
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2 mb-0">
-                    <i class="fas fa-tachometer-alt text-primary"></i> 
-                    Welcome to ZeroAI CRM
-                </h1>
+                <h1 class="h2 mb-0"><img src="/assets/frontend/images/icons/dashboard.svg" width="24" height="24" class="text-primary me-2"> Welcome to ZeroAI CRM</h1>
+                <div class="d-flex gap-2">
+                    <a href="/web/companies.php" class="btn btn-primary">
+                        <img src="/assets/frontend/images/icons/building.svg" width="16" height="16" class="me-1"> Add Company
+                    </a>
+                    <a href="/web/projects.php" class="btn btn-success">
+                        <img src="/assets/frontend/images/icons/project.svg" width="16" height="16" class="me-1"> New Project
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -73,12 +78,9 @@ try {
         </div>
     </div>
 
-    <!-- Quick Actions -->
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">
-                <img src="/assets/frontend/images/icons/rocket.svg" width="20" height="20" class="me-2"> Quick Actions
-            </h5>
+            <h5 class="mb-0">🚀 Quick Actions</h5>
         </div>
         <div class="card-body">
             <div class="row">
@@ -101,14 +103,20 @@ try {
                     </a>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <a href="/web/tasks.php" class="btn btn-outline-warning w-100 py-3">
-                        <img src="/assets/frontend/images/icons/tasks.svg" width="48" height="48" class="d-block mb-2 mx-auto">
-                        Manage Tasks
+                    <a href="/web/employees.php" class="btn btn-outline-warning w-100 py-3">
+                        <img src="/assets/frontend/images/icons/users.svg" width="48" height="48" class="d-block mb-2 mx-auto">
+                        Add Employee
                     </a>
                 </div>
             </div>
         </div>
     </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
