@@ -147,6 +147,7 @@ $currentPage = $currentPage ?? '';
                     <a href="/admin/tools.php" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics', 'tools']) ? 'class="active"' : '' ?>>Tools</a>
                     <a href="/admin/system.php" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
                     <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
+                    <a href="/admin/peers.php" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>Peers</a>
                 <?php endif; ?>
             </nav>
             <div class="user-info">
@@ -241,6 +242,7 @@ $currentPage = $currentPage ?? '';
                 <div class="sidebar-group">
                     <h3>Configuration</h3>
                     <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>General Settings</a>
+                    <a href="/admin/peers.php" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>Peer Management</a>
                     <a href="/admin/config.php" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
                     <a href="/admin/api" <?= ($currentPage ?? '') === 'api' ? 'class="active"' : '' ?>>API Settings</a>
                 </div>
