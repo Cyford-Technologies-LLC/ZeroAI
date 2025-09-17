@@ -53,34 +53,34 @@ try {
     <!-- Compact Stats Row -->
     <div class="row mb-4">
         <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2">
+            <div class="card text-center py-2 bg-primary text-white">
                 <div class="card-body p-2">
-                    <h4 class="text-primary mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
-                    <small class="text-muted">Companies</small>
+                    <h4 class="mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
+                    <small>Companies</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2">
+            <div class="card text-center py-2 bg-success text-white">
                 <div class="card-body p-2">
-                    <h4 class="text-success mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
-                    <small class="text-muted">Projects</small>
+                    <h4 class="mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
+                    <small>Projects</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2">
+            <div class="card text-center py-2 bg-info text-white">
                 <div class="card-body p-2">
-                    <h4 class="text-info mb-1"><?= htmlspecialchars($totalUsers) ?></h4>
-                    <small class="text-muted">Users</small>
+                    <h4 class="mb-1"><?= htmlspecialchars($totalUsers) ?></h4>
+                    <small>Users</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-2">
-            <div class="card text-center py-2">
+            <div class="card text-center py-2 bg-warning text-white">
                 <div class="card-body p-2">
-                    <h4 class="text-warning mb-1">0</h4>
-                    <small class="text-muted">Tasks</small>
+                    <h4 class="mb-1">0</h4>
+                    <small>Tasks</small>
                 </div>
             </div>
         </div>
