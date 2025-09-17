@@ -182,7 +182,7 @@ class PeerManager {
             return false;
         }
         
-        $cmd = "cd " . dirname($scriptPath) . " && /app/venv/bin/python peer_manager.py {$command}";
+        $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py {$command}";
         
         foreach ($args as $key => $value) {
             $cmd .= " {$key} {$value}";
@@ -276,7 +276,7 @@ class PeerManager {
             $authKey = $this->getAuthKey();
             $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
             
-            $cmd = "cd " . dirname($scriptPath) . " && /app/venv/bin/python peer_manager.py install --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
+            $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py install --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
             exec($cmd . " 2>&1", $output, $returnCode);
             
             $this->logger->info('Model installation', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
@@ -297,7 +297,7 @@ class PeerManager {
             $authKey = $this->getAuthKey();
             $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
             
-            $cmd = "cd " . dirname($scriptPath) . " && /app/venv/bin/python peer_manager.py remove --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
+            $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py remove --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
             exec($cmd . " 2>&1", $output, $returnCode);
             
             $this->logger->info('Model removal', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
