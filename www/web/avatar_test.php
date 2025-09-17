@@ -16,7 +16,7 @@
                         <div class="mb-3">
                             <label for="image" class="form-label">Source Image Preview</label>
                             <div class="mb-2">
-                                <img src="/assets/frontend/images/icons/avatar.svg" alt="Avatar Preview" class="img-thumbnail" style="width: 150px; height: 150px;">
+                                <div style="width: 150px; height: 150px; background: #007bff; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; border: 2px solid #ddd;">👤 Avatar</div>
                             </div>
                             <input type="text" class="form-control" id="image" placeholder="examples/source_image/art_0.png" value="examples/source_image/art_0.png">
                             <small class="form-text text-muted">This is a placeholder. The actual avatar image will be used during generation.</small>

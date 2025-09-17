@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN git clone https://github.com/OpenTalker/SadTalker.git .
 
+RUN pip install flask flask-cors requests
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 RUN pip install -r requirements.txt
-RUN pip install flask-cors
 
 COPY avatar_api.py .
 
