@@ -1,6 +1,28 @@
 <?php
-
+$pageTitle = 'Dashboard - ZeroAI CRM';
+$currentPage = 'dashboard';
 include __DIR__ . '/includes/header.php';
+
+// Get actual counts from database
+$totalCompanies = 0;
+$totalProjects = 0;
+$totalUsers = 0;
+$totalContacts = 0;
+
+try {
+    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
+    $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
+    $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
+    
+    // Get contacts count if table exists
+    try {
+        $totalContacts = $pdo->query("SELECT COUNT(*) FROM contacts")->fetchColumn() ?: 0;
+    } catch (Exception $e) {
+        $totalContacts = 0;
+    }
+} catch (Exception $e) {
+    // Use defaults
+}
 ?>
 
 <div class="container-fluid mt-4">
@@ -11,133 +33,78 @@ include __DIR__ . '/includes/header.php';
                     <i class="fas fa-tachometer-alt text-primary"></i> 
                     Welcome to ZeroAI CRM
                 </h1>
-                <div class="badge bg-primary fs-6">
-                    <i class="fas fa-user"></i> <?= htmlspecialchars($currentUser) ?>
-                </div>
             </div>
         </div>
     </div>
     
-    <!-- Stats Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
-                <div class="card-body text-center">
-                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
-                    <div>📢 Companies</div>
+    <!-- Compact Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-primary mb-1"><?= htmlspecialchars($totalCompanies) ?></h4>
+                    <small class="text-muted">Companies</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <div class="card-body text-center">
-                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
-                    <div>👥 Contacts</div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-success mb-1"><?= htmlspecialchars($totalContacts) ?></h4>
+                    <small class="text-muted">Contacts</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
-                <div class="card-body text-center">
-                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
-                    <div>📋 Projects</div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-info mb-1"><?= htmlspecialchars($totalProjects) ?></h4>
+                    <small class="text-muted">Projects</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <div class="card-body text-center">
-                    <div style="font-size: 2.5rem; font-weight: 700;">0</div>
-                    <div>✅ Tasks</div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card text-center py-2">
+                <div class="card-body p-2">
+                    <h4 class="text-warning mb-1">0</h4>
+                    <small class="text-muted">Tasks</small>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Quick Actions -->
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-rocket text-primary"></i> Quick Actions
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <a href="/web/companies.php" class="btn btn-primary w-100 py-3">
-                                <i class="fas fa-building fa-2x d-block mb-2"></i>
-                                <strong>Manage Companies</strong>
-                                <small class="d-block">Add and manage your business clients</small>
-                            </a>
-                        </div>
-                        <div class="col-md-6">
-                            <a href="/web/contacts.php" class="btn btn-success w-100 py-3">
-                                <i class="fas fa-users fa-2x d-block mb-2"></i>
-                                <strong>Manage Contacts</strong>
-                                <small class="d-block">Track your business relationships</small>
-                            </a>
-                        </div>
-                        <div class="col-md-6">
-                            <a href="/web/projects.php" class="btn btn-info w-100 py-3">
-                                <i class="fas fa-project-diagram fa-2x d-block mb-2"></i>
-                                <strong>Manage Projects</strong>
-                                <small class="d-block">Organize your work and deliverables</small>
-                            </a>
-                        </div>
-                        <div class="col-md-6">
-                            <a href="/web/tasks.php" class="btn btn-warning w-100 py-3">
-                                <i class="fas fa-tasks fa-2x d-block mb-2"></i>
-                                <strong>Manage Tasks</strong>
-                                <small class="d-block">Track your daily activities</small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <img src="/assets/frontend/images/icons/rocket.svg" width="20" height="20" class="me-2"> Quick Actions
+            </h5>
         </div>
-        
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-cog text-secondary"></i> System
-                    </h5>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/companies.php" class="btn btn-outline-primary w-100 py-3">
+                        <img src="/assets/frontend/images/icons/building.svg" width="48" height="48" class="d-block mb-2 mx-auto">
+                        Add Company
+                    </a>
                 </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="/web/init.php" class="btn btn-outline-primary">
-                            <i class="fas fa-database"></i> Setup Database
-                        </a>
-                        <a href="/web/ai_workshop.php" class="btn btn-outline-info">
-                            <i class="fas fa-robot"></i> AI Workshop
-                        </a>
-                        <?php if ($isAdmin): ?>
-                            <a href="/admin/dashboard.php" class="btn btn-outline-secondary">
-                                <i class="fas fa-shield-alt"></i> Admin Panel
-                            </a>
-                        <?php endif; ?>
-                    </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/projects.php" class="btn btn-outline-success w-100 py-3">
+                        <img src="/assets/frontend/images/icons/project.svg" width="48" height="48" class="d-block mb-2 mx-auto">
+                        New Project
+                    </a>
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle text-info"></i> About ZeroAI CRM
-                    </h5>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/contacts.php" class="btn btn-outline-info w-100 py-3">
+                        <img src="/assets/frontend/images/icons/users.svg" width="48" height="48" class="d-block mb-2 mx-auto">
+                        Add Contact
+                    </a>
                 </div>
-                <div class="card-body">
-                    <p class="small mb-2">
-                        <strong>Zero Cost.</strong> No API fees or subscriptions.
-                    </p>
-                    <p class="small mb-2">
-                        <strong>Zero Cloud.</strong> Your data stays on your machine.
-                    </p>
-                    <p class="small mb-0">
-                        <strong>Zero Limits.</strong> Scale on your terms.
-                    </p>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/web/tasks.php" class="btn btn-outline-warning w-100 py-3">
+                        <img src="/assets/frontend/images/icons/tasks.svg" width="48" height="48" class="d-block mb-2 mx-auto">
+                        Manage Tasks
+                    </a>
                 </div>
             </div>
         </div>

@@ -164,7 +164,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             <i class="fas fa-chart-line"></i> ZeroAI CRM
         </div>
         <div style="display: flex; gap: 20px; margin-right: 20px;">
-            <a href="/web/dashboard.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">📊 Dashboard</a>
+            <a href="/web/index.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">📊 Dashboard</a>
             <a href="/web/companies.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">🏢 Companies</a>
             <a href="/web/sales.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">💰 Sales</a>
             <a href="/web/projects.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">📋 Projects</a>
@@ -233,7 +233,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
                 <!-- Main Menu -->
                 <div style="margin-bottom: 20px;">
                     <h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>
-                    <a href="/web/dashboard.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📊 Dashboard</a>
+                    <a href="/web/index.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📊 Dashboard</a>
                     <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 Companies</a>
                     <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Contacts</a>
                     <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 Projects</a>
