@@ -1,2 +1,0 @@
-# With project and repository
-python -m run.internal.run_dev_ops --project=cyford/zeroai --repo=https://github.com/Cyford-Technologies-LLC/ZeroAI.git "Get project up in docker ,  and check projects files fo any errors"
