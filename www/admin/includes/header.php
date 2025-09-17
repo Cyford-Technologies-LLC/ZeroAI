@@ -147,7 +147,6 @@ $currentPage = $currentPage ?? '';
                     <a href="/admin/tools.php" <?= in_array($currentPage ?? '', ['monitoring', 'logs', 'performance', 'backup', 'restore', 'error_logs', 'diagnostics', 'tools']) ? 'class="active"' : '' ?>>Tools</a>
                     <a href="/admin/system.php" <?= in_array($currentPage ?? '', ['localhost', 'peers']) ? 'class="active"' : '' ?>>System</a>
                     <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>Settings</a>
-                    <a href="/admin/peers.php" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>Peers</a>
                 <?php endif; ?>
             </nav>
             <div class="user-info">
