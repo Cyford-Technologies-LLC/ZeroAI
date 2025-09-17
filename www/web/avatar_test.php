@@ -24,6 +24,9 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-play"></i> Generate Avatar
                         </button>
+                        <button type="button" class="btn btn-secondary ms-2" onclick="testConnection()">
+                            <i class="fas fa-network-wired"></i> Test Connection
+                        </button>
                     </form>
                     
                     <div id="loading" class="text-center mt-3" style="display: none;">
@@ -86,6 +89,21 @@ document.getElementById('avatarForm').addEventListener('submit', async function(
         document.getElementById('loading').style.display = 'none';
     }
 });
+
+async function testConnection() {
+    try {
+        const response = await fetch('api/avatar_test.php');
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert('✅ Avatar service is running: ' + result.message);
+        } else {
+            alert('❌ Avatar service error: ' + result.message + '\nDetails: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Connection test failed: ' + error.message);
+    }
+}
 </script>
 
 <?php include 'includes/footer.php'; ?>
