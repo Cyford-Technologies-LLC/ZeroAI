@@ -146,7 +146,7 @@ class PeerManager {
     }
     
     public function testPeer($ip, $model = 'llama3.2:1b') {
-        return $this->runPeerManager('test', ['--ip' => $ip, '--model' => $model]);
+        return $this->testPeerConnection($ip);
     }
     
     public function refreshPeers() {
@@ -175,29 +175,58 @@ class PeerManager {
     }
     
     private function runPeerManager($command, $args = []) {
-        $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
+        // Simple HTTP-based peer checking instead of Python script
+        if ($command === 'status') {
+            return $this->updatePeerStatuses();
+        }
         
-        if (!file_exists($scriptPath)) {
-            $this->logger->error('Peer manager script not found', ['path' => $scriptPath]);
+        if ($command === 'test' && isset($args['--ip'])) {
+            return $this->testPeerConnection($args['--ip']);
+        }
+        
+        return false;
+    }
+    
+    private function updatePeerStatuses() {
+        try {
+            $peers = $this->loadPeersConfig();
+            $updated = false;
+            
+            foreach ($peers as &$peer) {
+                $isOnline = $this->testPeerConnection($peer['ip'], $peer['port'] ?? 8080);
+                if ($peer['available'] !== $isOnline) {
+                    $peer['available'] = $isOnline;
+                    $peer['last_updated'] = time();
+                    $updated = true;
+                }
+            }
+            
+            if ($updated) {
+                $this->savePeersConfig($peers);
+            }
+            
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to update peer statuses', ['error' => $e->getMessage()]);
             return false;
         }
-        
-        $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py {$command}";
-        
-        foreach ($args as $key => $value) {
-            $cmd .= " {$key} {$value}";
+    }
+    
+    private function testPeerConnection($ip, $port = 8080) {
+        try {
+            $url = "http://{$ip}:{$port}/health";
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 5,
+                    'method' => 'GET'
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            return $result !== false;
+        } catch (\Exception $e) {
+            return false;
         }
-        
-        $this->logger->debug('Running peer manager command', ['command' => $cmd]);
-        
-        exec($cmd . " 2>&1", $output, $returnCode);
-        
-        $this->logger->debug('Peer manager result', [
-            'return_code' => $returnCode,
-            'output' => implode("\n", $output)
-        ]);
-        
-        return $returnCode === 0;
     }
     
     private function formatPeer($peer) {
