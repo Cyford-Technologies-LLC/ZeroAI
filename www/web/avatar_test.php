@@ -80,7 +80,8 @@ document.getElementById('avatarForm').addEventListener('submit', async function(
             document.getElementById('avatarVideo').src = videoUrl;
             document.getElementById('result').style.display = 'block';
         } else {
-            throw new Error('Failed to generate avatar');
+            const errorText = await response.text();
+            throw new Error(`Failed to generate avatar: ${errorText}`);
         }
     } catch (error) {
         document.getElementById('error').textContent = 'Error: ' + error.message;
