@@ -178,14 +178,31 @@ class PeerDiscovery:
 
     def _get_my_capabilities(self) -> PeerCapabilities:
         try:
-            ollama_models = self._get_ollama_models("localhost")
-            memory_gb = psutil.virtual_memory().available / (1024**3)
+            # Get models from local Ollama container
+            ollama_models = self._get_ollama_models("ollama")
+            if not ollama_models:
+                ollama_models = self._get_ollama_models("localhost")
+            
+            # Get total memory (not available)
+            memory_gb = psutil.virtual_memory().total / (1024**3)
             load_avg = psutil.cpu_percent(interval=0.1)
             cpu_cores = psutil.cpu_count(logical=True)
+            
+            # Check for GPU
             gpu_available = False
             gpu_memory_gb = 0.0
+            try:
+                import subprocess
+                result = subprocess.run(['nvidia-smi', '--query-gpu=memory.total', '--format=csv,noheader,nounits'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0 and result.stdout.strip():
+                    gpu_memory_gb = float(result.stdout.strip()) / 1024  # Convert MB to GB
+                    gpu_available = True
+            except:
+                pass
+            
             return PeerCapabilities(
-                available=True,
+                available=len(ollama_models) > 0 or True,  # Available if Ollama responds
                 models=ollama_models,
                 load_avg=load_avg,
                 memory=memory_gb,

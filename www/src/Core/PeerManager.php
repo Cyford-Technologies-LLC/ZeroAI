@@ -57,29 +57,34 @@ class PeerManager {
     }
     
     private function getLocalCapabilities() {
+        // Direct detection - simpler and more reliable
+        $models = $this->getInstalledModels('localhost');
+        $isAvailable = !empty($models);
+        
+        // Get system memory
+        $memoryGb = 8; // Default
         try {
-            $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
-            $cmd = "cd " . dirname($scriptPath) . " && python -c \"from peer_discovery import peer_discovery; import json; peers = peer_discovery.get_peers(); local = next((p for p in peers if p.name == 'local-node'), None); print(json.dumps({'available': local.capabilities.available if local else False, 'models': local.capabilities.models if local else [], 'memory_gb': local.capabilities.memory if local else 8, 'gpu_available': local.capabilities.gpu_available if local else False, 'gpu_memory_gb': local.capabilities.gpu_memory if local else 0}) if local else json.dumps({'available': False, 'models': [], 'memory_gb': 8, 'gpu_available': False, 'gpu_memory_gb': 0}))\"";
-            
-            exec($cmd . " 2>&1", $output, $returnCode);
-            
-            if ($returnCode === 0 && !empty($output[0])) {
-                $result = json_decode($output[0], true);
-                if ($result) {
-                    return $result;
-                }
+            $meminfo = file_get_contents('/proc/meminfo');
+            if (preg_match('/MemTotal:\s+(\d+)\s+kB/', $meminfo, $matches)) {
+                $memoryGb = round($matches[1] / 1024 / 1024, 1);
             }
-        } catch (Exception $e) {
-            $this->logger->error('Failed to get local capabilities', ['error' => $e->getMessage()]);
+        } catch (Exception $e) {}
+        
+        // Check GPU
+        $gpuAvailable = false;
+        $gpuMemoryGb = 0;
+        exec('nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null', $output, $returnCode);
+        if ($returnCode === 0 && !empty($output[0])) {
+            $gpuAvailable = true;
+            $gpuMemoryGb = round($output[0] / 1024, 1);
         }
         
-        // Fallback to basic detection
         return [
-            'available' => !empty($this->getInstalledModels('localhost')),
-            'models' => $this->getInstalledModels('localhost'),
-            'memory_gb' => 8,
-            'gpu_available' => false,
-            'gpu_memory_gb' => 0
+            'available' => $isAvailable,
+            'models' => $models,
+            'memory_gb' => $memoryGb,
+            'gpu_available' => $gpuAvailable,
+            'gpu_memory_gb' => $gpuMemoryGb
         ];
     }
     
