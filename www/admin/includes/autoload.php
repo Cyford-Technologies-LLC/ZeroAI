@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../src/Core/DatabaseManager.php';
 require_once __DIR__ . '/../../src/Core/QueueManager.php';
 require_once __DIR__ . '/../../src/Core/InputValidator.php';
 require_once __DIR__ . '/../../src/Core/Logger.php';
+require_once __DIR__ . '/../../src/Core/PeerManager.php';
 require_once __DIR__ . '/../../src/Core/VisitorTracker.php';
 require_once __DIR__ . '/../../src/Models/User.php';
 require_once __DIR__ . '/../../src/Models/Tenant.php';
