@@ -301,7 +301,12 @@ include __DIR__ . '/includes/header.php';
                         <tbody>
                             <?php foreach ($peers as $peer): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($peer['name']) ?></td>
+                                    <td>
+                                        <?= htmlspecialchars($peer['name']) ?>
+                                        <?php if (isset($peer['is_local']) && $peer['is_local']): ?>
+                                            <span class="badge bg-primary" style="font-size: 10px;">LOCAL</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?= htmlspecialchars($peer['ip']) ?>:<?= $peer['port'] ?></td>
                                     <td>
                                         <span class="badge bg-<?= $peer['status'] === 'online' ? 'success' : 'secondary' ?>">
@@ -331,13 +336,15 @@ include __DIR__ . '/includes/header.php';
                                                     🧪
                                                 </button>
                                             </form>
-                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this peer?')">
-                                                <input type="hidden" name="action" value="delete_peer">
-                                                <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                <button type="submit" style="background: #dc3545; color: white; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Delete Peer">
-                                                    🗑️
-                                                </button>
-                                            </form>
+                                            <?php if (!isset($peer['is_local']) || !$peer['is_local']): ?>
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this peer?')">
+                                                    <input type="hidden" name="action" value="delete_peer">
+                                                    <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                    <button type="submit" style="background: #dc3545; color: white; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Delete Peer">
+                                                        🗑️
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>

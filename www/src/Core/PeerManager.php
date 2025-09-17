@@ -19,18 +19,66 @@ class PeerManager {
     }
     
     public function getPeers() {
-        if (!file_exists($this->peersConfigPath)) {
-            return [];
+        $peers = [];
+        
+        // Add local Ollama container as first peer
+        $peers[] = $this->getLocalOllamaPeer();
+        
+        // Add configured peers
+        if (file_exists($this->peersConfigPath)) {
+            $content = file_get_contents($this->peersConfigPath);
+            $data = json_decode($content, true);
+            
+            if ($data && isset($data['peers'])) {
+                $peers = array_merge($peers, array_map([$this, 'formatPeer'], $data['peers']));
+            }
         }
         
-        $content = file_get_contents($this->peersConfigPath);
-        $data = json_decode($content, true);
+        return $peers;
+    }
+    
+    private function getLocalOllamaPeer() {
+        $localModels = $this->getInstalledModels('localhost');
+        $isOnline = !empty($localModels);
         
-        if (!$data || !isset($data['peers'])) {
-            return [];
+        return [
+            'name' => 'Local Ollama',
+            'ip' => 'localhost',
+            'port' => 11434,
+            'ollama_port' => 11434,
+            'status' => $isOnline ? 'online' : 'offline',
+            'models' => $localModels,
+            'memory_gb' => $this->getSystemMemory(),
+            'gpu_available' => $this->hasGPU(),
+            'gpu_memory_gb' => $this->getGPUMemory(),
+            'last_check' => date('Y-m-d H:i:s'),
+            'is_local' => true
+        ];
+    }
+    
+    private function getSystemMemory() {
+        try {
+            $meminfo = file_get_contents('/proc/meminfo');
+            if (preg_match('/MemTotal:\s+(\d+)\s+kB/', $meminfo, $matches)) {
+                return round($matches[1] / 1024 / 1024, 1); // Convert KB to GB
+            }
+        } catch (Exception $e) {}
+        return 8; // Default fallback
+    }
+    
+    private function hasGPU() {
+        exec('nvidia-smi 2>/dev/null', $output, $returnCode);
+        return $returnCode === 0;
+    }
+    
+    private function getGPUMemory() {
+        if (!$this->hasGPU()) return 0;
+        
+        exec('nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null', $output);
+        if (!empty($output[0])) {
+            return round($output[0] / 1024, 1); // Convert MB to GB
         }
-        
-        return array_map([$this, 'formatPeer'], $data['peers']);
+        return 0;
     }
     
     public function addPeer($name, $ip, $port = 8080) {
@@ -213,6 +261,11 @@ class PeerManager {
     
     public function installModel($peerIp, $modelName) {
         try {
+            // Handle localhost/local container
+            if ($peerIp === 'localhost') {
+                return $this->installLocalModel($modelName);
+            }
+            
             $authKey = $this->getAuthKey();
             $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
             
@@ -229,6 +282,11 @@ class PeerManager {
     
     public function removeModel($peerIp, $modelName) {
         try {
+            // Handle localhost/local container
+            if ($peerIp === 'localhost') {
+                return $this->removeLocalModel($modelName);
+            }
+            
             $authKey = $this->getAuthKey();
             $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
             
@@ -243,6 +301,34 @@ class PeerManager {
         }
     }
     
+    private function installLocalModel($modelName) {
+        try {
+            $cmd = "docker exec zeroai_ollama ollama pull {$modelName}";
+            exec($cmd . " 2>&1", $output, $returnCode);
+            
+            $this->logger->info('Local model installation', ['model' => $modelName, 'success' => $returnCode === 0]);
+            return $returnCode === 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Local model installation failed', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+    
+    private function removeLocalModel($modelName) {
+        try {
+            $cmd = "docker exec zeroai_ollama ollama rm {$modelName}";
+            exec($cmd . " 2>&1", $output, $returnCode);
+            
+            $this->logger->info('Local model removal', ['model' => $modelName, 'success' => $returnCode === 0]);
+            return $returnCode === 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Local model removal failed', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+    
+
+    
     private function getAuthKey() {
         $configPath = __DIR__ . '/../../../config/zeroai.json';
         if (file_exists($configPath)) {
@@ -254,7 +340,10 @@ class PeerManager {
     
     public function getInstalledModels($peerIp) {
         try {
-            $result = @file_get_contents("http://{$peerIp}:11434/api/tags", false, stream_context_create([
+            // Handle localhost/local container
+            $url = ($peerIp === 'localhost') ? 'http://localhost:11434/api/tags' : "http://{$peerIp}:11434/api/tags";
+            
+            $result = @file_get_contents($url, false, stream_context_create([
                 'http' => ['timeout' => 5]
             ]));
             
