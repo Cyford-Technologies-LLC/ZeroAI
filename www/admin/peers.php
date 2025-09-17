@@ -56,9 +56,12 @@ if ($_POST) {
                 
             case 'save_model_rules':
                 $rules = [
-                    'essential' => $_POST['essential'] ?? [],
-                    'medium_memory' => $_POST['medium_memory'] ?? [],
-                    'gpu_models' => $_POST['gpu_models'] ?? []
+                    'all_peers' => $_POST['all_peers'] ?? [],
+                    'memory_low' => $_POST['memory_low'] ?? [],
+                    'memory_medium' => $_POST['memory_medium'] ?? [],
+                    'memory_high' => $_POST['memory_high'] ?? [],
+                    'gpu_low' => $_POST['gpu_low'] ?? [],
+                    'gpu_high' => $_POST['gpu_high'] ?? []
                 ];
                 $peerManager->saveModelRules($rules);
                 $message = "Model auto-install rules saved successfully!";
@@ -126,28 +129,56 @@ include __DIR__ . '/includes/header.php';
             <form method="POST">
                 <input type="hidden" name="action" value="save_model_rules">
                 
+                <?php $rules = $peerManager->getModelRules(); ?>
+                
                 <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label><strong>All Peers (Essential Models):</strong></label>
+                    <div class="col-md-6">
+                        <label><strong>All Peers:</strong></label>
                         <div>
-                            <label><input type="checkbox" name="essential[]" value="llama3.2:1b" checked> llama3.2:1b (1.3GB)</label><br>
-                            <label><input type="checkbox" name="essential[]" value="llama3.2:3b" checked> llama3.2:3b (2GB)</label>
+                            <label><input type="checkbox" name="all_peers[]" value="llama3.2:1b" <?= in_array('llama3.2:1b', $rules['all_peers'] ?? []) ? 'checked' : '' ?>> llama3.2:1b (1.3GB)</label><br>
+                            <label><input type="checkbox" name="all_peers[]" value="llama3.2:3b" <?= in_array('llama3.2:3b', $rules['all_peers'] ?? []) ? 'checked' : '' ?>> llama3.2:3b (2GB)</label>
                         </div>
                     </div>
                     
-                    <div class="col-md-4">
-                        <label><strong>If RAM >= 8GB:</strong></label>
+                    <div class="col-md-6">
+                        <label><strong>Memory < 4GB:</strong></label>
                         <div>
-                            <label><input type="checkbox" name="medium_memory[]" value="llama3.1:8b"> llama3.1:8b (4.7GB)</label><br>
-                            <label><input type="checkbox" name="medium_memory[]" value="mistral:7b"> mistral:7b (4.1GB)</label><br>
-                            <label><input type="checkbox" name="medium_memory[]" value="codellama:7b"> codellama:7b (3.8GB)</label>
+                            <label><input type="checkbox" name="memory_low[]" value="llama3.2:1b" <?= in_array('llama3.2:1b', $rules['memory_low'] ?? []) ? 'checked' : '' ?>> llama3.2:1b (1.3GB)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label><strong>Memory 4-8GB:</strong></label>
+                        <div>
+                            <label><input type="checkbox" name="memory_medium[]" value="llama3.2:3b" <?= in_array('llama3.2:3b', $rules['memory_medium'] ?? []) ? 'checked' : '' ?>> llama3.2:3b (2GB)</label><br>
+                            <label><input type="checkbox" name="memory_medium[]" value="mistral:7b" <?= in_array('mistral:7b', $rules['memory_medium'] ?? []) ? 'checked' : '' ?>> mistral:7b (4.1GB)</label>
                         </div>
                     </div>
                     
-                    <div class="col-md-4">
-                        <label><strong>If GPU Available:</strong></label>
+                    <div class="col-md-6">
+                        <label><strong>Memory > 8GB:</strong></label>
                         <div>
-                            <label><input type="checkbox" name="gpu_models[]" value="llama3.1:8b-instruct-fp16"> llama3.1:8b-instruct-fp16 (16GB)</label>
+                            <label><input type="checkbox" name="memory_high[]" value="llama3.1:8b" <?= in_array('llama3.1:8b', $rules['memory_high'] ?? []) ? 'checked' : '' ?>> llama3.1:8b (4.7GB)</label><br>
+                            <label><input type="checkbox" name="memory_high[]" value="codellama:7b" <?= in_array('codellama:7b', $rules['memory_high'] ?? []) ? 'checked' : '' ?>> codellama:7b (3.8GB)</label><br>
+                            <label><input type="checkbox" name="memory_high[]" value="mixtral:8x7b" <?= in_array('mixtral:8x7b', $rules['memory_high'] ?? []) ? 'checked' : '' ?>> mixtral:8x7b (26GB)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label><strong>GPU VRAM <= 16GB:</strong></label>
+                        <div>
+                            <label><input type="checkbox" name="gpu_low[]" value="llama3.1:8b-instruct-fp16" <?= in_array('llama3.1:8b-instruct-fp16', $rules['gpu_low'] ?? []) ? 'checked' : '' ?>> llama3.1:8b-instruct-fp16 (8GB)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label><strong>GPU VRAM > 16GB:</strong></label>
+                        <div>
+                            <label><input type="checkbox" name="gpu_high[]" value="llama3.1:70b-instruct-fp16" <?= in_array('llama3.1:70b-instruct-fp16', $rules['gpu_high'] ?? []) ? 'checked' : '' ?>> llama3.1:70b-instruct-fp16 (40GB)</label>
                         </div>
                     </div>
                 </div>
