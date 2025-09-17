@@ -33,7 +33,7 @@ class PeerManager {
         return array_map([$this, 'formatPeer'], $data['peers']);
     }
     
-    public function addPeer($name, $ip, $port = 8080) {
+    public function addPeer($name, $ip, $port = 11434) {
         try {
             $peers = $this->loadPeersConfig();
             
@@ -149,7 +149,7 @@ class PeerManager {
         return [
             'name' => $peer['name'] ?? 'Unknown',
             'ip' => $peer['ip'] ?? '127.0.0.1',
-            'port' => $peer['port'] ?? 8080,
+            'port' => $peer['port'] ?? 11434,
             'status' => ($peer['available'] ?? false) ? 'online' : 'offline',
             'models' => $peer['models'] ?? [],
             'memory_gb' => $peer['memory_gb'] ?? 0,
