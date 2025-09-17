@@ -95,9 +95,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 2G
+          memory: 4G
 
   avatar:
     build: ./avatar
@@ -108,7 +108,9 @@ services:
       - ./avatars:/app/avatars
       - avatar_models:/app/checkpoints
     environment:
-      - CUDA_VISIBLE_DEVICES=0
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
     restart: unless-stopped
     deploy:
       resources:

@@ -19,7 +19,13 @@
         <textarea id="prompt" placeholder="Enter your prompt here...">Hello! How can I help you today?</textarea>
         
         <br>
+        <input type="file" id="imageUpload" accept="image/*" onchange="previewImage()">
+        <br><br>
+        <img id="imagePreview" style="max-width: 300px; display: none;">
+        
+        <br><br>
         <button onclick="generateAvatar()">Generate Avatar</button>
+        <button onclick="analyzeImage()">Analyze Image</button>
         
         <div class="loading" id="loading">Generating avatar... Please wait.</div>
         
@@ -30,6 +36,20 @@
     </div>
 
     <script>
+        function previewImage() {
+            const file = document.getElementById('imageUpload').files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
         async function generateAvatar() {
             const prompt = document.getElementById('prompt').value;
             const loading = document.getElementById('loading');
@@ -54,6 +74,32 @@
             } catch (error) {
                 alert('Error: ' + error.message);
                 loading.style.display = 'none';
+            }
+        }
+        
+        async function analyzeImage() {
+            const file = document.getElementById('imageUpload').files[0];
+            const question = document.getElementById('prompt').value || 'What do you see in this image?';
+            
+            if (!file) {
+                alert('Please select an image first');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('question', question);
+            
+            try {
+                const response = await fetch('http://localhost:7860/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                alert('Analysis: ' + result.analysis);
+            } catch (error) {
+                alert('Error: ' + error.message);
             }
         }
     </script>

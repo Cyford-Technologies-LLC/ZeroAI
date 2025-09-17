@@ -9,7 +9,16 @@ services:
               count: all
               capabilities: [gpu]
 
-  zeroai_peer:
+  peer:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  avatar:
     deploy:
       resources:
         reservations:
