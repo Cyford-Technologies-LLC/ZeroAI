@@ -74,10 +74,21 @@ document.getElementById('avatarForm').addEventListener('submit', async function(
         });
         
         if (response.ok) {
-            const result = await response.json();
+            const text = await response.text();
+            console.log('Response text:', text);
             
-            document.getElementById('error').innerHTML = `<div class="alert alert-success">✅ ${result.message}<br><small>${result.note}</small></div>`;
-            document.getElementById('error').style.display = 'block';
+            if (text.trim()) {
+                try {
+                    const result = JSON.parse(text);
+                    document.getElementById('error').innerHTML = `<div class="alert alert-success">✅ ${result.message || 'Success'}<br><small>${result.note || ''}</small></div>`;
+                    document.getElementById('error').style.display = 'block';
+                } catch (e) {
+                    document.getElementById('error').innerHTML = `<div class="alert alert-info">Response: ${text}</div>`;
+                    document.getElementById('error').style.display = 'block';
+                }
+            } else {
+                throw new Error('Empty response from server');
+            }
         } else {
             const errorText = await response.text();
             throw new Error(`Failed to generate avatar: ${errorText}`);
