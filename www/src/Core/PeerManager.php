@@ -38,47 +38,49 @@ class PeerManager {
     }
     
     private function getLocalOllamaPeer() {
-        $localModels = $this->getInstalledModels('localhost');
-        $isOnline = !empty($localModels);
+        // Use Python peer discovery to get local capabilities
+        $capabilities = $this->getLocalCapabilities();
         
         return [
             'name' => 'Local Ollama',
             'ip' => 'localhost',
             'port' => 11434,
             'ollama_port' => 11434,
-            'status' => $isOnline ? 'online' : 'offline',
-            'models' => $localModels,
-            'memory_gb' => $this->getSystemMemory(),
-            'gpu_available' => $this->hasGPU(),
-            'gpu_memory_gb' => $this->getGPUMemory(),
+            'status' => $capabilities['available'] ? 'online' : 'offline',
+            'models' => $capabilities['models'] ?? [],
+            'memory_gb' => $capabilities['memory_gb'] ?? 8,
+            'gpu_available' => $capabilities['gpu_available'] ?? false,
+            'gpu_memory_gb' => $capabilities['gpu_memory_gb'] ?? 0,
             'last_check' => date('Y-m-d H:i:s'),
             'is_local' => true
         ];
     }
     
-    private function getSystemMemory() {
+    private function getLocalCapabilities() {
         try {
-            $meminfo = file_get_contents('/proc/meminfo');
-            if (preg_match('/MemTotal:\s+(\d+)\s+kB/', $meminfo, $matches)) {
-                return round($matches[1] / 1024 / 1024, 1); // Convert KB to GB
+            $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
+            $cmd = "cd " . dirname($scriptPath) . " && python -c \"from peer_discovery import peer_discovery; import json; peers = peer_discovery.get_peers(); local = next((p for p in peers if p.name == 'local-node'), None); print(json.dumps({'available': local.capabilities.available if local else False, 'models': local.capabilities.models if local else [], 'memory_gb': local.capabilities.memory if local else 8, 'gpu_available': local.capabilities.gpu_available if local else False, 'gpu_memory_gb': local.capabilities.gpu_memory if local else 0}) if local else json.dumps({'available': False, 'models': [], 'memory_gb': 8, 'gpu_available': False, 'gpu_memory_gb': 0}))\"";
+            
+            exec($cmd . " 2>&1", $output, $returnCode);
+            
+            if ($returnCode === 0 && !empty($output[0])) {
+                $result = json_decode($output[0], true);
+                if ($result) {
+                    return $result;
+                }
             }
-        } catch (Exception $e) {}
-        return 8; // Default fallback
-    }
-    
-    private function hasGPU() {
-        exec('nvidia-smi 2>/dev/null', $output, $returnCode);
-        return $returnCode === 0;
-    }
-    
-    private function getGPUMemory() {
-        if (!$this->hasGPU()) return 0;
-        
-        exec('nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null', $output);
-        if (!empty($output[0])) {
-            return round($output[0] / 1024, 1); // Convert MB to GB
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get local capabilities', ['error' => $e->getMessage()]);
         }
-        return 0;
+        
+        // Fallback to basic detection
+        return [
+            'available' => !empty($this->getInstalledModels('localhost')),
+            'models' => $this->getInstalledModels('localhost'),
+            'memory_gb' => 8,
+            'gpu_available' => false,
+            'gpu_memory_gb' => 0
+        ];
     }
     
     public function addPeer($name, $ip, $port = 8080) {
