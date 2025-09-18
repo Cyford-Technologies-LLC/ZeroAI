@@ -403,6 +403,213 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
+    <!-- Model Performance Comparison Charts -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>📊 Model Performance Comparison</h3>
+        </div>
+        <div class="card-body">
+            <!-- Vision Models -->
+            <h4>🖼️ Vision Models (Image Analysis)</h4>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Size</th>
+                            <th>Min RAM</th>
+                            <th>Rec VRAM</th>
+                            <th>Speed</th>
+                            <th>Quality</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>moondream:1.8b</code></td>
+                            <td>1.7GB</td>
+                            <td>4GB</td>
+                            <td>2GB</td>
+                            <td>⚡⚡⚡</td>
+                            <td>⭐⭐</td>
+                            <td>Basic image understanding</td>
+                        </tr>
+                        <tr>
+                            <td><code>llava-phi3:3.8b</code></td>
+                            <td>2.9GB</td>
+                            <td>6GB</td>
+                            <td>4GB</td>
+                            <td>⚡⚡</td>
+                            <td>⭐⭐⭐</td>
+                            <td>Compact vision processing</td>
+                        </tr>
+                        <tr>
+                            <td><code>bakllava:7b</code></td>
+                            <td>4.1GB</td>
+                            <td>8GB</td>
+                            <td>6GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐</td>
+                            <td>Alternative vision architecture</td>
+                        </tr>
+                        <tr>
+                            <td><code>llava:7b</code></td>
+                            <td>4.7GB</td>
+                            <td>8GB</td>
+                            <td>6GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐</td>
+                            <td>Image analysis, visual Q&A</td>
+                        </tr>
+                        <tr>
+                            <td><code>llava-llama3:8b</code></td>
+                            <td>5.5GB</td>
+                            <td>12GB</td>
+                            <td>8GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                            <td>Latest architecture, improved reasoning</td>
+                        </tr>
+                        <tr>
+                            <td><code>llava:13b</code></td>
+                            <td>7.3GB</td>
+                            <td>16GB</td>
+                            <td>12GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                            <td>Enhanced image understanding</td>
+                        </tr>
+                        <tr>
+                            <td><code>llava:34b</code></td>
+                            <td>19GB</td>
+                            <td>32GB</td>
+                            <td>24GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                            <td>Professional-grade visual analysis</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Text Models -->
+            <h4>📝 Text Models (General Purpose)</h4>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Size</th>
+                            <th>Min RAM</th>
+                            <th>Speed</th>
+                            <th>Quality</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>llama3.2:1b</code></td>
+                            <td>1.3GB</td>
+                            <td>2GB</td>
+                            <td>⚡⚡⚡</td>
+                            <td>⭐⭐</td>
+                            <td>Ultra-fast responses, basic tasks</td>
+                        </tr>
+                        <tr>
+                            <td><code>llama3.2:3b</code></td>
+                            <td>2.0GB</td>
+                            <td>4GB</td>
+                            <td>⚡⚡</td>
+                            <td>⭐⭐⭐</td>
+                            <td>Resume analysis, skill extraction</td>
+                        </tr>
+                        <tr>
+                            <td><code>mistral:7b</code></td>
+                            <td>4.1GB</td>
+                            <td>8GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐</td>
+                            <td>Resume optimization, professional writing</td>
+                        </tr>
+                        <tr>
+                            <td><code>llama3.1:8b</code></td>
+                            <td>4.7GB</td>
+                            <td>8GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐</td>
+                            <td>Comprehensive text analysis, ATS optimization</td>
+                        </tr>
+                        <tr>
+                            <td><code>codellama:7b</code></td>
+                            <td>3.8GB</td>
+                            <td>8GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐</td>
+                            <td>Technical resumes, code analysis</td>
+                        </tr>
+                        <tr>
+                            <td><code>llama3.1:70b</code></td>
+                            <td>40GB</td>
+                            <td>64GB</td>
+                            <td>⚡</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                            <td>Enterprise-grade text processing</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Document Processing -->
+            <h4>📄 Document Processing Models</h4>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Workflow</th>
+                            <th>Models</th>
+                            <th>Total RAM</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Resume Images</strong></td>
+                            <td><code>llava:7b</code> → <code>llama3.1:8b</code></td>
+                            <td>16GB</td>
+                            <td>Scanned resumes, PDF screenshots</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Text Resumes</strong></td>
+                            <td><code>llama3.1:8b</code> → <code>mistral:7b</code></td>
+                            <td>12GB</td>
+                            <td>Text-based resume optimization</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Docs</strong></td>
+                            <td><code>llava:7b</code> → <code>codellama:7b</code></td>
+                            <td>14GB</td>
+                            <td>Developer resumes, technical analysis</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lightweight</strong></td>
+                            <td><code>moondream:1.8b</code> → <code>llama3.2:3b</code></td>
+                            <td>6GB</td>
+                            <td>Quick document scanning</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3">
+                <small class="text-muted">
+                    <strong>Legend:</strong> 
+                    ⚡⚡⚡ = Very Fast | ⚡⚡ = Fast | ⚡ = Moderate | 
+                    ⭐⭐⭐⭐⭐ = Excellent | ⭐⭐⭐⭐ = Good | ⭐⭐⭐ = Fair | ⭐⭐ = Basic
+                </small>
+            </div>
+        </div>
+    </div>
+
     <!-- Model Installation Progress Modal -->
     <div id="installModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
         <div style="background-color: white; margin: 10% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 600px; max-height: 70%; overflow-y: auto;">
@@ -422,5 +629,19 @@ include __DIR__ . '/includes/header.php';
             </div>
         </div>
     </div>
+
+
+<style>
+.table th, .table td {
+    vertical-align: middle;
+    font-size: 13px;
+}
+.table code {
+    background: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+</style>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
