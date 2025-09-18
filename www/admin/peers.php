@@ -49,9 +49,9 @@ if ($_POST) {
             case 'install_model':
                 $ip = $_POST['peer_ip'];
                 $model = $_POST['model_name'];
-                $result = $peerManager->installModel($ip, $model);
-                $message = $result ? "Model '{$model}' installation started!" : "Model installation failed!";
-                $messageType = $result ? 'success' : 'error';
+                $jobId = $peerManager->startModelInstallation($ip, $model);
+                $message = "Model '{$model}' installation started! Job ID: {$jobId}";
+                $messageType = 'success';
                 break;
                 
             case 'remove_model':
@@ -265,6 +265,74 @@ include __DIR__ . '/includes/header.php';
                     `;
                     container.appendChild(div);
                 }
+                
+                let installationJobId = null;
+                let installationInterval = null;
+                
+                function installModelWithProgress(peerIp, modelName) {
+                    // Show progress modal
+                    document.getElementById('installModal').style.display = 'block';
+                    document.getElementById('installModelName').textContent = modelName;
+                    document.getElementById('installPeerIp').textContent = peerIp;
+                    document.getElementById('installProgress').innerHTML = 'Starting installation...';
+                    
+                    // Start installation
+                    fetch('model_install_api.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `action=start_install&peer_ip=${encodeURIComponent(peerIp)}&model_name=${encodeURIComponent(modelName)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            installationJobId = data.job_id;
+                            // Start polling for status
+                            installationInterval = setInterval(checkInstallationStatus, 2000);
+                        } else {
+                            document.getElementById('installProgress').innerHTML = 'Error: ' + data.error;
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('installProgress').innerHTML = 'Error: ' + error.message;
+                    });
+                }
+                
+                function checkInstallationStatus() {
+                    if (!installationJobId) return;
+                    
+                    fetch(`model_install_api.php?action=get_status&job_id=${installationJobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const status = data.status;
+                            document.getElementById('installProgress').innerHTML = '<pre>' + status.log + '</pre>';
+                            
+                            if (status.status === 'completed') {
+                                clearInterval(installationInterval);
+                                document.getElementById('installProgress').innerHTML += '<div style="color: green; font-weight: bold;">Installation completed successfully!</div>';
+                                setTimeout(() => {
+                                    closeInstallModal();
+                                    location.reload(); // Refresh to show new model
+                                }, 2000);
+                            } else if (status.status === 'error') {
+                                clearInterval(installationInterval);
+                                document.getElementById('installProgress').innerHTML += '<div style="color: red; font-weight: bold;">Installation failed!</div>';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Status check error:', error);
+                    });
+                }
+                
+                function closeInstallModal() {
+                    document.getElementById('installModal').style.display = 'none';
+                    if (installationInterval) {
+                        clearInterval(installationInterval);
+                        installationInterval = null;
+                    }
+                    installationJobId = null;
+                }
                 </script>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -364,7 +432,7 @@ include __DIR__ . '/includes/header.php';
                                                         <input type="hidden" name="action" value="install_model">
                                                         <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
                                                         <input type="hidden" name="model_name" value="<?= $modelName ?>">
-                                                        <button type="submit" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 12px;" 
+                                                        <button type="button" onclick="installModelWithProgress('<?= $peer['ip'] ?>', '<?= $modelName ?>')" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 12px;" 
                                                                 title="<?= htmlspecialchars($specs['description']) ?> (<?= $specs['size_gb'] ?>GB)">
                                                             + <?= htmlspecialchars($modelName) ?>
                                                         </button>
@@ -389,6 +457,26 @@ include __DIR__ . '/includes/header.php';
                     </table>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Model Installation Progress Modal -->
+    <div id="installModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: white; margin: 10% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 600px; max-height: 70%; overflow-y: auto;">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+                <h3>Installing Model</h3>
+                <button onclick="closeInstallModal()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; float: right;">×</button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <strong>Model:</strong> <span id="installModelName"></span><br>
+                <strong>Peer:</strong> <span id="installPeerIp"></span>
+            </div>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                <div id="installProgress">Starting installation...</div>
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <small style="color: #666;">This may take several minutes depending on model size...</small>
+            </div>
         </div>
     </div>
 

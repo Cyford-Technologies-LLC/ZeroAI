@@ -375,19 +375,13 @@ class PeerManager {
     
     public function installModel($peerIp, $modelName) {
         try {
-            // Handle localhost/local container
-            if ($peerIp === 'localhost') {
+            // Handle local Ollama container
+            if ($peerIp === 'ollama' || $peerIp === 'localhost') {
                 return $this->installLocalModel($modelName);
             }
             
-            $authKey = $this->getAuthKey();
-            $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
-            
-            $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py install --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
-            exec($cmd . " 2>&1", $output, $returnCode);
-            
-            $this->logger->info('Model installation', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
-            return $returnCode === 0;
+            // For remote peers, use API call
+            return $this->installRemoteModel($peerIp, $modelName);
         } catch (\Exception $e) {
             $this->logger->error('Model installation failed', ['error' => $e->getMessage()]);
             return false;
@@ -396,19 +390,13 @@ class PeerManager {
     
     public function removeModel($peerIp, $modelName) {
         try {
-            // Handle localhost/local container
-            if ($peerIp === 'localhost') {
+            // Handle local Ollama container
+            if ($peerIp === 'ollama' || $peerIp === 'localhost') {
                 return $this->removeLocalModel($modelName);
             }
             
-            $authKey = $this->getAuthKey();
-            $scriptPath = __DIR__ . '/../../../run/internal/peer_manager.py';
-            
-            $cmd = "cd " . dirname($scriptPath) . " && python peer_manager.py remove --ip {$peerIp} --model {$modelName} --auth-key {$authKey}";
-            exec($cmd . " 2>&1", $output, $returnCode);
-            
-            $this->logger->info('Model removal', ['peer' => $peerIp, 'model' => $modelName, 'success' => $returnCode === 0]);
-            return $returnCode === 0;
+            // For remote peers, use API call
+            return $this->removeRemoteModel($peerIp, $modelName);
         } catch (\Exception $e) {
             $this->logger->error('Model removal failed', ['error' => $e->getMessage()]);
             return false;
@@ -417,11 +405,24 @@ class PeerManager {
     
     private function installLocalModel($modelName) {
         try {
-            $cmd = "docker exec zeroai_ollama ollama pull {$modelName}";
-            exec($cmd . " 2>&1", $output, $returnCode);
+            // Use Ollama API directly instead of docker exec
+            $url = 'http://ollama:11434/api/pull';
+            $data = json_encode(['name' => $modelName]);
             
-            $this->logger->info('Local model installation', ['model' => $modelName, 'success' => $returnCode === 0]);
-            return $returnCode === 0;
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => $data,
+                    'timeout' => 300 // 5 minutes timeout
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            $success = $result !== false;
+            
+            $this->logger->info('Local model installation', ['model' => $modelName, 'success' => $success]);
+            return $success;
         } catch (\Exception $e) {
             $this->logger->error('Local model installation failed', ['error' => $e->getMessage()]);
             return false;
@@ -430,11 +431,24 @@ class PeerManager {
     
     private function removeLocalModel($modelName) {
         try {
-            $cmd = "docker exec zeroai_ollama ollama rm {$modelName}";
-            exec($cmd . " 2>&1", $output, $returnCode);
+            // Use Ollama API directly
+            $url = 'http://ollama:11434/api/delete';
+            $data = json_encode(['name' => $modelName]);
             
-            $this->logger->info('Local model removal', ['model' => $modelName, 'success' => $returnCode === 0]);
-            return $returnCode === 0;
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'DELETE',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => $data,
+                    'timeout' => 30
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            $success = $result !== false;
+            
+            $this->logger->info('Local model removal', ['model' => $modelName, 'success' => $success]);
+            return $success;
         } catch (\Exception $e) {
             $this->logger->error('Local model removal failed', ['error' => $e->getMessage()]);
             return false;
@@ -442,6 +456,152 @@ class PeerManager {
     }
     
 
+    
+    private function installRemoteModel($peerIp, $modelName) {
+        try {
+            $url = "http://{$peerIp}:11434/api/pull";
+            $data = json_encode(['name' => $modelName]);
+            
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => $data,
+                    'timeout' => 300
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            return $result !== false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+    
+    private function removeRemoteModel($peerIp, $modelName) {
+        try {
+            $url = "http://{$peerIp}:11434/api/delete";
+            $data = json_encode(['name' => $modelName]);
+            
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'DELETE',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => $data,
+                    'timeout' => 30
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            return $result !== false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+    
+    public function startModelInstallation($peerIp, $modelName) {
+        // Start installation in background and return job ID
+        $jobId = uniqid('install_', true);
+        $logFile = __DIR__ . '/../../../logs/model_install_' . $jobId . '.log';
+        
+        // Ensure logs directory exists
+        $logDir = dirname($logFile);
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        // Start background process using dedicated script
+        $scriptPath = __DIR__ . '/../../admin/install_model_background.php';
+        $cmd = "nohup php {$scriptPath} '{$peerIp}' '{$modelName}' '{$logFile}' > /dev/null 2>&1 &";
+        
+        exec($cmd);
+        
+        $this->logger->info('Started background model installation', [
+            'job_id' => $jobId,
+            'peer' => $peerIp,
+            'model' => $modelName,
+            'log_file' => $logFile
+        ]);
+        
+        return $jobId;
+    }
+    
+    public function installLocalModelWithLogging($modelName, $logFile) {
+        file_put_contents($logFile, "Starting installation of {$modelName}...\n", FILE_APPEND);
+        
+        try {
+            $url = 'http://ollama:11434/api/pull';
+            $data = json_encode(['name' => $modelName, 'stream' => true]);
+            
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => $data,
+                    'timeout' => 1800 // 30 minutes
+                ]
+            ]);
+            
+            $stream = fopen($url, 'r', false, $context);
+            if ($stream) {
+                while (!feof($stream)) {
+                    $line = fgets($stream);
+                    if ($line) {
+                        $data = json_decode($line, true);
+                        if ($data) {
+                            $status = $data['status'] ?? 'Processing';
+                            $progress = '';
+                            if (isset($data['completed']) && isset($data['total'])) {
+                                $percent = round(($data['completed'] / $data['total']) * 100, 1);
+                                $progress = " ({$percent}%)";
+                            }
+                            file_put_contents($logFile, "{$status}{$progress}\n", FILE_APPEND);
+                        }
+                    }
+                }
+                fclose($stream);
+                file_put_contents($logFile, "Installation completed successfully!\n", FILE_APPEND);
+            } else {
+                file_put_contents($logFile, "ERROR: Failed to connect to Ollama\n", FILE_APPEND);
+            }
+        } catch (\Exception $e) {
+            file_put_contents($logFile, "ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+    
+    public function installRemoteModelWithLogging($peerIp, $modelName, $logFile) {
+        file_put_contents($logFile, "Starting installation of {$modelName} on {$peerIp}...\n", FILE_APPEND);
+        
+        try {
+            $result = $this->installRemoteModel($peerIp, $modelName);
+            if ($result) {
+                file_put_contents($logFile, "Installation completed successfully!\n", FILE_APPEND);
+            } else {
+                file_put_contents($logFile, "ERROR: Installation failed\n", FILE_APPEND);
+            }
+        } catch (\Exception $e) {
+            file_put_contents($logFile, "ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+    
+    public function getInstallationStatus($jobId) {
+        $logFile = __DIR__ . '/../../../logs/model_install_' . $jobId . '.log';
+        if (!file_exists($logFile)) {
+            return ['status' => 'not_found', 'log' => ''];
+        }
+        
+        $log = file_get_contents($logFile);
+        $lines = explode("\n", trim($log));
+        $lastLine = end($lines);
+        
+        if (strpos($lastLine, 'completed successfully') !== false) {
+            return ['status' => 'completed', 'log' => $log];
+        } elseif (strpos($lastLine, 'ERROR:') !== false) {
+            return ['status' => 'error', 'log' => $log];
+        } else {
+            return ['status' => 'running', 'log' => $log];
+        }
+    }
     
     private function getAuthKey() {
         $configPath = __DIR__ . '/../../../config/zeroai.json';
@@ -455,7 +615,7 @@ class PeerManager {
     public function getInstalledModels($peerIp) {
         try {
             // Handle localhost/local container - use ollama container name
-            if ($peerIp === 'localhost') {
+            if ($peerIp === 'localhost' || $peerIp === 'ollama') {
                 $url = 'http://ollama:11434/api/tags';
             } else {
                 $url = "http://{$peerIp}:11434/api/tags";
