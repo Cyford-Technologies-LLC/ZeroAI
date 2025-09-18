@@ -26,16 +26,26 @@ if ($_POST && isset($_POST['action'])) {
         }
         
         if ($_POST['action'] === 'update') {
-            $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=?");
-            $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id']]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=?");
+                $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id']]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=? AND created_by=?");
+                $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id'], $currentUser]);
+            }
             ob_end_clean();
             header('Location: /web/companies.php?success=updated');
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ?");
-            $stmt->execute([$_POST['company_id']]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ?");
+                $stmt->execute([$_POST['company_id']]);
+            } else {
+                $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ? AND created_by = ?");
+                $stmt->execute([$_POST['company_id'], $currentUser]);
+            }
             ob_end_clean();
             header('Location: /web/companies.php?success=deleted');
             exit;

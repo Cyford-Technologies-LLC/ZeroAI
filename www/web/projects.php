@@ -7,23 +7,7 @@ include __DIR__ . '/includes/header.php';
 if ($_POST) {
     try {
         if ($_POST['action'] === 'create') {
-            $stmt = $pdo->prepare("INSERT INTO projects (name, company_id, description, priority, budget, start_date, end_date, project_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')");
-            $stmt->execute([
-                $_POST['name'], 
-                $_POST['company_id'], 
-                $_POST['description'], 
-                $_POST['priority'], 
-                $_POST['budget'], 
-                $_POST['start_date'], 
-                $_POST['end_date'],
-                $_POST['project_type']
-            ]);
-            header('Location: /web/projects.php?success=created');
-            exit;
-        }
-        
-        if ($_POST['action'] === 'update') {
-            $stmt = $pdo->prepare("UPDATE projects SET name=?, company_id=?, description=?, priority=?, budget=?, start_date=?, end_date=?, project_type=? WHERE id=?");
+            $stmt = $pdo->prepare("INSERT INTO projects (name, company_id, description, priority, budget, start_date, end_date, project_type, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)");
             $stmt->execute([
                 $_POST['name'], 
                 $_POST['company_id'], 
@@ -33,15 +17,53 @@ if ($_POST) {
                 $_POST['start_date'], 
                 $_POST['end_date'],
                 $_POST['project_type'],
-                $_POST['project_id']
+                $currentUser
             ]);
+            header('Location: /web/projects.php?success=created');
+            exit;
+        }
+        
+        if ($_POST['action'] === 'update') {
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("UPDATE projects SET name=?, company_id=?, description=?, priority=?, budget=?, start_date=?, end_date=?, project_type=? WHERE id=?");
+                $stmt->execute([
+                    $_POST['name'], 
+                    $_POST['company_id'], 
+                    $_POST['description'], 
+                    $_POST['priority'], 
+                    $_POST['budget'], 
+                    $_POST['start_date'], 
+                    $_POST['end_date'],
+                    $_POST['project_type'],
+                    $_POST['project_id']
+                ]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE projects SET name=?, company_id=?, description=?, priority=?, budget=?, start_date=?, end_date=?, project_type=? WHERE id=? AND created_by=?");
+                $stmt->execute([
+                    $_POST['name'], 
+                    $_POST['company_id'], 
+                    $_POST['description'], 
+                    $_POST['priority'], 
+                    $_POST['budget'], 
+                    $_POST['start_date'], 
+                    $_POST['end_date'],
+                    $_POST['project_type'],
+                    $_POST['project_id'],
+                    $currentUser
+                ]);
+            }
             header('Location: /web/projects.php?success=updated');
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ?");
-            $stmt->execute([$_POST['project_id']]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ?");
+                $stmt->execute([$_POST['project_id']]);
+            } else {
+                $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ? AND created_by = ?");
+                $stmt->execute([$_POST['project_id'], $currentUser]);
+            }
             header('Location: /web/projects.php?success=deleted');
             exit;
         }
@@ -52,8 +74,18 @@ if ($_POST) {
 
 // Get projects and companies
 try {
-    $projects = $pdo->query("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id ORDER BY p.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-    $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    if ($isAdmin) {
+        $projects = $pdo->query("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id ORDER BY p.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $stmt = $pdo->prepare("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id WHERE p.created_by = ? ORDER BY p.created_at DESC");
+        $stmt->execute([$currentUser]);
+        $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE created_by = ? ORDER BY name");
+        $stmt->execute([$currentUser]);
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (Exception $e) {
     $projects = [];
     $companies = [];

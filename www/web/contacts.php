@@ -7,30 +7,44 @@ include __DIR__ . '/includes/header.php';
 if ($_POST) {
     try {
         if ($_POST['action'] === 'create') {
-            $stmt = $pdo->prepare("INSERT INTO contacts (company_id, first_name, last_name, email, phone, mobile, position, department, address, city, state, zip_code, country, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO contacts (company_id, first_name, last_name, email, phone, mobile, position, department, address, city, state, zip_code, country, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
                 $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
-                $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes']
+                $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $currentUser
             ]);
             header('Location: /web/contacts.php?success=created');
             exit;
         }
         
         if ($_POST['action'] === 'update') {
-            $stmt = $pdo->prepare("UPDATE contacts SET company_id=?, first_name=?, last_name=?, email=?, phone=?, mobile=?, position=?, department=?, address=?, city=?, state=?, zip_code=?, country=?, notes=? WHERE id=?");
-            $stmt->execute([
-                $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
-                $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
-                $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $_POST['contact_id']
-            ]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("UPDATE contacts SET company_id=?, first_name=?, last_name=?, email=?, phone=?, mobile=?, position=?, department=?, address=?, city=?, state=?, zip_code=?, country=?, notes=? WHERE id=?");
+                $stmt->execute([
+                    $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
+                    $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
+                    $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $_POST['contact_id']
+                ]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE contacts SET company_id=?, first_name=?, last_name=?, email=?, phone=?, mobile=?, position=?, department=?, address=?, city=?, state=?, zip_code=?, country=?, notes=? WHERE id=? AND created_by=?");
+                $stmt->execute([
+                    $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
+                    $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
+                    $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $_POST['contact_id'], $currentUser
+                ]);
+            }
             header('Location: /web/contacts.php?success=updated');
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            $stmt = $pdo->prepare("DELETE FROM contacts WHERE id = ?");
-            $stmt->execute([$_POST['contact_id']]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("DELETE FROM contacts WHERE id = ?");
+                $stmt->execute([$_POST['contact_id']]);
+            } else {
+                $stmt = $pdo->prepare("DELETE FROM contacts WHERE id = ? AND created_by = ?");
+                $stmt->execute([$_POST['contact_id'], $currentUser]);
+            }
             header('Location: /web/contacts.php?success=deleted');
             exit;
         }
@@ -57,13 +71,24 @@ if ($_POST) {
 
 // Get contacts with company info
 try {
-    $sql = "SELECT c.*, comp.name as company_name FROM contacts c 
-            LEFT JOIN companies comp ON c.company_id = comp.id 
-            ORDER BY c.last_name, c.first_name";
-    $contacts = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get companies for dropdown
-    $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    if ($isAdmin) {
+        $sql = "SELECT c.*, comp.name as company_name FROM contacts c 
+                LEFT JOIN companies comp ON c.company_id = comp.id 
+                ORDER BY c.last_name, c.first_name";
+        $contacts = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $sql = "SELECT c.*, comp.name as company_name FROM contacts c 
+                LEFT JOIN companies comp ON c.company_id = comp.id 
+                WHERE c.created_by = ? ORDER BY c.last_name, c.first_name";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$currentUser]);
+        $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE created_by = ? ORDER BY name");
+        $stmt->execute([$currentUser]);
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (Exception $e) {
     $contacts = [];
     $companies = [];
