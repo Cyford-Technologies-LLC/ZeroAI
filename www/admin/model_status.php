@@ -107,6 +107,7 @@ function closeModal() {
     const modal = document.getElementById('logModal');
     modal.style.display = 'none';
     modal.classList.remove('show');
+    document.body.style.overflow = '';
     currentJobId = null;
 }
 
@@ -144,14 +145,11 @@ function viewLog(jobId) {
     currentJobId = jobId;
     document.getElementById('logContent').textContent = 'Loading...';
     
-    // Show modal
-    if (logModal) {
-        logModal.show();
-    } else {
-        // Direct fallback
-        document.getElementById('logModal').style.display = 'block';
-        document.getElementById('logModal').classList.add('show');
-    }
+    // Show modal using direct DOM manipulation
+    const modal = document.getElementById('logModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
     
     refreshLog();
 }
