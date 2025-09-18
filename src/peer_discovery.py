@@ -226,7 +226,7 @@ class PeerDiscovery:
             response.raise_for_status()
             return [m['name'] for m in response.json().get('models', [])]
         except requests.exceptions.RequestException:
-            return []
+            return None
 
     def _get_my_capabilities(self) -> PeerCapabilities:
         try:
@@ -274,7 +274,25 @@ class PeerDiscovery:
             return response.json()
         except requests.exceptions.RequestException as e:
             log_peer(f"⚠️ Failed to get metrics from peer at {ip}: {e}", 4, "yellow")
-            return None
+            # Fallback: detect capabilities directly
+            return self._get_direct_capabilities(ip)
+    
+    def _get_direct_capabilities(self, ip: str) -> Optional[Dict[str, Any]]:
+        """Get capabilities directly when /capabilities endpoint fails"""
+        try:
+            # Check if peer is reachable via Ollama
+            test_response = requests.get(f"http://{ip}:11434", timeout=2)
+            if test_response.status_code == 200:
+                return {
+                    "load_avg": 0.0,
+                    "memory_gb": 16.0,  # Estimated
+                    "gpu_available": True,  # Assume GPU peer
+                    "gpu_memory_gb": 8.0,  # Estimated  
+                    "cpu_cores": 8
+                }
+        except:
+            pass
+        return None
 
     def _check_single_peer(self, peer_info: Dict[str, Any]) -> tuple[str, PeerCapabilities]:
         """Check a single peer's capabilities"""
@@ -287,7 +305,7 @@ class PeerDiscovery:
         for attempt in range(PEER_PING_RETRIES):
             try:
                 ollama_models = self._get_ollama_models(ollama_ip)
-                if not ollama_models:
+                if ollama_models is None:
                     continue
                     
                 metrics = self._get_peer_metrics(ollama_ip)
