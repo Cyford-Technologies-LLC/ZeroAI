@@ -395,7 +395,7 @@ include __DIR__ . '/includes/header.php';
                 <button type="submit" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 8px 16px; border-radius: 4px; cursor: pointer;" onclick="return confirm('This will install models on all online peers based on the rules above. Continue?')">
                     🚀 Apply Auto-Install Rules Now
                 </button>
-                <a href="model_status.php" style="background: #17a2b8; color: white; border: 1px solid #17a2b8; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 10px;">
+                <a href="model_status.php" target="_blank" style="background: #17a2b8; color: white; border: 1px solid #17a2b8; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 10px;">
                     📊 View Installation Status
                 </a>
                 <small style="margin-left: 10px; color: #666;">Install models on all peers based on the rules above</small>
