@@ -362,7 +362,7 @@ class PeerManager {
             }
         }
         
-        if ($gpuAvailable && $gpuMemoryGb >= 8) {
+        if ($gpuAvailable && $gpuMemoryGb >= 14) {
             foreach ($specs['gpu_models'] as $model => $spec) {
                 if ($memoryGb >= $spec['min_memory_gb'] && $gpuMemoryGb >= ($spec['min_gpu_memory_gb'] ?? 0)) {
                     $recommended[$model] = $spec;

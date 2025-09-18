@@ -344,7 +344,7 @@ include __DIR__ . '/includes/header.php';
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label><strong>GPU VRAM <= 16GB:</strong></label>
+                        <label><strong>GPU VRAM < 14GB:</strong></label>
                         <div id="gpu_low_models">
                             <?php foreach ($rules['gpu_low'] ?? [] as $model): ?>
                                 <div class="mb-1">
@@ -357,7 +357,7 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     
                     <div class="col-md-6">
-                        <label><strong>GPU VRAM > 16GB:</strong></label>
+                        <label><strong>GPU VRAM >= 14GB:</strong></label>
                         <div id="gpu_high_models">
                             <?php foreach ($rules['gpu_high'] ?? [] as $model): ?>
                                 <div class="mb-1">
