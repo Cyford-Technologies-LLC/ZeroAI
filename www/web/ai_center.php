@@ -1,38 +1,107 @@
 <?php
-session_start();
-require_once __DIR__ . '/../admin/includes/autoload.php';
-
-use ZeroAI\Core\{DatabaseManager, Tenant, Company};
+$pageTitle = 'AI Community Center - ZeroAI CRM';
+$currentPage = 'ai_center';
+include __DIR__ . '/includes/header.php';
 
 $companyId = $_GET['company'] ?? $_SESSION['company_id'] ?? 1;
-$db = DatabaseManager::getInstance();
 
-$company = new Company();
-$companyData = $company->findById($companyId);
-
-$pageTitle = 'AI Community Center - ' . ($companyData['name'] ?? 'ZeroAI');
-include __DIR__ . '/../admin/includes/header.php';
+// Create agents table if not exists
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS agents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name VARCHAR(255) NOT NULL,
+        role VARCHAR(255),
+        goal TEXT,
+        backstory TEXT,
+        status VARCHAR(20) DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+    
+    $pdo->exec("CREATE TABLE IF NOT EXISTS company_agents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER,
+        agent_id INTEGER,
+        assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies(id),
+        FOREIGN KEY (agent_id) REFERENCES agents(id)
+    )");
+    
+    // Insert sample agents if table is empty
+    $count = $pdo->query("SELECT COUNT(*) FROM agents")->fetchColumn();
+    if ($count == 0) {
+        $sampleAgents = [
+            ['Dr. Sarah Chen', 'Research Analyst', 'Analyze market trends and provide data-driven insights', 'Expert researcher with 10+ years in market analysis'],
+            ['Alex Thompson', 'Content Creator', 'Create engaging content for marketing campaigns', 'Creative writer specializing in digital marketing'],
+            ['Maya Patel', 'Customer Success Manager', 'Ensure customer satisfaction and retention', 'Customer service expert with proven track record'],
+            ['David Kim', 'Sales Assistant', 'Support sales team with lead qualification', 'Sales professional with expertise in B2B markets']
+        ];
+        
+        foreach ($sampleAgents as $agent) {
+            $stmt = $pdo->prepare("INSERT INTO agents (name, role, goal, backstory) VALUES (?, ?, ?, ?)");
+            $stmt->execute($agent);
+        }
+    }
+} catch (Exception $e) {}
 
 // Get available agents
-$agents = $db->select('agents', ['status' => 'active']) ?: [];
+$agents = $pdo->query("SELECT * FROM agents WHERE status = 'active' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
 // Get company's assigned agents
-$assignedAgents = $db->query(
-    "SELECT a.*, ca.assigned_at FROM agents a 
-     JOIN company_agents ca ON a.id = ca.agent_id 
-     WHERE ca.company_id = ? AND a.status = 'active'",
-    [$companyId]
-) ?: [];
+$assignedAgents = $pdo->prepare("SELECT a.*, ca.assigned_at FROM agents a 
+                                 JOIN company_agents ca ON a.id = ca.agent_id 
+                                 WHERE ca.company_id = ? AND a.status = 'active'");
+$assignedAgents->execute([$companyId]);
+$assignedAgents = $assignedAgents->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+// Get company data
+$companyData = ['name' => 'Your Company'];
+try {
+    $stmt = $pdo->prepare("SELECT * FROM companies WHERE id = ?");
+    $stmt->execute([$companyId]);
+    $company = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($company) {
+        $companyData = $company;
+    }
+} catch (Exception $e) {}
 ?>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h1>🤖 AI Community Center</h1>
-    <div>
-        <span style="background: #007cba; color: white; padding: 5px 10px; border-radius: 4px;">
-            <?= htmlspecialchars($companyData['name'] ?? 'Company') ?>
-        </span>
+    <!-- Header Section -->
+    <div class="header-section">
+        <div style="background: #007cba; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button id="sidebarToggle" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; display: none;">☰</button>
+                <h1 style="margin: 0; font-size: 1.5rem;">🤖 AI Community Center</h1>
+            </div>
+            <?= $menuSystem->renderHeaderMenu() ?>
+            <div class="profile-dropdown">
+                <span style="cursor: pointer; padding: 8px 12px; border-radius: 4px; background: rgba(255,255,255,0.1);">
+                    <?= htmlspecialchars($currentUser) ?> (<?= htmlspecialchars($userOrgId) ?>) ▼
+                </span>
+                <div class="profile-dropdown-content">
+                    <?php if ($isAdmin): ?>
+                        <a href="/admin/dashboard.php">⚙️ Admin Panel</a>
+                    <?php endif; ?>
+                    <a href="/web/logout.php">🚪 Logout</a>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <!-- Sidebar Section -->
+    <div class="sidebar-section">
+        <?= $menuSystem->renderSidebar($currentPage) ?>
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="main-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>AI Community Center</h2>
+            <div>
+                <span style="background: #007cba; color: white; padding: 5px 10px; border-radius: 4px;">
+                    <?= htmlspecialchars($companyData['name'] ?? 'Company') ?>
+                </span>
+            </div>
+        </div>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
     <!-- Available AI Agents -->
@@ -260,5 +329,40 @@ document.getElementById('chatModal').addEventListener('click', function(e) {
 });
 </script>
 
-<?php include __DIR__ . '/../admin/includes/footer.php'; ?>
+    </div>
+
+    <!-- Footer Section -->
+    <div class="footer-section">
+        <div style="padding: 15px 20px; text-align: center; color: #666;">
+            © 2024 ZeroAI CRM. All rights reserved.
+        </div>
+    </div>
+</div>
+
+<script>
+// Mobile sidebar toggle
+document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+    const container = document.getElementById('layoutContainer');
+    const sidebar = document.querySelector('.sidebar-section');
+    
+    if (window.innerWidth <= 768) {
+        sidebar.classList.toggle('mobile-open');
+    } else {
+        container.classList.toggle('sidebar-closed');
+    }
+});
+
+// Show mobile toggle on small screens
+function updateSidebarToggle() {
+    const toggle = document.getElementById('sidebarToggle');
+    if (toggle) {
+        toggle.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+    }
+}
+
+window.addEventListener('resize', updateSidebarToggle);
+updateSidebarToggle();
+</script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
 
