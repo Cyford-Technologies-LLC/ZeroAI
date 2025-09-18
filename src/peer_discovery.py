@@ -206,35 +206,7 @@ class PeerDiscovery:
             return False, f"Failed to add peer: {e}"
 
     def _load_all_peers(self) -> List[Dict[str, Any]]:
-        # Try to load from peers.yml first
-        peers_yml = Path("src/peers.yml")
-        if peers_yml.exists():
-            try:
-                import yaml
-                with open(peers_yml, 'r') as f:
-                    yml_data = yaml.safe_load(f)
-                    peers = []
-                    if yml_data:
-                        for name, config in yml_data.items():
-                        peers.append({
-                            "name": name,
-                            "ip": config["ip"],
-                            "port": config.get("port", 11434),
-                            "available": False,
-                            "models": [],
-                            "load_avg": 0.0,
-                            "memory_gb": 0.0,
-                            "gpu_available": False,
-                            "gpu_memory_gb": 0.0,
-                            "cpu_cores": 0,
-                            "last_updated": 0
-                        })
-                    if peers:
-                        return peers
-            except Exception as e:
-                log_peer(f"Error loading peers.yml: {e}", 1, "red")
-        
-        # Fallback to peers.json
+        # Load from peers.json only
         peers = self._load_peers_from_config()
         if peers:
             return peers
