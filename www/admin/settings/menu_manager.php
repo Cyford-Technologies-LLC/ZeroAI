@@ -223,9 +223,9 @@ if (isset($_GET['success'])) {
 </div>
 
 <!-- Edit Menu Modal -->
-<div class="modal fade" id="editMenuModal" tabindex="-1" style="display: none;">
-    <div class="modal-dialog">
-        <div class="modal-content">
+<div class="modal" id="editMenuModal" tabindex="-1" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog" style="position: relative; margin: 50px auto; max-width: 600px;">
+        <div class="modal-content" style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Menu Item</h5>
                 <button type="button" class="btn-close" onclick="closeModal('editMenuModal')"></button>
@@ -314,7 +314,8 @@ function editMenu(id) {
     document.getElementById('editSortOrder').value = menuData.sort_order || '';
     document.getElementById('editIsActive').checked = menuData.is_active == 1;
     
-    document.getElementById('editMenuModal').style.display = 'block';
+    document.getElementById('editMenuModal').style.display = 'flex';
+    document.getElementById('editMenuModal').style.alignItems = 'center';
 }
 
 function closeModal(modalId) {
