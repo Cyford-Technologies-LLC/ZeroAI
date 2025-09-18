@@ -24,13 +24,18 @@ class PeerManager {
         // Add local Ollama container as first peer
         $peers[] = $this->getLocalOllamaPeer();
         
-        // Add configured peers
+        // Add configured peers with real-time status check
         if (file_exists($this->peersConfigPath)) {
             $content = file_get_contents($this->peersConfigPath);
             $data = json_decode($content, true);
             
             if ($data && isset($data['peers'])) {
-                $peers = array_merge($peers, array_map([$this, 'formatPeer'], $data['peers']));
+                foreach ($data['peers'] as $peerData) {
+                    $peer = $this->formatPeer($peerData);
+                    // Always check status in real-time
+                    $peer['status'] = $this->testPeerConnection($peer['ip'], $peer['port']) ? 'online' : 'offline';
+                    $peers[] = $peer;
+                }
             }
         }
         
@@ -512,7 +517,7 @@ class PeerManager {
         
         // Start background process using dedicated script
         $scriptPath = __DIR__ . '/../../admin/install_model_background.php';
-        $cmd = "nohup php {$scriptPath} '{$peerIp}' '{$modelName}' '{$logFile}' > /dev/null 2>&1 &";
+        $cmd = "php {$scriptPath} '{$peerIp}' '{$modelName}' '{$logFile}' > /dev/null 2>&1 &";
         
         exec($cmd);
         
@@ -530,39 +535,23 @@ class PeerManager {
         file_put_contents($logFile, "Starting installation of {$modelName}...\n", FILE_APPEND);
         
         try {
-            $url = 'http://ollama:11434/api/pull';
-            $data = json_encode(['name' => $modelName, 'stream' => true]);
+            // Use simple curl approach for better compatibility
+            $cmd = "curl -X POST http://ollama:11434/api/pull -H 'Content-Type: application/json' -d '{\"name\":\"{$modelName}\"}' 2>&1";
             
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'POST',
-                    'header' => "Content-Type: application/json\r\n",
-                    'content' => $data,
-                    'timeout' => 1800 // 30 minutes
-                ]
-            ]);
+            file_put_contents($logFile, "Executing: {$cmd}\n", FILE_APPEND);
             
-            $stream = fopen($url, 'r', false, $context);
-            if ($stream) {
-                while (!feof($stream)) {
-                    $line = fgets($stream);
-                    if ($line) {
-                        $data = json_decode($line, true);
-                        if ($data) {
-                            $status = $data['status'] ?? 'Processing';
-                            $progress = '';
-                            if (isset($data['completed']) && isset($data['total'])) {
-                                $percent = round(($data['completed'] / $data['total']) * 100, 1);
-                                $progress = " ({$percent}%)";
-                            }
-                            file_put_contents($logFile, "{$status}{$progress}\n", FILE_APPEND);
-                        }
-                    }
-                }
-                fclose($stream);
+            $output = [];
+            $returnCode = 0;
+            exec($cmd, $output, $returnCode);
+            
+            foreach ($output as $line) {
+                file_put_contents($logFile, $line . "\n", FILE_APPEND);
+            }
+            
+            if ($returnCode === 0) {
                 file_put_contents($logFile, "Installation completed successfully!\n", FILE_APPEND);
             } else {
-                file_put_contents($logFile, "ERROR: Failed to connect to Ollama\n", FILE_APPEND);
+                file_put_contents($logFile, "ERROR: Installation failed with code {$returnCode}\n", FILE_APPEND);
             }
         } catch (\Exception $e) {
             file_put_contents($logFile, "ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
