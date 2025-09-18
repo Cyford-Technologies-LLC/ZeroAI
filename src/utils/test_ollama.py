@@ -1,7 +1,7 @@
 import ollama
 
 try:
-    ollama_client = ollama.Client(host='http://149.36.1.65:11434')
+    ollama_client = ollama.Client(host='http:// gpu-001:11434')
     response = ollama_client.embeddings(
         model='mxbai-embed-large',
         prompt='test'

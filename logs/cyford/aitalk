@@ -19,17 +19,17 @@ Initializing DevOps router, waiting up to 5s for initial peer discovery...
 🔍 Initiating peer discovery cycle...
 ✅ Loaded 2 peers from configuration.
    Loaded peers:
-[{'name': 'GPU-01', 'ip': '149.36.1.65', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
+[{'name': 'GPU-01', 'ip': ' gpu-001', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
    Loaded peers:
-[{'name': 'GPU-01', 'ip': '149.36.1.65', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
-✅ Discovered Ollama on peer GPU-01 at 149.36.1.65. Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
-✅ Discovered Ollama on peer GPU-01 at 149.36.1.65. Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
+[{'name': 'GPU-01', 'ip': ' gpu-001', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
+✅ Discovered Ollama on peer GPU-01 at  gpu-001. Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
+✅ Discovered Ollama on peer GPU-01 at  gpu-001. Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
 ✅ Discovered Ollama on peer web-01 at 66.179.243.150. Models: ['gemma2:2b', 'llama3.2:1b', 'llama3.2:latest']
 ✅ Discovered Ollama on peer web-01 at 66.179.243.150. Models: ['gemma2:2b', 'llama3.2:1b', 'llama3.2:latest']
 🔍 Peer discovery cycle complete.
 Forced an immediate peer discovery cycle
 Found 2 peers during router initialization
-  - Peer: GPU-01 (149.36.1.65)
+  - Peer: GPU-01 ( gpu-001)
     Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
   - Peer: web-01 (66.179.243.150)
     Models: ['gemma2:2b', 'llama3.2:1b', 'llama3.2:latest']
@@ -49,8 +49,8 @@ Attempting distributed routing for category 'general' with preferences: ['llama3
 🔍 Initiating peer discovery cycle...
 ✅ Loaded 2 peers from configuration.
    Loaded peers:
-[{'name': 'GPU-01', 'ip': '149.36.1.65', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
-✅ Discovered Ollama on peer GPU-01 at 149.36.1.65. Models: ['gemma2:2b', 'llava:7b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
+[{'name': 'GPU-01', 'ip': ' gpu-001', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
+✅ Discovered Ollama on peer GPU-01 at  gpu-001. Models: ['gemma2:2b', 'llava:7b', 'codellama:13b', 'codellama:7b', 'llama3.2:1b', 'llama3.2:latest', 'llama3.1:8b']
 ✅ Discovered Ollama on peer web-01 at 66.179.243.150. Models: ['gemma2:2b', 'llama3.2:1b', 'llama3.2:latest']
 🔍 Peer discovery cycle complete.
 Ran peer discovery cycle to refresh peer list
@@ -68,14 +68,14 @@ Ran peer discovery cycle to refresh peer list
       - 🚫 Model llava:7b not available on peer web-01.
       - ✅ Candidate found: Model=llama3.2:1b on Peer=web-01
 ✅ Optimal Endpoint Selected: Peer=GPU-01, Model=llama3.1:8b
-Parent method returned: base_url=http://149.36.1.65:11434, peer_name=GPU-01, model_name=llama3.1:8b
-DEBUG: Distributed routing result: base_url=http://149.36.1.65:11434, model_name=llama3.1:8b
+Parent method returned: base_url=http:// gpu-001:11434, peer_name=GPU-01, model_name=llama3.1:8b
+DEBUG: Distributed routing result: base_url=http:// gpu-001:11434, model_name=llama3.1:8b
 
 --- DEBUG: Successful Distributed Call ---
   Attempting to create Ollama instance with config:
   {
   "model": "ollama/llama3.1:8b",
-  "base_url": "http://149.36.1.65:11434",
+  "base_url": "http:// gpu-001:11434",
   "temperature": 0.3
 }
 --- END DEBUG: Successful Distributed Call ---
@@ -85,8 +85,8 @@ Attempting distributed routing for category 'general' with preferences: ['llama3
 🔍 Initiating peer discovery cycle...
 ✅ Loaded 2 peers from configuration.
    Loaded peers:
-[{'name': 'GPU-01', 'ip': '149.36.1.65', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
-✅ Discovered Ollama on peer GPU-01 at 149.36.1.65. Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:latest', 'llama3.2:1b', 'llama3.1:8b']
+[{'name': 'GPU-01', 'ip': ' gpu-001', 'port': 8080}, {'name': 'web-01', 'ip': '66.179.243.150', 'port': 8080}]
+✅ Discovered Ollama on peer GPU-01 at  gpu-001. Models: ['llava:7b', 'gemma2:2b', 'codellama:13b', 'codellama:7b', 'llama3.2:latest', 'llama3.2:1b', 'llama3.1:8b']
 ✅ Discovered Ollama on peer web-01 at 66.179.243.150. Models: ['llama3.2:1b', 'llama3.2:latest', 'gemma2:2b']
 🔍 Peer discovery cycle complete.
 Ran peer discovery cycle to refresh peer list
@@ -104,14 +104,14 @@ Ran peer discovery cycle to refresh peer list
       - 🚫 Model llava:7b not available on peer web-01.
       - ✅ Candidate found: Model=llama3.2:1b on Peer=web-01
 ✅ Optimal Endpoint Selected: Peer=GPU-01, Model=llama3.1:8b
-Parent method returned: base_url=http://149.36.1.65:11434, peer_name=GPU-01, model_name=llama3.1:8b
-DEBUG: Distributed routing result: base_url=http://149.36.1.65:11434, model_name=llama3.1:8b
+Parent method returned: base_url=http:// gpu-001:11434, peer_name=GPU-01, model_name=llama3.1:8b
+DEBUG: Distributed routing result: base_url=http:// gpu-001:11434, model_name=llama3.1:8b
 
 --- DEBUG: Successful Distributed Call ---
   Attempting to create Ollama instance with config:
   {
   "model": "ollama/llama3.1:8b",
-  "base_url": "http://149.36.1.65:11434",
+  "base_url": "http:// gpu-001:11434",
   "temperature": 0.3
 }
 --- END DEBUG: Successful Distributed Call ---

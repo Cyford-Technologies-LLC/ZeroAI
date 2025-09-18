@@ -13,7 +13,7 @@ done
 ### Peer Management
 ```bash
 # Add GPU peer
-python -m run.internal.peer_manager --ip 149.36.1.65 --name GPU-01 --model codellama:13b add
+python -m run.internal.peer_manager --ip  gpu-001 --name GPU-01 --model codellama:13b add
 
 # List peers
 python -m run.internal.peer_manager list
@@ -221,7 +221,7 @@ free -h
 nvidia-smi
 
 # Test peer connectivity
-curl http://149.36.1.65:11434/api/tags
+curl http:// gpu-001:11434/api/tags
 
 # Reset peer discovery cache
 rm -f config/peers.json

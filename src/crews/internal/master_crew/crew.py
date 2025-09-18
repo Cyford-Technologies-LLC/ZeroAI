@@ -23,7 +23,7 @@ from langchain_ollama import OllamaEmbeddings
 #     "provider": "ollama",
 #     "config": {
 #         "model": "mistral-nemo:latest",
-#         "base_url": "http://149.36.1.65:11434"
+#         "base_url": "http:// gpu-001:11434"
 #     }
 # }
 

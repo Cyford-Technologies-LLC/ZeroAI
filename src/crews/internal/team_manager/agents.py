@@ -294,7 +294,7 @@ def get_manager_llmc(router: Any) -> Any:
     try:
         manager_llm = OllamaLLM(
             model="ollama/llama3.1:8b",
-            base_url="http://149.36.1.65:11434"
+            base_url="http:// gpu-001:11434"
         )
         manager_llm.get_num_tokens("test")
         console.print(

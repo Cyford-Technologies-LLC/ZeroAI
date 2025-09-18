@@ -25,7 +25,7 @@ ollama_embedder_config = {
     "provider": "ollama",
     "config": {
         "model": "mxbai-embed-large",
-        "base_url": "http://149.36.1.65:11434"
+        "base_url": "http:// gpu-001:11434"
     }
 }
 
@@ -201,7 +201,7 @@ def create_project_manager_agent(router: DistributedRouter, inputs: Dict[str, An
             "provider": "ollama",
             "config": {
                 "model": "mxbai-embed-large",
-                "base_url": "http://149.36.1.65:11434"
+                "base_url": "http:// gpu-001:11434"
             }
         }
 
@@ -309,7 +309,7 @@ def create_internal_researcher_agent(router: DistributedRouter, inputs: Dict[str
             "provider": "ollama",
             "config": {
                 "model": "mxbai-embed-large",
-                "base_url": "http://149.36.1.65:11434"
+                "base_url": "http:// gpu-001:11434"
             }
         }
 
