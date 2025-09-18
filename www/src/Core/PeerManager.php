@@ -762,5 +762,83 @@ class PeerManager {
             throw $e;
         }
     }
+    
+    public function applyAutoInstallRules() {
+        try {
+            $rules = $this->getModelRules();
+            $peers = $this->getPeers();
+            $installJobs = [];
+            
+            foreach ($peers as $peer) {
+                if ($peer['status'] !== 'online') continue;
+                
+                $installedModels = $this->getInstalledModels($peer['ip']);
+                $modelsToInstall = [];
+                
+                // All peers models
+                foreach ($rules['all_peers'] as $model) {
+                    if (!in_array($model, $installedModels)) {
+                        $modelsToInstall[] = $model;
+                    }
+                }
+                
+                // Memory-based models
+                $memoryGb = $peer['memory_gb'];
+                if ($memoryGb < 4) {
+                    foreach ($rules['memory_low'] as $model) {
+                        if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                            $modelsToInstall[] = $model;
+                        }
+                    }
+                } elseif ($memoryGb >= 4 && $memoryGb <= 8) {
+                    foreach ($rules['memory_medium'] as $model) {
+                        if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                            $modelsToInstall[] = $model;
+                        }
+                    }
+                } else {
+                    foreach ($rules['memory_high'] as $model) {
+                        if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                            $modelsToInstall[] = $model;
+                        }
+                    }
+                }
+                
+                // GPU-based models
+                if ($peer['gpu_available']) {
+                    $gpuMemoryGb = $peer['gpu_memory_gb'];
+                    if ($gpuMemoryGb < 14) {
+                        foreach ($rules['gpu_low'] as $model) {
+                            if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                                $modelsToInstall[] = $model;
+                            }
+                        }
+                    } else {
+                        foreach ($rules['gpu_high'] as $model) {
+                            if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                                $modelsToInstall[] = $model;
+                            }
+                        }
+                    }
+                }
+                
+                // Start installations
+                foreach ($modelsToInstall as $model) {
+                    $jobId = $this->startModelInstallation($peer['ip'], $model);
+                    $installJobs[] = [
+                        'peer' => $peer['name'],
+                        'model' => $model,
+                        'job_id' => $jobId
+                    ];
+                }
+            }
+            
+            $this->logger->info('Auto-install rules applied', ['jobs' => count($installJobs)]);
+            return $installJobs;
+        } catch (\Exception $e) {
+            $this->logger->error('Auto-install failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
 }
 

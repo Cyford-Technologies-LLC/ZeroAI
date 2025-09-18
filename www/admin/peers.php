@@ -75,6 +75,11 @@ if ($_POST) {
                 $message = "Model auto-install rules saved successfully!";
                 break;
                 
+            case 'apply_auto_install':
+                $jobs = $peerManager->applyAutoInstallRules();
+                $message = "Started " . count($jobs) . " model installations based on auto-install rules!";
+                break;
+                
             case 'export_models':
                 $exportData = $peerManager->exportModels();
                 header('Content-Type: application/json');
@@ -370,92 +375,21 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
                 
-                <script>
-                function addModel(category) {
-                    const container = document.getElementById(category + '_models');
-                    const div = document.createElement('div');
-                    div.className = 'mb-1';
-                    div.innerHTML = `
-                        <input type="text" name="${category}[]" placeholder="model:tag" style="width: 200px; padding: 2px;">
-                        <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
-                    `;
-                    container.appendChild(div);
-                }
-                
-                let installationJobId = null;
-                let installationInterval = null;
-                
-                function installModelWithProgress(peerIp, modelName) {
-                    // Show progress modal
-                    document.getElementById('installModal').style.display = 'block';
-                    document.getElementById('installModelName').textContent = modelName;
-                    document.getElementById('installPeerIp').textContent = peerIp;
-                    document.getElementById('installProgress').innerHTML = 'Starting installation...';
-                    
-                    // Start installation
-                    fetch('model_install_api.php', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: `action=start_install&peer_ip=${encodeURIComponent(peerIp)}&model_name=${encodeURIComponent(modelName)}`
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            installationJobId = data.job_id;
-                            // Start polling for status
-                            installationInterval = setInterval(checkInstallationStatus, 2000);
-                        } else {
-                            document.getElementById('installProgress').innerHTML = 'Error: ' + data.error;
-                        }
-                    })
-                    .catch(error => {
-                        document.getElementById('installProgress').innerHTML = 'Error: ' + error.message;
-                    });
-                }
-                
-                function checkInstallationStatus() {
-                    if (!installationJobId) return;
-                    
-                    fetch(`model_install_api.php?action=get_status&job_id=${installationJobId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const status = data.status;
-                            document.getElementById('installProgress').innerHTML = '<pre>' + status.log + '</pre>';
-                            
-                            if (status.status === 'completed') {
-                                clearInterval(installationInterval);
-                                document.getElementById('installProgress').innerHTML += '<div style="color: green; font-weight: bold;">Installation completed successfully!</div>';
-                                setTimeout(() => {
-                                    closeInstallModal();
-                                    location.reload(); // Refresh to show new model
-                                }, 2000);
-                            } else if (status.status === 'error') {
-                                clearInterval(installationInterval);
-                                document.getElementById('installProgress').innerHTML += '<div style="color: red; font-weight: bold;">Installation failed!</div>';
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Status check error:', error);
-                    });
-                }
-                
-                function closeInstallModal() {
-                    document.getElementById('installModal').style.display = 'none';
-                    if (installationInterval) {
-                        clearInterval(installationInterval);
-                        installationInterval = null;
-                    }
-                    installationJobId = null;
-                }
-                </script>
+                <script src="js/model-install.js"></script>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button type="submit" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                         Save Auto-Install Rules
                     </button>
                 </div>
+            </form>
+            
+            <form method="POST" style="margin-top: 15px;">
+                <input type="hidden" name="action" value="apply_auto_install">
+                <button type="submit" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 8px 16px; border-radius: 4px; cursor: pointer;" onclick="return confirm('This will install models on all online peers based on the rules above. Continue?')">
+                    🚀 Apply Auto-Install Rules Now
+                </button>
+                <small style="margin-left: 10px; color: #666;">Install models on all peers based on the rules above</small>
             </form>
         </div>
     </div>
