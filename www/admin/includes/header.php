@@ -242,7 +242,7 @@ $currentPage = $currentPage ?? '';
                     <h3>Configuration</h3>
                     <a href="/admin/settings.php" <?= ($currentPage ?? '') === 'settings' ? 'class="active"' : '' ?>>General Settings</a>
                     <a href="/admin/peers.php" <?= ($currentPage ?? '') === 'peers' ? 'class="active"' : '' ?>>Peer Management</a>
-
+                    <a href="/admin/settings/menu_manager.php" <?= ($currentPage ?? '') === 'menu_manager' ? 'class="active"' : '' ?>>🍔 Menu Manager</a>
                     <a href="/admin/config.php" <?= ($currentPage ?? '') === 'config' ? 'class="active"' : '' ?>>System Config</a>
                     <a href="/admin/api" <?= ($currentPage ?? '') === 'api' ? 'class="active"' : '' ?>>API Settings</a>
                 </div>

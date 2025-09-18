@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/csp.php';
+require_once __DIR__ . '/menu_system.php';
 
 session_start();
 require_once __DIR__ . '/../../src/autoload.php';
@@ -27,6 +28,9 @@ try {
     if ($user) {
         $userOrgId = $user['organization_id'] ?? 1;
     }
+    
+    // Initialize menu system
+    $menuSystem = new MenuSystem($pdo);
 } catch (Exception $e) {
     // Use default
 }
@@ -191,11 +195,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             <img src="/assets/frontend/images/icons/logo.svg" width="24" height="24" style="margin-right: 8px;"> ZeroAI CRM
         </div>
         <div style="display: flex; gap: 20px; margin-right: 20px;">
-            <a href="/web/index.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">📊 Dashboard</a>
-            <a href="/web/companies.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">🏢 Companies</a>
-            <a href="/web/sales.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">💰 Sales</a>
-            <a href="/web/projects.php" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px;">📋 Projects</a>
-            <a href="/web/ai_workshop.php" style="background: #0dcaf0; color: black; padding: 6px 12px; border-radius: 4px; text-decoration: none;">🤖 AI</a>
+            <?= isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage) : '' ?>
             <?php if ($isAdmin): ?><a href="/admin/dashboard.php" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none;">⚙️ Admin</a><?php endif; ?>
         </div>
         
@@ -233,41 +233,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             </h6>
         </div>
         <div id="sidebar-content" style="padding: 20px;">
-            <?php if ($currentContext === 'projects'): ?>
-                <!-- Project Context Menu -->
-                <div style="margin-bottom: 20px;">
-                    <h6 style="color: #94a3b8; margin-bottom: 10px;">Project Navigation</h6>
-                    <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 All Projects</a>
-                    <?php if ($contextId): ?>
-                        <a href="/web/project_view.php?id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">📊 Project Overview</a>
-                        <a href="/web/tasks.php?project_id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">✅ Tasks</a>
-                        <a href="/web/bugs.php?project_id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">🐛 Bugs</a>
-                        <a href="/web/features.php?project_id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">✨ Features</a>
-                        <a href="/web/team.php?project_id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">👥 Team</a>
-                        <a href="/web/releases.php?project_id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">🚀 Releases</a>
-                        <a href="/web/documents.php?project_id=<?= htmlspecialchars($contextId) ?>" style="color: white; text-decoration: none; display: block; padding: 8px 0; padding-left: 20px;">📄 Documents</a>
-                    <?php endif; ?>
-                </div>
-            <?php elseif ($currentContext === 'companies'): ?>
-                <!-- Company Context Menu -->
-                <div style="margin-bottom: 20px;">
-                    <h6 style="color: #94a3b8; margin-bottom: 10px;">Company Navigation</h6>
-                    <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>
-                    <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Contacts</a>
-                    <a href="/web/documents.php?context=companies" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📄 Documents</a>
-                </div>
-            <?php else: ?>
-                <!-- Main Menu -->
-                <div style="margin-bottom: 20px;">
-                    <h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>
-                    <a href="/web/index.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📊 Dashboard</a>
-                    <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 Companies</a>
-                    <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Contacts</a>
-                    <a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 Projects</a>
-                    <a href="/web/tasks.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">✅ Tasks</a>
-                    <a href="/web/sales.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">💰 Sales</a>
-                </div>
-            <?php endif; ?>
+            <?= isset($menuSystem) ? $menuSystem->renderSidebarMenu($currentContext, $contextId) : '' ?>
             
             <div style="margin-bottom: 20px;">
                 <h6 style="color: #94a3b8; margin-bottom: 10px;">Quick Actions</h6>
