@@ -84,10 +84,23 @@ async def get_capabilities():
     except:
         pass
     
+    # Get models from local Ollama
+    models = []
+    try:
+        import requests
+        response = requests.get(f"{os.getenv('OLLAMA_HOST', 'http://ollama:11434')}/api/tags", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            models = [m['name'] for m in data.get('models', [])]
+    except:
+        pass
+    
     return {
-        "load_avg": load_avg,
+        "cpu_cores": cpu_cores,
         "memory_gb": round(memory_gb, 1),
-        "gpu_available": gpu_available,
         "gpu_memory_gb": round(gpu_memory_gb, 1),
-        "cpu_cores": cpu_cores
+        "models": models,
+        "load_avg": load_avg,
+        "available": True,
+        "gpu_available": gpu_available
     }
