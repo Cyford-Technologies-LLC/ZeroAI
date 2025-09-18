@@ -309,7 +309,7 @@ include __DIR__ . '/includes/header.php';
                                         <?php endif; ?>
                                     </td>
                                     <td><?= htmlspecialchars($peer['ip']) ?>:<?= $peer['port'] ?></td>
-                                    <td><a href="http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health/" target="_blank">http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health/</a></td>
+                                    <td><a href="http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health" target="_blank">http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health</a></td>
                                     <td>
                                         <span class="badge bg-<?= $peer['status'] === 'online' ? 'success' : 'secondary' ?>">
                                             <?= $peer['status'] ?>
