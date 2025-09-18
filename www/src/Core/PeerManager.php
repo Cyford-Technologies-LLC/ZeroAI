@@ -417,9 +417,10 @@ class PeerManager {
             $context = stream_context_create([
                 'http' => [
                     'method' => 'POST',
-                    'header' => "Content-Type: application/json\r\n",
+                    'header' => "Content-Type: application/json\r\nContent-Length: " . strlen($data) . "\r\n",
                     'content' => $data,
-                    'timeout' => 300 // 5 minutes timeout
+                    'timeout' => 300, // 5 minutes timeout
+                    'ignore_errors' => true
                 ]
             ]);
             
@@ -470,9 +471,10 @@ class PeerManager {
             $context = stream_context_create([
                 'http' => [
                     'method' => 'POST',
-                    'header' => "Content-Type: application/json\r\n",
+                    'header' => "Content-Type: application/json\r\nContent-Length: " . strlen($data) . "\r\n",
                     'content' => $data,
-                    'timeout' => 300
+                    'timeout' => 300,
+                    'ignore_errors' => true
                 ]
             ]);
             
@@ -621,6 +623,30 @@ class PeerManager {
             return $config['peer_manager_key'] ?? 'default_key_change_me';
         }
         return 'default_key_change_me';
+    }
+    
+    private function checkPeerHasOllama($peerIp) {
+        try {
+            // Handle local Ollama container
+            if ($peerIp === 'ollama' || $peerIp === 'localhost') {
+                $url = 'http://ollama:11434/api/tags';
+            } else {
+                $url = "http://{$peerIp}:11434/api/tags";
+            }
+            
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 2,
+                    'ignore_errors' => true,
+                    'method' => 'GET'
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            return $result !== false;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     public function getInstalledModels($peerIp) {
@@ -855,23 +881,35 @@ class PeerManager {
                     
                     $this->logger->info('Models to install for peer', ['peer' => $peer['name'], 'models' => $modelsToInstall]);
                     
-                    // Start installations
-                    foreach ($modelsToInstall as $model) {
-                        try {
-                            $this->logger->info('Starting model installation', ['peer' => $peer['name'], 'model' => $model]);
-                            $jobId = $this->startModelInstallation($peer['ip'], $model);
-                            $installJobs[] = [
+                    // Check if peer has Ollama before installing models
+                    if (!empty($modelsToInstall)) {
+                        $hasOllama = $this->checkPeerHasOllama($peer['ip']);
+                        if (!$hasOllama) {
+                            $this->logger->info('Skipping model installation - peer does not have Ollama', [
                                 'peer' => $peer['name'],
-                                'model' => $model,
-                                'job_id' => $jobId
-                            ];
-                            $this->logger->info('Model installation job started', ['peer' => $peer['name'], 'model' => $model, 'job_id' => $jobId]);
-                        } catch (\Exception $e) {
-                            $this->logger->error('Failed to start model installation', [
-                                'peer' => $peer['name'],
-                                'model' => $model,
-                                'error' => $e->getMessage()
+                                'ip' => $peer['ip'],
+                                'models_skipped' => $modelsToInstall
                             ]);
+                        } else {
+                            // Start installations
+                            foreach ($modelsToInstall as $model) {
+                                try {
+                                    $this->logger->info('Starting model installation', ['peer' => $peer['name'], 'model' => $model]);
+                                    $jobId = $this->startModelInstallation($peer['ip'], $model);
+                                    $installJobs[] = [
+                                        'peer' => $peer['name'],
+                                        'model' => $model,
+                                        'job_id' => $jobId
+                                    ];
+                                    $this->logger->info('Model installation job started', ['peer' => $peer['name'], 'model' => $model, 'job_id' => $jobId]);
+                                } catch (\Exception $e) {
+                                    $this->logger->error('Failed to start model installation', [
+                                        'peer' => $peer['name'],
+                                        'model' => $model,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                }
+                            }
                         }
                     }
                 } catch (\Exception $e) {

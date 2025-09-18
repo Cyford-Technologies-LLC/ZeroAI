@@ -82,20 +82,20 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Log Viewer Modal -->
-<div class="modal fade" id="logModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="logModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Installation Log</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="logContent" style="background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
+                <div id="logContent" style="background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-size: 12px;">
                     Loading...
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
                 <button type="button" class="btn btn-primary" onclick="refreshLog()">Refresh</button>
             </div>
         </div>
@@ -103,14 +103,55 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <script>
+function closeModal() {
+    const modal = document.getElementById('logModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    currentJobId = null;
+}
+
+// Close modal when clicking outside
+document.getElementById('logModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+
+<script>
 let currentJobId = null;
+let logModal = null;
+
+// Initialize modal when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const modalElement = document.getElementById('logModal');
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        logModal = new bootstrap.Modal(modalElement);
+    } else {
+        // Fallback for older Bootstrap or jQuery
+        logModal = {
+            show: function() {
+                $('#logModal').modal('show');
+            },
+            hide: function() {
+                $('#logModal').modal('hide');
+            }
+        };
+    }
+});
 
 function viewLog(jobId) {
     currentJobId = jobId;
     document.getElementById('logContent').textContent = 'Loading...';
     
-    const modal = new bootstrap.Modal(document.getElementById('logModal'));
-    modal.show();
+    // Show modal
+    if (logModal) {
+        logModal.show();
+    } else {
+        // Direct fallback
+        document.getElementById('logModal').style.display = 'block';
+        document.getElementById('logModal').classList.add('show');
+    }
     
     refreshLog();
 }
@@ -139,5 +180,66 @@ setInterval(() => {
     }
 }, 5000);
 </script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal.show {
+    display: block !important;
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 10px;
+    pointer-events: none;
+}
+
+.modal-lg {
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: 6px;
+    box-shadow: 0 3px 9px rgba(0,0,0,.5);
+    pointer-events: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 15px;
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 15px;
+    border-top: 1px solid #dee2e6;
+    gap: 10px;
+}
+</style>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
