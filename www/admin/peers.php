@@ -204,8 +204,7 @@ include __DIR__ . '/includes/header.php';
                                     <td><?= $peer['memory_gb'] ?>GB</td>
                                     <td>
                                         <?php $installedModels = $peerManager->getInstalledModels($peer['ip']); ?>
-                                        <small><?= implode(', ', array_slice($installedModels, 0, 5)) ?>
-                                        <?= count($installedModels) > 5 ? '...' : '' ?></small>
+                                        <small><?= implode(', ', $installedModels) ?></small>
                                     </td>
                                     <td><small><?= $peer['last_check'] ?></small></td>
                                     <td>
