@@ -104,7 +104,7 @@ class PeerManager {
                 'ip' => $ip,
                 'port' => (int)$port,
                 'available' => false,
-                'last_updated' => time()
+                'last_updated' => (int)time()
             ];
             
             $peers[] = $newPeer;
@@ -281,7 +281,7 @@ class PeerManager {
                 'memory_gb' => $caps['memory_gb'] ?? 0,
                 'gpu_available' => $caps['gpu_available'] ?? false,
                 'gpu_memory_gb' => $caps['gpu_memory_gb'] ?? 0,
-                'last_check' => isset($caps['last_seen']) ? date('Y-m-d H:i:s', $caps['last_seen']) : 'Never'
+                'last_check' => isset($caps['last_seen']) ? date('Y-m-d H:i:s', (int)$caps['last_seen']) : 'Never'
             ];
         } else {
             // Flat format
@@ -295,7 +295,7 @@ class PeerManager {
                 'memory_gb' => $peer['memory_gb'] ?? 0,
                 'gpu_available' => $peer['gpu_available'] ?? false,
                 'gpu_memory_gb' => $peer['gpu_memory_gb'] ?? 0,
-                'last_check' => isset($peer['last_updated']) ? date('Y-m-d H:i:s', $peer['last_updated']) : 'Never'
+                'last_check' => isset($peer['last_updated']) ? date('Y-m-d H:i:s', (int)$peer['last_updated']) : 'Never'
             ];
         }
     }
@@ -441,8 +441,10 @@ class PeerManager {
             
             $context = stream_context_create([
                 'http' => [
-                    'timeout' => 3,
-                    'ignore_errors' => true
+                    'timeout' => 2,
+                    'ignore_errors' => true,
+                    'method' => 'GET',
+                    'header' => "Connection: close\r\n"
                 ]
             ]);
             
@@ -450,6 +452,11 @@ class PeerManager {
             
             if ($result === false) {
                 $this->logger->debug('Failed to get models from peer', ['ip' => $peerIp, 'url' => $url]);
+                return [];
+            }
+            
+            if (empty($result)) {
+                $this->logger->debug('Empty response from peer', ['ip' => $peerIp, 'url' => $url]);
                 return [];
             }
             

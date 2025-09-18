@@ -290,6 +290,7 @@ include __DIR__ . '/includes/header.php';
                             <tr>
                                 <th>Name</th>
                                 <th>IP:Port</th>
+                                <th>Health URL</th>
                                 <th>Status</th>
                                 <th>GPU</th>
                                 <th>Memory</th>
@@ -308,6 +309,7 @@ include __DIR__ . '/includes/header.php';
                                         <?php endif; ?>
                                     </td>
                                     <td><?= htmlspecialchars($peer['ip']) ?>:<?= $peer['port'] ?></td>
+                                    <td><a href="http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health/" target="_blank">http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health/</a></td>
                                     <td>
                                         <span class="badge bg-<?= $peer['status'] === 'online' ? 'success' : 'secondary' ?>">
                                             <?= $peer['status'] ?>
@@ -349,7 +351,7 @@ include __DIR__ . '/includes/header.php';
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colspan="8" style="background: #f8f9fa; padding: 10px;">
+                                    <td colspan="9" style="background: #f8f9fa; padding: 10px;">
                                         <strong>Recommended Models (RAM: <?= $peer['memory_gb'] ?>GB, GPU: <?= $peer['gpu_available'] ? 'Yes' : 'No' ?>):</strong><br>
                                         <?php 
                                         $recommended = $peerManager->getRecommendedModels($peer['memory_gb'], $peer['gpu_available'], $peer['gpu_memory_gb']);
