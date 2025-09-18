@@ -36,12 +36,14 @@ class MenuSystem {
         (2, 'Companies', 'header', 'companies', '/web/companies.php', '🏢', 2, 1),
         (3, 'Sales', 'header', 'sales', '/web/sales.php', '💰', 3, 1),
         (4, 'Projects', 'header', 'projects', '/web/projects.php', '📋', 4, 1),
-        (5, 'AI Workshop', 'header', 'ai', '/web/ai_workshop.php', '🤖', 5, 1),
+        (5, 'Marketing', 'header', 'marketing', '/web/marketing.php', '📊', 5, 1),
+        (6, 'AI Workshop', 'header', 'ai', '/web/ai_workshop.php', '🤖', 6, 1),
         
         (10, 'All Companies', 'sidebar', 'companies', '/web/companies.php', '🏢', 1, 1),
-        (11, 'Contacts', 'sidebar', 'companies', '/web/contacts.php', '👥', 2, 1),
+        (11, 'Contacts', 'sidebar', 'companies', '/web/contacts.php', '☎️', 2, 1),
         (12, 'Locations', 'sidebar', 'companies', '/web/locations.php', '📍', 3, 1),
-        (13, 'Documents', 'sidebar', 'companies', '/web/documents.php?context=companies', '📄', 4, 1),
+        (13, 'Employees', 'sidebar', 'companies', '/web/employees.php', '👥', 4, 1),
+        (14, 'Documents', 'sidebar', 'companies', '/web/documents.php?context=companies', '📄', 5, 1),
         
         (20, 'All Projects', 'sidebar', 'projects', '/web/projects.php', '📋', 1, 1),
         (21, 'Tasks', 'sidebar', 'projects', '/web/tasks.php', '✅', 2, 1),
@@ -49,7 +51,21 @@ class MenuSystem {
         (23, 'Features', 'sidebar', 'projects', '/web/features.php', '✨', 4, 1),
         (24, 'Team', 'sidebar', 'projects', '/web/team.php', '👥', 5, 1),
         (25, 'Releases', 'sidebar', 'projects', '/web/releases.php', '🚀', 6, 1),
-        (26, 'Project Documents', 'sidebar', 'projects', '/web/documents.php?context=projects', '📄', 7, 1);
+        (26, 'Project Documents', 'sidebar', 'projects', '/web/documents.php?context=projects', '📄', 7, 1),
+        
+        (30, 'Campaigns', 'sidebar', 'marketing', '/web/campaigns.php', '📢', 1, 1),
+        (31, 'Email Marketing', 'sidebar', 'marketing', '/web/email_marketing.php', '📧', 2, 1),
+        (32, 'Analytics', 'sidebar', 'marketing', '/web/analytics.php', '📈', 3, 1),
+        (33, 'Lead Generation', 'sidebar', 'marketing', '/web/lead_generation.php', '🎯', 4, 1),
+        
+        (40, 'Pipeline', 'sidebar', 'sales', '/web/sales.php', '💰', 1, 1),
+        (41, 'Opportunities', 'sidebar', 'sales', '/web/opportunities.php', '🎯', 2, 1),
+        (42, 'Quotes', 'sidebar', 'sales', '/web/quotes.php', '📋', 3, 1),
+        (43, 'Reports', 'sidebar', 'sales', '/web/sales_reports.php', '📊', 4, 1),
+        
+        (50, 'AI Center', 'sidebar', 'ai', '/web/ai_center.php', '🤖', 1, 1),
+        (51, 'AI Workshop', 'sidebar', 'ai', '/web/ai_workshop.php', '🔧', 2, 1),
+        (52, 'Automation', 'sidebar', 'ai', '/web/automation.php', '⚡', 3, 1);
         ";
         
         $this->pdo->exec($sql);
@@ -115,6 +131,12 @@ class MenuSystem {
         return $html;
     }
     
+    public function renderSidebar($currentPage = '') {
+        $context = $this->getCurrentContext();
+        $contextId = $this->getContextId();
+        return $this->renderSidebarMenu($context, $contextId);
+    }
+    
     public function renderSidebarMenu($context = 'main', $contextId = null) {
         $menus = $this->getSidebarMenus($context);
         $html = '';
@@ -178,6 +200,32 @@ class MenuSystem {
         return array_filter($menus, function($menu) use ($context) {
             return $menu['menu_group'] === $context;
         });
+    }
+    
+    private function getCurrentContext() {
+        $uri = $_SERVER['REQUEST_URI'];
+        if (strpos($uri, '/projects.php') !== false || strpos($uri, '/tasks.php') !== false || 
+            strpos($uri, '/bugs.php') !== false || strpos($uri, '/features.php') !== false ||
+            strpos($uri, '/team.php') !== false || strpos($uri, '/releases.php') !== false) {
+            return 'projects';
+        } elseif (strpos($uri, '/companies.php') !== false || strpos($uri, '/contacts.php') !== false ||
+                  strpos($uri, '/locations.php') !== false || strpos($uri, '/employees.php') !== false) {
+            return 'companies';
+        } elseif (strpos($uri, '/sales.php') !== false || strpos($uri, '/opportunities.php') !== false ||
+                  strpos($uri, '/quotes.php') !== false || strpos($uri, '/sales_reports.php') !== false) {
+            return 'sales';
+        } elseif (strpos($uri, '/marketing.php') !== false || strpos($uri, '/campaigns.php') !== false ||
+                  strpos($uri, '/email_marketing.php') !== false || strpos($uri, '/analytics.php') !== false ||
+                  strpos($uri, '/lead_generation.php') !== false) {
+            return 'marketing';
+        } elseif (strpos($uri, '/ai_') !== false || strpos($uri, '/automation.php') !== false) {
+            return 'ai';
+        }
+        return 'main';
+    }
+    
+    private function getContextId() {
+        return $_GET['company_id'] ?? $_GET['project_id'] ?? null;
     }
     
     private function getContextParam($context) {
