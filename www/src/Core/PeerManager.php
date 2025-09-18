@@ -505,30 +505,52 @@ class PeerManager {
     }
     
     public function startModelInstallation($peerIp, $modelName) {
-        // Start installation in background and return job ID
-        $jobId = uniqid('install_', true);
-        $logFile = __DIR__ . '/../../../logs/model_install_' . $jobId . '.log';
-        
-        // Ensure logs directory exists
-        $logDir = dirname($logFile);
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
+        try {
+            $this->logger->info('Starting model installation process', ['peer' => $peerIp, 'model' => $modelName]);
+            
+            // Start installation in background and return job ID
+            $jobId = uniqid('install_', true);
+            $logFile = __DIR__ . '/../../../logs/model_install_' . $jobId . '.log';
+            
+            // Ensure logs directory exists
+            $logDir = dirname($logFile);
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0755, true);
+                $this->logger->debug('Created logs directory', ['path' => $logDir]);
+            }
+            
+            // Start background process using dedicated script
+            $scriptPath = __DIR__ . '/../../admin/install_model_background.php';
+            
+            if (!file_exists($scriptPath)) {
+                $this->logger->error('Background installation script not found', ['path' => $scriptPath]);
+                throw new \Exception("Installation script not found: {$scriptPath}");
+            }
+            
+            $cmd = "php {$scriptPath} '{$peerIp}' '{$modelName}' '{$logFile}' > /dev/null 2>&1 &";
+            $this->logger->debug('Executing background installation command', ['command' => $cmd]);
+            
+            exec($cmd, $output, $returnCode);
+            
+            $this->logger->info('Started background model installation', [
+                'job_id' => $jobId,
+                'peer' => $peerIp,
+                'model' => $modelName,
+                'log_file' => $logFile,
+                'command' => $cmd,
+                'return_code' => $returnCode
+            ]);
+            
+            return $jobId;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to start model installation', [
+                'peer' => $peerIp,
+                'model' => $modelName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
         }
-        
-        // Start background process using dedicated script
-        $scriptPath = __DIR__ . '/../../admin/install_model_background.php';
-        $cmd = "php {$scriptPath} '{$peerIp}' '{$modelName}' '{$logFile}' > /dev/null 2>&1 &";
-        
-        exec($cmd);
-        
-        $this->logger->info('Started background model installation', [
-            'job_id' => $jobId,
-            'peer' => $peerIp,
-            'model' => $modelName,
-            'log_file' => $logFile
-        ]);
-        
-        return $jobId;
     }
     
     public function installLocalModelWithLogging($modelName, $logFile) {
@@ -754,78 +776,116 @@ class PeerManager {
     
     public function applyAutoInstallRules() {
         try {
+            $this->logger->info('Starting auto-install rules application');
+            
             $rules = $this->getModelRules();
+            $this->logger->debug('Loaded model rules', $rules);
+            
             $peers = $this->getPeers();
+            $this->logger->debug('Found peers', ['count' => count($peers)]);
+            
             $installJobs = [];
             
             foreach ($peers as $peer) {
-                if ($peer['status'] !== 'online') continue;
+                $this->logger->debug('Processing peer', ['name' => $peer['name'], 'status' => $peer['status']]);
                 
-                $installedModels = $this->getInstalledModels($peer['ip']);
-                $modelsToInstall = [];
-                
-                // All peers models
-                foreach ($rules['all_peers'] as $model) {
-                    if (!in_array($model, $installedModels)) {
-                        $modelsToInstall[] = $model;
-                    }
+                if ($peer['status'] !== 'online') {
+                    $this->logger->debug('Skipping offline peer', ['name' => $peer['name']]);
+                    continue;
                 }
                 
-                // Memory-based models
-                $memoryGb = $peer['memory_gb'];
-                if ($memoryGb < 4) {
-                    foreach ($rules['memory_low'] as $model) {
-                        if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                try {
+                    $installedModels = $this->getInstalledModels($peer['ip']);
+                    $this->logger->debug('Installed models for peer', ['peer' => $peer['name'], 'models' => $installedModels]);
+                    
+                    $modelsToInstall = [];
+                    
+                    // All peers models
+                    foreach ($rules['all_peers'] as $model) {
+                        if (!in_array($model, $installedModels)) {
                             $modelsToInstall[] = $model;
+                            $this->logger->debug('Added all_peers model', ['peer' => $peer['name'], 'model' => $model]);
                         }
                     }
-                } elseif ($memoryGb >= 4 && $memoryGb <= 8) {
-                    foreach ($rules['memory_medium'] as $model) {
-                        if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
-                            $modelsToInstall[] = $model;
-                        }
-                    }
-                } else {
-                    foreach ($rules['memory_high'] as $model) {
-                        if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
-                            $modelsToInstall[] = $model;
-                        }
-                    }
-                }
-                
-                // GPU-based models
-                if ($peer['gpu_available']) {
-                    $gpuMemoryGb = $peer['gpu_memory_gb'];
-                    if ($gpuMemoryGb < 14) {
-                        foreach ($rules['gpu_low'] as $model) {
+                    
+                    // Memory-based models
+                    $memoryGb = $peer['memory_gb'];
+                    if ($memoryGb < 4) {
+                        foreach ($rules['memory_low'] as $model) {
                             if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
                                 $modelsToInstall[] = $model;
+                                $this->logger->debug('Added memory_low model', ['peer' => $peer['name'], 'model' => $model]);
+                            }
+                        }
+                    } elseif ($memoryGb >= 4 && $memoryGb <= 8) {
+                        foreach ($rules['memory_medium'] as $model) {
+                            if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                                $modelsToInstall[] = $model;
+                                $this->logger->debug('Added memory_medium model', ['peer' => $peer['name'], 'model' => $model]);
                             }
                         }
                     } else {
-                        foreach ($rules['gpu_high'] as $model) {
+                        foreach ($rules['memory_high'] as $model) {
                             if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
                                 $modelsToInstall[] = $model;
+                                $this->logger->debug('Added memory_high model', ['peer' => $peer['name'], 'model' => $model]);
                             }
                         }
                     }
-                }
-                
-                // Start installations
-                foreach ($modelsToInstall as $model) {
-                    $jobId = $this->startModelInstallation($peer['ip'], $model);
-                    $installJobs[] = [
+                    
+                    // GPU-based models
+                    if ($peer['gpu_available']) {
+                        $gpuMemoryGb = $peer['gpu_memory_gb'];
+                        if ($gpuMemoryGb < 14) {
+                            foreach ($rules['gpu_low'] as $model) {
+                                if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                                    $modelsToInstall[] = $model;
+                                    $this->logger->debug('Added gpu_low model', ['peer' => $peer['name'], 'model' => $model]);
+                                }
+                            }
+                        } else {
+                            foreach ($rules['gpu_high'] as $model) {
+                                if (!in_array($model, $installedModels) && !in_array($model, $modelsToInstall)) {
+                                    $modelsToInstall[] = $model;
+                                    $this->logger->debug('Added gpu_high model', ['peer' => $peer['name'], 'model' => $model]);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $this->logger->info('Models to install for peer', ['peer' => $peer['name'], 'models' => $modelsToInstall]);
+                    
+                    // Start installations
+                    foreach ($modelsToInstall as $model) {
+                        try {
+                            $this->logger->info('Starting model installation', ['peer' => $peer['name'], 'model' => $model]);
+                            $jobId = $this->startModelInstallation($peer['ip'], $model);
+                            $installJobs[] = [
+                                'peer' => $peer['name'],
+                                'model' => $model,
+                                'job_id' => $jobId
+                            ];
+                            $this->logger->info('Model installation job started', ['peer' => $peer['name'], 'model' => $model, 'job_id' => $jobId]);
+                        } catch (\Exception $e) {
+                            $this->logger->error('Failed to start model installation', [
+                                'peer' => $peer['name'],
+                                'model' => $model,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->error('Error processing peer for auto-install', [
                         'peer' => $peer['name'],
-                        'model' => $model,
-                        'job_id' => $jobId
-                    ];
+                        'error' => $e->getMessage()
+                    ]);
                 }
             }
             
-            $this->logger->info('Auto-install rules applied', ['jobs' => count($installJobs)]);
+            $this->logger->info('Auto-install rules applied successfully', ['total_jobs' => count($installJobs), 'jobs' => $installJobs]);
             return $installJobs;
         } catch (\Exception $e) {
-            $this->logger->error('Auto-install failed', ['error' => $e->getMessage()]);
+            $this->logger->error('Auto-install rules application failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             throw $e;
         }
     }
