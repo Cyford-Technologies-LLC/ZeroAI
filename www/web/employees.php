@@ -9,30 +9,44 @@ $companyId = $_GET['company_id'] ?? null;
 if ($_POST) {
     try {
         if ($_POST['action'] === 'create') {
-            $stmt = $pdo->prepare("INSERT INTO employees (company_id, first_name, last_name, email, phone, position, department, hire_date, salary, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)");
+            $stmt = $pdo->prepare("INSERT INTO employees (company_id, first_name, last_name, email, phone, position, department, hire_date, salary, status, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)");
             $stmt->execute([
                 $_POST['company_id'], $_POST['first_name'], $_POST['last_name'],
                 $_POST['email'], $_POST['phone'], $_POST['position'], $_POST['department'],
-                $_POST['hire_date'], $_POST['salary'], $_POST['notes']
+                $_POST['hire_date'], $_POST['salary'], $_POST['notes'], $currentUser
             ]);
             header('Location: /web/employees.php?success=created' . ($companyId ? '&company_id=' . $companyId : ''));
             exit;
         }
         
         if ($_POST['action'] === 'update') {
-            $stmt = $pdo->prepare("UPDATE employees SET company_id=?, first_name=?, last_name=?, email=?, phone=?, position=?, department=?, hire_date=?, salary=?, status=?, notes=? WHERE id=?");
-            $stmt->execute([
-                $_POST['company_id'], $_POST['first_name'], $_POST['last_name'],
-                $_POST['email'], $_POST['phone'], $_POST['position'], $_POST['department'],
-                $_POST['hire_date'], $_POST['salary'], $_POST['status'], $_POST['notes'], $_POST['employee_id']
-            ]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("UPDATE employees SET company_id=?, first_name=?, last_name=?, email=?, phone=?, position=?, department=?, hire_date=?, salary=?, status=?, notes=? WHERE id=?");
+                $stmt->execute([
+                    $_POST['company_id'], $_POST['first_name'], $_POST['last_name'],
+                    $_POST['email'], $_POST['phone'], $_POST['position'], $_POST['department'],
+                    $_POST['hire_date'], $_POST['salary'], $_POST['status'], $_POST['notes'], $_POST['employee_id']
+                ]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE employees SET company_id=?, first_name=?, last_name=?, email=?, phone=?, position=?, department=?, hire_date=?, salary=?, status=?, notes=? WHERE id=? AND created_by=?");
+                $stmt->execute([
+                    $_POST['company_id'], $_POST['first_name'], $_POST['last_name'],
+                    $_POST['email'], $_POST['phone'], $_POST['position'], $_POST['department'],
+                    $_POST['hire_date'], $_POST['salary'], $_POST['status'], $_POST['notes'], $_POST['employee_id'], $currentUser
+                ]);
+            }
             header('Location: /web/employees.php?success=updated' . ($companyId ? '&company_id=' . $companyId : ''));
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
-            $stmt->execute([$_POST['employee_id']]);
+            if ($isAdmin) {
+                $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
+                $stmt->execute([$_POST['employee_id']]);
+            } else {
+                $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ? AND created_by = ?");
+                $stmt->execute([$_POST['employee_id'], $currentUser]);
+            }
             header('Location: /web/employees.php?success=deleted' . ($companyId ? '&company_id=' . $companyId : ''));
             exit;
         }
@@ -55,16 +69,29 @@ if ($companyId) {
 
 // Get employees
 try {
-    if ($companyId) {
-        $stmt = $pdo->prepare("SELECT e.*, c.name as company_name FROM employees e LEFT JOIN companies c ON e.company_id = c.id WHERE e.company_id = ? ORDER BY e.last_name, e.first_name");
-        $stmt->execute([$companyId]);
+    if ($isAdmin) {
+        if ($companyId) {
+            $stmt = $pdo->prepare("SELECT e.*, c.name as company_name FROM employees e LEFT JOIN companies c ON e.company_id = c.id WHERE e.company_id = ? ORDER BY e.last_name, e.first_name");
+            $stmt->execute([$companyId]);
+        } else {
+            $stmt = $pdo->query("SELECT e.*, c.name as company_name FROM employees e LEFT JOIN companies c ON e.company_id = c.id ORDER BY e.last_name, e.first_name");
+        }
+        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        $stmt = $pdo->query("SELECT e.*, c.name as company_name FROM employees e LEFT JOIN companies c ON e.company_id = c.id ORDER BY e.last_name, e.first_name");
+        if ($companyId) {
+            $stmt = $pdo->prepare("SELECT e.*, c.name as company_name FROM employees e LEFT JOIN companies c ON e.company_id = c.id WHERE e.company_id = ? AND (e.created_by = ? OR e.created_by IS NULL) ORDER BY e.last_name, e.first_name");
+            $stmt->execute([$companyId, $currentUser]);
+        } else {
+            $stmt = $pdo->prepare("SELECT e.*, c.name as company_name FROM employees e LEFT JOIN companies c ON e.company_id = c.id WHERE (e.created_by = ? OR e.created_by IS NULL) ORDER BY e.last_name, e.first_name");
+            $stmt->execute([$currentUser]);
+        }
+        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE created_by = ? ORDER BY name");
+        $stmt->execute([$currentUser]);
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get companies for dropdown
-    $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $employees = [];
     $companies = [];
