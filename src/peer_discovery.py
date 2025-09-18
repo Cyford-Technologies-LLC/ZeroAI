@@ -280,9 +280,9 @@ class PeerDiscovery:
     def _get_direct_capabilities(self, ip: str) -> Optional[Dict[str, Any]]:
         """Get capabilities directly when /capabilities endpoint fails"""
         try:
-            # Check if peer is reachable via Ollama
-            test_response = requests.get(f"http://{ip}:11434", timeout=2)
-            if test_response.status_code == 200:
+            # Check if peer passes health check on port 8080
+            health_response = requests.get(f"http://{ip}:8080/health", timeout=2)
+            if health_response.status_code == 200:
                 return {
                     "load_avg": 0.0,
                     "memory_gb": 16.0,  # Estimated
