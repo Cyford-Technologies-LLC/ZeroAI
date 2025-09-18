@@ -9,6 +9,13 @@ class MenuSystem {
     }
     
     private function initMenuTable() {
+        // Add menu_group column if it doesn't exist
+        try {
+            $this->pdo->exec("ALTER TABLE menus ADD COLUMN menu_group TEXT NULL");
+        } catch (Exception $e) {
+            // Column already exists or table doesn't exist yet
+        }
+        
         $sql = "
         CREATE TABLE IF NOT EXISTS menus (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
