@@ -43,6 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($existing)) {
                 $error = 'Username or email already registered';
             } else {
+                // Generate unique 10-digit organization ID
+                do {
+                    $organizationId = str_pad(mt_rand(1000000000, 9999999999), 10, '0', STR_PAD_LEFT);
+                    $existingOrg = $db->query("SELECT id FROM users WHERE organization_id = ?", [$organizationId]);
+                } while (!empty($existingOrg));
+                
                 // Step 1: Create user using DatabaseManager with bypass queue
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $userId = $db->insert('users', [
@@ -50,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => $email,
                     'password' => $hashedPassword,
                     'role' => 'frontend',
-                    'organization_id' => 1
+                    'organization_id' => $organizationId
                 ], true); // Force immediate write
                 
                 // Step 2: Get real user ID by selecting from database
@@ -66,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'phone' => $phone,
                             'website' => $website,
                             'linkedin' => $linkedin,
-                            'organization_id' => 1,
+                            'organization_id' => $organizationId,
                             'user_id' => $realUserId,
                             'created_by' => $realUserId
                         ], true); // Force immediate write

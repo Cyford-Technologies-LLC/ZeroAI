@@ -22,6 +22,13 @@ try {
     $db = new Database();
     $pdo = $db->getConnection();
 
+    // Check if organization_id column exists, create if not
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN organization_id VARCHAR(10) UNIQUE");
+    } catch (Exception $e) {
+        // Column already exists
+    }
+
     $stmt = $pdo->prepare("SELECT organization_id FROM users WHERE username = ?");
     $stmt->execute([$currentUser]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
