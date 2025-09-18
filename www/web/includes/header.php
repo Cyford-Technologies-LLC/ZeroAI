@@ -263,6 +263,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
                 onclick="toggleSidebar()">☰</button>
         <div style="font-size: 1.5rem; font-weight: bold; margin-right: auto;">
             <img src="/assets/frontend/images/icons/logo.svg" width="24" height="24" style="margin-right: 8px;"> ZeroAI CRM
+            <span style="font-size: 0.8rem; color: #94a3b8; margin-left: 10px;">Org: <?= htmlspecialchars($userOrgId) ?></span>
         </div>
         <div style="display: flex; gap: 20px; margin-right: 20px;">
             <?= isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage) : '' ?>

@@ -24,9 +24,7 @@ try {
         $stmt->execute([$userOrgId]);
         $totalProjects = $stmt->fetchColumn() ?: 0;
         
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE organization_id = ?");
-        $stmt->execute([$userOrgId]);
-        $totalUsers = $stmt->fetchColumn() ?: 0;
+        $totalUsers = 1; // Non-admin users only see themselves
     }
     
     // Get tenants if table exists

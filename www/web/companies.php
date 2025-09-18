@@ -182,7 +182,7 @@ if (isset($_GET['success'])) {
                         <tr>
                             <th class="d-none d-md-table-cell">ID</th>
                             <th>Company</th>
-                            <th class="d-none d-sm-table-cell">Organization ID</th>
+                            <th class="d-none d-sm-table-cell">Email</th>
                             <th class="d-none d-lg-table-cell">Phone</th>
                             <th class="d-none d-md-table-cell">Industry</th>
                             <?php if ($isAdmin): ?><th class="d-none d-xl-table-cell">Created By</th><?php endif; ?>
@@ -195,9 +195,9 @@ if (isset($_GET['success'])) {
                                 <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['id']) ?></td>
                                 <td>
                                     <div class="fw-bold"><?= htmlspecialchars($company['name']) ?></div>
-                                    <div class="d-sm-none small text-muted">Org: <?= htmlspecialchars($company['organization_id'] ?? '1') ?></div>
+                                    <div class="d-sm-none small text-muted"><?= htmlspecialchars($company['email']) ?></div>
                                 </td>
-                                <td class="d-none d-sm-table-cell"><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
+                                <td class="d-none d-sm-table-cell"><?= htmlspecialchars($company['email']) ?></td>
                                 <td class="d-none d-lg-table-cell"><?= htmlspecialchars($company['phone']) ?></td>
                                 <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['industry']) ?></td>
                                 <?php if ($isAdmin): ?>
