@@ -38,15 +38,18 @@ class PeerManager {
     }
     
     private function getLocalOllamaPeer() {
-        // Use Python peer discovery to get local capabilities
-        $capabilities = $this->getLocalCapabilities();
+        // Step 1: Check if Ollama is online
+        $isOnline = $this->testOllamaConnection();
+        
+        // Step 2: Get capabilities (only if online)
+        $capabilities = $isOnline ? $this->getLocalCapabilities() : [];
         
         return [
             'name' => 'Local Ollama',
             'ip' => 'ollama',
             'port' => 11434,
             'ollama_port' => 11434,
-            'status' => $capabilities['available'] ? 'online' : 'offline',
+            'status' => $isOnline ? 'online' : 'offline',
             'models' => $capabilities['models'] ?? [],
             'memory_gb' => $capabilities['memory_gb'] ?? 8,
             'gpu_available' => $capabilities['gpu_available'] ?? false,
@@ -56,10 +59,27 @@ class PeerManager {
         ];
     }
     
+    private function testOllamaConnection() {
+        try {
+            $url = 'http://ollama:11434/api/tags';
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 3,
+                    'method' => 'GET',
+                    'ignore_errors' => true
+                ]
+            ]);
+            
+            $result = @file_get_contents($url, false, $context);
+            return $result !== false;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+    
     private function getLocalCapabilities() {
-        // Direct detection - simpler and more reliable
+        // Get installed models
         $models = $this->getInstalledModels('localhost');
-        $isAvailable = !empty($models);
         
         // Get system memory
         $memoryGb = 8; // Default
@@ -80,7 +100,6 @@ class PeerManager {
         }
         
         return [
-            'available' => $isAvailable,
             'models' => $models,
             'memory_gb' => $memoryGb,
             'gpu_available' => $gpuAvailable,
