@@ -76,6 +76,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
     <link href="/assets/frontend/css/bootstrap.min.css" rel="stylesheet">
     <link href="/assets/frontend/css/fontawesome.min.css" rel="stylesheet">
     <link href="/assets/frontend/css/crm-frontend.css" rel="stylesheet">
+    <link href="/web/includes/mobile-fixes.css" rel="stylesheet">
     <script src="/assets/frontend/js/header.js" defer></script>
     <script src="/assets/frontend/js/forms.js" defer></script>
     <script src="/assets/frontend/js/bootstrap-collapse.js" defer></script>
@@ -139,6 +140,16 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         @media (max-width: 768px) {
             .layout-container {
                 grid-template-columns: 0px 1fr 0px;
+                grid-template-rows: auto 1fr auto;
+            }
+            .header-section {
+                padding: 0 10px;
+            }
+            .header-section > div:first-child {
+                font-size: 1.2rem;
+            }
+            .header-section > div:nth-child(2) {
+                display: none;
             }
             .sidebar-section {
                 position: fixed;
@@ -147,9 +158,25 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
                 width: 250px;
                 height: calc(100vh - 70px);
                 transition: left 0.3s ease;
+                z-index: 1050;
             }
             .sidebar-section.mobile-open {
                 left: 0;
+            }
+            .main-section {
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .header-section {
+                padding: 0 5px;
+            }
+            .header-section > div:first-child {
+                font-size: 1rem;
+            }
+            .main-section {
+                padding: 5px;
             }
         }
     </style>
@@ -261,6 +288,17 @@ function toggleSidebar() {
     
     if (window.innerWidth <= 768) {
         sidebar.classList.toggle('mobile-open');
+        
+        // Add/remove overlay
+        let overlay = document.getElementById('mobileOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'mobileOverlay';
+            overlay.className = 'mobile-overlay';
+            overlay.onclick = () => toggleSidebar();
+            document.body.appendChild(overlay);
+        }
+        overlay.classList.toggle('show');
     } else {
         container.classList.toggle('sidebar-closed');
     }

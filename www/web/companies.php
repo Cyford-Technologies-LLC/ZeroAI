@@ -168,30 +168,35 @@ if (isset($_GET['success'])) {
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Company Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Industry</th>
-                            <?php if ($isAdmin): ?><th>Created By</th><th>Org ID</th><?php endif; ?>
+                            <th class="d-none d-md-table-cell">ID</th>
+                            <th>Company</th>
+                            <th class="d-none d-sm-table-cell">Email</th>
+                            <th class="d-none d-lg-table-cell">Phone</th>
+                            <th class="d-none d-md-table-cell">Industry</th>
+                            <?php if ($isAdmin): ?><th class="d-none d-xl-table-cell">Created By</th><th class="d-none d-xl-table-cell">Org ID</th><?php endif; ?>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($companies as $company): ?>
                             <tr>
-                                <td><?= htmlspecialchars($company['id']) ?></td>
-                                <td><?= htmlspecialchars($company['name']) ?></td>
-                                <td><?= htmlspecialchars($company['email']) ?></td>
-                                <td><?= htmlspecialchars($company['phone']) ?></td>
-                                <td><?= htmlspecialchars($company['industry']) ?></td>
+                                <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['id']) ?></td>
+                                <td>
+                                    <div class="fw-bold"><?= htmlspecialchars($company['name']) ?></div>
+                                    <div class="d-sm-none small text-muted"><?= htmlspecialchars($company['email']) ?></div>
+                                </td>
+                                <td class="d-none d-sm-table-cell"><?= htmlspecialchars($company['email']) ?></td>
+                                <td class="d-none d-lg-table-cell"><?= htmlspecialchars($company['phone']) ?></td>
+                                <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['industry']) ?></td>
                                 <?php if ($isAdmin): ?>
-                                    <td><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
-                                    <td><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
+                                    <td class="d-none d-xl-table-cell"><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
+                                    <td class="d-none d-xl-table-cell"><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
                                 <?php endif; ?>
                                 <td>
-                                    <button onclick="editCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-warning" data-company='<?= json_encode($company) ?>'>Edit</button>
-                                    <button onclick="deleteCompany(<?= $company['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
+                                    <div class="btn-group btn-group-sm">
+                                        <button onclick="editCompany(<?= $company['id'] ?>)" class="btn btn-warning btn-sm" data-company='<?= json_encode($company) ?>' title="Edit">✏️</button>
+                                        <button onclick="deleteCompany(<?= $company['id'] ?>)" class="btn btn-danger btn-sm" title="Delete">🗑️</button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

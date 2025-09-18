@@ -47,35 +47,35 @@ try {
     
     <!-- Stats Cards -->
     <div class="row g-2 mb-4">
-        <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="card text-white" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
-                <div class="card-body text-center py-3">
-                    <div style="font-size: 1.8rem; font-weight: 700;"><?= htmlspecialchars($totalCompanies) ?></div>
-                    <div style="font-size: 0.9rem;">📢 Companies</div>
+                <div class="card-body text-center py-2 py-md-3">
+                    <div class="fs-4 fs-md-2 fw-bold"><?= htmlspecialchars($totalCompanies) ?></div>
+                    <div class="small">🏢 Companies</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="card text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <div class="card-body text-center py-3">
-                    <div style="font-size: 1.8rem; font-weight: 700;"><?= htmlspecialchars($totalContacts) ?></div>
-                    <div style="font-size: 0.9rem;">👥 Contacts</div>
+                <div class="card-body text-center py-2 py-md-3">
+                    <div class="fs-4 fs-md-2 fw-bold"><?= htmlspecialchars($totalContacts) ?></div>
+                    <div class="small">👥 Contacts</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="card text-white" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
-                <div class="card-body text-center py-3">
-                    <div style="font-size: 1.8rem; font-weight: 700;"><?= htmlspecialchars($totalProjects) ?></div>
-                    <div style="font-size: 0.9rem;">📋 Projects</div>
+                <div class="card-body text-center py-2 py-md-3">
+                    <div class="fs-4 fs-md-2 fw-bold"><?= htmlspecialchars($totalProjects) ?></div>
+                    <div class="small">📋 Projects</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="card text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <div class="card-body text-center py-3">
-                    <div style="font-size: 1.8rem; font-weight: 700;">0</div>
-                    <div style="font-size: 0.9rem;">✅ Tasks</div>
+                <div class="card-body text-center py-2 py-md-3">
+                    <div class="fs-4 fs-md-2 fw-bold">0</div>
+                    <div class="small">✅ Tasks</div>
                 </div>
             </div>
         </div>
