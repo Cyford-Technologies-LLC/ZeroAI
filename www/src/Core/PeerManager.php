@@ -220,9 +220,12 @@ class PeerManager {
     }
     
     private function updatePeerStatuses() {
-        // Just trigger Python peer discovery - don't do direct HTTP checks
-        // The Python script will update the JSON with fresh data
-        $this->logger->debug('Peer status update requested - data will be read from JSON');
+        $peers = $this->loadPeersConfig();
+        foreach ($peers as &$peer) {
+            $peer['available'] = $this->testPeerConnection($peer['ip'], $peer['port']);
+            $peer['last_updated'] = time();
+        }
+        $this->savePeersConfig($peers);
         return true;
     }
     
