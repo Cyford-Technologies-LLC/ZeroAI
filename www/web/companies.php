@@ -182,10 +182,10 @@ if (isset($_GET['success'])) {
                         <tr>
                             <th class="d-none d-md-table-cell">ID</th>
                             <th>Company</th>
-                            <th class="d-none d-sm-table-cell">Email</th>
+                            <th class="d-none d-sm-table-cell">Organization ID</th>
                             <th class="d-none d-lg-table-cell">Phone</th>
                             <th class="d-none d-md-table-cell">Industry</th>
-                            <?php if ($isAdmin): ?><th class="d-none d-xl-table-cell">Created By</th><th class="d-none d-xl-table-cell">Org ID</th><?php endif; ?>
+                            <?php if ($isAdmin): ?><th class="d-none d-xl-table-cell">Created By</th><?php endif; ?>
                             <th>Actions</th>
                         </tr>
                     </thead>
