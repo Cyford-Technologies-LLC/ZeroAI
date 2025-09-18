@@ -214,7 +214,8 @@ class PeerDiscovery:
                 with open(peers_yml, 'r') as f:
                     yml_data = yaml.safe_load(f)
                     peers = []
-                    for name, config in yml_data.items():
+                    if yml_data:
+                        for name, config in yml_data.items():
                         peers.append({
                             "name": name,
                             "ip": config["ip"],
