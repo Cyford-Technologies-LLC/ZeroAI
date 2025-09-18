@@ -144,6 +144,122 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
     
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Connected Peers</h3>
+        </div>
+        <div class="card-body">
+            <?php if (empty($peers)): ?>
+                <p class="text-muted">No peers configured. Add a peer above to get started.</p>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>IP:Port</th>
+                                <th>Health URL</th>
+                                <th>Status</th>
+                                <th>GPU</th>
+                                <th>Memory</th>
+                                <th>Models</th>
+                                <th>Last Check</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($peers as $peer): ?>
+                                <tr>
+                                    <td>
+                                        <?= htmlspecialchars($peer['name']) ?>
+                                        <?php if (isset($peer['is_local']) && $peer['is_local']): ?>
+                                            <span class="badge bg-primary" style="font-size: 10px;">LOCAL</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($peer['ip']) ?>:<?= $peer['port'] ?></td>
+                                    <td><a href="http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health" target="_blank">http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health</a></td>
+                                    <td>
+                                        <span class="badge bg-<?= $peer['status'] === 'online' ? 'success' : 'secondary' ?>">
+                                            <?= $peer['status'] ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($peer['gpu_available']): ?>
+                                            <i class="fas fa-check text-success"></i> <?= $peer['gpu_memory_gb'] ?>GB
+                                        <?php else: ?>
+                                            <i class="fas fa-times text-muted"></i> No
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= $peer['memory_gb'] ?>GB</td>
+                                    <td>
+                                        <?php $installedModels = $peerManager->getInstalledModels($peer['ip']); ?>
+                                        <small><?= implode(', ', array_slice($installedModels, 0, 2)) ?>
+                                        <?= count($installedModels) > 2 ? '...' : '' ?></small>
+                                    </td>
+                                    <td><small><?= $peer['last_check'] ?></small></td>
+                                    <td>
+                                        <div style="display: flex; gap: 5px;">
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="action" value="test_peer">
+                                                <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                <button type="submit" style="background: #17a2b8; color: white; border: 1px solid #17a2b8; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Test Peer">
+                                                    🧪
+                                                </button>
+                                            </form>
+                                            <?php if (!isset($peer['is_local']) || !$peer['is_local']): ?>
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this peer?')">
+                                                    <input type="hidden" name="action" value="delete_peer">
+                                                    <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                    <button type="submit" style="background: #dc3545; color: white; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Delete Peer">
+                                                        🗑️
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="9" style="background: #f8f9fa; padding: 10px;">
+                                        <strong>Recommended Models (RAM: <?= $peer['memory_gb'] ?>GB, GPU: <?= $peer['gpu_available'] ? 'Yes' : 'No' ?>):</strong><br>
+                                        <?php 
+                                        $recommended = $peerManager->getRecommendedModels($peer['memory_gb'], $peer['gpu_available'], $peer['gpu_memory_gb']);
+                                        if (empty($recommended)): ?>
+                                            <small class="text-muted">No models recommended for this peer's specs</small>
+                                        <?php else:
+                                            foreach ($recommended as $modelName => $specs): 
+                                                if (!in_array($modelName, $installedModels)): ?>
+                                                    <form method="POST" style="display: inline-block; margin: 2px;">
+                                                        <input type="hidden" name="action" value="install_model">
+                                                        <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                        <input type="hidden" name="model_name" value="<?= $modelName ?>">
+                                                        <button type="button" onclick="installModelWithProgress('<?= $peer['ip'] ?>', '<?= $modelName ?>')" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 12px;" 
+                                                                title="<?= htmlspecialchars($specs['description']) ?> (<?= $specs['size_gb'] ?>GB)">
+                                                            + <?= htmlspecialchars($modelName) ?>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary" style="margin: 2px; font-size: 10px;">
+                                                        <?= htmlspecialchars($modelName) ?> ✓
+                                                        <form method="POST" style="display: inline; margin-left: 5px;" onsubmit="return confirm('Remove model <?= $modelName ?>?')">
+                                                            <input type="hidden" name="action" value="remove_model">
+                                                            <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
+                                                            <input type="hidden" name="model_name" value="<?= $modelName ?>">
+                                                            <button type="submit" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 10px;" title="Remove model">×</button>
+                                                        </form>
+                                                    </span>
+                                                <?php endif;
+                                            endforeach;
+                                        endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    
     <!-- Model Auto-Install Rules -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -341,122 +457,6 @@ include __DIR__ . '/includes/header.php';
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h3>Connected Peers</h3>
-        </div>
-        <div class="card-body">
-            <?php if (empty($peers)): ?>
-                <p class="text-muted">No peers configured. Add a peer above to get started.</p>
-            <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>IP:Port</th>
-                                <th>Health URL</th>
-                                <th>Status</th>
-                                <th>GPU</th>
-                                <th>Memory</th>
-                                <th>Models</th>
-                                <th>Last Check</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($peers as $peer): ?>
-                                <tr>
-                                    <td>
-                                        <?= htmlspecialchars($peer['name']) ?>
-                                        <?php if (isset($peer['is_local']) && $peer['is_local']): ?>
-                                            <span class="badge bg-primary" style="font-size: 10px;">LOCAL</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= htmlspecialchars($peer['ip']) ?>:<?= $peer['port'] ?></td>
-                                    <td><a href="http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health" target="_blank">http://<?= $peer['ip'] ?>:<?= $peer['port'] ?>/health</a></td>
-                                    <td>
-                                        <span class="badge bg-<?= $peer['status'] === 'online' ? 'success' : 'secondary' ?>">
-                                            <?= $peer['status'] ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php if ($peer['gpu_available']): ?>
-                                            <i class="fas fa-check text-success"></i> <?= $peer['gpu_memory_gb'] ?>GB
-                                        <?php else: ?>
-                                            <i class="fas fa-times text-muted"></i> No
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= $peer['memory_gb'] ?>GB</td>
-                                    <td>
-                                        <?php $installedModels = $peerManager->getInstalledModels($peer['ip']); ?>
-                                        <small><?= implode(', ', array_slice($installedModels, 0, 2)) ?>
-                                        <?= count($installedModels) > 2 ? '...' : '' ?></small>
-                                    </td>
-                                    <td><small><?= $peer['last_check'] ?></small></td>
-                                    <td>
-                                        <div style="display: flex; gap: 5px;">
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="action" value="test_peer">
-                                                <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                <button type="submit" style="background: #17a2b8; color: white; border: 1px solid #17a2b8; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Test Peer">
-                                                    🧪
-                                                </button>
-                                            </form>
-                                            <?php if (!isset($peer['is_local']) || !$peer['is_local']): ?>
-                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this peer?')">
-                                                    <input type="hidden" name="action" value="delete_peer">
-                                                    <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                    <button type="submit" style="background: #dc3545; color: white; border: 1px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Delete Peer">
-                                                        🗑️
-                                                    </button>
-                                                </form>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td colspan="9" style="background: #f8f9fa; padding: 10px;">
-                                        <strong>Recommended Models (RAM: <?= $peer['memory_gb'] ?>GB, GPU: <?= $peer['gpu_available'] ? 'Yes' : 'No' ?>):</strong><br>
-                                        <?php 
-                                        $recommended = $peerManager->getRecommendedModels($peer['memory_gb'], $peer['gpu_available'], $peer['gpu_memory_gb']);
-                                        if (empty($recommended)): ?>
-                                            <small class="text-muted">No models recommended for this peer's specs</small>
-                                        <?php else:
-                                            foreach ($recommended as $modelName => $specs): 
-                                                if (!in_array($modelName, $installedModels)): ?>
-                                                    <form method="POST" style="display: inline-block; margin: 2px;">
-                                                        <input type="hidden" name="action" value="install_model">
-                                                        <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                        <input type="hidden" name="model_name" value="<?= $modelName ?>">
-                                                        <button type="button" onclick="installModelWithProgress('<?= $peer['ip'] ?>', '<?= $modelName ?>')" style="background: #28a745; color: white; border: 1px solid #28a745; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 12px;" 
-                                                                title="<?= htmlspecialchars($specs['description']) ?> (<?= $specs['size_gb'] ?>GB)">
-                                                            + <?= htmlspecialchars($modelName) ?>
-                                                        </button>
-                                                    </form>
-                                                <?php else: ?>
-                                                    <span class="badge bg-secondary" style="margin: 2px; font-size: 10px;">
-                                                        <?= htmlspecialchars($modelName) ?> ✓
-                                                        <form method="POST" style="display: inline; margin-left: 5px;" onsubmit="return confirm('Remove model <?= $modelName ?>?')">
-                                                            <input type="hidden" name="action" value="remove_model">
-                                                            <input type="hidden" name="peer_ip" value="<?= $peer['ip'] ?>">
-                                                            <input type="hidden" name="model_name" value="<?= $modelName ?>">
-                                                            <button type="submit" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 10px;" title="Remove model">×</button>
-                                                        </form>
-                                                    </span>
-                                                <?php endif;
-                                            endforeach;
-                                        endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 
