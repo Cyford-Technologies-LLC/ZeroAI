@@ -401,3 +401,6 @@ class PeerDiscovery:
 
 # Global singleton instance
 peer_discovery = PeerDiscovery.get_instance()
+
+if __name__ == "__main__":
+    peer_discovery._discovery_cycle()

@@ -201,7 +201,7 @@ class PeerManager {
                 return false;
             }
             
-            $cmd = "cd /app && /app/venv/bin/python -c 'import sys; sys.path.append(\"/app\"); from src.peer_discovery import peer_discovery; peer_discovery._discovery_cycle()'";
+            $cmd = "cd /app && /app/venv/bin/python /app/src/peer_discovery.py";
             
             $this->logger->debug('Running Python peer discovery', ['command' => $cmd]);
             
@@ -451,19 +451,16 @@ class PeerManager {
             $result = @file_get_contents($url, false, $context);
             
             if ($result === false) {
-                $this->logger->debug('Failed to get models from peer', ['ip' => $peerIp, 'url' => $url]);
                 return [];
             }
             
             if (empty($result)) {
-                $this->logger->debug('Empty response from peer', ['ip' => $peerIp, 'url' => $url]);
                 return [];
             }
             
             $data = json_decode($result, true);
             return array_column($data['models'] ?? [], 'name');
         } catch (\Exception $e) {
-            $this->logger->debug('Exception getting models from peer', ['ip' => $peerIp, 'error' => $e->getMessage()]);
             return [];
         }
     }
