@@ -166,26 +166,24 @@ class MenuSystem {
         $pageVar = strtolower(str_replace(' ', '_', $pageName));
         
         // Create basic page template
-        $template = "<?php
-\$pageTitle = '{$pageName} - ZeroAI CRM';
-\$currentPage = '{$pageVar}';
-include __DIR__ . '/includes/header.php';
-?>
-
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-12">
-            <h1 class="h2 mb-4">{$pageName}</h1>
-            <div class="card">
-                <div class="card-body">
-                    <p>This page was automatically generated. Please customize it as needed.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>";
+        $template = "<?php\n" .
+            "\$pageTitle = '{$pageName} - ZeroAI CRM';\n" .
+            "\$currentPage = '{$pageVar}';\n" .
+            "include __DIR__ . '/includes/header.php';\n" .
+            "?>\n\n" .
+            "<div class=\"container-fluid mt-4\">\n" .
+            "    <div class=\"row\">\n" .
+            "        <div class=\"col-12\">\n" .
+            "            <h1 class=\"h2 mb-4\">{$pageName}</h1>\n" .
+            "            <div class=\"card\">\n" .
+            "                <div class=\"card-body\">\n" .
+            "                    <p>This page was automatically generated. Please customize it as needed.</p>\n" .
+            "                </div>\n" .
+            "            </div>\n" .
+            "        </div>\n" .
+            "    </div>\n" .
+            "</div>\n\n" .
+            "<?php include __DIR__ . '/includes/footer.php'; ?>";
         
         file_put_contents($filePath, $template);
     }
