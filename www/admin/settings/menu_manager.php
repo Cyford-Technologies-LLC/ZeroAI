@@ -2,6 +2,11 @@
 $pageTitle = 'Menu Manager - ZeroAI Admin';
 $currentPage = 'menu_manager';
 
+// Initialize database connection
+require_once __DIR__ . '/../../config/database.php';
+$db = new Database();
+$pdo = $db->getConnection();
+
 // Handle form submission
 if ($_POST && isset($_POST['action'])) {
     ob_start();
