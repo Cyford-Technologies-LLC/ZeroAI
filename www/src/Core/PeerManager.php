@@ -584,11 +584,26 @@ class PeerManager {
         file_put_contents($logFile, "Starting installation of {$modelName} on {$peerIp}...\n", FILE_APPEND);
         
         try {
+            // Test Ollama connection first
+            $testUrl = "http://{$peerIp}:11434/api/tags";
+            file_put_contents($logFile, "Testing Ollama connection: {$testUrl}\n", FILE_APPEND);
+            
+            $testContext = stream_context_create(['http' => ['timeout' => 5, 'method' => 'GET']]);
+            $testResult = @file_get_contents($testUrl, false, $testContext);
+            
+            if ($testResult === false) {
+                $error = error_get_last();
+                file_put_contents($logFile, "ERROR: Cannot connect to Ollama on {$peerIp}:11434 - " . ($error['message'] ?? 'Connection failed') . "\n", FILE_APPEND);
+                return;
+            }
+            
+            file_put_contents($logFile, "Ollama connection successful, proceeding with installation...\n", FILE_APPEND);
+            
             $result = $this->installRemoteModel($peerIp, $modelName);
             if ($result) {
                 file_put_contents($logFile, "Installation completed successfully!\n", FILE_APPEND);
             } else {
-                file_put_contents($logFile, "ERROR: Installation failed\n", FILE_APPEND);
+                file_put_contents($logFile, "ERROR: Installation failed - check Ollama logs on peer\n", FILE_APPEND);
             }
         } catch (\Exception $e) {
             file_put_contents($logFile, "ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
