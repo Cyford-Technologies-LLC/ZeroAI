@@ -11,9 +11,21 @@ $totalUsers = 0;
 
 try {
     // Use existing $pdo from header
-    $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
-    $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
-    $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
+    if ($isAdmin) {
+        $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
+        $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
+        $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE created_by = ?");
+        $stmt->execute([$currentUser]);
+        $totalCompanies = $stmt->fetchColumn() ?: 0;
+        
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE created_by = ?");
+        $stmt->execute([$currentUser]);
+        $totalProjects = $stmt->fetchColumn() ?: 0;
+        
+        $totalUsers = 1; // Non-admin users only see themselves
+    }
     
     // Get tenants if table exists
     try {

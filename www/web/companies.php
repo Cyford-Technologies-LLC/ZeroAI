@@ -68,6 +68,19 @@ if (isset($_GET['success'])) {
         case 'deleted': $success = 'Company deleted successfully!'; break;
     }
 }
+
+// Fetch companies with proper filtering
+try {
+    if ($isAdmin) {
+        $stmt = $pdo->query("SELECT * FROM companies ORDER BY name");
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM companies WHERE created_by = ? ORDER BY name");
+        $stmt->execute([$currentUser]);
+    }
+    $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $companies = [];
+}
 ?>
 
 <?php if ($success): ?>
