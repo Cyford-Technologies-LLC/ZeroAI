@@ -118,7 +118,7 @@ include __DIR__ . '/includes/header.php';
     
     <?php if ($message): ?>
         <div class="alert alert-<?= $messageType === 'error' ? 'danger' : 'success' ?>">
-            <?= htmlspecialchars($message) ?>
+            <?= $message ?>
         </div>
     <?php endif; ?>
     
@@ -327,7 +327,7 @@ include __DIR__ . '/includes/header.php';
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label><strong>Memory 4-8GB:</strong></label>
+                        <label><strong>Memory 4-7.5GB:</strong></label>
                         <div id="memory_medium_models">
                             <?php foreach ($rules['memory_medium'] ?? [] as $model): ?>
                                 <div class="mb-1">
@@ -340,7 +340,7 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     
                     <div class="col-md-6">
-                        <label><strong>Memory > 8GB:</strong></label>
+                        <label><strong>Memory > 7.5GB:</strong></label>
                         <div id="memory_high_models">
                             <?php foreach ($rules['memory_high'] ?? [] as $model): ?>
                                 <div class="mb-1">
