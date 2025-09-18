@@ -195,7 +195,6 @@ if (isset($_GET['success'])) {
                                 <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['id']) ?></td>
                                 <td>
                                     <div class="fw-bold"><?= htmlspecialchars($company['name']) ?></div>
-                                    <div class="d-sm-none small text-muted"><?= htmlspecialchars($company['email']) ?></div>
                                 </td>
                                 <td class="d-none d-sm-table-cell"><?= htmlspecialchars($company['email']) ?></td>
                                 <td class="d-none d-lg-table-cell"><?= htmlspecialchars($company['phone']) ?></td>
