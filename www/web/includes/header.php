@@ -130,6 +130,37 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             display: block;
         }
         
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #0056b3;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            z-index: 1002;
+            top: 100%;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
         .profile-dropdown-content a {
             color: black;
             padding: 12px 16px;

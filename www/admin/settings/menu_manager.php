@@ -14,10 +14,11 @@ if ($_POST && isset($_POST['action'])) {
     
     try {
         if ($_POST['action'] === 'create_menu') {
-            $stmt = $pdo->prepare("INSERT INTO menus (name, type, parent_id, url, icon, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO menus (name, type, menu_group, parent_id, url, icon, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $_POST['name'], 
                 $_POST['type'], 
+                $_POST['menu_group'], 
                 $_POST['parent_id'] ?: null, 
                 $_POST['url'], 
                 $_POST['icon'], 
@@ -30,10 +31,11 @@ if ($_POST && isset($_POST['action'])) {
         }
         
         if ($_POST['action'] === 'update_menu') {
-            $stmt = $pdo->prepare("UPDATE menus SET name=?, type=?, parent_id=?, url=?, icon=?, sort_order=?, is_active=? WHERE id=?");
+            $stmt = $pdo->prepare("UPDATE menus SET name=?, type=?, menu_group=?, parent_id=?, url=?, icon=?, sort_order=?, is_active=? WHERE id=?");
             $stmt->execute([
                 $_POST['name'], 
                 $_POST['type'], 
+                $_POST['menu_group'], 
                 $_POST['parent_id'] ?: null, 
                 $_POST['url'], 
                 $_POST['icon'], 
@@ -113,9 +115,19 @@ if (isset($_GET['success'])) {
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Parent Menu</label>
+                        <label class="form-label">Menu Group</label>
+                        <select class="form-select" name="menu_group">
+                            <option value="main">Main</option>
+                            <option value="companies">Companies</option>
+                            <option value="projects">Projects</option>
+                            <option value="sales">Sales</option>
+                            <option value="ai">AI</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Parent Menu (for sub-menus)</label>
                         <select class="form-select" name="parent_id">
-                            <option value="">None (Top Level)</option>
+                            <option value="">None</option>
                             <?php foreach ($menus as $menu): ?>
                                 <option value="<?= $menu['id'] ?>"><?= htmlspecialchars($menu['name']) ?></option>
                             <?php endforeach; ?>
@@ -161,6 +173,7 @@ if (isset($_GET['success'])) {
                             <th>ID</th>
                             <th>Name</th>
                             <th>Type</th>
+                            <th>Group</th>
                             <th>Parent</th>
                             <th>URL</th>
                             <th>Icon</th>
@@ -175,11 +188,12 @@ if (isset($_GET['success'])) {
                                 <td><?= htmlspecialchars($menu['id']) ?></td>
                                 <td><?= htmlspecialchars($menu['name']) ?></td>
                                 <td><span class="badge bg-<?= $menu['type'] === 'header' ? 'primary' : 'secondary' ?>"><?= htmlspecialchars($menu['type']) ?></span></td>
+                                <td><span class="badge bg-info"><?= htmlspecialchars($menu['menu_group'] ?? 'main') ?></span></td>
                                 <td>
                                     <?php 
                                     if ($menu['parent_id']) {
                                         $parentMenu = array_filter($menus, fn($m) => $m['id'] == $menu['parent_id']);
-                                        echo htmlspecialchars(reset($parentMenu)['name'] ?? 'Unknown');
+                                        echo '<span class="badge bg-warning">' . htmlspecialchars(reset($parentMenu)['name'] ?? 'Unknown') . '</span>';
                                     } else {
                                         echo '-';
                                     }
@@ -233,9 +247,19 @@ if (isset($_GET['success'])) {
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Parent Menu</label>
+                            <label class="form-label">Menu Group</label>
+                            <select class="form-select" name="menu_group" id="editMenuGroup">
+                                <option value="main">Main</option>
+                                <option value="companies">Companies</option>
+                                <option value="projects">Projects</option>
+                                <option value="sales">Sales</option>
+                                <option value="ai">AI</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Parent Menu (for sub-menus)</label>
                             <select class="form-select" name="parent_id" id="editParentId">
-                                <option value="">None (Top Level)</option>
+                                <option value="">None</option>
                                 <?php foreach ($menus as $menu): ?>
                                     <option value="<?= $menu['id'] ?>"><?= htmlspecialchars($menu['name']) ?></option>
                                 <?php endforeach; ?>
@@ -283,6 +307,7 @@ function editMenu(id) {
     document.getElementById('editMenuId').value = menuData.id;
     document.getElementById('editName').value = menuData.name || '';
     document.getElementById('editType').value = menuData.type || '';
+    document.getElementById('editMenuGroup').value = menuData.menu_group || 'main';
     document.getElementById('editParentId').value = menuData.parent_id || '';
     document.getElementById('editUrl').value = menuData.url || '';
     document.getElementById('editIcon').value = menuData.icon || '';
