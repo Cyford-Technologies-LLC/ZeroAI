@@ -195,14 +195,13 @@ if (isset($_GET['success'])) {
                                 <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['id']) ?></td>
                                 <td>
                                     <div class="fw-bold"><?= htmlspecialchars($company['name']) ?></div>
-                                    <div class="d-sm-none small text-muted"><?= htmlspecialchars($company['email']) ?></div>
+                                    <div class="d-sm-none small text-muted">Org: <?= htmlspecialchars($company['organization_id'] ?? '1') ?></div>
                                 </td>
-                                <td class="d-none d-sm-table-cell"><?= htmlspecialchars($company['email']) ?></td>
+                                <td class="d-none d-sm-table-cell"><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
                                 <td class="d-none d-lg-table-cell"><?= htmlspecialchars($company['phone']) ?></td>
                                 <td class="d-none d-md-table-cell"><?= htmlspecialchars($company['industry']) ?></td>
                                 <?php if ($isAdmin): ?>
                                     <td class="d-none d-xl-table-cell"><?= htmlspecialchars($company['created_by'] ?? 'Unknown') ?></td>
-                                    <td class="d-none d-xl-table-cell"><?= htmlspecialchars($company['organization_id'] ?? '1') ?></td>
                                 <?php endif; ?>
                                 <td>
                                     <div class="btn-group btn-group-sm">
