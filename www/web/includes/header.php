@@ -29,6 +29,38 @@ try {
         // Column already exists
     }
 
+    // Update existing records with organization_id = 1 to unique IDs
+    $stmt = $pdo->prepare("SELECT id, username, organization_id FROM users WHERE organization_id = '1' OR organization_id IS NULL");
+    $stmt->execute();
+    $usersToUpdate = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($usersToUpdate as $userToUpdate) {
+        // Generate unique 10-digit organization ID
+        do {
+            $newOrgId = str_pad(mt_rand(1000000000, 9999999999), 10, '0', STR_PAD_LEFT);
+            $checkStmt = $pdo->prepare("SELECT id FROM users WHERE organization_id = ?");
+            $checkStmt->execute([$newOrgId]);
+        } while ($checkStmt->fetch());
+        
+        // Update user
+        $updateStmt = $pdo->prepare("UPDATE users SET organization_id = ? WHERE id = ?");
+        $updateStmt->execute([$newOrgId, $userToUpdate['id']]);
+        
+        // Update companies for this user
+        $companyStmt = $pdo->prepare("UPDATE companies SET organization_id = ? WHERE organization_id = '1' AND (created_by = ? OR user_id = ?)");
+        $companyStmt->execute([$newOrgId, $userToUpdate['username'], $userToUpdate['id']]);
+        
+        // Update contacts for this user
+        $contactStmt = $pdo->prepare("UPDATE contacts SET organization_id = ? WHERE organization_id = '1' AND created_by = ?");
+        $contactStmt->execute([$newOrgId, $userToUpdate['username']]);
+        
+        // Update projects for this user
+        $projectStmt = $pdo->prepare("UPDATE projects SET organization_id = ? WHERE organization_id = '1' AND created_by = ?");
+        $projectStmt->execute([$newOrgId, $userToUpdate['username']]);
+        
+        error_log("[DEBUG] Updated organization_id for user {$userToUpdate['username']} (ID: {$userToUpdate['id']}) from 1 to {$newOrgId}");
+    }
+
     $stmt = $pdo->prepare("SELECT organization_id FROM users WHERE username = ?");
     $stmt->execute([$currentUser]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
