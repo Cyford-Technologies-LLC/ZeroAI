@@ -78,7 +78,7 @@ if ($_POST) {
             case 'apply_auto_install':
                 try {
                     $jobs = $peerManager->applyAutoInstallRules();
-                    $message = "Started " . count($jobs) . " model installations based on auto-install rules! <a href='model_status.php'>View Status</a>";
+                    $message = "Started " . count($jobs) . " model installations based on auto-install rules! <a href='model_status.php' class='btn btn-sm btn-info ms-2'>📊 View Progress</a>";
                     $messageType = 'success';
                 } catch (Exception $e) {
                     $message = "Failed to apply auto-install rules: " . $e->getMessage();
