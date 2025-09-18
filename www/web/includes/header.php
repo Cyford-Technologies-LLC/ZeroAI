@@ -99,9 +99,25 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
     strpos($_SERVER['REQUEST_URI'], '/releases.php') !== false) {
     $currentContext = 'projects';
     $contextId = $_GET['project_id'] ?? null;
-} elseif (strpos($_SERVER['REQUEST_URI'], '/companies.php') !== false) {
+} elseif (strpos($_SERVER['REQUEST_URI'], '/companies.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/contacts.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/locations.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/employees.php') !== false) {
     $currentContext = 'companies';
     $contextId = $_GET['company_id'] ?? null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/sales.php') !== false) {
+    $currentContext = 'sales';
+    $contextId = null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/marketing.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/campaigns.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/email_marketing.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/analytics.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/lead_generation.php') !== false) {
+    $currentContext = 'marketing';
+    $contextId = null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/ai_') !== false) {
+    $currentContext = 'ai';
+    $contextId = null;
 }
 ?>
 <!DOCTYPE html>
@@ -298,6 +314,9 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
                 switch($currentContext) {
                     case 'projects': echo 'Project Menu'; break;
                     case 'companies': echo 'Company Menu'; break;
+                    case 'sales': echo 'Sales Menu'; break;
+                    case 'marketing': echo 'Marketing Menu'; break;
+                    case 'ai': echo 'AI Menu'; break;
                     default: echo 'Main Menu'; break;
                 }
                 ?>
