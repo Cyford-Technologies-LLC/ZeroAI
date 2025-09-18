@@ -419,8 +419,7 @@ class PeerManager {
                     'method' => 'POST',
                     'header' => "Content-Type: application/json\r\nContent-Length: " . strlen($data) . "\r\n",
                     'content' => $data,
-                    'timeout' => 300, // 5 minutes timeout
-                    'ignore_errors' => true
+                    'timeout' => 300 // 5 minutes timeout
                 ]
             ]);
             
@@ -473,8 +472,7 @@ class PeerManager {
                     'method' => 'POST',
                     'header' => "Content-Type: application/json\r\nContent-Length: " . strlen($data) . "\r\n",
                     'content' => $data,
-                    'timeout' => 300,
-                    'ignore_errors' => true
+                    'timeout' => 300
                 ]
             ]);
             
