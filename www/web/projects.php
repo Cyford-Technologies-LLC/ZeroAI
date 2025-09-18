@@ -78,12 +78,12 @@ try {
         $projects = $pdo->query("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id ORDER BY p.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
         $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        $stmt = $pdo->prepare("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id WHERE p.created_by = ? ORDER BY p.created_at DESC");
-        $stmt->execute([$currentUser]);
+        $stmt = $pdo->prepare("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id WHERE p.organization_id = ? ORDER BY p.created_at DESC");
+        $stmt->execute([$userOrgId]);
         $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE created_by = ? ORDER BY name");
-        $stmt->execute([$currentUser]);
+        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE organization_id = ? ORDER BY name");
+        $stmt->execute([$userOrgId]);
         $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Exception $e) {

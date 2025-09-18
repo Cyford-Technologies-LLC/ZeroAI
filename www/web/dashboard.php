@@ -16,15 +16,17 @@ try {
         $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
         $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
     } else {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE created_by = ?");
-        $stmt->execute([$currentUser]);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE organization_id = ?");
+        $stmt->execute([$userOrgId]);
         $totalCompanies = $stmt->fetchColumn() ?: 0;
         
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE created_by = ?");
-        $stmt->execute([$currentUser]);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE organization_id = ?");
+        $stmt->execute([$userOrgId]);
         $totalProjects = $stmt->fetchColumn() ?: 0;
         
-        $totalUsers = 1; // Non-admin users only see themselves
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE organization_id = ?");
+        $stmt->execute([$userOrgId]);
+        $totalUsers = $stmt->fetchColumn() ?: 0;
     }
     
     // Get tenants if table exists

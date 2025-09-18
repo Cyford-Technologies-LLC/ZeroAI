@@ -80,13 +80,13 @@ try {
     } else {
         $sql = "SELECT c.*, comp.name as company_name FROM contacts c 
                 LEFT JOIN companies comp ON c.company_id = comp.id 
-                WHERE c.created_by = ? ORDER BY c.last_name, c.first_name";
+                WHERE c.organization_id = ? ORDER BY c.last_name, c.first_name";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$currentUser]);
+        $stmt->execute([$userOrgId]);
         $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE created_by = ? ORDER BY name");
-        $stmt->execute([$currentUser]);
+        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE organization_id = ? ORDER BY name");
+        $stmt->execute([$userOrgId]);
         $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Exception $e) {

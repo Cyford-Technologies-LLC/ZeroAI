@@ -41,8 +41,8 @@ try {
         $stmt = $pdo->query("SELECT * FROM companies ORDER BY created_at DESC");
         $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM companies WHERE organization_id = ? OR created_by = ?");
-        $stmt->execute([$userOrgId, $currentUser]);
+        $stmt = $pdo->prepare("SELECT * FROM companies WHERE organization_id = ?");
+        $stmt->execute([$userOrgId]);
         $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Exception $e) {
