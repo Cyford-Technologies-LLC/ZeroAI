@@ -10,22 +10,17 @@ $totalProjects = 0;
 $totalUsers = 0;
 
 try {
-    // Use existing $pdo from header
-    if ($isAdmin) {
-        $totalCompanies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn() ?: 0;
-        $totalProjects = $pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn() ?: 0;
-        $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() ?: 0;
-    } else {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE organization_id = ?");
-        $stmt->execute([$userOrgId]);
-        $totalCompanies = $stmt->fetchColumn() ?: 0;
-        
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE organization_id = ?");
-        $stmt->execute([$userOrgId]);
-        $totalProjects = $stmt->fetchColumn() ?: 0;
-        
-        $totalUsers = 1; // Non-admin users only see themselves
-    }
+    // Get statistics from tenant database
+    require_once __DIR__ . '/../src/Services/CRMHelper.php';
+    $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+    
+    $companies = $crmHelper->getCompanies();
+    $projects = $crmHelper->getProjects();
+    $contacts = $crmHelper->getContacts();
+    
+    $totalCompanies = count($companies);
+    $totalProjects = count($projects);
+    $totalUsers = 1; // Current user
     
     // Get tenants if table exists
     try {

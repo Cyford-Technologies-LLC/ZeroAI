@@ -46,19 +46,25 @@ if ($_POST) {
     }
 }
 
-// Get projects and companies
+// Get projects and companies from tenant database
 try {
-    if ($isAdmin) {
-        $projects = $pdo->query("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id ORDER BY p.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-        $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        $stmt = $pdo->prepare("SELECT p.*, c.name as company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id WHERE p.organization_id = ? ORDER BY p.created_at DESC");
-        $stmt->execute([$userOrgId]);
-        $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE organization_id = ? ORDER BY name");
-        $stmt->execute([$userOrgId]);
-        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    require_once __DIR__ . '/../src/Services/CRMHelper.php';
+    $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+    
+    $projects = $crmHelper->getProjects();
+    $companies = $crmHelper->getCompanies();
+    
+    // Add company names to projects
+    foreach ($projects as &$project) {
+        $project['company_name'] = 'No Company';
+        if ($project['company_id']) {
+            foreach ($companies as $company) {
+                if ($company['id'] == $project['company_id']) {
+                    $project['company_name'] = $company['name'];
+                    break;
+                }
+            }
+        }
     }
 } catch (Exception $e) {
     $projects = [];
