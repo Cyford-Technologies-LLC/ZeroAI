@@ -5,7 +5,7 @@
       <paths name="root@74.208.234.43">
         <serverdata>
           <mappings>
-            <mapping deploy="/opt/cyford/zeroai" local="$PROJECT_DIR$" web="/" />
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
