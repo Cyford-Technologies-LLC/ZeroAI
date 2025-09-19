@@ -172,6 +172,10 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             transition: grid-template-columns 0.3s ease;
         }
         
+        .layout-container.right-panel-default {
+            grid-template-columns: 250px 1fr 300px;
+        }
+        
         .layout-container.sidebar-closed {
             grid-template-columns: 0px 1fr 300px;
         }
