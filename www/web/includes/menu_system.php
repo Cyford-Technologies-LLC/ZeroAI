@@ -84,9 +84,11 @@ class MenuSystem {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    public function renderHeaderMenu($currentPage = '') {
+    public function renderHeaderMenu($currentPage = '', $maxVisible = 3) {
         $menus = $this->getHeaderMenus();
-        $html = '';
+        $visibleHtml = '';
+        $hiddenHtml = '';
+        $count = 0;
         
         foreach ($menus as $menu) {
             if (!$menu['parent_id']) {
@@ -97,27 +99,28 @@ class MenuSystem {
                 
                 $subMenus = $this->getSubMenus($menu['id'], 'header');
                 
+                $menuHtml = '';
                 if (!empty($subMenus)) {
-                    $html .= '<div class="dropdown" style="display: inline-block; position: relative;">';
-                    $html .= sprintf(
+                    $menuHtml = '<div class="dropdown" style="display: inline-block; position: relative;">';
+                    $menuHtml .= sprintf(
                         '<a href="%s" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; %s">%s %s ▼</a>',
                         htmlspecialchars($menu['url']),
                         $activeClass,
                         htmlspecialchars($menu['icon']),
                         htmlspecialchars($menu['name'])
                     );
-                    $html .= '<div class="dropdown-content" style="display: none; position: absolute; background: #0056b3; min-width: 160px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1; border-radius: 4px; top: 100%;">';
+                    $menuHtml .= '<div class="dropdown-content" style="display: none; position: absolute; background: #0056b3; min-width: 160px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1; border-radius: 4px; top: 100%;">';
                     foreach ($subMenus as $subMenu) {
-                        $html .= sprintf(
+                        $menuHtml .= sprintf(
                             '<a href="%s" style="color: white; text-decoration: none; display: block; padding: 8px 16px;">%s %s</a>',
                             htmlspecialchars($subMenu['url']),
                             htmlspecialchars($subMenu['icon']),
                             htmlspecialchars($subMenu['name'])
                         );
                     }
-                    $html .= '</div></div>';
+                    $menuHtml .= '</div></div>';
                 } else {
-                    $html .= sprintf(
+                    $menuHtml = sprintf(
                         '<a href="%s" style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; %s">%s %s</a>',
                         htmlspecialchars($menu['url']),
                         $activeClass,
@@ -125,10 +128,25 @@ class MenuSystem {
                         htmlspecialchars($menu['name'])
                     );
                 }
+                
+                if ($count < $maxVisible) {
+                    $visibleHtml .= $menuHtml;
+                } else {
+                    $hiddenHtml .= $menuHtml;
+                }
+                $count++;
             }
         }
         
-        return $html;
+        $result = $visibleHtml;
+        if (!empty($hiddenHtml)) {
+            $result .= '<div class="dropdown" style="display: inline-block; position: relative;">';
+            $result .= '<button style="background: #0056b3; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">☰ More</button>';
+            $result .= '<div class="dropdown-content" style="right: 0; left: auto;">' . $hiddenHtml . '</div>';
+            $result .= '</div>';
+        }
+        
+        return $result;
     }
     
     public function renderSidebar($currentPage = '') {
