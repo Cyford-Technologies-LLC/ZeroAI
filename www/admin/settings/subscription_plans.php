@@ -57,6 +57,8 @@ if ($_POST) {
             }
             
             $success = 'Plan updated successfully!';
+            header('Location: ?');
+            exit;
         }
         
         if ($_POST['action'] === 'delete') {
