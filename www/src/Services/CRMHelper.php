@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';
-
 namespace ZeroAI\Services;
+
+require_once __DIR__ . '/../bootstrap.php';
 
 class CRMHelper {
     private $logger;
