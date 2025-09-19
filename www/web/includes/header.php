@@ -92,8 +92,39 @@ try {
 }
 
 // Get current context for dynamic sidebar
-$currentContext = 'companies';
+$currentContext = 'main';
 $contextId = null;
+
+if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false || 
+    strpos($_SERVER['REQUEST_URI'], '/bugs.php') !== false || 
+    strpos($_SERVER['REQUEST_URI'], '/features.php') !== false ||
+    strpos($_SERVER['REQUEST_URI'], '/team.php') !== false ||
+    strpos($_SERVER['REQUEST_URI'], '/releases.php') !== false) {
+    $currentContext = 'projects';
+    $contextId = $_GET['project_id'] ?? null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/companies.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/contacts.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/locations.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/employees.php') !== false) {
+    $currentContext = 'companies';
+    $contextId = $_GET['company_id'] ?? null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/sales.php') !== false) {
+    $currentContext = 'sales';
+    $contextId = null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/marketing.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/campaigns.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/email_marketing.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/analytics.php') !== false ||
+          strpos($_SERVER['REQUEST_URI'], '/lead_generation.php') !== false) {
+    $currentContext = 'marketing';
+    $contextId = null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/ai_') !== false) {
+    $currentContext = 'ai';
+    $contextId = null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/integrations') !== false || strpos($_SERVER['REQUEST_URI'], '/integration_marketplace') !== false) {
+    $currentContext = 'integrations';
+    $contextId = null;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -299,7 +330,20 @@ $contextId = null;
             </h6>
         </div>
         <div id="sidebar-content" style="padding: 20px;">
-            <?= $menuSystem->renderSidebarMenu($currentContext, $contextId) ?>
+            <?php if ($currentContext === 'companies'): ?>
+                <div style="margin-bottom: 20px;">
+                    <h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>
+                    <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>
+                    <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>
+                    <a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>
+                    <a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>
+                    <a href="/web/documents.php?context=companies" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📄 Documents</a>
+                </div>
+            <?php else: ?>
+                <?php if (isset($menuSystem)): ?>
+                    <?= $menuSystem->renderSidebarMenu($currentContext, $contextId) ?>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 
