@@ -116,6 +116,15 @@ $currentPage = $currentPage ?? '';
         document.getElementById(modalId).style.display = 'none';
     }
     
+    function toggleRightPanel() {
+        const contentWrapper = document.querySelector('.content-wrapper');
+        const rightPanel = document.getElementById('rightPanel');
+        
+        if (contentWrapper && rightPanel) {
+            contentWrapper.classList.toggle('right-closed');
+        }
+    }
+    
     // Close modal when clicking outside
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) {
