@@ -10,42 +10,51 @@ if ($_POST && isset($_POST['action'])) {
     // Include header after form processing
     include __DIR__ . '/includes/header.php';
     try {
+        require_once __DIR__ . '/../src/Services/CRMHelper.php';
+        $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+        
         if ($_POST['action'] === 'create') {
-            // Check for duplicate name or email
-            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM companies WHERE name = ? OR email = ?");
-            $checkStmt->execute([$_POST['name'], $_POST['email']]);
-            if ($checkStmt->fetchColumn() > 0) {
-                throw new Exception('Company name or email already exists');
+            // Check for duplicate name or email in tenant database
+            $existingCompanies = $crmHelper->getCompanies();
+            foreach ($existingCompanies as $existing) {
+                if ($existing['name'] === $_POST['name'] || $existing['email'] === $_POST['email']) {
+                    throw new Exception('Company name or email already exists');
+                }
             }
             
-            $stmt = $pdo->prepare("INSERT INTO companies (name, ein, business_id, email, phone, street, street2, city, state, zip, country, website, linkedin, industry, about, organization_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $userOrgId, $currentUser]);
+            $companyData = [
+                'name' => $_POST['name'],
+                'email' => $_POST['email'],
+                'phone' => $_POST['phone'],
+                'address' => trim(($_POST['street'] ?? '') . ' ' . ($_POST['street2'] ?? '') . ' ' . ($_POST['city'] ?? '') . ' ' . ($_POST['state'] ?? '') . ' ' . ($_POST['zip'] ?? ''))
+            ];
+            
+            $crmHelper->addCompany($companyData);
             ob_end_clean();
             header('Location: /web/companies.php?success=added');
             exit;
         }
         
         if ($_POST['action'] === 'update') {
-            if ($isAdmin) {
-                $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=?");
-                $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id']]);
-            } else {
-                $stmt = $pdo->prepare("UPDATE companies SET name=?, ein=?, business_id=?, email=?, phone=?, street=?, street2=?, city=?, state=?, zip=?, country=?, website=?, linkedin=?, industry=?, about=? WHERE id=? AND created_by=?");
-                $stmt->execute([$_POST['name'], $_POST['ein'], $_POST['business_id'], $_POST['email'], $_POST['phone'], $_POST['street'], $_POST['street2'], $_POST['city'], $_POST['state'], $_POST['zip'], $_POST['country'], $_POST['website'], $_POST['linkedin'], $_POST['industry'], $_POST['about'], $_POST['company_id'], $currentUser]);
-            }
+            // Use tenant database for updates
+            $tenantDb = new \ZeroAI\Services\TenantDatabase($userOrgId);
+            $updateData = [
+                'name' => $_POST['name'],
+                'email' => $_POST['email'],
+                'phone' => $_POST['phone'],
+                'address' => trim(($_POST['street'] ?? '') . ' ' . ($_POST['street2'] ?? '') . ' ' . ($_POST['city'] ?? '') . ' ' . ($_POST['state'] ?? '') . ' ' . ($_POST['zip'] ?? ''))
+            ];
+            
+            $tenantDb->update('companies', $updateData, ['id' => $_POST['company_id']]);
             ob_end_clean();
             header('Location: /web/companies.php?success=updated');
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            if ($isAdmin) {
-                $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ?");
-                $stmt->execute([$_POST['company_id']]);
-            } else {
-                $stmt = $pdo->prepare("DELETE FROM companies WHERE id = ? AND created_by = ?");
-                $stmt->execute([$_POST['company_id'], $currentUser]);
-            }
+            // Use tenant database for deletes
+            $tenantDb = new \ZeroAI\Services\TenantDatabase($userOrgId);
+            $tenantDb->delete('companies', ['id' => $_POST['company_id']]);
             ob_end_clean();
             header('Location: /web/companies.php?success=deleted');
             exit;

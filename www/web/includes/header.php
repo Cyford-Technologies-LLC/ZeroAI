@@ -74,17 +74,13 @@ try {
     // Use default
 }
 
-// Get companies
+// Get companies from tenant database
 try {
-    if ($isAdmin) {
-        $stmt = $pdo->query("SELECT * FROM companies ORDER BY created_at DESC");
-        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        $stmt = $pdo->prepare("SELECT * FROM companies WHERE organization_id = ?");
-        $stmt->execute([$userOrgId]);
-        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    require_once __DIR__ . '/../../src/Services/CRMHelper.php';
+    $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+    $companies = $crmHelper->getCompanies();
 } catch (Exception $e) {
+    error_log("Header: Failed to load companies from tenant DB: " . $e->getMessage());
     $companies = [];
 }
 

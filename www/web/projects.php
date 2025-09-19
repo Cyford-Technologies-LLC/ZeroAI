@@ -6,64 +6,38 @@ include __DIR__ . '/includes/header.php';
 // Handle form submissions
 if ($_POST) {
     try {
+        require_once __DIR__ . '/../src/Services/CRMHelper.php';
+        $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+        
         if ($_POST['action'] === 'create') {
-            $stmt = $pdo->prepare("INSERT INTO projects (name, company_id, description, priority, budget, start_date, end_date, project_type, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)");
-            $stmt->execute([
-                $_POST['name'], 
-                $_POST['company_id'], 
-                $_POST['description'], 
-                $_POST['priority'], 
-                $_POST['budget'], 
-                $_POST['start_date'], 
-                $_POST['end_date'],
-                $_POST['project_type'],
-                $currentUser
-            ]);
+            $projectData = [
+                'name' => $_POST['name'],
+                'company_id' => $_POST['company_id'] ?: null,
+                'description' => $_POST['description'],
+                'status' => 'active'
+            ];
+            
+            $crmHelper->addProject($projectData);
             header('Location: /web/projects.php?success=created');
             exit;
         }
         
         if ($_POST['action'] === 'update') {
-            if ($isAdmin) {
-                $stmt = $pdo->prepare("UPDATE projects SET name=?, company_id=?, description=?, priority=?, budget=?, start_date=?, end_date=?, project_type=? WHERE id=?");
-                $stmt->execute([
-                    $_POST['name'], 
-                    $_POST['company_id'], 
-                    $_POST['description'], 
-                    $_POST['priority'], 
-                    $_POST['budget'], 
-                    $_POST['start_date'], 
-                    $_POST['end_date'],
-                    $_POST['project_type'],
-                    $_POST['project_id']
-                ]);
-            } else {
-                $stmt = $pdo->prepare("UPDATE projects SET name=?, company_id=?, description=?, priority=?, budget=?, start_date=?, end_date=?, project_type=? WHERE id=? AND created_by=?");
-                $stmt->execute([
-                    $_POST['name'], 
-                    $_POST['company_id'], 
-                    $_POST['description'], 
-                    $_POST['priority'], 
-                    $_POST['budget'], 
-                    $_POST['start_date'], 
-                    $_POST['end_date'],
-                    $_POST['project_type'],
-                    $_POST['project_id'],
-                    $currentUser
-                ]);
-            }
+            $tenantDb = new \ZeroAI\Services\TenantDatabase($userOrgId);
+            $updateData = [
+                'name' => $_POST['name'],
+                'company_id' => $_POST['company_id'] ?: null,
+                'description' => $_POST['description']
+            ];
+            
+            $tenantDb->update('projects', $updateData, ['id' => $_POST['project_id']]);
             header('Location: /web/projects.php?success=updated');
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            if ($isAdmin) {
-                $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ?");
-                $stmt->execute([$_POST['project_id']]);
-            } else {
-                $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ? AND created_by = ?");
-                $stmt->execute([$_POST['project_id'], $currentUser]);
-            }
+            $tenantDb = new \ZeroAI\Services\TenantDatabase($userOrgId);
+            $tenantDb->delete('projects', ['id' => $_POST['project_id']]);
             header('Location: /web/projects.php?success=deleted');
             exit;
         }

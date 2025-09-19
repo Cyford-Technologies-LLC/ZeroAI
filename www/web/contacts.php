@@ -6,45 +6,41 @@ include __DIR__ . '/includes/header.php';
 // Handle form submissions
 if ($_POST) {
     try {
+        require_once __DIR__ . '/../src/Services/CRMHelper.php';
+        $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+        
         if ($_POST['action'] === 'create') {
-            $stmt = $pdo->prepare("INSERT INTO contacts (company_id, first_name, last_name, email, phone, mobile, position, department, address, city, state, zip_code, country, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
-                $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
-                $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $currentUser
-            ]);
+            $contactData = [
+                'company_id' => $_POST['company_id'] ?: null,
+                'first_name' => $_POST['first_name'],
+                'last_name' => $_POST['last_name'],
+                'email' => $_POST['email'],
+                'phone' => $_POST['phone']
+            ];
+            
+            $crmHelper->addContact($contactData);
             header('Location: /web/contacts.php?success=created');
             exit;
         }
         
         if ($_POST['action'] === 'update') {
-            if ($isAdmin) {
-                $stmt = $pdo->prepare("UPDATE contacts SET company_id=?, first_name=?, last_name=?, email=?, phone=?, mobile=?, position=?, department=?, address=?, city=?, state=?, zip_code=?, country=?, notes=? WHERE id=?");
-                $stmt->execute([
-                    $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
-                    $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
-                    $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $_POST['contact_id']
-                ]);
-            } else {
-                $stmt = $pdo->prepare("UPDATE contacts SET company_id=?, first_name=?, last_name=?, email=?, phone=?, mobile=?, position=?, department=?, address=?, city=?, state=?, zip_code=?, country=?, notes=? WHERE id=? AND created_by=?");
-                $stmt->execute([
-                    $_POST['company_id'] ?: null, $_POST['first_name'], $_POST['last_name'],
-                    $_POST['email'], $_POST['phone'], $_POST['mobile'], $_POST['position'], $_POST['department'],
-                    $_POST['address'], $_POST['city'], $_POST['state'], $_POST['zip_code'], $_POST['country'], $_POST['notes'], $_POST['contact_id'], $currentUser
-                ]);
-            }
+            $tenantDb = new \ZeroAI\Services\TenantDatabase($userOrgId);
+            $updateData = [
+                'company_id' => $_POST['company_id'] ?: null,
+                'first_name' => $_POST['first_name'],
+                'last_name' => $_POST['last_name'],
+                'email' => $_POST['email'],
+                'phone' => $_POST['phone']
+            ];
+            
+            $tenantDb->update('contacts', $updateData, ['id' => $_POST['contact_id']]);
             header('Location: /web/contacts.php?success=updated');
             exit;
         }
         
         if ($_POST['action'] === 'delete') {
-            if ($isAdmin) {
-                $stmt = $pdo->prepare("DELETE FROM contacts WHERE id = ?");
-                $stmt->execute([$_POST['contact_id']]);
-            } else {
-                $stmt = $pdo->prepare("DELETE FROM contacts WHERE id = ? AND created_by = ?");
-                $stmt->execute([$_POST['contact_id'], $currentUser]);
-            }
+            $tenantDb = new \ZeroAI\Services\TenantDatabase($userOrgId);
+            $tenantDb->delete('contacts', ['id' => $_POST['contact_id']]);
             header('Location: /web/contacts.php?success=deleted');
             exit;
         }
@@ -69,25 +65,25 @@ if ($_POST) {
     }
 }
 
-// Get contacts with company info
+// Get contacts and companies from tenant database
 try {
-    if ($isAdmin) {
-        $sql = "SELECT c.*, comp.name as company_name FROM contacts c 
-                LEFT JOIN companies comp ON c.company_id = comp.id 
-                ORDER BY c.last_name, c.first_name";
-        $contacts = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        $companies = $pdo->query("SELECT id, name FROM companies ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        $sql = "SELECT c.*, comp.name as company_name FROM contacts c 
-                LEFT JOIN companies comp ON c.company_id = comp.id 
-                WHERE c.organization_id = ? ORDER BY c.last_name, c.first_name";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userOrgId]);
-        $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $stmt = $pdo->prepare("SELECT id, name FROM companies WHERE organization_id = ? ORDER BY name");
-        $stmt->execute([$userOrgId]);
-        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    require_once __DIR__ . '/../src/Services/CRMHelper.php';
+    $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
+    
+    $contacts = $crmHelper->getContacts();
+    $companies = $crmHelper->getCompanies();
+    
+    // Add company names to contacts
+    foreach ($contacts as &$contact) {
+        $contact['company_name'] = 'No Company';
+        if ($contact['company_id']) {
+            foreach ($companies as $company) {
+                if ($company['id'] == $contact['company_id']) {
+                    $contact['company_name'] = $company['name'];
+                    break;
+                }
+            }
+        }
     }
 } catch (Exception $e) {
     $contacts = [];
