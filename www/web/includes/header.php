@@ -302,7 +302,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             <?= isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage) : '' ?>
             <?php if ($isAdmin): ?><a href="/admin/dashboard.php" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; white-space: nowrap;">⚙️ Admin</a><?php endif; ?>
         </div>
-        <div class="dropdown" id="moreMenuDropdown" style="display: none; position: relative;">
+        <div class="dropdown" id="moreMenuDropdown" style="display: none; position: relative; margin-right: 20px;">
             <button style="background: #0056b3; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">☰ More</button>
             <div class="dropdown-content" id="moreMenuContent" style="right: 0; left: auto;"></div>
         </div>
