@@ -91,9 +91,18 @@ try {
     $companies = [];
 }
 
-// Get current context for dynamic sidebar
-$currentContext = 'companies';
+// Get current context from database based on currentPage
+$currentContext = 'main';
 $contextId = null;
+
+if (isset($menuSystem) && !empty($currentPage)) {
+    $stmt = $pdo->prepare("SELECT menu_group FROM menus WHERE url LIKE ? AND menu_group IS NOT NULL LIMIT 1");
+    $stmt->execute(['%' . $currentPage . '.php']);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($result && $result['menu_group']) {
+        $currentContext = $result['menu_group'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
