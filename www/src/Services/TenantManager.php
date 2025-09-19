@@ -136,6 +136,13 @@ class TenantManager {
     
     public function getTenantDbPath($organizationId) {
         try {
+            // Check file system directly first
+            $dbPath = "/app/data/companies/{$organizationId}/crm.db";
+            if (file_exists($dbPath)) {
+                return $dbPath;
+            }
+            
+            // Fallback to database table
             $pdo = $this->mainDb->getConnection();
             $stmt = $pdo->prepare("SELECT db_path FROM tenant_databases WHERE organization_id = ?");
             $stmt->execute([$organizationId]);
