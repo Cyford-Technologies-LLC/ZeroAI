@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Contacts - ZeroAI CRM';
-$currentPage = 'Contacts';
+$currentPage = 'contacts';
 include __DIR__ . '/includes/header.php';
 
 // Handle form submissions
