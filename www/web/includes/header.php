@@ -245,14 +245,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         
 
         
-        @media (max-width: 1200px) {
-            #headerMenus {
-                display: none !important;
-            }
-            #moreMenuDropdown {
-                display: block !important;
-            }
-        }
+
         
         @media (max-width: 768px) {
             .layout-container {
@@ -388,19 +381,47 @@ function toggleSidebar() {
     }
 }
 
-// Populate More menu on load
-window.addEventListener('load', function() {
+// Responsive menu handler
+function handleResponsiveMenu() {
     const headerMenus = document.getElementById('headerMenus');
-    const moreMenuContent = document.getElementById('moreMenuContent');
+    const moreDropdown = document.getElementById('moreMenuDropdown');
+    const moreContent = document.getElementById('moreMenuContent');
     
-    if (headerMenus && moreMenuContent) {
-        const menuItems = headerMenus.querySelectorAll('a, .dropdown');
-        menuItems.forEach(item => {
-            const clone = item.cloneNode(true);
-            moreMenuContent.appendChild(clone);
-        });
+    if (!headerMenus || !moreDropdown || !moreContent) return;
+    
+    const menuItems = Array.from(headerMenus.children);
+    const containerWidth = headerMenus.offsetWidth;
+    let totalWidth = 0;
+    let visibleCount = 0;
+    
+    // Reset
+    moreContent.innerHTML = '';
+    moreDropdown.style.display = 'none';
+    menuItems.forEach(item => item.style.display = '');
+    
+    // Calculate how many items fit
+    for (let i = 0; i < menuItems.length; i++) {
+        totalWidth += menuItems[i].offsetWidth + 20; // +20 for gap
+        if (totalWidth > containerWidth - 120) { // -120 for More button space
+            break;
+        }
+        visibleCount++;
     }
-});
+    
+    // Hide overflow items and add to More menu
+    if (visibleCount < menuItems.length) {
+        for (let i = visibleCount; i < menuItems.length; i++) {
+            menuItems[i].style.display = 'none';
+            const clone = menuItems[i].cloneNode(true);
+            clone.style.display = 'block';
+            moreContent.appendChild(clone);
+        }
+        moreDropdown.style.display = 'block';
+    }
+}
+
+window.addEventListener('load', handleResponsiveMenu);
+window.addEventListener('resize', handleResponsiveMenu);
 
 
 </script>
