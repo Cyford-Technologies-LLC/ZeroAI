@@ -37,7 +37,7 @@ class MenuSystem {
         (3, 'Sales', 'header', 'sales', '/web/sales.php', '💰', 3, 1),
         (4, 'Projects', 'header', 'projects', '/web/projects.php', '📋', 4, 1),
         (5, 'Marketing', 'header', 'marketing', '/web/marketing.php', '📊', 5, 1),
-        (6, 'AI Workshop', 'header', 'ai', '/web/ai_workshop.php', '🤖', 6, 1),
+
         
         (10, 'All Companies', 'sidebar', 'companies', '/web/companies.php', '🏢', 1, 1),
         (11, 'Contacts', 'sidebar', 'companies', '/web/contacts.php', '☎️', 2, 1),
@@ -64,7 +64,7 @@ class MenuSystem {
         (43, 'Reports', 'sidebar', 'sales', '/web/sales_reports.php', '📊', 4, 1),
         
         (50, 'AI Center', 'sidebar', 'ai', '/web/ai_center.php', '🤖', 1, 1),
-        (51, 'AI Workshop', 'sidebar', 'ai', '/web/ai_workshop.php', '🔧', 2, 1),
+
         (52, 'Automation', 'sidebar', 'ai', '/web/automation.php', '⚡', 3, 1);
         ";
         
