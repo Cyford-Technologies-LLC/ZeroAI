@@ -26,6 +26,7 @@
         <br><br>
         <button onclick="generateAvatar()">Generate Avatar</button>
         <button onclick="analyzeImage()">Analyze Image</button>
+        <button onclick="checkAvatarStatus()">Check Avatar Status</button>
         
         <div class="loading" id="loading">Generating avatar... Please wait.</div>
         
@@ -97,6 +98,16 @@
                 alert('Analysis: ' + result.analysis);
             } catch (error) {
                 alert('Error: ' + error.message);
+            }
+        }
+        
+        async function checkAvatarStatus() {
+            try {
+                const response = await fetch('/avatar/api.php?action=status');
+                const result = await response.json();
+                alert('Avatar Status: ' + JSON.stringify(result, null, 2));
+            } catch (error) {
+                alert('Status Check Error: ' + error.message);
             }
         }
     </script>
