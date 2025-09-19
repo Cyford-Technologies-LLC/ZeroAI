@@ -96,8 +96,8 @@ $currentContext = 'main';
 $contextId = null;
 
 if (isset($menuSystem) && !empty($currentPage)) {
-    $stmt = $pdo->prepare("SELECT menu_group FROM menus WHERE url LIKE ? AND menu_group IS NOT NULL LIMIT 1");
-    $stmt->execute(['%' . $currentPage . '.php']);
+    $stmt = $pdo->prepare("SELECT menu_group FROM menus WHERE url = ? AND menu_group IS NOT NULL LIMIT 1");
+    $stmt->execute(['/web/' . $currentPage . '.php']);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($result && $result['menu_group']) {
         $currentContext = $result['menu_group'];
