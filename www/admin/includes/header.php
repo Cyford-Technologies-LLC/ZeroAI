@@ -156,6 +156,8 @@ $currentPage = $currentPage ?? '';
             .nav { flex-wrap: wrap; justify-content: center; }
             input, select, textarea { font-size: 16px; }
             .stats-grid { grid-template-columns: 1fr; }
+            .table-responsive { overflow-x: auto; }
+            .table th, .table td { white-space: nowrap; min-width: 120px; }
         }
     </style>
     <div class="header">
