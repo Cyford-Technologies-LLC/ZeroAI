@@ -277,49 +277,37 @@ try {
                 </div>
             <?php else: ?>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Plan</th>
-                                <th>Price</th>
-                                <th>Description</th>
+                <div class="subscription-plans">
+                    <?php foreach ($plans as $plan): ?>
+                        <div class="plan-card <?= $plan['is_featured'] ? 'featured' : '' ?>">
+                            <div class="plan-header">
+                                <h3><?= htmlspecialchars($plan['name']) ?></h3>
+                                <div class="plan-price">
+                                    $<?= number_format($plan['price'], 2) ?>
+                                    <small>/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
+                                </div>
+                                <p><?= htmlspecialchars($plan['description']) ?></p>
+                            </div>
+                            <div class="plan-features">
                                 <?php foreach ($services as $service): ?>
-                                    <th><?= htmlspecialchars($service['name']) ?></th>
+                                    <?php 
+                                    $valueStmt = $pdo->prepare("SELECT value FROM plan_services WHERE plan_id = ? AND service_id = ?");
+                                    $valueStmt->execute([$plan['id'], $service['id']]);
+                                    $planService = $valueStmt->fetch(PDO::FETCH_ASSOC);
+                                    $value = $planService ? $planService['value'] : '-';
+                                    ?>
+                                    <div class="feature-row">
+                                        <span class="feature-name"><?= htmlspecialchars($service['name']) ?></span>
+                                        <span class="feature-value"><?= htmlspecialchars($value) ?></span>
+                                    </div>
                                 <?php endforeach; ?>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($plans as $plan): ?>
-                                <tr <?= $plan['is_featured'] ? 'class="table-primary"' : '' ?>>
-                                    <td>
-                                        <strong><?= htmlspecialchars($plan['name']) ?></strong>
-                                        <?= $plan['is_featured'] ? '<br><small class="text-primary">Most Popular</small>' : '' ?>
-                                    </td>
-                                    <td>
-                                        <strong>$<?= number_format($plan['price'], 2) ?></strong>
-                                        <br><small>/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
-                                    </td>
-                                    <td><?= htmlspecialchars($plan['description']) ?></td>
-                                    <?php foreach ($services as $service): ?>
-                                        <?php 
-                                        // Get plan service value
-                                        $valueStmt = $pdo->prepare("SELECT value FROM plan_services WHERE plan_id = ? AND service_id = ?");
-                                        $valueStmt->execute([$plan['id'], $service['id']]);
-                                        $planService = $valueStmt->fetch(PDO::FETCH_ASSOC);
-                                        $value = $planService ? $planService['value'] : '-';
-                                        ?>
-                                        <td><?= htmlspecialchars($value) ?></td>
-                                    <?php endforeach; ?>
-                                    <td>
-                                        <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
-                                        <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </div>
+                            <div class="plan-actions">
+                                <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
+                                <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-danger">Delete</button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>

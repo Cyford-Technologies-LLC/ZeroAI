@@ -50,16 +50,19 @@ input, select, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px 
 .collapse { display: none !important; }
 .collapse.show { display: block !important; }
 
-/* Subscription Plans Horizontal Layout */
+/* Subscription Plans Vertical Layout */
 .subscription-plans { display: flex; flex-direction: row; gap: 20px; flex-wrap: wrap; }
 .plan-card { border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; background: white; flex: 1; min-width: 300px; }
 .plan-card.featured { border-color: #007bff; position: relative; }
 .plan-card.featured::before { content: "Most Popular"; position: absolute; top: -10px; left: 20px; background: #007bff; color: white; padding: 5px 15px; border-radius: 15px; font-size: 12px; }
 .plan-header { text-align: center; margin-bottom: 20px; }
 .plan-price { font-size: 2rem; font-weight: bold; color: #007bff; }
-.plan-features { list-style: none; padding: 0; margin: 20px 0; }
-.plan-features li { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-.plan-features li:last-child { border-bottom: none; }
+.plan-features { margin: 20px 0; }
+.feature-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.feature-row:last-child { border-bottom: none; }
+.feature-name { font-weight: 500; }
+.feature-value { color: #007bff; font-weight: bold; }
+.plan-actions { margin-top: 20px; text-align: center; }
 
 @media (max-width: 768px) {
     .content-wrapper { flex-direction: column; }
