@@ -51,7 +51,13 @@ if ($_POST) {
                 if (strpos($key, 'service_') === 0) {
                     $serviceId = str_replace('service_', '', $key);
                     error_log("Updating service {$serviceId} with value: {$value}");
-                    $stmt = $pdo->prepare("INSERT OR REPLACE INTO plan_services (plan_id, service_id, value) VALUES (?, ?, ?)");
+                    
+                    // Delete existing record first
+                    $stmt = $pdo->prepare("DELETE FROM plan_services WHERE plan_id = ? AND service_id = ?");
+                    $stmt->execute([$_POST['plan_id'], $serviceId]);
+                    
+                    // Insert new record
+                    $stmt = $pdo->prepare("INSERT INTO plan_services (plan_id, service_id, value) VALUES (?, ?, ?)");
                     $stmt->execute([$_POST['plan_id'], $serviceId, $value]);
                 }
             }
