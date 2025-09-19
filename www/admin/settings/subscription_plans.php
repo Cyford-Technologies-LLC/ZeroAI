@@ -339,7 +339,7 @@ try {
                                 <?php endforeach; ?>
                             </div>
                             <div class="plan-actions">
-                                <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
+                                <button onclick="window.location.href='?edit=<?= $plan['id'] ?>'" class="btn btn-warning">Edit</button>
                                 <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-danger">Delete</button>
                             </div>
                         </div>
