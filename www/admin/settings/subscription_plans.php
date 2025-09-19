@@ -278,11 +278,6 @@ try {
 </div>
 
 <script>
-function toggleCollapse(id) {
-    const element = document.getElementById(id);
-    element.style.display = element.style.display === 'none' ? 'block' : 'none';
-}
-
 function editPlan(id) {
     console.log('Edit plan clicked:', id);
     const button = document.querySelector(`button[onclick="editPlan(${id})"]`);
@@ -308,10 +303,6 @@ function editPlan(id) {
     modal.style.opacity = '1';
 }
 
-function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-}
-
 function deletePlan(id) {
     if (confirm('Are you sure you want to delete this plan?')) {
         const form = document.createElement('form');
@@ -322,12 +313,7 @@ function deletePlan(id) {
     }
 }
 
-window.onclick = function(event) {
-    const modal = document.getElementById('editPlanModal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-}
+
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

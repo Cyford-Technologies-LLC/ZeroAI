@@ -129,6 +129,25 @@ $currentPage = $currentPage ?? '';
         .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
         .collapse { display: none !important; }
         .collapse.show { display: block !important; }
+    </style>
+    <script>
+    // Universal modal and form functions
+    function toggleCollapse(id) {
+        const element = document.getElementById(id);
+        element.style.display = element.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    }
+    </script>
         @media (max-width: 768px) {
             .content-wrapper { flex-direction: column; }
             .sidebar { width: 100%; order: 2; }
