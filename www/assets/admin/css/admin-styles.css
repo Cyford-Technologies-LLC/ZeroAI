@@ -51,8 +51,8 @@ input, select, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px 
 .collapse.show { display: block !important; }
 
 /* Subscription Plans Vertical Layout */
-.subscription-plans { display: flex; flex-direction: row; gap: 20px; flex-wrap: nowrap; justify-content: flex-start; }
-.plan-card { border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; background: white; width: 300px; flex-shrink: 0; }
+.subscription-plans { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px; }
+.plan-card { border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; background: white; min-width: 300px; flex: 0 0 auto; }
 .plan-card.featured { border-color: #007bff; position: relative; }
 .plan-card.featured::before { content: "Most Popular"; position: absolute; top: -10px; left: 20px; background: #007bff; color: white; padding: 5px 15px; border-radius: 15px; font-size: 12px; }
 .plan-header { text-align: center; margin-bottom: 20px; }
