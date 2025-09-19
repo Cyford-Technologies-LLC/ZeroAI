@@ -138,15 +138,38 @@ class TenantManager {
         try {
             // Check file system directly first
             $dbPath = "/app/data/companies/{$organizationId}/crm.db";
-            if (file_exists($dbPath)) {
-                return $dbPath;
+            $dirPath = "/app/data/companies/{$organizationId}";
+            
+            $this->logger->info("TenantManager: Looking for tenant database", [
+                'org_id' => $organizationId,
+                'checking_dir' => $dirPath,
+                'expected_db_path' => $dbPath
+            ]);
+            
+            if (is_dir($dirPath)) {
+                $this->logger->info("TenantManager: Directory exists", ['dir' => $dirPath]);
+                if (file_exists($dbPath)) {
+                    $this->logger->info("TenantManager: Database file found", ['path' => $dbPath]);
+                    return $dbPath;
+                } else {
+                    $this->logger->warning("TenantManager: Directory exists but database missing", ['path' => $dbPath]);
+                }
+            } else {
+                $this->logger->warning("TenantManager: Directory does not exist", ['dir' => $dirPath]);
             }
             
             // Fallback to database table
+            $this->logger->info("TenantManager: Checking database table for tenant path");
             $pdo = $this->mainDb->getConnection();
             $stmt = $pdo->prepare("SELECT db_path FROM tenant_databases WHERE organization_id = ?");
             $stmt->execute([$organizationId]);
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                $this->logger->info("TenantManager: Found path in database table", ['path' => $result['db_path']]);
+            } else {
+                $this->logger->warning("TenantManager: No entry found in tenant_databases table", ['org_id' => $organizationId]);
+            }
             
             return $result ? $result['db_path'] : null;
         } catch (\Exception $e) {
@@ -155,6 +178,28 @@ class TenantManager {
                 'error' => $e->getMessage()
             ]);
             return null;
+        }
+    }
+    
+    public function getTenantDatabase($organizationId) {
+        try {
+            $dbPath = $this->getTenantDbPath($organizationId);
+            if (!$dbPath) {
+                $this->logger->error("TenantManager: Tenant database not found", [
+                    'org_id' => $organizationId,
+                    'searched_path' => "/app/data/companies/{$organizationId}/crm.db"
+                ]);
+                throw new \Exception("Tenant database not found for organization: {$organizationId}");
+            }
+            
+            $this->logger->info("TenantManager: Creating TenantDatabase instance", ['path' => $dbPath]);
+            return new TenantDatabase($dbPath);
+        } catch (\Exception $e) {
+            $this->logger->error('TenantManager: Failed to get tenant database', [
+                'org_id' => $organizationId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 }
