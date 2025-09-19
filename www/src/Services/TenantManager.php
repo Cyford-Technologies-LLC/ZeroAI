@@ -143,43 +143,40 @@ class TenantManager {
             $dbPath = "/app/data/companies/{$organizationId}/crm.db";
             $dirPath = "/app/data/companies/{$organizationId}";
             
-            $this->logger->info("TenantManager: Looking for tenant database", [
-                'org_id' => $organizationId,
-                'checking_dir' => $dirPath,
-                'expected_db_path' => $dbPath
-            ]);
+            error_log("[DEBUG] TenantManager: getTenantDbPath called with orgId: " . var_export($organizationId, true));
+            error_log("[DEBUG] TenantManager: Expected dir: {$dirPath}");
+            error_log("[DEBUG] TenantManager: Expected db: {$dbPath}");
+            error_log("[DEBUG] TenantManager: Directory exists: " . (is_dir($dirPath) ? 'YES' : 'NO'));
+            error_log("[DEBUG] TenantManager: File exists: " . (file_exists($dbPath) ? 'YES' : 'NO'));
             
             if (is_dir($dirPath)) {
-                $this->logger->info("TenantManager: Directory exists", ['dir' => $dirPath]);
                 if (file_exists($dbPath)) {
-                    $this->logger->info("TenantManager: Database file found", ['path' => $dbPath]);
+                    error_log("[DEBUG] TenantManager: Returning existing db path: {$dbPath}");
                     return $dbPath;
                 } else {
-                    $this->logger->warning("TenantManager: Directory exists but database missing", ['path' => $dbPath]);
+                    error_log("[DEBUG] TenantManager: Directory exists but database missing");
                 }
             } else {
-                $this->logger->warning("TenantManager: Directory does not exist", ['dir' => $dirPath]);
+                error_log("[DEBUG] TenantManager: Directory does not exist");
             }
             
             // Fallback to database table
-            $this->logger->info("TenantManager: Checking database table for tenant path");
+            error_log("[DEBUG] TenantManager: Checking database table for tenant path");
             $pdo = $this->mainDb->getConnection();
             $stmt = $pdo->prepare("SELECT db_path FROM tenant_databases WHERE organization_id = ?");
             $stmt->execute([$organizationId]);
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             if ($result) {
-                $this->logger->info("TenantManager: Found path in database table", ['path' => $result['db_path']]);
+                error_log("[DEBUG] TenantManager: Found path in database table: " . $result['db_path']);
+                return $result['db_path'];
             } else {
-                $this->logger->warning("TenantManager: No entry found in tenant_databases table", ['org_id' => $organizationId]);
+                error_log("[DEBUG] TenantManager: No entry found in tenant_databases table");
             }
             
-            return $result ? $result['db_path'] : null;
+            return null;
         } catch (\Exception $e) {
-            $this->logger->error('TenantManager: Failed to get tenant db path', [
-                'org_id' => $organizationId,
-                'error' => $e->getMessage()
-            ]);
+            error_log("[ERROR] TenantManager: Exception in getTenantDbPath: " . $e->getMessage());
             return null;
         }
     }
