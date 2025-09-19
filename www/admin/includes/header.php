@@ -104,7 +104,12 @@ $currentPage = $currentPage ?? '';
     // Universal modal and form functions
     function toggleCollapse(id) {
         const element = document.getElementById(id);
-        element.style.display = element.style.display === 'none' ? 'block' : 'none';
+        if (!element) {
+            console.error('Element not found:', id);
+            return;
+        }
+        const isHidden = element.style.display === 'none' || window.getComputedStyle(element).display === 'none';
+        element.style.display = isHidden ? 'block' : 'none';
     }
     
     function closeModal(modalId) {

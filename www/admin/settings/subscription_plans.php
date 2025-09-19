@@ -193,7 +193,7 @@ try {
     <?php endif; ?>
 
     <!-- Add Plan Form -->
-    <div class="card mb-4 collapse" id="addPlanForm" style="display: none;">
+    <div class="card mb-4" id="addPlanForm" style="display: none;">
         <div class="card-header">
             <h5 class="mb-0">Add New Plan</h5>
         </div>
@@ -256,7 +256,7 @@ try {
         <div class="card-body">
             <button class="btn btn-success mb-3" onclick="toggleCollapse('addServiceForm')">Add Service</button>
             
-            <div class="collapse" id="addServiceForm" style="display: none;">
+            <div id="addServiceForm" style="display: none;">
                 <form method="POST" class="mb-3">
                     <input type="hidden" name="action" value="add_service">
                     <div class="row">
