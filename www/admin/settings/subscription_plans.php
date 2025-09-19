@@ -95,7 +95,12 @@ try {
     
     // Insert default plans if table is empty
     $count = $pdo->query("SELECT COUNT(*) FROM subscription_plans")->fetchColumn();
-    if ($count == 0) {
+    $serviceCount = $pdo->query("SELECT COUNT(*) FROM plan_services")->fetchColumn();
+    if ($count == 0 || $serviceCount == 0) {
+        $pdo->exec("DELETE FROM plan_services");
+        $pdo->exec("DELETE FROM subscription_services");
+        $pdo->exec("DELETE FROM subscription_plans");
+        
         $pdo->exec("
             INSERT INTO subscription_plans (name, description, price, billing_cycle, features, is_featured, is_active, sort_order) VALUES 
             ('Free', 'Perfect for getting started', 0.00, 'month', '[\"1 User\", \"Basic CRM\", \"Email Support\"]', 0, 1, 1),
