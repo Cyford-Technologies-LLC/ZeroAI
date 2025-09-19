@@ -286,6 +286,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         </div>
         <div style="display: flex; gap: 20px; margin-right: 20px;">
             <?= isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage) : '' ?>
+            <a href="/web/integrations.php" style="background: <?= $currentPage === 'integrations' ? '#0056b3' : 'rgba(255,255,255,0.1)' ?>; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none;">🔌 Integrations</a>
             <?php if ($isAdmin): ?><a href="/admin/dashboard.php" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none;">⚙️ Admin</a><?php endif; ?>
         </div>
         
