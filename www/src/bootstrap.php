@@ -27,8 +27,9 @@ set_error_handler(function($severity, $message, $file, $line) use ($logger) {
         'severity' => $severity
     ]);
     
-    if (getenv('ENVIRONMENT') !== 'development') {
-        throw new \ZeroAI\Core\SecurityException('Internal server error', 500);
+    // Don't throw exceptions for deprecation warnings
+    if ($severity === E_DEPRECATED || $severity === E_USER_DEPRECATED) {
+        return true;
     }
     
     return false;
@@ -36,19 +37,24 @@ set_error_handler(function($severity, $message, $file, $line) use ($logger) {
 
 // Set up exception handler
 set_exception_handler(function($exception) use ($logger) {
-    if ($exception instanceof \ZeroAI\Core\SecurityException) {
-        $logger->logSecurity($exception->getMessage(), 'high');
-        http_response_code($exception->getCode() ?: 500);
-        echo json_encode(['error' => 'Security error occurred']);
-    } else {
-        $logger->error('Unhandled exception: ' . $exception->getMessage(), [
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine(),
-            'trace' => $exception->getTraceAsString()
-        ]);
-        
-        http_response_code(500);
-        echo json_encode(['error' => 'Internal server error']);
+    try {
+        if ($exception instanceof \ZeroAI\Core\SecurityException) {
+            $logger->logSecurity($exception->getMessage(), 'high');
+            http_response_code($exception->getCode() ?: 500);
+        } else {
+            $logger->error('Unhandled exception: ' . $exception->getMessage(), [
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine()
+            ]);
+            http_response_code(500);
+        }
+    } catch (Exception $e) {
+        // Fallback if logging fails
+        error_log('Bootstrap exception handler failed: ' . $e->getMessage());
+    }
+    
+    if (getenv('ENVIRONMENT') === 'development') {
+        echo 'Error: ' . $exception->getMessage();
     }
     
     exit;
