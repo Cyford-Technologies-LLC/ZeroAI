@@ -73,6 +73,10 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userOrgId = $user['organization_id'] ?? 1;
+        // Ensure userOrgId is just the organization ID, not a path
+        if (is_string($userOrgId) && strpos($userOrgId, '/') !== false) {
+            $userOrgId = basename(dirname($userOrgId));
+        }
     }
     
     // Initialize menu system
