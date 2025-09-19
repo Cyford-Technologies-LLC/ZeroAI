@@ -78,6 +78,28 @@ $currentPage = $currentPage ?? '';
     <?php endif; ?>
 </head>
 <body>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
+        .header { background: #007bff; color: white; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5rem; font-weight: bold; }
+        .nav { display: flex; gap: 20px; }
+        .nav a { color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background 0.3s; }
+        .nav a:hover { background: rgba(255,255,255,0.1); }
+        .nav a.active { background: rgba(255,255,255,0.2); }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .header-btn { padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-frontend { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .btn-logout { background: linear-gradient(135deg, #dc3545, #e74c3c); color: white; }
+        .content-wrapper { display: flex; flex: 1; }
+        .sidebar { width: 250px; background: #343a40; color: white; padding: 20px 0; overflow-y: auto; }
+        .sidebar-group { margin-bottom: 20px; }
+        .sidebar-group h3 { color: #adb5bd; font-size: 12px; text-transform: uppercase; margin: 0 20px 10px; font-weight: bold; }
+        .sidebar a { display: block; color: #dee2e6; text-decoration: none; padding: 10px 20px; transition: background 0.3s; }
+        .sidebar a:hover { background: #495057; }
+        .sidebar a.active { background: #007bff; color: white; }
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    </style>
     <script>
     // Universal modal and form functions
     function toggleCollapse(id) {
