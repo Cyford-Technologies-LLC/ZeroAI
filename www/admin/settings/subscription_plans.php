@@ -1,5 +1,6 @@
 <?php
 $pageTitle = 'Subscription Plans Management';
+$currentPage = 'subscription_plans';
 require_once __DIR__ . '/../../config/database.php';
 
 $db = new Database();
