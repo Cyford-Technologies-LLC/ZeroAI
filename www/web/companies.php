@@ -25,8 +25,7 @@ if ($_POST && isset($_POST['action'])) {
             $companyData = [
                 'name' => $_POST['name'],
                 'email' => $_POST['email'],
-                'phone' => $_POST['phone'],
-                'address' => trim(($_POST['street'] ?? '') . ' ' . ($_POST['street2'] ?? '') . ' ' . ($_POST['city'] ?? '') . ' ' . ($_POST['state'] ?? '') . ' ' . ($_POST['zip'] ?? ''))
+                'phone' => $_POST['phone']
             ];
             
             $crmHelper->addCompany($companyData);
@@ -41,8 +40,7 @@ if ($_POST && isset($_POST['action'])) {
             $updateData = [
                 'name' => $_POST['name'],
                 'email' => $_POST['email'],
-                'phone' => $_POST['phone'],
-                'address' => trim(($_POST['street'] ?? '') . ' ' . ($_POST['street2'] ?? '') . ' ' . ($_POST['city'] ?? '') . ' ' . ($_POST['state'] ?? '') . ' ' . ($_POST['zip'] ?? ''))
+                'phone' => $_POST['phone']
             ];
             
             $tenantDb->update('companies', $updateData, ['id' => $_POST['company_id']]);
