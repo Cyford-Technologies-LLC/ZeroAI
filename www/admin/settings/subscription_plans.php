@@ -170,43 +170,31 @@ try {
                     <p class="text-muted">No plans found. Add your first plan above.</p>
                 </div>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Price</th>
-                                <th>Cycle</th>
-                                <th>Features</th>
-                                <th>Featured</th>
-                                <th>Status</th>
-                                <th>Order</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($plans as $plan): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($plan['name']) ?></td>
-                                    <td>$<?= number_format($plan['price'], 2) ?></td>
-                                    <td><?= htmlspecialchars($plan['billing_cycle']) ?></td>
-                                    <td>
-                                        <?php 
-                                        $features = json_decode($plan['features'], true);
-                                        echo count($features) . ' features';
-                                        ?>
-                                    </td>
-                                    <td><?= $plan['is_featured'] ? '⭐ Yes' : 'No' ?></td>
-                                    <td><?= $plan['is_active'] ? '✅ Active' : '❌ Inactive' ?></td>
-                                    <td><?= $plan['sort_order'] ?></td>
-                                    <td>
-                                        <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
-                                        <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                <div class="subscription-plans">
+                    <?php foreach ($plans as $plan): ?>
+                        <div class="plan-card <?= $plan['is_featured'] ? 'featured' : '' ?>">
+                            <div class="plan-header">
+                                <h3><?= htmlspecialchars($plan['name']) ?></h3>
+                                <div class="plan-price">
+                                    $<?= number_format($plan['price'], 2) ?>
+                                    <small>/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
+                                </div>
+                                <p><?= htmlspecialchars($plan['description']) ?></p>
+                            </div>
+                            <ul class="plan-features">
+                                <?php 
+                                $features = json_decode($plan['features'], true) ?: [];
+                                foreach ($features as $feature): 
+                                ?>
+                                    <li><?= htmlspecialchars($feature) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                            <div style="margin-top: 20px;">
+                                <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
+                                <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-danger">Delete</button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>

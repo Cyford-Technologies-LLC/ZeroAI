@@ -17,39 +17,29 @@ try {
         <div class="col-12">
             <h1 class="h2 mb-4">Choose Your Plan</h1>
             
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Service</th>
-                            <?php foreach ($plans as $plan): ?>
-                                <th class="text-center <?= $plan['is_featured'] ? 'bg-primary text-white' : '' ?>">
-                                    <div class="mb-2">
-                                        <strong><?= htmlspecialchars($plan['name']) ?></strong>
-                                        <?php if ($plan['is_featured']): ?>
-                                            <br><small>Most Popular</small>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="h4 mb-2">
-                                        $<?= number_format($plan['price'], 2) ?>
-                                        <small class="text-muted">/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
-                                    </div>
-                                    <p class="small mb-3"><?= htmlspecialchars($plan['description']) ?></p>
-                                    <button class="btn btn-<?= $plan['is_featured'] ? 'light' : 'primary' ?> btn-sm w-100">
-                                        Choose Plan
-                                    </button>
-                                </th>
-                            <?php endforeach; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><strong>Users</strong><br><small class="text-muted">Number of users allowed</small></td><?php foreach ($plans as $plan): ?><td class="text-center">✓ Included</td><?php endforeach; ?></tr>
-                        <tr><td><strong>CRM Access</strong><br><small class="text-muted">Customer relationship management</small></td><?php foreach ($plans as $plan): ?><td class="text-center">✓ Included</td><?php endforeach; ?></tr>
-                        <tr><td><strong>AI Features</strong><br><small class="text-muted">Artificial intelligence capabilities</small></td><?php foreach ($plans as $plan): ?><td class="text-center">✓ Included</td><?php endforeach; ?></tr>
-                        <tr><td><strong>Support</strong><br><small class="text-muted">Customer support level</small></td><?php foreach ($plans as $plan): ?><td class="text-center">✓ Included</td><?php endforeach; ?></tr>
-                        <tr><td><strong>Reports</strong><br><small class="text-muted">Advanced reporting and analytics</small></td><?php foreach ($plans as $plan): ?><td class="text-center">✓ Included</td><?php endforeach; ?></tr>
-                    </tbody>
-                </table>
+            <div class="subscription-plans">
+                <?php foreach ($plans as $plan): ?>
+                    <div class="plan-card <?= $plan['is_featured'] ? 'featured' : '' ?>">
+                        <div class="plan-header">
+                            <h3><?= htmlspecialchars($plan['name']) ?></h3>
+                            <div class="plan-price">
+                                $<?= number_format($plan['price'], 2) ?>
+                                <small>/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
+                            </div>
+                            <p><?= htmlspecialchars($plan['description']) ?></p>
+                        </div>
+                        <ul class="plan-features">
+                            <li><strong>Users:</strong> Number of users allowed</li>
+                            <li><strong>CRM Access:</strong> Customer relationship management</li>
+                            <li><strong>AI Features:</strong> Artificial intelligence capabilities</li>
+                            <li><strong>Support:</strong> Customer support level</li>
+                            <li><strong>Reports:</strong> Advanced reporting and analytics</li>
+                        </ul>
+                        <button class="btn btn-<?= $plan['is_featured'] ? 'primary' : 'outline-primary' ?> w-100">
+                            Choose Plan
+                        </button>
+                    </div>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
