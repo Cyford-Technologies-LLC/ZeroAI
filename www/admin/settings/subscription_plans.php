@@ -301,7 +301,11 @@ function editPlan(id) {
     const features = JSON.parse(planData.features || '[]');
     document.getElementById('editFeatures').value = features.join('\n');
     
-    document.getElementById('editPlanModal').style.display = 'block';
+    const modal = document.getElementById('editPlanModal');
+    console.log('Modal element:', modal);
+    modal.style.display = 'block';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
 }
 
 function closeModal(modalId) {
