@@ -121,6 +121,9 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
 } elseif (strpos($_SERVER['REQUEST_URI'], '/ai_') !== false) {
     $currentContext = 'ai';
     $contextId = null;
+} elseif (strpos($_SERVER['REQUEST_URI'], '/integrations') !== false || strpos($_SERVER['REQUEST_URI'], '/integration_marketplace') !== false) {
+    $currentContext = 'integrations';
+    $contextId = null;
 }
 ?>
 <!DOCTYPE html>

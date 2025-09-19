@@ -232,6 +232,8 @@ class MenuSystem {
             return 'marketing';
         } elseif (strpos($uri, '/ai_') !== false || strpos($uri, '/automation.php') !== false) {
             return 'ai';
+        } elseif (strpos($uri, '/integrations') !== false || strpos($uri, '/integration_marketplace') !== false) {
+            return 'integrations';
         }
         
         return 'main';

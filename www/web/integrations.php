@@ -9,7 +9,9 @@ if ($_POST && isset($_POST['action'])) {
     
     try {
         require_once __DIR__ . '/../src/Services/IntegrationManager.php';
-        $integrationManager = new \ZeroAI\Services\IntegrationManager($userOrgId);
+        // Ensure userOrgId is just the organization ID, not a path
+        $orgId = is_string($userOrgId) && strpos($userOrgId, '/') !== false ? basename(dirname($userOrgId)) : $userOrgId;
+        $integrationManager = new \ZeroAI\Services\IntegrationManager($orgId);
         
         if ($_POST['action'] === 'create') {
             $config = [];
@@ -56,9 +58,9 @@ if ($_POST && isset($_POST['action'])) {
 // Get integrations
 try {
     require_once __DIR__ . '/../src/Services/IntegrationManager.php';
-    // Debug: Log the userOrgId value
-    error_log("IntegrationManager userOrgId: " . var_export($userOrgId, true));
-    $integrationManager = new \ZeroAI\Services\IntegrationManager($userOrgId);
+    // Ensure userOrgId is just the organization ID, not a path
+    $orgId = is_string($userOrgId) && strpos($userOrgId, '/') !== false ? basename(dirname($userOrgId)) : $userOrgId;
+    $integrationManager = new \ZeroAI\Services\IntegrationManager($orgId);
     $integrations = $integrationManager->getIntegrations();
 } catch (Exception $e) {
     $integrations = [];
