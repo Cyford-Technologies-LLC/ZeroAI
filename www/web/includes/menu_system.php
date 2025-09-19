@@ -70,11 +70,9 @@ class MenuSystem {
         (51, 'AI Workshop', 'sidebar', 'ai', '/web/ai_workshop.php', '🔧', 2, 1),
         (52, 'Automation', 'sidebar', 'ai', '/web/automation.php', '⚡', 3, 1),
         
-        (60, 'Integrations', 'header', 'main', '/web/integrations.php', '🔌', 7, 1),
-        (61, 'My Integrations', 'header', 'main', '/web/integrations.php', '🔧', 1, 1),
-        (62, 'Marketplace', 'header', 'main', '/web/integration_marketplace.php', '🛒', 2, 1);
-        
-        UPDATE menus SET parent_id = 60 WHERE id IN (61, 62);
+        (60, 'Integrations', 'header', 'integrations', '/web/integrations.php', '🔌', 7, 1),
+        (61, 'My Integrations', 'header', 'integrations', '/web/integrations.php', '🔧', 1, 1),
+        (62, 'Marketplace', 'header', 'integrations', '/web/integration_marketplace.php', '🛒', 2, 1);
         ";
         
         $this->pdo->exec($sql);
