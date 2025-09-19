@@ -59,7 +59,7 @@
             video.style.display = 'none';
             
             try {
-                const response = await fetch('/avatar/api.php/generate', {
+                const response = await fetch('/avatar/api.php?action=generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
@@ -88,7 +88,7 @@
             formData.append('question', question);
             
             try {
-                const response = await fetch('/avatar/api.php/analyze', {
+                const response = await fetch('/avatar/api.php?action=analyze', {
                     method: 'POST',
                     body: formData
                 });
