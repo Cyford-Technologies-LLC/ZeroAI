@@ -30,6 +30,16 @@ if ($_POST) {
                 isset($_POST['is_active']) ? 1 : 0,
                 $_POST['sort_order']
             ]);
+            
+            $planId = $pdo->lastInsertId();
+            
+            // Add default service values for new plan
+            $services = $pdo->query("SELECT id FROM subscription_services WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($services as $service) {
+                $stmt = $pdo->prepare("INSERT INTO plan_services (plan_id, service_id, value) VALUES (?, ?, ?)");
+                $stmt->execute([$planId, $service['id'], '-']);
+            }
+            
             $success = 'Plan created successfully!';
         }
         
@@ -436,15 +446,17 @@ function editPlan(id) {
     const features = JSON.parse(planData.features || '[]');
     document.getElementById('editFeatures').value = features.join('\n');
     
-    // Load existing service values
-    fetch(`?action=get_plan_services&plan_id=${id}`)
-        .then(response => response.json())
-        .then(services => {
-            services.forEach(service => {
-                const input = document.getElementById(`editService${service.service_id}`);
-                if (input) input.value = service.value || '';
-            });
+    // Load existing service values synchronously
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `?action=get_plan_services&plan_id=${id}`, false);
+    xhr.send();
+    if (xhr.status === 200) {
+        const services = JSON.parse(xhr.responseText);
+        services.forEach(service => {
+            const input = document.getElementById(`editService${service.service_id}`);
+            if (input) input.value = service.value || '';
         });
+    }
     
     const modal = document.getElementById('editPlanModal');
     console.log('Modal element:', modal);
