@@ -200,7 +200,7 @@ try {
                                     <td><?= $plan['is_active'] ? '✅ Active' : '❌ Inactive' ?></td>
                                     <td><?= $plan['sort_order'] ?></td>
                                     <td>
-                                        <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-warning" data-plan='<?= htmlspecialchars(json_encode($plan)) ?>'>Edit</button>
+                                        <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
                                         <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
                                     </td>
                                 </tr>
