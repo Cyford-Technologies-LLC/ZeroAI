@@ -119,31 +119,92 @@ $subscriptions = [
     <a href="/web/store.php" class="btn btn-outline-secondary">← Back to Store</a>
 </div>
 
-<div class="row mb-5">
-    <?php foreach ($subscriptions as $plan): ?>
-        <div class="col-lg-4 mb-4">
-            <div class="card pricing-card h-100 <?= $plan['popular'] ? 'popular' : '' ?>">
-                <div class="card-body text-center p-4">
-                    <h3 class="card-title"><?= $plan['name'] ?></h3>
-                    <div class="price-display">
-                        $<?= $plan['price'] ?>
-                        <small class="text-muted" style="font-size: 1rem;">/<?= $plan['billing'] ?></small>
+<div class="table-responsive mb-5">
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr class="text-center">
+                <th class="bg-light" style="width: 25%;">Features</th>
+                <th class="bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 25%;">
+                    <div class="py-3">
+                        <h4 class="mb-1">Starter</h4>
+                        <div class="h2 mb-1">$29<small class="fs-6">/month</small></div>
+                        <small class="opacity-90">Perfect for small teams</small>
                     </div>
-                    
-                    <ul class="feature-list mt-4 mb-4">
-                        <?php foreach ($plan['features'] as $feature): ?>
-                            <li><?= $feature ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                    
-                    <button class="btn btn-primary btn-purchase w-100" 
-                            onclick="checkout('subscription', '<?= $plan['id'] ?>', <?= $plan['price'] ?>)">
-                        Choose Plan
-                    </button>
-                </div>
-            </div>
-        </div>
-    <?php endforeach; ?>
+                </th>
+                <th class="bg-gradient text-white position-relative" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); width: 25%;">
+                    <span class="position-absolute top-0 start-50 translate-middle badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size: 0.7rem;">Most Popular</span>
+                    <div class="py-3">
+                        <h4 class="mb-1">Professional</h4>
+                        <div class="h2 mb-1">$79<small class="fs-6">/month</small></div>
+                        <small class="opacity-90">Best for growing businesses</small>
+                    </div>
+                </th>
+                <th class="bg-gradient text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); width: 25%;">
+                    <div class="py-3">
+                        <h4 class="mb-1">Enterprise</h4>
+                        <div class="h2 mb-1">$199<small class="fs-6">/month</small></div>
+                        <small class="opacity-90">For large organizations</small>
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="fw-bold bg-light">AI Tokens/Month</td>
+                <td class="text-center">5,000</td>
+                <td class="text-center">25,000</td>
+                <td class="text-center">Unlimited</td>
+            </tr>
+            <tr>
+                <td class="fw-bold bg-light">Companies</td>
+                <td class="text-center">10</td>
+                <td class="text-center">100</td>
+                <td class="text-center">Unlimited</td>
+            </tr>
+            <tr>
+                <td class="fw-bold bg-light">Contacts</td>
+                <td class="text-center">50</td>
+                <td class="text-center">500</td>
+                <td class="text-center">Unlimited</td>
+            </tr>
+            <tr>
+                <td class="fw-bold bg-light">Integrations</td>
+                <td class="text-center">Basic</td>
+                <td class="text-center">All</td>
+                <td class="text-center">Custom</td>
+            </tr>
+            <tr>
+                <td class="fw-bold bg-light">Support</td>
+                <td class="text-center">Email</td>
+                <td class="text-center">Priority</td>
+                <td class="text-center">24/7</td>
+            </tr>
+            <tr>
+                <td class="fw-bold bg-light">Analytics</td>
+                <td class="text-center"><i class="fas fa-times text-muted"></i></td>
+                <td class="text-center"><i class="fas fa-check text-success"></i> Advanced</td>
+                <td class="text-center"><i class="fas fa-check text-success"></i> Advanced</td>
+            </tr>
+            <tr>
+                <td class="fw-bold bg-light">White-label</td>
+                <td class="text-center"><i class="fas fa-times text-muted"></i></td>
+                <td class="text-center"><i class="fas fa-times text-muted"></i></td>
+                <td class="text-center"><i class="fas fa-check text-success"></i></td>
+            </tr>
+            <tr>
+                <td class="bg-light"></td>
+                <td class="text-center py-3">
+                    <button class="btn btn-primary btn-lg" onclick="checkout('subscription', 'starter', 29)">Choose Starter</button>
+                </td>
+                <td class="text-center py-3">
+                    <button class="btn btn-primary btn-lg" onclick="checkout('subscription', 'professional', 79)">Choose Professional</button>
+                </td>
+                <td class="text-center py-3">
+                    <button class="btn btn-primary btn-lg" onclick="checkout('subscription', 'enterprise', 199)">Choose Enterprise</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
 <div class="alert alert-info">
