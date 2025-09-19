@@ -45,120 +45,117 @@ include __DIR__ . '/includes/header.php';
 }
 </style>
 
-<div class="store-header">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1 class="mb-3">🚀 ZeroAI Store</h1>
-            <p class="mb-0">Choose your plan and power up your CRM with AI tokens</p>
-        </div>
-        <div class="col-md-4 text-center">
-            <div class="bg-white text-dark p-3 rounded-3">
-                <h5 class="text-primary mb-0">Start Free</h5>
-                <small class="mb-0">14-day trial included</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Subscription Plans -->
-<div class="section-title">
-    <h2>💎 Subscription Plans</h2>
-    <p class="text-muted">Choose the perfect plan for your business needs</p>
-</div>
-
-<div class="row mb-5">
-    <?php foreach ($subscriptions as $plan): ?>
-        <div class="col-lg-4 mb-4">
-            <div class="card pricing-card h-100 <?= $plan['popular'] ? 'popular' : '' ?>">
-                <div class="card-body text-center p-4">
-                    <h3 class="card-title"><?= $plan['name'] ?></h3>
-                    <div class="price-display">
-                        $<?= $plan['price'] ?>
-                        <small class="text-muted" style="font-size: 1rem;">/<?= $plan['billing'] ?></small>
-                    </div>
-                    
-                    <ul class="feature-list mt-4 mb-4">
-                        <?php foreach ($plan['features'] as $feature): ?>
-                            <li><?= $feature ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                    
-                    <button class="btn btn-primary btn-purchase w-100" 
-                            onclick="checkout('subscription', '<?= $plan['id'] ?>', <?= $plan['price'] ?>)">
-                        Choose Plan
-                    </button>
-                </div>
-            </div>
-        </div>
-    <?php endforeach; ?>
-</div>
-
-<!-- Token Packages -->
-<div class="section-title">
-    <h2>🪙 Prepaid AI Tokens</h2>
-    <p class="text-muted">Buy tokens in advance and save money</p>
-</div>
+<h1 class="mb-4">🛒 ZeroAI Store</h1>
+<p class="text-muted mb-4">Choose from our marketplace of plans, tokens, and services</p>
 
 <div class="row">
-    <?php foreach ($tokenPackages as $package): ?>
-        <div class="col-md-6 col-lg-3 mb-4">
-            <div class="card token-card h-100">
-                <div class="card-body text-center p-4">
-                    <div class="token-amount"><?= number_format($package['tokens']) ?></div>
-                    <p class="text-muted mb-2">AI Tokens</p>
-                    
-                    <?php if ($package['bonus'] > 0): ?>
-                        <div class="bonus-badge mb-3">
-                            +<?= number_format($package['bonus']) ?> Bonus!
-                        </div>
-                    <?php endif; ?>
-                    
-                    <div class="h4 text-success mb-3">$<?= $package['price'] ?></div>
-                    
-                    <p class="small text-muted mb-3">
-                        $<?= number_format($package['price'] / ($package['tokens'] + $package['bonus']), 4) ?> per token
-                    </p>
-                    
-                    <button class="btn btn-outline-primary btn-purchase w-100" 
-                            onclick="checkout('tokens', '<?= $package['id'] ?>', <?= $package['price'] ?>)">
-                        Buy Tokens
-                    </button>
-                </div>
+    <!-- Subscription Plans -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <a href="/web/subscriptions.php" class="store-card card text-decoration-none">
+            <div class="card-body text-center d-flex flex-column justify-content-center subscription-card">
+                <div class="store-icon">💎</div>
+                <h4>Subscription Plans</h4>
+                <p class="mb-0">Monthly & yearly plans with AI tokens included</p>
+                <small class="mt-2">Starting at $29/month</small>
+            </div>
+        </a>
+    </div>
+    
+    <!-- AI Tokens -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <a href="/web/tokens.php" class="store-card card text-decoration-none">
+            <div class="card-body text-center d-flex flex-column justify-content-center token-card">
+                <div class="store-icon">🪙</div>
+                <h4>AI Token Packages</h4>
+                <p class="mb-0">Prepaid tokens with bonus offers</p>
+                <small class="mt-2">Starting at $9.99</small>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Billing & Usage -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <a href="/web/billing.php" class="store-card card text-decoration-none">
+            <div class="card-body text-center d-flex flex-column justify-content-center billing-card">
+                <div class="store-icon">📊</div>
+                <h4>Billing & Usage</h4>
+                <p class="mb-0">Manage subscriptions and view usage</p>
+                <small class="mt-2">Current plan & analytics</small>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Enterprise Solutions -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="store-card card">
+            <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white;">
+                <div class="store-icon">🏢</div>
+                <h4>Enterprise</h4>
+                <p class="mb-0">Custom solutions for large teams</p>
+                <small class="mt-2">Contact sales</small>
             </div>
         </div>
-    <?php endforeach; ?>
-</div>
-
-<!-- Features Section -->
-<div class="row mt-5 pt-5 border-top">
-    <div class="col-md-4 text-center mb-4">
-        <div class="h1 text-primary">🔒</div>
-        <h5>Secure Payments</h5>
-        <p class="text-muted">All payments processed securely through Stripe</p>
     </div>
-    <div class="col-md-4 text-center mb-4">
-        <div class="h1 text-primary">⚡</div>
-        <h5>Instant Activation</h5>
-        <p class="text-muted">Your plan activates immediately after payment</p>
-    </div>
-    <div class="col-md-4 text-center mb-4">
-        <div class="h1 text-primary">🔄</div>
-        <h5>Cancel Anytime</h5>
-        <p class="text-muted">No long-term contracts, cancel whenever you want</p>
-    </div>
-</div>
-
-<script>
-function checkout(type, productId, price) {
-    // Redirect to checkout page with product details
-    const params = new URLSearchParams({
-        type: type,
-        product: productId,
-        price: price
-    });
     
-    window.location.href = '/web/checkout.php?' + params.toString();
-}
-</script>
+    <!-- API Access -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="store-card card">
+            <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #17a2b8 0%, #6610f2 100%); color: white;">
+                <div class="store-icon">🔌</div>
+                <h4>API Access</h4>
+                <p class="mb-0">Integrate ZeroAI with your apps</p>
+                <small class="mt-2">Developer plans</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- White Label -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="store-card card">
+            <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white;">
+                <div class="store-icon">🏷️</div>
+                <h4>White Label</h4>
+                <p class="mb-0">Brand ZeroAI as your own</p>
+                <small class="mt-2">Custom branding</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Training & Support -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="store-card card">
+            <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white;">
+                <div class="store-icon">🎓</div>
+                <h4>Training & Support</h4>
+                <p class="mb-0">Get expert help and training</p>
+                <small class="mt-2">Premium support</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add-ons -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="store-card card">
+            <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #495057 0%, #6c757d 100%); color: white;">
+                <div class="store-icon">🧩</div>
+                <h4>Add-ons</h4>
+                <p class="mb-0">Extra features and integrations</p>
+                <small class="mt-2">Extend functionality</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gift Cards -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="store-card card">
+            <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%); color: white;">
+                <div class="store-icon">🎁</div>
+                <h4>Gift Cards</h4>
+                <p class="mb-0">Give the gift of AI productivity</p>
+                <small class="mt-2">Perfect for teams</small>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
