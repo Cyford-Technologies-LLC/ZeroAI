@@ -73,10 +73,15 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user) {
         $userOrgId = $user['organization_id'] ?? 1;
+        error_log("[DEBUG] Header: Raw userOrgId from DB: " . var_export($userOrgId, true));
+        
         // Ensure userOrgId is just the organization ID, not a path
         if (is_string($userOrgId) && strpos($userOrgId, '/') !== false) {
             $userOrgId = basename(dirname($userOrgId));
+            error_log("[DEBUG] Header: Extracted orgId from path: " . $userOrgId);
         }
+        
+        error_log("[DEBUG] Header: Final userOrgId: " . var_export($userOrgId, true));
     }
     
     // Initialize menu system
@@ -87,6 +92,7 @@ try {
 
 // Get companies from tenant database
 try {
+    error_log("[DEBUG] Header: About to create CRMHelper with orgId: " . var_export($userOrgId, true));
     require_once __DIR__ . '/../../src/Services/CRMHelper.php';
     $crmHelper = new \ZeroAI\Services\CRMHelper($userOrgId);
     $companies = $crmHelper->getCompanies();

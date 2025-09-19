@@ -58,13 +58,22 @@ if ($_POST && isset($_POST['action'])) {
 // Get integrations
 try {
     require_once __DIR__ . '/../src/Services/IntegrationManager.php';
+    
+    // Debug the userOrgId value
+    error_log("[DEBUG] Integrations: Raw userOrgId: " . var_export($userOrgId, true));
+    
     // Ensure userOrgId is just the organization ID, not a path
     $orgId = is_string($userOrgId) && strpos($userOrgId, '/') !== false ? basename(dirname($userOrgId)) : $userOrgId;
+    
+    error_log("[DEBUG] Integrations: Final orgId: " . var_export($orgId, true));
+    
     $integrationManager = new \ZeroAI\Services\IntegrationManager($orgId);
     $integrations = $integrationManager->getIntegrations();
 } catch (Exception $e) {
     $integrations = [];
     $error = "Error loading integrations: " . $e->getMessage();
+    error_log("[ERROR] Integrations page: " . $e->getMessage());
+    error_log("[ERROR] Integrations page trace: " . $e->getTraceAsString());
 }
 
 // Handle success messages

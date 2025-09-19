@@ -186,12 +186,15 @@ class TenantManager {
     
     public function getTenantDatabase($organizationId) {
         try {
+            error_log("[DEBUG] TenantManager: getTenantDatabase called with orgId: " . var_export($organizationId, true));
+            
             $dbPath = $this->getTenantDbPath($organizationId);
             if (!$dbPath) {
                 $this->logger->error("TenantManager: Tenant database not found", [
                     'org_id' => $organizationId,
                     'searched_path' => "/app/data/companies/{$organizationId}/crm.db"
                 ]);
+                error_log("[ERROR] TenantManager: Tenant database not found for organization: {$organizationId}");
                 throw new \Exception("Tenant database not found for organization: {$organizationId}");
             }
             
@@ -202,6 +205,7 @@ class TenantManager {
                 'org_id' => $organizationId,
                 'error' => $e->getMessage()
             ]);
+            error_log("[ERROR] TenantManager: Exception in getTenantDatabase: " . $e->getMessage());
             throw $e;
         }
     }
