@@ -67,7 +67,7 @@ class MenuSystem {
         (43, 'Reports', 'sidebar', 'sales', '/web/sales_reports.php', '📊', 4, 1),
         
         (50, 'AI Center', 'sidebar', 'ai', '/web/ai_center.php', '🤖', 1, 1),
-        (51, 'AI Tools', 'sidebar', 'ai', '/web/ai_tools.php', '🔧', 2, 1),
+        (51, 'AI Workshop', 'sidebar', 'ai', '/web/ai_workshop.php', '🔧', 2, 1),
         (52, 'Automation', 'sidebar', 'ai', '/web/automation.php', '⚡', 3, 1),
         
         (60, 'Integrations', 'header', 'main', '/web/integrations.php', '🔌', 7, 1),
