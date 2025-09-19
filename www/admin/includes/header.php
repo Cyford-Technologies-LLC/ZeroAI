@@ -119,6 +119,16 @@ $currentPage = $currentPage ?? '';
         .stat-card { background: #007bff; color: white; padding: 20px; border-radius: 8px; text-align: center; }
         .stat-value { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
         .stat-label { font-size: 0.9em; opacity: 0.9; }
+        /* Universal Modal Styles */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1050; }
+        .modal-dialog { position: relative; width: auto; margin: 1.75rem; max-width: 800px; margin: 50px auto; }
+        .modal-content { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .modal-header { padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 1rem; }
+        .modal-footer { padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        .collapse { display: none !important; }
+        .collapse.show { display: block !important; }
         @media (max-width: 768px) {
             .content-wrapper { flex-direction: column; }
             .sidebar { width: 100%; order: 2; }
