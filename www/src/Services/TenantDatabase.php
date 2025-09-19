@@ -8,29 +8,27 @@ class TenantDatabase {
     private $pdo;
     private $organizationId;
     
-    public function __construct($organizationId) {
+    public function __construct($dbPath, $organizationId = null) {
         try {
             $this->logger = \ZeroAI\Core\Logger::getInstance();
-            $this->organizationId = $organizationId;
+            $this->organizationId = $organizationId ?: basename(dirname($dbPath));
             
-            $tenantManager = new TenantManager();
-            $dbPath = $tenantManager->getTenantDbPath($organizationId);
-            
-            if (!$dbPath || !file_exists($dbPath)) {
-                throw new \Exception("Tenant database not found for organization: {$organizationId}");
+            if (!file_exists($dbPath)) {
+                throw new \Exception("Tenant database file not found: {$dbPath}");
             }
             
             $this->pdo = new \PDO("sqlite:{$dbPath}");
             $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             
             $this->logger->debug('TenantDatabase: Connected to tenant database', [
-                'org_id' => $organizationId,
+                'org_id' => $this->organizationId,
                 'db_path' => $dbPath
             ]);
         } catch (\Exception $e) {
             if ($this->logger) {
                 $this->logger->error('TenantDatabase: Connection failed', [
-                    'org_id' => $organizationId,
+                    'org_id' => $this->organizationId,
+                    'db_path' => $dbPath,
                     'error' => $e->getMessage()
                 ]);
             }
@@ -40,6 +38,23 @@ class TenantDatabase {
     
     public function getConnection() {
         return $this->pdo;
+    }
+    
+    public function execute($sql) {
+        try {
+            $result = $this->pdo->exec($sql);
+            $this->logger->debug('TenantDatabase: SQL executed', [
+                'org_id' => $this->organizationId,
+                'affected_rows' => $result
+            ]);
+            return $result;
+        } catch (\Exception $e) {
+            $this->logger->error('TenantDatabase: SQL execution failed', [
+                'org_id' => $this->organizationId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
     
     public function select($table, $where = [], $limit = null) {

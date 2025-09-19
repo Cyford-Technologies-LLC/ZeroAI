@@ -190,16 +190,23 @@ class TenantManager {
             
             $dbPath = $this->getTenantDbPath($organizationId);
             if (!$dbPath) {
-                $this->logger->error("TenantManager: Tenant database not found", [
-                    'org_id' => $organizationId,
-                    'searched_path' => "/app/data/companies/{$organizationId}/crm.db"
-                ]);
-                error_log("[ERROR] TenantManager: Tenant database not found for organization: {$organizationId}");
-                throw new \Exception("Tenant database not found for organization: {$organizationId}");
+                // Try to create the tenant database if it doesn't exist
+                error_log("[DEBUG] TenantManager: Database not found, attempting to create for org: {$organizationId}");
+                $this->createTenantDatabase($organizationId);
+                $dbPath = $this->getTenantDbPath($organizationId);
+                
+                if (!$dbPath) {
+                    $this->logger->error("TenantManager: Tenant database not found", [
+                        'org_id' => $organizationId,
+                        'searched_path' => "/app/data/companies/{$organizationId}/crm.db"
+                    ]);
+                    error_log("[ERROR] TenantManager: Tenant database not found for organization: {$organizationId}");
+                    throw new \Exception("Tenant database not found for organization: {$organizationId}");
+                }
             }
             
             $this->logger->info("TenantManager: Creating TenantDatabase instance", ['path' => $dbPath]);
-            return new TenantDatabase($dbPath);
+            return new TenantDatabase($dbPath, $organizationId);
         } catch (\Exception $e) {
             $this->logger->error('TenantManager: Failed to get tenant database', [
                 'org_id' => $organizationId,
