@@ -31,10 +31,7 @@ class MenuSystem {
             FOREIGN KEY (parent_id) REFERENCES menus(id)
         );
         
-        INSERT OR IGNORE INTO menus (id, name, type, menu_group, parent_id, url, icon, sort_order, is_active) VALUES
-        (60, 'Integrations', 'header', 'integrations', NULL, '/web/integrations.php', '🔌', 7, 1);
-        
-        INSERT OR IGNORE INTO menus (id, name, type, menu_group, parent_id, url, icon, sort_order, is_active) VALUES 
+        INSERT OR IGNORE INTO menus (id, name, type, menu_group, url, icon, sort_order, is_active) VALUES 
         (1, 'Dashboard', 'header', 'main', '/web/index.php', '📊', 1, 1),
         (2, 'Companies', 'header', 'companies', '/web/companies.php', '🏢', 2, 1),
         (3, 'Sales', 'header', 'sales', '/web/sales.php', '💰', 3, 1),
@@ -68,11 +65,7 @@ class MenuSystem {
         
         (50, 'AI Center', 'sidebar', 'ai', '/web/ai_center.php', '🤖', 1, 1),
         (51, 'AI Workshop', 'sidebar', 'ai', '/web/ai_workshop.php', '🔧', 2, 1),
-        (52, 'Automation', 'sidebar', 'ai', '/web/automation.php', '⚡', 3, 1),
-        
-        (60, 'Integrations', 'header', 'integrations', '/web/integrations.php', '🔌', 7, 1),
-        (61, 'My Integrations', 'header', 'integrations', '/web/integrations.php', '🔧', 1, 1),
-        (62, 'Marketplace', 'header', 'integrations', '/web/integration_marketplace.php', '🛒', 2, 1);
+        (52, 'Automation', 'sidebar', 'ai', '/web/automation.php', '⚡', 3, 1);
         ";
         
         $this->pdo->exec($sql);
