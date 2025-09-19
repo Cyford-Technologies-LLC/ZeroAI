@@ -92,6 +92,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
+                // Step 4: Create tenant database for the organization
+                try {
+                    require_once __DIR__ . '/../src/Services/TenantManager.php';
+                    $tenantManager = new \ZeroAI\Services\TenantManager();
+                    $tenantOrgId = $tenantManager->createTenantDatabase($organizationId);
+                    
+                    $logger->info('Tenant database created during registration', [
+                        'org_id' => $tenantOrgId,
+                        'user_id' => $realUserId,
+                        'username' => $username
+                    ]);
+                } catch (Exception $tenantError) {
+                    $logger->error('Tenant database creation failed during registration', [
+                        'error' => $tenantError->getMessage(),
+                        'org_id' => $organizationId,
+                        'user_id' => $realUserId
+                    ]);
+                    // Don't fail registration if tenant DB creation fails
+                }
+                
                 $success = 'Registration successful! You can now login.';
                 
                 $logger->debug('User created with ID', ['user_id' => $realUserId, 'username' => $username]);
