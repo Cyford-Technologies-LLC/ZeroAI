@@ -282,9 +282,9 @@ try {
                 </div>
             <?php else: ?>
 
-                <div class="subscription-plans">
+                <div class="subscription-plans" style="display: flex; gap: 20px; overflow-x: auto;">
                     <?php foreach ($plans as $plan): ?>
-                        <div class="plan-card <?= $plan['is_featured'] ? 'featured' : '' ?>">
+                        <div class="plan-card <?= $plan['is_featured'] ? 'featured' : '' ?>" style="min-width: 300px; flex-shrink: 0;">
                             <div class="plan-header">
                                 <h3><?= htmlspecialchars($plan['name']) ?></h3>
                                 <div class="plan-price">
