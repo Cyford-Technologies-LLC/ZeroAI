@@ -91,14 +91,9 @@ try {
     $companies = [];
 }
 
-// Get current context dynamically from menu system
-$currentContext = 'main';
+// Get current context for dynamic sidebar
+$currentContext = 'companies';
 $contextId = null;
-
-if (isset($menuSystem)) {
-    $currentContext = $menuSystem->getCurrentContext();
-    $contextId = $menuSystem->getContextId();
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
