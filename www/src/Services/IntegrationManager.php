@@ -92,7 +92,7 @@ class IntegrationManager {
     
     public function getIntegrations() {
         try {
-            $integrations = $this->tenantDb->select('integrations', '*');
+            $integrations = $this->tenantDb->select('integrations');
             foreach ($integrations as &$integration) {
                 $integration['config'] = json_decode($integration['config'], true) ?: [];
             }

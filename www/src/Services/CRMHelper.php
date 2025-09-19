@@ -14,7 +14,8 @@ class CRMHelper {
             
             if ($organizationId) {
                 $this->organizationId = $organizationId;
-                $this->tenantDb = new TenantDatabase($organizationId);
+                $tenantManager = new TenantManager();
+                $this->tenantDb = $tenantManager->getTenantDatabase($organizationId);
                 $this->logger->debug('CRMHelper: Initialized with tenant database', ['org_id' => $organizationId]);
             } else {
                 $this->logger->debug('CRMHelper: Initialized without tenant database');
@@ -33,7 +34,7 @@ class CRMHelper {
     public function getCompanies($limit = null) {
         try {
             if ($this->tenantDb) {
-                $companies = $this->tenantDb->select('companies', [], $limit);
+                $companies = $this->tenantDb->select('companies', '*', [], $limit);
                 $this->logger->debug('CRMHelper: Retrieved companies from tenant DB', [
                     'org_id' => $this->organizationId,
                     'count' => count($companies)
@@ -61,7 +62,7 @@ class CRMHelper {
             $where = $companyId ? ['company_id' => $companyId] : [];
             
             if ($this->tenantDb) {
-                $contacts = $this->tenantDb->select('contacts', $where, $limit);
+                $contacts = $this->tenantDb->select('contacts', '*', $where, $limit);
                 $this->logger->debug('CRMHelper: Retrieved contacts from tenant DB', [
                     'org_id' => $this->organizationId,
                     'company_id' => $companyId,
@@ -91,7 +92,7 @@ class CRMHelper {
             $where = $companyId ? ['company_id' => $companyId] : [];
             
             if ($this->tenantDb) {
-                $projects = $this->tenantDb->select('projects', $where, $limit);
+                $projects = $this->tenantDb->select('projects', '*', $where, $limit);
                 $this->logger->debug('CRMHelper: Retrieved projects from tenant DB', [
                     'org_id' => $this->organizationId,
                     'company_id' => $companyId,

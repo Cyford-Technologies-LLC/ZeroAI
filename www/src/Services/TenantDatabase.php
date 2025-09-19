@@ -57,12 +57,12 @@ class TenantDatabase {
         }
     }
     
-    public function select($table, $where = [], $limit = null) {
+    public function select($table, $columns = '*', $where = [], $limit = null) {
         try {
-            $sql = "SELECT * FROM {$table}";
+            $sql = "SELECT {$columns} FROM {$table}";
             $params = [];
             
-            if (!empty($where)) {
+            if (!empty($where) && is_array($where)) {
                 $conditions = [];
                 foreach ($where as $key => $value) {
                     $conditions[] = "{$key} = ?";
@@ -79,19 +79,9 @@ class TenantDatabase {
             $stmt->execute($params);
             $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
-            $this->logger->debug('TenantDatabase: Select query executed', [
-                'org_id' => $this->organizationId,
-                'table' => $table,
-                'count' => count($result)
-            ]);
-            
             return $result;
         } catch (\Exception $e) {
-            $this->logger->error('TenantDatabase: Select query failed', [
-                'org_id' => $this->organizationId,
-                'table' => $table,
-                'error' => $e->getMessage()
-            ]);
+            error_log("[ERROR] TenantDatabase select: " . $e->getMessage());
             throw $e;
         }
     }
