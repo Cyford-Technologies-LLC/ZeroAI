@@ -8,15 +8,14 @@ import base64
 from pathlib import Path
 import cv2
 import numpy as np
-from TTS.api import TTS
-import torch
+import pyttsx3
 
 app = Flask(__name__)
 CORS(app)
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
 
 # Initialize TTS
-tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
+tts = pyttsx3.init()
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
@@ -32,7 +31,8 @@ def generate_avatar():
             video_path = video_file.name
         
         # Generate speech
-        tts.tts_to_file(text=prompt, file_path=audio_path)
+        tts.save_to_file(prompt, audio_path)
+        tts.runAndWait()
         
         # Create simple avatar video (placeholder face with audio)
         create_simple_avatar(audio_path, video_path, prompt)
