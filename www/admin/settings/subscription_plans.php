@@ -5,9 +5,7 @@ require_once __DIR__ . '/../../config/database.php';
 $db = new Database();
 $pdo = $db->getConnection();
 
-include __DIR__ . '/../includes/header.php';
-
-// Handle AJAX requests
+// Handle AJAX requests BEFORE any HTML output
 if (isset($_GET['action']) && $_GET['action'] === 'get_plan_services') {
     $planId = $_GET['plan_id'];
     $stmt = $pdo->prepare("SELECT service_id, value FROM plan_services WHERE plan_id = ?");
@@ -17,6 +15,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_plan_services') {
     echo json_encode($services);
     exit;
 }
+
+include __DIR__ . '/../includes/header.php';
 
 // Handle form submissions
 if ($_POST) {
