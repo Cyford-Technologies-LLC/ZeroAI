@@ -23,8 +23,8 @@ tokenizers>=0.13.0
 # Cloud provider integrations (optional)
 openai>=1.0.0
 anthropic>=0.18.0
-docling  #    >=0.4.0   #  conflict
-FastAPI form data processing dependency
+docling   # >=0.4.0
+# FastAPI form data processing dependency
 python-multipart>=0.0.6
 
 # Avatar Generation Dependencies
