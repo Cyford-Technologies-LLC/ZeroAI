@@ -284,6 +284,7 @@ function toggleCollapse(id) {
 }
 
 function editPlan(id) {
+    console.log('Edit plan clicked:', id);
     const button = document.querySelector(`button[onclick="editPlan(${id})"]`);
     const planData = JSON.parse(button.getAttribute('data-plan'));
     
