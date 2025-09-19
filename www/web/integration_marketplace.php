@@ -77,6 +77,15 @@ $availableIntegrations = [
         'icon' => '🏢',
         'type' => 'webhook',
         'fields' => ['webhook_url']
+    ],
+    [
+        'id' => 'stripe',
+        'name' => 'Stripe',
+        'description' => 'Process payments and manage subscriptions with Stripe',
+        'category' => 'Payments',
+        'icon' => '💳',
+        'type' => 'api',
+        'fields' => ['publishable_key', 'secret_key', 'webhook_secret']
     ]
 ];
 
