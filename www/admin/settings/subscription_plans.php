@@ -88,6 +88,23 @@ try {
             ('Pro', 'Best for growing businesses', 29.99, 'month', '[\"5 Users\", \"Advanced CRM\", \"AI Features\", \"Priority Support\", \"Custom Reports\"]', 1, 1, 2),
             ('Enterprise', 'For large organizations', 99.99, 'month', '[\"Unlimited Users\", \"Full CRM Suite\", \"Advanced AI\", \"24/7 Support\", \"Custom Integration\", \"White Label\"]', 0, 1, 3)
         ");
+        
+        // Insert default services
+        $pdo->exec("
+            INSERT INTO subscription_services (name, description, sort_order) VALUES 
+            ('Users', 'Number of users allowed', 1),
+            ('CRM Access', 'Customer relationship management features', 2),
+            ('AI Features', 'Artificial intelligence capabilities', 3),
+            ('Support Level', 'Customer support tier', 4),
+            ('Custom Reports', 'Advanced reporting and analytics', 5)
+        ");
+        
+        $pdo->exec("
+            INSERT INTO plan_services (plan_id, service_id, value) VALUES 
+            (1, 1, '1 User'), (1, 2, 'Basic'), (1, 3, 'Limited'), (1, 4, 'Email'), (1, 5, 'No'),
+            (2, 1, '5 Users'), (2, 2, 'Full'), (2, 3, 'Advanced'), (2, 4, 'Priority'), (2, 5, 'Yes'),
+            (3, 1, 'Unlimited'), (3, 2, 'Enterprise'), (3, 3, 'Full AI Suite'), (3, 4, '24/7'), (3, 5, 'Custom')
+        ");
     }
 } catch (Exception $e) {
     $error = "Database error: " . $e->getMessage();
