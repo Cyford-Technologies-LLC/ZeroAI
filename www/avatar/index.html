@@ -59,17 +59,14 @@
             video.style.display = 'none';
             
             try {
-                const response = await fetch('http://localhost:7860/generate', {
+                const response = await fetch('/avatar/api.php/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
                 });
                 
-                const blob = await response.blob();
-                const videoUrl = URL.createObjectURL(blob);
-                
-                video.src = videoUrl;
-                video.style.display = 'block';
+                const result = await response.json();
+                alert('Avatar Response: ' + result.status);
                 loading.style.display = 'none';
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -91,7 +88,7 @@
             formData.append('question', question);
             
             try {
-                const response = await fetch('http://localhost:7860/analyze', {
+                const response = await fetch('/avatar/api.php/analyze', {
                     method: 'POST',
                     body: formData
                 });

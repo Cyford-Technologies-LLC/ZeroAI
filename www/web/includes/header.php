@@ -167,18 +167,27 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
                 "sidebar main right"
                 "footer footer footer";
             grid-template-rows: 70px 1fr auto;
-            grid-template-columns: 250px 1fr 0px;
+            grid-template-columns: 250px 1fr 300px;
             height: 100vh;
             transition: grid-template-columns 0.3s ease;
         }
         
         .layout-container.sidebar-closed {
+            grid-template-columns: 0px 1fr 300px;
+        }
+        
+        .layout-container.right-closed {
+            grid-template-columns: 250px 1fr 0px;
+        }
+        
+        .layout-container.both-closed {
             grid-template-columns: 0px 1fr 0px;
         }
         
         .header-section { grid-area: header; z-index: 1001; }
         .sidebar-section { grid-area: sidebar; z-index: 1000; overflow: hidden; }
         .main-section { grid-area: main; overflow-y: auto; padding: 20px; }
+        .right-section { grid-area: right; z-index: 1000; overflow: hidden; background: #f8f9fa; border-left: 1px solid #dee2e6; }
         .footer-section { grid-area: footer; background: #f8f9fa; border-top: 1px solid #dee2e6; min-height: 50px; }
         
         .profile-dropdown {
@@ -249,7 +258,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         
         @media (max-width: 768px) {
             .layout-container {
-                grid-template-columns: 0px 1fr 0px;
+                grid-template-columns: 0px 1fr 0px !important;
                 grid-template-rows: auto 1fr auto;
             }
             .header-section {
@@ -307,6 +316,10 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             <div class="dropdown-content" id="moreMenuContent" style="right: 0; left: auto;"></div>
         </div>
         
+        <!-- Right Panel Toggle -->
+        <button style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 8px; border-radius: 4px; margin-right: 10px;"
+                onclick="toggleRightPanel()" title="Toggle Right Panel">📊</button>
+        
         <!-- Profile Dropdown -->
         <div class="profile-dropdown">
             <button style="background: #6366f1; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer;">
@@ -355,6 +368,22 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         </div>
     </div>
 
+    <!-- Right Panel -->
+    <div class="right-section" id="rightPanel" style="overflow-y: auto;">
+        <div style="padding: 20px; border-bottom: 1px solid #dee2e6;">
+            <h6 style="margin: 0; color: #6c757d; text-transform: uppercase; font-size: 0.8rem;">ZeroAI Assistant</h6>
+        </div>
+        <div style="padding: 0;">
+            <!-- Avatar Section -->
+            <div style="height: 100%; min-height: 600px;">
+                <iframe src="/avatar/index.html" 
+                        style="width: 100%; height: 100%; border: none; min-height: 600px;"
+                        title="ZeroAI Avatar Assistant">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div class="main-section" id="mainContent">
 
@@ -377,7 +406,47 @@ function toggleSidebar() {
         }
         overlay.classList.toggle('show');
     } else {
-        container.classList.toggle('sidebar-closed');
+        const isRightClosed = container.classList.contains('right-closed');
+        const isSidebarClosed = container.classList.contains('sidebar-closed');
+        
+        container.classList.remove('sidebar-closed', 'right-closed', 'both-closed');
+        
+        if (!isSidebarClosed) {
+            if (isRightClosed) {
+                container.classList.add('both-closed');
+            } else {
+                container.classList.add('sidebar-closed');
+            }
+        } else {
+            if (isRightClosed) {
+                container.classList.add('right-closed');
+            }
+        }
+    }
+}
+
+function toggleRightPanel() {
+    const container = document.getElementById('layoutContainer');
+    
+    if (window.innerWidth <= 768) {
+        return; // Don't show right panel on mobile
+    }
+    
+    const isRightClosed = container.classList.contains('right-closed');
+    const isSidebarClosed = container.classList.contains('sidebar-closed');
+    
+    container.classList.remove('sidebar-closed', 'right-closed', 'both-closed');
+    
+    if (!isRightClosed) {
+        if (isSidebarClosed) {
+            container.classList.add('both-closed');
+        } else {
+            container.classList.add('right-closed');
+        }
+    } else {
+        if (isSidebarClosed) {
+            container.classList.add('sidebar-closed');
+        }
     }
 }
 
