@@ -56,6 +56,8 @@ if ($_POST && isset($_POST['action'])) {
 // Get integrations
 try {
     require_once __DIR__ . '/../src/Services/IntegrationManager.php';
+    // Debug: Log the userOrgId value
+    error_log("IntegrationManager userOrgId: " . var_export($userOrgId, true));
     $integrationManager = new \ZeroAI\Services\IntegrationManager($userOrgId);
     $integrations = $integrationManager->getIntegrations();
 } catch (Exception $e) {
