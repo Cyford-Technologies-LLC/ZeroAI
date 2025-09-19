@@ -107,35 +107,7 @@ $wonValue = array_sum(array_column($wonDeals, 'amount'));
 
 ?>
 
-    <!-- Header Section -->
-    <div class="header-section">
-        <div style="background: #007cba; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <button id="sidebarToggle" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; display: none;">☰</button>
-                <h1 style="margin: 0; font-size: 1.5rem;">💰 Sales Pipeline</h1>
-            </div>
-            <?= $menuSystem->renderHeaderMenu() ?>
-            <div class="profile-dropdown">
-                <span style="cursor: pointer; padding: 8px 12px; border-radius: 4px; background: rgba(255,255,255,0.1);">
-                    <?= htmlspecialchars($currentUser) ?> (<?= htmlspecialchars($userOrgId) ?>) ▼
-                </span>
-                <div class="profile-dropdown-content">
-                    <?php if ($isAdmin): ?>
-                        <a href="/admin/dashboard.php">⚙️ Admin Panel</a>
-                    <?php endif; ?>
-                    <a href="/web/logout.php">🚪 Logout</a>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Sidebar Section -->
-    <div class="sidebar-section">
-        <?= $menuSystem->renderSidebar($currentPage) ?>
-    </div>
-
-    <!-- Main Content Section -->
-    <div class="main-section">
         <?php if (isset($success)): ?>
             <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
         <?php endif; ?>
@@ -314,15 +286,7 @@ $wonValue = array_sum(array_column($wonDeals, 'amount'));
                 <?php endif; ?>
             </div>
         </div>
-    </div>
 
-    <!-- Footer Section -->
-    <div class="footer-section">
-        <div style="padding: 15px 20px; text-align: center; color: #666;">
-            © 2024 ZeroAI CRM. All rights reserved.
-        </div>
-    </div>
-</div>
 
 <script>
 function toggleCollapse(id) {
