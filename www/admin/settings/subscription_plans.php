@@ -58,6 +58,24 @@ try {
             is_active BOOLEAN DEFAULT 1,
             sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS subscription_services (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            sort_order INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS plan_services (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            plan_id INTEGER NOT NULL,
+            service_id INTEGER NOT NULL,
+            value TEXT,
+            FOREIGN KEY (plan_id) REFERENCES subscription_plans(id),
+            FOREIGN KEY (service_id) REFERENCES subscription_services(id)
         )
     ");
     
@@ -183,10 +201,18 @@ try {
                             </div>
                             <ul class="plan-features">
                                 <?php 
-                                $features = json_decode($plan['features'], true) ?: [];
-                                foreach ($features as $feature): 
+                                // Get services for this plan
+                                $serviceStmt = $pdo->query("SELECT * FROM subscription_services WHERE is_active = 1 ORDER BY sort_order");
+                                $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                foreach ($services as $service):
+                                    // Get plan service value
+                                    $valueStmt = $pdo->prepare("SELECT value FROM plan_services WHERE plan_id = ? AND service_id = ?");
+                                    $valueStmt->execute([$plan['id'], $service['id']]);
+                                    $planService = $valueStmt->fetch(PDO::FETCH_ASSOC);
+                                    $value = $planService ? $planService['value'] : '✓';
                                 ?>
-                                    <li><?= htmlspecialchars($feature) ?></li>
+                                    <li><strong><?= htmlspecialchars($service['name']) ?>:</strong> <?= htmlspecialchars($value) ?></li>
                                 <?php endforeach; ?>
                             </ul>
                             <div style="margin-top: 20px;">
