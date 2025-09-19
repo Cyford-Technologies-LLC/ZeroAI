@@ -286,13 +286,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         </div>
         <div style="display: flex; gap: 20px; margin-right: 20px;">
             <?= isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage) : '' ?>
-            <div class="dropdown">
-                <a href="#" style="background: <?= in_array($currentPage, ['integrations', 'integration_marketplace']) ? '#0056b3' : 'rgba(255,255,255,0.1)' ?>; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none;">🔌 Integrations</a>
-                <div class="dropdown-content">
-                    <a href="/web/integrations.php">My Integrations</a>
-                    <a href="/web/integration_marketplace.php">Marketplace</a>
-                </div>
-            </div>
+
             <?php if ($isAdmin): ?><a href="/admin/dashboard.php" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none;">⚙️ Admin</a><?php endif; ?>
         </div>
         
