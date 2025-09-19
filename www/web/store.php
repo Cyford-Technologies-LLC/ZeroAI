@@ -44,8 +44,9 @@ $tokenPackages = [
 .store-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 4rem 0;
-    margin: -20px -20px 3rem -20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
 }
 
 .pricing-card {
@@ -166,17 +167,15 @@ $tokenPackages = [
 </style>
 
 <div class="store-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="display-4 mb-3">🚀 ZeroAI Store</h1>
-                <p class="lead">Choose your plan and power up your CRM with AI tokens</p>
-            </div>
-            <div class="col-md-4 text-center">
-                <div class="bg-white text-dark p-4 rounded-3">
-                    <h3 class="text-primary mb-0">Start Free</h3>
-                    <p class="mb-0">14-day trial included</p>
-                </div>
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-3">🚀 ZeroAI Store</h1>
+            <p class="mb-0">Choose your plan and power up your CRM with AI tokens</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="bg-white text-dark p-3 rounded-3">
+                <h5 class="text-primary mb-0">Start Free</h5>
+                <small class="mb-0">14-day trial included</small>
             </div>
         </div>
     </div>

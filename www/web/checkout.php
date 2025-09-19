@@ -74,8 +74,9 @@ if ($_POST && isset($_POST['action']) && $_POST['action'] === 'process_payment')
 .checkout-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 2rem 0;
-    margin: -20px -20px 2rem -20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
     text-align: center;
 }
 
