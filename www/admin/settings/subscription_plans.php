@@ -1,13 +1,11 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 $pageTitle = 'Subscription Plans Management';
 require_once __DIR__ . '/../../config/database.php';
 
 $db = new Database();
 $pdo = $db->getConnection();
+
+include __DIR__ . '/../includes/header.php';
 
 // Handle form submissions
 if ($_POST) {
@@ -327,7 +325,4 @@ window.onclick = function(event) {
 }
 </script>
 
-<?php 
-include __DIR__ . '/../includes/header.php';
-include __DIR__ . '/../includes/footer.php'; 
-?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
