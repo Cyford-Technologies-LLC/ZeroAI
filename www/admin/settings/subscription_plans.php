@@ -448,6 +448,11 @@ function editPlan(id) {
     document.getElementById('editFeatures').value = features.join('\n');
     
     const modal = document.getElementById('editPlanModal');
+    if (!modal) {
+        alert('Modal not found!');
+        return;
+    }
+    alert('Modal found, showing it');
     modal.style.display = 'block';
     modal.style.position = 'fixed';
     modal.style.top = '0';
