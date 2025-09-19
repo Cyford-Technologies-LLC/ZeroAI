@@ -330,7 +330,41 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             </h6>
         </div>
         <div id="sidebar-content" style="padding: 20px;">
-            <?= isset($menuSystem) ? $menuSystem->renderSidebarMenu($currentContext, $contextId) : '' ?>
+            <?php 
+            if (isset($menuSystem)) {
+                $sidebarContent = $menuSystem->renderSidebarMenu($currentContext, $contextId);
+                if (empty(trim($sidebarContent))) {
+                    // If no content returned, show context-specific fallback
+                    echo '<div style="margin-bottom: 20px;">';
+                    echo '<h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>';
+                    if ($currentContext === 'companies') {
+                        echo '<a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>';
+                        echo '<a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>';
+                        echo '<a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>';
+                        echo '<a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>';
+                    } else {
+                        echo '<a href="/web/index.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📊 Dashboard</a>';
+                        echo '<a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 Companies</a>';
+                        echo '<a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>';
+                        echo '<a href="/web/projects.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📋 Projects</a>';
+                        echo '<a href="/web/sales.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">💰 Sales</a>';
+                        echo '<a href="/web/marketing.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📊 Marketing</a>';
+                    }
+                    echo '</div>';
+                } else {
+                    echo $sidebarContent;
+                }
+            } else {
+                // MenuSystem not available - show basic fallback
+                echo '<div style="margin-bottom: 20px;">';
+                echo '<h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>';
+                echo '<a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>';
+                echo '<a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>';
+                echo '<a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>';
+                echo '<a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>';
+                echo '</div>';
+            }
+            ?>
             
             <div style="margin-bottom: 20px;">
                 <h6 style="color: #94a3b8; margin-bottom: 10px;">Quick Actions</h6>
