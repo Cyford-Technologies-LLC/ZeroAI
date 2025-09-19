@@ -330,26 +330,20 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             </h6>
         </div>
         <div id="sidebar-content" style="padding: 20px;">
-            <?php 
-            // Always show context-specific navigation for companies section
-            if ($currentContext === 'companies') {
-                echo '<div style="margin-bottom: 20px;">';
-                echo '<h6 style="color: #94a3b8; margin-bottom: 10px;">Company Navigation</h6>';
-                echo '<a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>';
-                echo '<a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>';
-                echo '<a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>';
-                echo '<a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>';
-                echo '<a href="/web/documents.php?context=companies" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📄 Documents</a>';
-                echo '</div>';
-            } else {
-                // Show dynamic menu for other contexts
-                if (isset($menuSystem)) {
-                    echo $menuSystem->renderSidebarMenu($currentContext, $contextId);
-                }
-            }
-            ?>
-            
-
+            <?php if ($currentContext === 'companies'): ?>
+                <div style="margin-bottom: 20px;">
+                    <h6 style="color: #94a3b8; margin-bottom: 10px;">Navigation</h6>
+                    <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>
+                    <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>
+                    <a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>
+                    <a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>
+                    <a href="/web/documents.php?context=companies" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📄 Documents</a>
+                </div>
+            <?php else: ?>
+                <?php if (isset($menuSystem)): ?>
+                    <?= $menuSystem->renderSidebarMenu($currentContext, $contextId) ?>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 
