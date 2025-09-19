@@ -67,8 +67,20 @@ if ($_POST && isset($_POST['action'])) {
 try {
     $stmt = $pdo->query("SELECT * FROM menus ORDER BY type, sort_order, name");
     $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get top-level header menus as group options
+    $stmt = $pdo->query("SELECT LOWER(name) as group_name FROM menus WHERE parent_id IS NULL AND type = 'header' ORDER BY name");
+    $topMenuGroups = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Get existing menu_group values
+    $stmt = $pdo->query("SELECT DISTINCT menu_group FROM menus WHERE menu_group IS NOT NULL ORDER BY menu_group");
+    $existingGroups = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Combine and remove duplicates
+    $menuGroups = array_unique(array_merge($topMenuGroups, $existingGroups));
 } catch (Exception $e) {
     $menus = [];
+    $menuGroups = ['main', 'companies', 'projects', 'sales', 'ai'];
 }
 
 // Handle success messages
@@ -117,11 +129,9 @@ if (isset($_GET['success'])) {
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Menu Group</label>
                         <select class="form-select" name="menu_group">
-                            <option value="main">Main</option>
-                            <option value="companies">Companies</option>
-                            <option value="projects">Projects</option>
-                            <option value="sales">Sales</option>
-                            <option value="ai">AI</option>
+                            <?php foreach ($menuGroups as $group): ?>
+                                <option value="<?= htmlspecialchars($group) ?>"><?= htmlspecialchars(ucfirst($group)) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -249,11 +259,9 @@ if (isset($_GET['success'])) {
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Menu Group</label>
                             <select class="form-select" name="menu_group" id="editMenuGroup">
-                                <option value="main">Main</option>
-                                <option value="companies">Companies</option>
-                                <option value="projects">Projects</option>
-                                <option value="sales">Sales</option>
-                                <option value="ai">AI</option>
+                                <?php foreach ($menuGroups as $group): ?>
+                                    <option value="<?= htmlspecialchars($group) ?>"><?= htmlspecialchars(ucfirst($group)) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
