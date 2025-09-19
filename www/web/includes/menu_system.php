@@ -204,6 +204,18 @@ class MenuSystem {
     
     private function getCurrentContext() {
         $uri = $_SERVER['REQUEST_URI'];
+        $currentPage = basename(parse_url($uri, PHP_URL_PATH));
+        
+        // Check if current page matches any menu group
+        $stmt = $this->pdo->prepare("SELECT DISTINCT menu_group FROM menus WHERE url LIKE ? AND menu_group IS NOT NULL");
+        $stmt->execute(['%' . $currentPage]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && $result['menu_group']) {
+            return $result['menu_group'];
+        }
+        
+        // Fallback to legacy detection for existing pages
         if (strpos($uri, '/projects.php') !== false || strpos($uri, '/tasks.php') !== false || 
             strpos($uri, '/bugs.php') !== false || strpos($uri, '/features.php') !== false ||
             strpos($uri, '/team.php') !== false || strpos($uri, '/releases.php') !== false) {
@@ -221,6 +233,7 @@ class MenuSystem {
         } elseif (strpos($uri, '/ai_') !== false || strpos($uri, '/automation.php') !== false) {
             return 'ai';
         }
+        
         return 'main';
     }
     
