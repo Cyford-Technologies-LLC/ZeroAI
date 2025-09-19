@@ -20,8 +20,9 @@ try {
 .billing-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 3rem 0;
-    margin: -20px -20px 2rem -20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
 }
 
 .stat-card {
@@ -131,17 +132,15 @@ try {
 </style>
 
 <div class="billing-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="mb-3">💳 Billing & Usage</h1>
-                <p class="lead">Manage your subscription and monitor token usage</p>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="/web/store.php" class="btn btn-light btn-lg">
-                    <i class="fas fa-shopping-cart me-2"></i>Upgrade Plan
-                </a>
-            </div>
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-3">💳 Billing & Usage</h1>
+            <p class="mb-0">Manage your subscription and monitor token usage</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/web/store.php" class="btn btn-light">
+                <i class="fas fa-shopping-cart me-2"></i>Upgrade Plan
+            </a>
         </div>
     </div>
 </div>

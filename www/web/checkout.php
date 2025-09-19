@@ -176,7 +176,7 @@ if ($_POST && isset($_POST['action']) && $_POST['action'] === 'process_payment')
 
 <div class="checkout-header">
     <h1>🛒 Secure Checkout</h1>
-    <p>Complete your purchase securely</p>
+    <p class="mb-0">Complete your purchase securely</p>
 </div>
 
 <?php if (isset($success)): ?>

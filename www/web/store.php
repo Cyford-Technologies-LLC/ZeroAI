@@ -195,7 +195,7 @@ $tokenPackages = [
                     <h3 class="card-title"><?= $plan['name'] ?></h3>
                     <div class="price-display">
                         $<?= $plan['price'] ?>
-                        <small class="text-muted" style="font-size: 1rem;">/{$plan['billing']}</small>
+                        <small class="text-muted" style="font-size: 1rem;">/<?= $plan['billing'] ?></small>
                     </div>
                     
                     <ul class="feature-list mt-4 mb-4">
