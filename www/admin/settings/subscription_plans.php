@@ -34,6 +34,9 @@ if ($_POST) {
         }
         
         if ($_POST['action'] === 'update') {
+            // Debug output
+            error_log('UPDATE POST DATA: ' . print_r($_POST, true));
+            
             $stmt = $pdo->prepare("UPDATE subscription_plans SET name=?, description=?, price=?, billing_cycle=?, features=?, is_featured=?, is_active=?, sort_order=? WHERE id=?");
             $stmt->execute([
                 $_POST['name'], $_POST['description'], $_POST['price'], $_POST['billing_cycle'],
@@ -47,6 +50,7 @@ if ($_POST) {
             foreach ($_POST as $key => $value) {
                 if (strpos($key, 'service_') === 0) {
                     $serviceId = str_replace('service_', '', $key);
+                    error_log("Updating service {$serviceId} with value: {$value}");
                     $stmt = $pdo->prepare("INSERT OR REPLACE INTO plan_services (plan_id, service_id, value) VALUES (?, ?, ?)");
                     $stmt->execute([$_POST['plan_id'], $serviceId, $value]);
                 }
