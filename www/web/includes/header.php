@@ -296,21 +296,10 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             <img src="/assets/frontend/images/icons/logo.svg" width="24" height="24" style="margin-right: 8px;"> ZeroAI CRM
             <span style="font-size: 0.8rem; color: #94a3b8; margin-left: 10px;">Org: <?= htmlspecialchars($userOrgId) ?></span>
         </div>
-        <?php 
-        $menuData = isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage, 3) : ['visible' => '', 'hidden' => '', 'hasHidden' => false];
-        ?>
         <div style="display: flex; gap: 20px; margin-right: 20px; overflow: hidden; flex: 1;" id="headerMenus">
-            <?= $menuData['visible'] ?>
+            <?= isset($menuSystem) ? $menuSystem->renderHeaderMenu($currentPage) : '' ?>
             <?php if ($isAdmin): ?><a href="/admin/dashboard.php" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; white-space: nowrap;">⚙️ Admin</a><?php endif; ?>
         </div>
-        <?php if ($menuData['hasHidden']): ?>
-        <div class="dropdown" style="position: relative;">
-            <button style="background: #0056b3; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">☰ More</button>
-            <div class="dropdown-content" style="right: 0; left: auto;">
-                <?= $menuData['hidden'] ?>
-            </div>
-        </div>
-        <?php endif; ?>
         
         <!-- Profile Dropdown -->
         <div class="profile-dropdown">
