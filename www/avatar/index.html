@@ -66,9 +66,17 @@
                     body: JSON.stringify({ prompt: prompt })
                 });
                 
-                const result = await response.json();
-                alert('Avatar Response: ' + result.status);
-                loading.style.display = 'none';
+                if (response.headers.get('content-type')?.includes('video')) {
+                    const blob = await response.blob();
+                    const videoUrl = URL.createObjectURL(blob);
+                    video.src = videoUrl;
+                    video.style.display = 'block';
+                    loading.style.display = 'none';
+                } else {
+                    const result = await response.json();
+                    alert('Avatar Response: ' + JSON.stringify(result));
+                    loading.style.display = 'none';
+                }
             } catch (error) {
                 alert('Error: ' + error.message);
                 loading.style.display = 'none';

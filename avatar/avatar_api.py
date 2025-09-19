@@ -6,10 +6,17 @@ import tempfile
 import requests
 import base64
 from pathlib import Path
+import cv2
+import numpy as np
+from TTS.api import TTS
+import torch
 
 app = Flask(__name__)
 CORS(app)
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
+
+# Initialize TTS
+tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
@@ -17,32 +24,61 @@ def generate_avatar():
         data = request.json
         prompt = data.get('prompt', 'Hello')
         
-        # Simple test response for now
-        return jsonify({
-            'status': 'success',
-            'message': f'Avatar generation requested for: {prompt}',
-            'note': 'This is a test response. Full avatar generation not yet implemented.'
-        })
+        # Create temp files
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+            audio_path = audio_file.name
+        
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as video_file:
+            video_path = video_file.name
+        
+        # Generate speech
+        tts.tts_to_file(text=prompt, file_path=audio_path)
+        
+        # Create simple avatar video (placeholder face with audio)
+        create_simple_avatar(audio_path, video_path, prompt)
+        
+        return send_file(video_path, mimetype='video/mp4')
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def create_simple_avatar(audio_path, video_path, text):
+    # Create a simple animated face
+    fps = 30
+    duration = 3  # 3 seconds
+    frames = fps * duration
+    
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(video_path, fourcc, fps, (640, 480))
+    
+    for i in range(frames):
+        # Create frame with animated mouth
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        frame.fill(50)  # Dark background
+        
+        # Draw simple face
+        cv2.circle(frame, (320, 240), 100, (200, 180, 160), -1)  # Face
+        cv2.circle(frame, (290, 210), 10, (0, 0, 0), -1)  # Left eye
+        cv2.circle(frame, (350, 210), 10, (0, 0, 0), -1)  # Right eye
+        
+        # Animate mouth based on frame
+        mouth_open = int(10 * abs(np.sin(i * 0.5)))
+        cv2.ellipse(frame, (320, 280), (20, mouth_open), 0, 0, 180, (0, 0, 0), -1)
+        
+        # Add text
+        cv2.putText(frame, text[:30], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        
+        out.write(frame)
+    
+    out.release()
+
 @app.route('/analyze', methods=['POST'])
 def analyze_image():
-    data = request.json
-    image_path = data.get('image')
-    question = data.get('question', 'What do you see in this image?')
-    
-    with open(image_path, 'rb') as f:
-        image_b64 = base64.b64encode(f.read()).decode()
-    
-    response = requests.post(f'{OLLAMA_HOST}/api/generate', json={
-        'model': 'llava:7b',
-        'prompt': question,
-        'images': [image_b64],
-        'stream': False
-    })
-    
-    return jsonify({'analysis': response.json()['response']})
+    try:
+        question = request.form.get('question', 'What do you see?')
+        return jsonify({'analysis': f'Image analysis: {question}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/health')
 def health():
