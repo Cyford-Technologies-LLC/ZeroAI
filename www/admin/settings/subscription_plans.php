@@ -448,6 +448,13 @@ function editPlan(id) {
     
     const modal = document.getElementById('editPlanModal');
     modal.style.display = 'block';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.zIndex = '9999';
     
     // Load existing service values after showing modal
     fetch(`?action=get_plan_services&plan_id=${id}`)
