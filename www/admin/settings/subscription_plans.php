@@ -39,6 +39,20 @@ if ($_POST) {
             $stmt->execute([$_POST['plan_id']]);
             $success = 'Plan deleted successfully!';
         }
+        
+        if ($_POST['action'] === 'add_service') {
+            $stmt = $pdo->prepare("INSERT INTO subscription_services (name, description, sort_order) VALUES (?, ?, ?)");
+            $stmt->execute([$_POST['service_name'], $_POST['service_description'], $_POST['sort_order']]);
+            $success = 'Service added successfully!';
+        }
+        
+        if ($_POST['action'] === 'delete_service') {
+            $stmt = $pdo->prepare("DELETE FROM subscription_services WHERE id = ?");
+            $stmt->execute([$_POST['service_id']]);
+            $stmt = $pdo->prepare("DELETE FROM plan_services WHERE service_id = ?");
+            $stmt->execute([$_POST['service_id']]);
+            $success = 'Service deleted successfully!';
+        }
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
     }
@@ -110,11 +124,13 @@ try {
     $error = "Database error: " . $e->getMessage();
 }
 
-// Get all plans
+// Get all plans and services
 try {
     $plans = $pdo->query("SELECT * FROM subscription_plans ORDER BY sort_order, name")->fetchAll(PDO::FETCH_ASSOC);
+    $services = $pdo->query("SELECT * FROM subscription_services WHERE is_active = 1 ORDER BY sort_order")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $plans = [];
+    $services = [];
 }
 ?>
 
@@ -194,6 +210,61 @@ try {
         </div>
     </div>
 
+    <!-- Service Management -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Service Management</h5>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-success mb-3" onclick="toggleCollapse('addServiceForm')">Add Service</button>
+            
+            <div class="collapse" id="addServiceForm" style="display: none;">
+                <form method="POST" class="mb-3">
+                    <input type="hidden" name="action" value="add_service">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <input type="text" name="service_name" class="form-control" placeholder="Service Name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" name="service_description" class="form-control" placeholder="Description">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="sort_order" class="form-control" placeholder="Order" value="0">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Service Name</th>
+                            <th>Description</th>
+                            <th>Order</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($services as $service): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($service['name']) ?></td>
+                                <td><?= htmlspecialchars($service['description']) ?></td>
+                                <td><?= $service['sort_order'] ?></td>
+                                <td>
+                                    <button onclick="deleteService(<?= $service['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Plans List -->
     <div class="card">
         <div class="card-header">
@@ -205,39 +276,50 @@ try {
                     <p class="text-muted">No plans found. Add your first plan above.</p>
                 </div>
             <?php else: ?>
-                <div class="subscription-plans">
-                    <?php foreach ($plans as $plan): ?>
-                        <div class="plan-card <?= $plan['is_featured'] ? 'featured' : '' ?>">
-                            <div class="plan-header">
-                                <h3><?= htmlspecialchars($plan['name']) ?></h3>
-                                <div class="plan-price">
-                                    $<?= number_format($plan['price'], 2) ?>
-                                    <small>/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
-                                </div>
-                                <p><?= htmlspecialchars($plan['description']) ?></p>
-                            </div>
-                            <ul class="plan-features">
-                                <?php 
-                                // Get services for this plan
-                                $serviceStmt = $pdo->query("SELECT * FROM subscription_services WHERE is_active = 1 ORDER BY sort_order");
-                                $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
-                                
-                                foreach ($services as $service):
-                                    // Get plan service value
-                                    $valueStmt = $pdo->prepare("SELECT value FROM plan_services WHERE plan_id = ? AND service_id = ?");
-                                    $valueStmt->execute([$plan['id'], $service['id']]);
-                                    $planService = $valueStmt->fetch(PDO::FETCH_ASSOC);
-                                    $value = $planService ? $planService['value'] : '✓';
-                                ?>
-                                    <li><strong><?= htmlspecialchars($service['name']) ?>:</strong> <?= htmlspecialchars($value) ?></li>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Plan</th>
+                                <th>Price</th>
+                                <th>Description</th>
+                                <?php foreach ($services as $service): ?>
+                                    <th><?= htmlspecialchars($service['name']) ?></th>
                                 <?php endforeach; ?>
-                            </ul>
-                            <div style="margin-top: 20px;">
-                                <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
-                                <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-danger">Delete</button>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($plans as $plan): ?>
+                                <tr <?= $plan['is_featured'] ? 'class="table-primary"' : '' ?>>
+                                    <td>
+                                        <strong><?= htmlspecialchars($plan['name']) ?></strong>
+                                        <?= $plan['is_featured'] ? '<br><small class="text-primary">Most Popular</small>' : '' ?>
+                                    </td>
+                                    <td>
+                                        <strong>$<?= number_format($plan['price'], 2) ?></strong>
+                                        <br><small>/<?= htmlspecialchars($plan['billing_cycle']) ?></small>
+                                    </td>
+                                    <td><?= htmlspecialchars($plan['description']) ?></td>
+                                    <?php foreach ($services as $service): ?>
+                                        <?php 
+                                        // Get plan service value
+                                        $valueStmt = $pdo->prepare("SELECT value FROM plan_services WHERE plan_id = ? AND service_id = ?");
+                                        $valueStmt->execute([$plan['id'], $service['id']]);
+                                        $planService = $valueStmt->fetch(PDO::FETCH_ASSOC);
+                                        $value = $planService ? $planService['value'] : '-';
+                                        ?>
+                                        <td><?= htmlspecialchars($value) ?></td>
+                                    <?php endforeach; ?>
+                                    <td>
+                                        <button onclick="editPlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-warning" data-plan='<?= json_encode($plan) ?>'>Edit</button>
+                                        <button onclick="deletePlan(<?= $plan['id'] ?>)" class="btn btn-sm btn-danger">Delete</button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             <?php endif; ?>
         </div>
@@ -339,6 +421,16 @@ function deletePlan(id) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = '<input type="hidden" name="action" value="delete"><input type="hidden" name="plan_id" value="' + id + '">';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function deleteService(id) {
+    if (confirm('Are you sure you want to delete this service? This will remove it from all plans.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = '<input type="hidden" name="action" value="delete_service"><input type="hidden" name="service_id" value="' + id + '">';
         document.body.appendChild(form);
         form.submit();
     }
