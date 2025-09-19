@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 $pageTitle = 'Subscription Plans Management';
 include __DIR__ . '/../includes/header.php';
 
