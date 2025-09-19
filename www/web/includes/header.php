@@ -321,8 +321,8 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
         </div>
         
         <!-- Right Panel Toggle -->
-        <button style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 8px; border-radius: 4px; margin-right: 10px;"
-                onclick="toggleRightPanel()" title="Toggle Right Panel">📊</button>
+        <button style="background: #10b981; color: white; font-size: 1rem; cursor: pointer; padding: 8px 12px; border-radius: 4px; margin-right: 10px; border: none; font-weight: bold;"
+                onclick="toggleRightPanel()" title="Toggle Avatar Assistant">🤖 Avatar</button>
         
         <!-- Profile Dropdown -->
         <div class="profile-dropdown">
