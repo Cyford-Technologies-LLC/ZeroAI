@@ -94,6 +94,9 @@ class TenantManager {
                 email TEXT,
                 phone TEXT,
                 address TEXT,
+                website TEXT,
+                industry TEXT,
+                notes TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             
