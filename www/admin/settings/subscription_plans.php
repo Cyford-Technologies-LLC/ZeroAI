@@ -7,6 +7,17 @@ $pdo = $db->getConnection();
 
 include __DIR__ . '/../includes/header.php';
 
+// Handle AJAX requests
+if (isset($_GET['action']) && $_GET['action'] === 'get_plan_services') {
+    $planId = $_GET['plan_id'];
+    $stmt = $pdo->prepare("SELECT service_id, value FROM plan_services WHERE plan_id = ?");
+    $stmt->execute([$planId]);
+    $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    header('Content-Type: application/json');
+    echo json_encode($services);
+    exit;
+}
+
 // Handle form submissions
 if ($_POST) {
     try {
@@ -31,6 +42,16 @@ if ($_POST) {
                 isset($_POST['is_active']) ? 1 : 0,
                 $_POST['sort_order'], $_POST['plan_id']
             ]);
+            
+            // Update service values
+            foreach ($_POST as $key => $value) {
+                if (strpos($key, 'service_') === 0) {
+                    $serviceId = str_replace('service_', '', $key);
+                    $stmt = $pdo->prepare("INSERT OR REPLACE INTO plan_services (plan_id, service_id, value) VALUES (?, ?, ?)");
+                    $stmt->execute([$_POST['plan_id'], $serviceId, $value]);
+                }
+            }
+            
             $success = 'Plan updated successfully!';
         }
         
@@ -356,6 +377,19 @@ try {
                             <label class="form-label">Features (one per line)</label>
                             <textarea class="form-control" name="features" id="editFeatures" rows="3"></textarea>
                         </div>
+                        <div class="col-12 mb-3">
+                            <h6>Service Values</h6>
+                            <?php foreach ($services as $service): ?>
+                                <div class="row mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label"><?= htmlspecialchars($service['name']) ?></label>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control" name="service_<?= $service['id'] ?>" id="editService<?= $service['id'] ?>" placeholder="Enter value for <?= htmlspecialchars($service['name']) ?>">
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Sort Order</label>
                             <input type="number" class="form-control" name="sort_order" id="editSortOrder">
@@ -401,6 +435,16 @@ function editPlan(id) {
     // Handle features
     const features = JSON.parse(planData.features || '[]');
     document.getElementById('editFeatures').value = features.join('\n');
+    
+    // Load existing service values
+    fetch(`?action=get_plan_services&plan_id=${id}`)
+        .then(response => response.json())
+        .then(services => {
+            services.forEach(service => {
+                const input = document.getElementById(`editService${service.service_id}`);
+                if (input) input.value = service.value || '';
+            });
+        });
     
     const modal = document.getElementById('editPlanModal');
     console.log('Modal element:', modal);
