@@ -366,12 +366,23 @@ if (strpos($_SERVER['REQUEST_URI'], '/projects.php') !== false ||
             }
             ?>
             
+            <?php if ($currentContext === 'companies'): ?>
+            <div style="margin-bottom: 20px;">
+                <h6 style="color: #94a3b8; margin-bottom: 10px;">Company Navigation</h6>
+                <a href="/web/companies.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">🏢 All Companies</a>
+                <a href="/web/contacts.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">☎️ Contacts</a>
+                <a href="/web/locations.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📍 Locations</a>
+                <a href="/web/employees.php" style="color: white; text-decoration: none; display: block; padding: 8px 0;">👥 Employees</a>
+                <a href="/web/documents.php?context=companies" style="color: white; text-decoration: none; display: block; padding: 8px 0;">📄 Documents</a>
+            </div>
+            <?php else: ?>
             <div style="margin-bottom: 20px;">
                 <h6 style="color: #94a3b8; margin-bottom: 10px;">Quick Actions</h6>
                 <a href="/web/companies.php#add" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Company</a>
                 <a href="/web/projects.php#add" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Project</a>
                 <a href="/web/contacts.php#add" style="color: #0dcaf0; text-decoration: none; display: block; padding: 8px 0;">+ Add Contact</a>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 
