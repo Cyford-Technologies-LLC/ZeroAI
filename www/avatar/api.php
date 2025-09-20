@@ -47,7 +47,7 @@ try {
         if ($result) {
             // Set proper headers for video response
             header('Content-Type: video/mp4');
-            header('Content-Disposition: attachment; filename="avatar.mp4"');
+            header('Content-Length: ' . strlen($result));
             echo $result;
         } else {
             header('Content-Type: application/json');
