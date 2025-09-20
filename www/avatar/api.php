@@ -46,7 +46,7 @@ try {
         
         if ($result) {
             // Set proper headers for video response
-            header('Content-Type: video/mp4');
+            header('Content-Type: video/webm');
             header('Content-Length: ' . strlen($result));
             echo $result;
         } else {
