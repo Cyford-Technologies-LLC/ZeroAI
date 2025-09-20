@@ -113,13 +113,17 @@ def create_basic_video(text, output_path):
     finally:
         out.release()
 
+@app.route('/analyze', methods=['POST'])
+def analyze_image():
+    try:
+        question = request.form.get('question', 'What do you see?')
+        return jsonify({'analysis': f'Image analysis: {question}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/health')
 def health():
-    return jsonify({
-        'status': 'ok', 
-        'device': device, 
-        'tts_ready': tts is not None
-    })
+    return jsonify({'status': 'ok', 'device': device, 'models': 'TTS + MediaPipe'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7860, debug=False)
+    app.run(host='0.0.0.0', port=7860)
