@@ -119,17 +119,45 @@ def generate_talking_face(image_path, audio_path, output_path):
             print("Image is None, creating default")
             img = create_default_face()
         
-        with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
-            results = face_detection.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        print(f"Image loaded successfully, shape: {img.shape}")
+        print(f"Image dtype: {img.dtype}, min: {img.min()}, max: {img.max()}")
+        
+        # Save debug image
+        cv2.imwrite('/app/debug_input.jpg', img)
+        print("Debug image saved to /app/debug_input.jpg")
+        
+        with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.3) as face_detection:
+            # Convert to RGB for MediaPipe
+            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            print(f"RGB image shape: {rgb_img.shape}")
+            
+            results = face_detection.process(rgb_img)
+            print(f"MediaPipe processing completed")
+            print(f"Results: {results}")
+            print(f"Has detections: {hasattr(results, 'detections')}")
             
             if results.detections:
                 print(f"Found {len(results.detections)} faces")
+                for i, detection in enumerate(results.detections):
+                    print(f"Face {i}: confidence = {detection.score}")
+                    bbox = detection.location_data.relative_bounding_box
+                    print(f"Face {i}: bbox = x:{bbox.xmin}, y:{bbox.ymin}, w:{bbox.width}, h:{bbox.height}")
+                
                 # Create animated video with detected face
                 create_animated_face(img, results.detections[0], audio_path, output_path)
             else:
-                print("No face detected, using basic avatar")
-                # No face detected, use basic avatar
-                create_basic_avatar(audio_path, output_path, "No face detected")
+                print("No face detected by MediaPipe")
+                print("Trying with lower confidence threshold...")
+                
+                # Try with very low confidence
+                with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.1) as face_detection_low:
+                    results_low = face_detection_low.process(rgb_img)
+                    if results_low.detections:
+                        print(f"Found {len(results_low.detections)} faces with low confidence")
+                        create_animated_face(img, results_low.detections[0], audio_path, output_path)
+                    else:
+                        print("Still no face detected, using basic avatar")
+                        create_basic_avatar(audio_path, output_path, "No face detected")
                 
     except Exception as e:
         print(f"Face generation error: {str(e)}")
