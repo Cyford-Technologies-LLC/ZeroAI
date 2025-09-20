@@ -6,7 +6,7 @@ ob_start();
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
-header('Content-Type: application/json');
+// Content-Type set dynamically based on response
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
@@ -29,9 +29,13 @@ try {
         curl_close($ch);
         
         if ($result) {
+            // Set proper headers for video response
+            header('Content-Type: video/mp4');
+            header('Content-Disposition: attachment; filename="avatar.mp4"');
             echo $result;
         } else {
-            echo json_encode(['status' => 'success', 'message' => 'Avatar container not running. Text: ' . $prompt]);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Avatar container not responding']);
         }
         
     } elseif ($action === 'analyze') {
