@@ -60,6 +60,9 @@
             video.style.display = 'none';
             
             try {
+                // Store prompt for the video request
+                sessionStorage.setItem('avatarPrompt', prompt);
+                
                 const response = await fetch('/avatar/api.php?action=generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -72,9 +75,9 @@
                     console.log('Response size:', response.headers.get('content-length'));
                     
                     if (contentType && contentType.includes('video')) {
-                        const blob = await response.blob();
-                        console.log('Blob size:', blob.size);
-                        const videoUrl = URL.createObjectURL(blob);
+                        // Use direct URL instead of blob
+                        const timestamp = Date.now();
+                        const videoUrl = `/avatar/api.php?action=generate&t=${timestamp}`;
                         video.src = videoUrl;
                         video.style.display = 'block';
                         console.log('Video URL set:', videoUrl);

@@ -41,8 +41,9 @@ def generate_avatar():
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
             audio_path = audio_file.name
         
-        with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as video_file:
-            video_path = video_file.name
+        # Use static video file path
+        video_path = '/app/static/avatar_video.avi'
+        os.makedirs('/app/static', exist_ok=True)
         
         try:
             # Generate high-quality TTS
@@ -64,7 +65,7 @@ def generate_avatar():
             
             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                 print(f"Video created successfully: {os.path.getsize(video_path)} bytes")
-                return send_file(video_path, mimetype='video/webm', as_attachment=False)
+                return send_file(video_path, mimetype='video/avi', as_attachment=False)
             else:
                 print("Video creation failed - file empty or missing")
                 return jsonify({'error': 'Video creation failed'}), 500
@@ -142,8 +143,8 @@ def create_animated_face(img, detection, audio_path, output_path):
     
     height, width = img.shape[:2]
     
-    # Use VP80 codec for WebM format
-    codecs = ['VP80', 'MJPG', 'XVID']
+    # Use mp4v codec for MP4 files
+    codecs = ['mp4v', 'MJPG', 'XVID']
     out = None
     final_path = output_path
     
@@ -217,8 +218,8 @@ def create_basic_avatar(audio_path, video_path, text):
     duration = 3
     frames = fps * duration
     
-    # Use VP80 codec for WebM format
-    codecs = ['VP80', 'MJPG', 'XVID']
+    # Use mp4v codec for MP4 files
+    codecs = ['mp4v', 'MJPG', 'XVID']
     out = None
     
     for codec in codecs:
