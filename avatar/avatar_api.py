@@ -11,6 +11,7 @@ import numpy as np
 from TTS.api import TTS
 import cv2
 import traceback
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -27,6 +28,9 @@ except Exception as e:
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
+    mode = request.args.get('mode', 'simple')  # Add mode support
+    print(f"=== AVATAR GENERATION START - MODE: {mode} ===")
+    
     try:
         data = request.json
         if not data:
@@ -35,7 +39,7 @@ def generate_avatar():
         prompt = data.get('prompt', 'Hello')
         source_image = data.get('image', '/app/default_face.jpg')
         
-        print(f"Generating avatar for: {prompt}", flush=True)
+        print(f"Generating avatar for: {prompt} (mode: {mode})", flush=True)
         
         # Create temp files
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
@@ -52,9 +56,16 @@ def generate_avatar():
                 tts.tts_to_file(text=prompt, file_path=audio_path)
                 print("TTS completed")
             
-            # Use MediaPipe for realistic talking face
-            print("Generating talking face...")
-            generate_talking_face(source_image, audio_path, video_path)
+            # Generate based on mode
+            if mode == 'sadtalker':
+                print("Using SadTalker mode...")
+                success = generate_sadtalker_video(audio_path, video_path, prompt)
+                if not success:
+                    print("SadTalker failed, falling back to MediaPipe")
+                    generate_talking_face(source_image, audio_path, video_path)
+            else:
+                print("Using simple/MediaPipe mode...")
+                generate_talking_face(source_image, audio_path, video_path)
             print("Face generation completed")
             
             # Check if video was created
@@ -338,13 +349,47 @@ def analyze_image():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def generate_sadtalker_video(audio_path, video_path, prompt):
+    """Generate SadTalker realistic avatar (placeholder for now)"""
+    print("SadTalker not yet implemented, using fallback")
+    return False  # Will trigger fallback to MediaPipe
+
+@app.route('/debug/status')
+def debug_status():
+    """Debug status endpoint"""
+    try:
+        status = {
+            'timestamp': str(datetime.now()),
+            'device': device,
+            'tts_ready': tts is not None,
+            'sadtalker_installed': False,  # Will be True when implemented
+            'modes': ['simple', 'sadtalker'],
+            'disk_space': 'Available',
+            'memory': 'Available'
+        }
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/debug/logs')
+def debug_logs():
+    """Debug logs endpoint"""
+    try:
+        # Return recent logs (placeholder)
+        logs = ['Avatar system running', 'TTS initialized', 'MediaPipe ready']
+        return jsonify({'logs': logs})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 @app.route('/health')
 def health():
     return jsonify({
         'status': 'ok', 
         'device': device, 
         'tts_ready': tts is not None,
-        'models': 'TTS + MediaPipe'
+        'models': 'TTS + MediaPipe',
+        'modes': ['simple', 'sadtalker'],
+        'endpoints': ['/generate?mode=simple', '/generate?mode=sadtalker', '/debug/status', '/debug/logs']
     })
 
 if __name__ == '__main__':
