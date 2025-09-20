@@ -12,7 +12,7 @@ class AvatarProvider
     public function __construct()
     {
         $this->logger = Logger::getInstance();
-        $this->avatarServiceUrl = 'http://avatar:7860';
+        $this->avatarServiceUrl = 'http://localhost:7860';
     }
 
     public function generateAvatar($prompt, $image = 'examples/source_image/art_0.png')
