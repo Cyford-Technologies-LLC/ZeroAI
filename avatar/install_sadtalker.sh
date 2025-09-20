@@ -21,7 +21,8 @@ mkdir -p checkpoints
 cd checkpoints
 wget https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00109-model.pth.tar
 wget https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00229-model.pth.tar
-wget https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/epoch_20.pth
-wget https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/SadTalker_V002.pth || echo "Main checkpoint not found, continuing..."
+
+# Download epoch_20.pth from alternative source
+wget -O epoch_20.pth https://huggingface.co/vinthony/SadTalker/resolve/main/checkpoints/epoch_20.pth || echo "Failed to download epoch_20.pth"
 
 echo "SadTalker installation complete"
