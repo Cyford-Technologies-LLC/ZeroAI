@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZeroAI Avatar Debug Console</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .controls { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        button.danger { background: #dc3545; }
+        button.success { background: #28a745; }
+        textarea { width: 100%; height: 100px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; }
+        .log-container { background: #000; color: #0f0; font-family: monospace; padding: 15px; height: 300px; overflow-y: auto; border: 1px solid #333; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .status-item { background: #333; padding: 15px; border-radius: 4px; }
+        .status-ok { border-left: 4px solid #28a745; }
+        .status-error { border-left: 4px solid #dc3545; }
+        .status-warning { border-left: 4px solid #ffc107; }
+        video { width: 100%; max-width: 500px; border: 2px solid #555; }
+        .debug-info { background: #1a1a2e; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .mode-selector { margin: 10px 0; }
+        .mode-selector input[type="radio"] { margin: 0 5px 0 15px; }
+        .loading { display: none; color: #ffc107; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 ZeroAI Avatar Debug Console</h1>
+        
+        <div class="section">
+            <h2>Avatar Generation</h2>
+            
+            <div class="mode-selector">
+                <strong>Mode:</strong>
+                <input type="radio" id="mode-simple" name="mode" value="simple" checked>
+                <label for="mode-simple">Simple Avatar</label>
+                <input type="radio" id="mode-sadtalker" name="mode" value="sadtalker">
+                <label for="mode-sadtalker">SadTalker (Realistic)</label>
+            </div>
+            
+            <textarea id="prompt" placeholder="Enter your prompt here...">Hello! This is a test of the avatar system with full debugging enabled.</textarea>
+            
+            <div class="controls">
+                <button onclick="generateAvatar()">Generate Avatar</button>
+                <button onclick="testConnection()" class="success">Test Connection</button>
+                <button onclick="getStatus()">Get Status</button>
+                <button onclick="getLogs()">Get Logs</button>
+                <button onclick="clearLogs()" class="danger">Clear Logs</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <p>🔄 Generating avatar... This may take a few minutes.</p>
+                <div id="progress"></div>
+            </div>
+            
+            <div id="result" style="display: none;">
+                <h3>Generated Avatar:</h3>
+                <video id="avatarVideo" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <div class="debug-info" id="videoInfo"></div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+        
+        <div class="section">
+            <h2>System Status</h2>
+            <div class="controls">
+                <button onclick="refreshStatus()">Refresh Status</button>
+            </div>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-item">Loading status...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Debug Logs</h2>
+            <div class="controls">
+                <button onclick="refreshLogs()">Refresh Logs</button>
+                <button onclick="clearDebugLogs()" class="danger">Clear Debug Logs</button>
+                <button onclick="downloadLogs()">Download Logs</button>
+            </div>
+            <div class="log-container" id="logContainer">
+                Click "Refresh Logs" to load debug information...
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>PHP Error Logs</h2>
+            <div class="controls">
+                <button onclick="getPhpErrors()">Get PHP Errors</button>
+                <button onclick="clearPhpErrors()" class="danger">Clear PHP Errors</button>
+            </div>
+            <div class="log-container" id="phpErrorContainer">
+                Click "Get PHP Errors" to load PHP error logs...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let debugMode = true;
+        let currentMode = 'simple';
+        
+        // Console logging wrapper
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toISOString();
+            console.log(`[${timestamp}] ${message}`, data || '');
+            
+            if (debugMode) {
+                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data) : ''}`;
+                appendToLog('logContainer', logEntry);
+            }
+        }
+        
+        function appendToLog(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML += message + '\n';
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Update mode when radio buttons change
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                currentMode = this.value;
+                debugLog('Mode changed', { mode: currentMode });
+            });
+        });
+        
+        async function generateAvatar() {
+            const prompt = document.getElementById('prompt').value;
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            const video = document.getElementById('avatarVideo');
+            const videoInfo = document.getElementById('videoInfo');
+            
+            debugLog('Starting avatar generation', { mode: currentMode, prompt: prompt.substring(0, 50) });
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                
+                const duration = Date.now() - startTime;
+                
+                debugLog('Avatar API response received', {
+                    status: response.status,
+                    contentType: response.headers.get('content-type'),
+                    contentLength: response.headers.get('content-length'),
+                    avatarMode: response.headers.get('x-avatar-mode'),
+                    avatarSize: response.headers.get('x-avatar-size'),
+                    duration: duration + 'ms'
+                });
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('video')) {
+                        const blob = await response.blob();
+                        const videoUrl = URL.createObjectURL(blob);
+                        
+                        video.src = videoUrl;
+                        result.style.display = 'block';
+                        
+                        videoInfo.innerHTML = `
+                            <strong>Video Info:</strong><br>
+                            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
+                            Size: ${blob.size} bytes<br>
+                            Type: ${contentType}<br>
+                            Generation Time: ${duration}ms<br>
+                            URL: ${videoUrl}
+                        `;
+                        
+                        video.onloadeddata = () => {
+                            debugLog('Video loaded successfully', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight
+                            });
+                        };
+                        
+                        video.onerror = (e) => {
+                            debugLog('Video error', { error: e, videoError: video.error });
+                        };
+                        
+                        debugLog('Avatar generation successful', {
+                            blobSize: blob.size,
+                            videoUrl: videoUrl
+                        });
+                        
+                    } else {
+                        const text = await response.text();
+                        debugLog('Non-video response received', { response: text });
+                        throw new Error('Expected video response, got: ' + contentType);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+            } catch (err) {
+                debugLog('Avatar generation error', { error: err.message, stack: err.stack });
+                error.textContent = 'Error: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        async function testConnection() {
+            debugLog('Testing avatar service connection');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=test');
+                const result = await response.json();
+                
+                debugLog('Connection test result', result);
+                
+                if (result.status === 'success') {
+                    alert('✅ Connection successful: ' + result.message);
+                } else {
+                    alert('❌ Connection failed: ' + result.message);
+                }
+            } catch (error) {
+                debugLog('Connection test error', { error: error.message });
+                alert('❌ Connection test failed: ' + error.message);
+            }
+        }
+        
+        async function getStatus() {
+            debugLog('Getting system status');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=status');
+                const result = await response.json();
+                
+                debugLog('System status received', result);
+                displayStatus(result.data || result);
+                
+            } catch (error) {
+                debugLog('Status retrieval error', { error: error.message });
+                console.error('Status error:', error);
+            }
+        }
+        
+        function displayStatus(status) {
+            const grid = document.getElementById('statusGrid');
+            
+            if (!status) {
+                grid.innerHTML = '<div class="status-item status-error">No status data available</div>';
+                return;
+            }
+            
+            const items = [
+                { label: 'Timestamp', value: status.timestamp, status: 'ok' },
+                { label: 'Device', value: status.device, status: 'ok' },
+                { label: 'TTS Ready', value: status.tts_ready ? 'Yes' : 'No', status: status.tts_ready ? 'ok' : 'error' },
+                { label: 'SadTalker Installed', value: status.sadtalker_installed ? 'Yes' : 'No', status: status.sadtalker_installed ? 'ok' : 'warning' },
+                { label: 'SadTalker Checkpoints', value: status.sadtalker_checkpoints ? 'Yes' : 'No', status: status.sadtalker_checkpoints ? 'ok' : 'warning' },
+                { label: 'Reference Image', value: status.reference_image ? 'Yes' : 'No', status: status.reference_image ? 'ok' : 'warning' }
+            ];
+            
+            grid.innerHTML = items.map(item => `
+                <div class="status-item status-${item.status}">
+                    <strong>${item.label}:</strong><br>
+                    ${item.value}
+                </div>
+            `).join('');
+        }
+        
+        async function getLogs() {
+            debugLog('Getting avatar service logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=logs');
+                const result = await response.json();
+                
+                debugLog('Logs received', { logCount: result.data?.logs?.length || 0 });
+                
+                const container = document.getElementById('logContainer');
+                if (result.data && result.data.logs) {
+                    container.innerHTML = result.data.logs.join('\n');
+                } else {
+                    container.innerHTML = 'No logs available';
+                }
+                
+            } catch (error) {
+                debugLog('Log retrieval error', { error: error.message });
+                console.error('Logs error:', error);
+            }
+        }
+        
+        async function getPhpErrors() {
+            debugLog('Getting PHP error logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=php_errors');
+                const result = await response.json();
+                
+                debugLog('PHP errors received', { errorCount: result.errors?.length || 0 });
+                
+                const container = document.getElementById('phpErrorContainer');
+                if (result.errors && result.errors.length > 0) {
+                    container.innerHTML = result.errors.join('\n');
+                } else {
+                    container.innerHTML = 'No PHP errors found';
+                }
+                
+            } catch (error) {
+                debugLog('PHP error retrieval error', { error: error.message });
+                console.error('PHP errors error:', error);
+            }
+        }
+        
+        async function clearPhpErrors() {
+            debugLog('Clearing PHP error logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=clear_errors');
+                const result = await response.json();
+                
+                debugLog('PHP errors cleared', result);
+                
+                if (result.cleared) {
+                    document.getElementById('phpErrorContainer').innerHTML = 'PHP error logs cleared';
+                    alert('✅ PHP error logs cleared');
+                } else {
+                    alert('❌ Failed to clear PHP error logs');
+                }
+                
+            } catch (error) {
+                debugLog('PHP error clearing error', { error: error.message });
+                console.error('Clear PHP errors error:', error);
+            }
+        }
+        
+        function refreshStatus() {
+            getStatus();
+        }
+        
+        function refreshLogs() {
+            getLogs();
+        }
+        
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = 'Logs cleared';
+            debugLog('Debug logs cleared');
+        }
+        
+        function clearDebugLogs() {
+            document.getElementById('logContainer').innerHTML = 'Debug logs cleared';
+            console.clear();
+            debugLog('Debug console cleared');
+        }
+        
+        function downloadLogs() {
+            const logs = document.getElementById('logContainer').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `avatar_debug_logs_${new Date().toISOString()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            debugLog('Debug logs downloaded');
+        }
+        
+        // Initialize
+        debugLog('Avatar Debug Console initialized');
+        getStatus();
+    </script>
+</body>
+</html>
