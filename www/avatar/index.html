@@ -75,9 +75,9 @@
                     console.log('Response size:', response.headers.get('content-length'));
                     
                     if (contentType && contentType.includes('video')) {
-                        // Use direct URL instead of blob
-                        const timestamp = Date.now();
-                        const videoUrl = `/avatar/api.php?action=generate&t=${timestamp}`;
+                        const blob = await response.blob();
+                        console.log('Blob size:', blob.size);
+                        const videoUrl = URL.createObjectURL(blob);
                         video.src = videoUrl;
                         video.style.display = 'block';
                         console.log('Video URL set:', videoUrl);
