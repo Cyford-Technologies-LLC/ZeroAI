@@ -72,13 +72,15 @@ def generate_avatar():
             
             # Generate based on mode
             if mode == 'sadtalker':
-                print("Using SadTalker mode...")
+                print("=== ATTEMPTING SADTALKER MODE ===")
                 success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
                 if not success:
-                    print("SadTalker failed, falling back to MediaPipe")
+                    print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
                     generate_talking_face(source_image, audio_path, video_path, codec, quality)
+                else:
+                    print("=== SADTALKER SUCCESS ===")
             else:
-                print("Using simple/MediaPipe mode...")
+                print("=== USING SIMPLE/MEDIAPIPE MODE ===")
                 generate_talking_face(source_image, audio_path, video_path, codec, quality)
             print("Face generation completed")
             
@@ -517,19 +519,32 @@ def get_mimetype_for_codec(codec):
 
 def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', quality='high'):
     """Generate SadTalker realistic avatar using subprocess"""
-    print(f"=== SADTALKER MODE START ===")
+    print(f"=== SADTALKER DETAILED DEBUG START ===")
+    print(f"Audio path: {audio_path}")
+    print(f"Video path: {video_path}")
+    print(f"Prompt: {prompt[:50]}...")
     
     try:
         # Check if SadTalker is available
         sadtalker_path = '/app/SadTalker'
+        print(f"Checking SadTalker path: {sadtalker_path}")
+        print(f"SadTalker exists: {os.path.exists(sadtalker_path)}")
+        
+        if os.path.exists(sadtalker_path):
+            print(f"SadTalker directory contents: {os.listdir(sadtalker_path)}")
+            inference_path = f'{sadtalker_path}/inference.py'
+            print(f"Inference script exists: {os.path.exists(inference_path)}")
+        
         if not os.path.exists(sadtalker_path):
-            print("SadTalker not installed, falling back")
+            print("FAILURE REASON: SadTalker directory not found")
             return False
             
         # Create reference image
         ref_image_path = os.path.join(os.path.dirname(video_path), 'ref_face.jpg')
+        print(f"Creating reference image: {ref_image_path}")
         default_face = create_default_face()
         cv2.imwrite(ref_image_path, default_face)
+        print(f"Reference image created: {os.path.exists(ref_image_path)}")
         
         # Run SadTalker via subprocess
         cmd = [
@@ -542,24 +557,46 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
             '--size', '512'
         ]
         
+        print(f"SadTalker command: {' '.join(cmd)}")
+        print("Executing SadTalker...")
+        
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        
+        print(f"SadTalker return code: {result.returncode}")
+        print(f"SadTalker stdout: {result.stdout}")
+        print(f"SadTalker stderr: {result.stderr}")
         
         if result.returncode == 0:
             # Find generated video and move to expected location
             result_dir = os.path.dirname(video_path)
+            print(f"Checking result directory: {result_dir}")
+            print(f"Directory contents: {os.listdir(result_dir)}")
+            
             for file in os.listdir(result_dir):
                 if file.endswith('.mp4') and 'result' in file:
                     generated_path = os.path.join(result_dir, file)
+                    print(f"Found generated video: {generated_path}")
                     os.rename(generated_path, video_path)
-                    print(f"SadTalker success: {os.path.getsize(video_path)} bytes")
+                    print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
                     return True
+            
+            print("FAILURE REASON: No result video found in output directory")
+        else:
+            print(f"FAILURE REASON: SadTalker process failed with code {result.returncode}")
+            print(f"STDERR: {result.stderr}")
         
-        print(f"SadTalker failed: {result.stderr}")
         return False
         
+    except subprocess.TimeoutExpired:
+        print("FAILURE REASON: SadTalker process timed out after 120 seconds")
+        return False
     except Exception as e:
-        print(f"SadTalker error: {e}")
+        print(f"FAILURE REASON: Exception occurred: {e}")
+        print(f"Exception type: {type(e).__name__}")
+        print(f"Exception traceback: {traceback.format_exc()}")
         return False
+    finally:
+        print(f"=== SADTALKER DETAILED DEBUG END ===")
 
 def create_enhanced_realistic_face(audio_path, video_path, prompt, codec='h264_high', quality='high'):
     """Create enhanced realistic talking face with better lip sync"""
