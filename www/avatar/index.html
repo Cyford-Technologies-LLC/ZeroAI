@@ -68,14 +68,20 @@
                 
                 if (response.ok) {
                     const contentType = response.headers.get('content-type');
+                    console.log('Content-Type:', contentType);
+                    console.log('Response size:', response.headers.get('content-length'));
+                    
                     if (contentType && contentType.includes('video')) {
                         const blob = await response.blob();
+                        console.log('Blob size:', blob.size);
                         const videoUrl = URL.createObjectURL(blob);
                         video.src = videoUrl;
                         video.style.display = 'block';
+                        console.log('Video URL set:', videoUrl);
                     } else {
-                        const result = await response.json();
-                        alert('Avatar Response: ' + JSON.stringify(result));
+                        const result = await response.text();
+                        console.log('Non-video response:', result);
+                        alert('Avatar Response: ' + result);
                     }
                 } else {
                     alert('Error: ' + response.status + ' ' + response.statusText);
