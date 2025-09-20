@@ -630,13 +630,30 @@
         
         function copyLogsToClipboard() {
             const logs = document.getElementById('logContainer').textContent;
-            navigator.clipboard.writeText(logs).then(() => {
-                debugLog('Debug logs copied to clipboard');
-                alert('✅ Logs copied to clipboard!');
-            }).catch(err => {
-                debugLog('Failed to copy logs to clipboard', { error: err.message });
-                alert('❌ Failed to copy logs: ' + err.message);
-            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(logs).then(() => {
+                    debugLog('Debug logs copied to clipboard');
+                    alert('✅ Logs copied to clipboard!');
+                }).catch(err => {
+                    debugLog('Failed to copy logs to clipboard', { error: err.message });
+                    alert('❌ Failed to copy logs: ' + err.message);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = logs;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    debugLog('Debug logs copied to clipboard (fallback)');
+                    alert('✅ Logs copied to clipboard!');
+                } catch (err) {
+                    debugLog('Failed to copy logs to clipboard (fallback)', { error: err.message });
+                    alert('❌ Failed to copy logs: ' + err.message);
+                }
+                document.body.removeChild(textArea);
+            }
         }
         
         // Enhanced initialization with environment detection

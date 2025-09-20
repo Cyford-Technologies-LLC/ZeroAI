@@ -552,9 +552,8 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
             '--driven_audio', audio_path,
             '--source_image', ref_image_path,
             '--result_dir', os.path.dirname(video_path),
-            '--enhancer', 'gfpgan',
-            '--preprocess', 'crop',
-            '--size', '512'
+            '--still',
+            '--preprocess', 'crop'
         ]
         
         print(f"SadTalker command: {' '.join(cmd)}")
