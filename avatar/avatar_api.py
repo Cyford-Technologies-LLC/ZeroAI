@@ -28,18 +28,29 @@ except Exception as e:
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
-    mode = request.args.get('mode', 'simple')  # Add mode support
-    print(f"=== AVATAR GENERATION START - MODE: {mode} ===")
+    mode = request.args.get('mode', 'simple')
+    codec = request.args.get('codec', 'h264_high')  # Add codec support
+    quality = request.args.get('quality', 'high')   # Add quality support
+    
+    print(f"=== AVATAR GENERATION START ===")
+    print(f"Mode: {mode}")
+    print(f"Codec: {codec}")
+    print(f"Quality: {quality}")
+    print(f"Request args: {dict(request.args)}")
     
     try:
         data = request.json
         if not data:
+            print("ERROR: No JSON data provided")
             return jsonify({'error': 'No JSON data provided'}), 400
             
         prompt = data.get('prompt', 'Hello')
         source_image = data.get('image', '/app/default_face.jpg')
+        codec_options = data.get('codec_options', {})
         
-        print(f"Generating avatar for: {prompt} (mode: {mode})", flush=True)
+        print(f"Prompt: {prompt[:50]}...")
+        print(f"Source image: {source_image}")
+        print(f"Codec options: {codec_options}")
         
         # Create temp files
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
@@ -59,13 +70,13 @@ def generate_avatar():
             # Generate based on mode
             if mode == 'sadtalker':
                 print("Using SadTalker mode...")
-                success = generate_sadtalker_video(audio_path, video_path, prompt)
+                success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
                 if not success:
                     print("SadTalker failed, falling back to MediaPipe")
-                    generate_talking_face(source_image, audio_path, video_path)
+                    generate_talking_face(source_image, audio_path, video_path, codec, quality)
             else:
                 print("Using simple/MediaPipe mode...")
-                generate_talking_face(source_image, audio_path, video_path)
+                generate_talking_face(source_image, audio_path, video_path, codec, quality)
             print("Face generation completed")
             
             # Check if video was created
@@ -75,20 +86,13 @@ def generate_avatar():
                 print(f"File size: {os.path.getsize(video_path)} bytes")
             
             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
-                # Convert AVI to MP4 using FFmpeg
-                mp4_path = video_path.replace('.avi', '.mp4')
-                try:
-                    import subprocess
-                    result = subprocess.run(['ffmpeg', '-i', video_path, '-i', audio_path, '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-shortest', '-y', mp4_path], 
-                                          capture_output=True, text=True)
-                    if result.returncode == 0 and os.path.exists(mp4_path) and os.path.getsize(mp4_path) > 0:
-                        print(f"Converted to MP4: {mp4_path} ({os.path.getsize(mp4_path)} bytes)")
-                        return send_file(mp4_path, mimetype='video/mp4', as_attachment=False)
-                    else:
-                        print(f"FFmpeg failed: {result.stderr}")
-                        return send_file(video_path, mimetype='video/avi', as_attachment=False)
-                except Exception as e:
-                    print(f"FFmpeg conversion error: {e}")
+                # Convert to final format using FFmpeg with codec support
+                final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
+                if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
+                    print(f"Final video: {final_path} ({os.path.getsize(final_path)} bytes)")
+                    return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
+                else:
+                    print("Codec conversion failed, returning original AVI")
                     return send_file(video_path, mimetype='video/avi', as_attachment=False)
             else:
                 print("Video creation failed - file empty or missing")
@@ -108,7 +112,7 @@ def generate_avatar():
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-def generate_talking_face(image_path, audio_path, output_path):
+def generate_talking_face(image_path, audio_path, output_path, codec='h264_high', quality='high'):
     """Generate realistic talking face using MediaPipe"""
     try:
         print("Starting face detection...")
@@ -155,7 +159,7 @@ def generate_talking_face(image_path, audio_path, output_path):
                     print(f"Face {i}: bbox = x:{bbox.xmin}, y:{bbox.ymin}, w:{bbox.width}, h:{bbox.height}")
                 
                 # Create animated video with detected face
-                create_animated_face(img, results.detections[0], audio_path, output_path)
+                create_animated_face(img, results.detections[0], audio_path, output_path, codec, quality)
             else:
                 print("No face detected by MediaPipe")
                 print("Trying with lower confidence threshold...")
@@ -165,16 +169,16 @@ def generate_talking_face(image_path, audio_path, output_path):
                     results_low = face_detection_low.process(rgb_img)
                     if results_low.detections:
                         print(f"Found {len(results_low.detections)} faces with low confidence")
-                        create_animated_face(img, results_low.detections[0], audio_path, output_path)
+                        create_animated_face(img, results_low.detections[0], audio_path, output_path, codec, quality)
                     else:
                         print("Still no face detected, using basic avatar")
-                        create_basic_avatar(audio_path, output_path, "No face detected")
+                        create_basic_avatar(audio_path, output_path, "No face detected", codec, quality)
                 
     except Exception as e:
         print(f"Face generation error: {str(e)}")
         print(traceback.format_exc())
         # Fallback to basic avatar
-        create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}")
+        create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}", codec, quality)
 
 def create_default_face():
     """Create a default face image"""
@@ -186,7 +190,7 @@ def create_default_face():
     cv2.ellipse(img, (256, 300), (30, 15), 0, 0, 180, (100, 50, 50), -1)
     return img
 
-def create_animated_face(img, detection, audio_path, output_path):
+def create_animated_face(img, detection, audio_path, output_path, codec='h264_high', quality='high'):
     """Create animated face video"""
     print("Creating animated face video...")
     fps = 30
@@ -279,7 +283,7 @@ def create_animated_face(img, detection, audio_path, output_path):
         if out:
             out.release()
 
-def create_basic_avatar(audio_path, video_path, text):
+def create_basic_avatar(audio_path, video_path, text, codec='h264_high', quality='high'):
     """Fallback basic avatar"""
     print("Creating basic avatar...")
     fps = 30
@@ -349,8 +353,153 @@ def analyze_image():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def generate_sadtalker_video(audio_path, video_path, prompt):
+def convert_video_with_codec(video_path, audio_path, codec, quality):
+    """Convert video using specified codec with comprehensive logging"""
+    print(f"=== VIDEO CODEC CONVERSION START ===")
+    print(f"Input video: {video_path}")
+    print(f"Input audio: {audio_path}")
+    print(f"Target codec: {codec}")
+    print(f"Quality: {quality}")
+    
+    # Define codec configurations
+    codec_configs = {
+        'h264_high': {
+            'video_codec': 'libx264',
+            'audio_codec': 'aac',
+            'preset': 'slow',
+            'crf': '18',
+            'profile': 'high',
+            'level': '4.1',
+            'extension': '.mp4'
+        },
+        'h264_medium': {
+            'video_codec': 'libx264',
+            'audio_codec': 'aac',
+            'preset': 'medium',
+            'crf': '23',
+            'profile': 'main',
+            'level': '4.0',
+            'extension': '.mp4'
+        },
+        'h264_fast': {
+            'video_codec': 'libx264',
+            'audio_codec': 'aac',
+            'preset': 'ultrafast',
+            'crf': '28',
+            'profile': 'baseline',
+            'level': '3.1',
+            'extension': '.mp4'
+        },
+        'h265_high': {
+            'video_codec': 'libx265',
+            'audio_codec': 'aac',
+            'preset': 'slow',
+            'crf': '20',
+            'extension': '.mp4'
+        },
+        'webm_high': {
+            'video_codec': 'libvpx-vp9',
+            'audio_codec': 'libopus',
+            'crf': '20',
+            'b:v': '2M',
+            'extension': '.webm'
+        },
+        'webm_fast': {
+            'video_codec': 'libvpx',
+            'audio_codec': 'libvorbis',
+            'crf': '25',
+            'b:v': '1M',
+            'extension': '.webm'
+        }
+    }
+    
+    # Get codec configuration
+    config = codec_configs.get(codec, codec_configs['h264_high'])
+    print(f"Using codec config: {config}")
+    
+    # Create output path
+    output_path = video_path.replace('.avi', config['extension'])
+    print(f"Output path: {output_path}")
+    
+    try:
+        # Build FFmpeg command
+        cmd = ['ffmpeg', '-i', video_path, '-i', audio_path]
+        
+        # Video codec settings
+        cmd.extend(['-c:v', config['video_codec']])
+        if 'preset' in config:
+            cmd.extend(['-preset', config['preset']])
+        if 'crf' in config:
+            cmd.extend(['-crf', config['crf']])
+        if 'profile' in config:
+            cmd.extend(['-profile:v', config['profile']])
+        if 'level' in config:
+            cmd.extend(['-level', config['level']])
+        if 'b:v' in config:
+            cmd.extend(['-b:v', config['b:v']])
+        
+        # Audio codec settings
+        cmd.extend(['-c:a', config['audio_codec']])
+        
+        # Universal compatibility settings
+        cmd.extend(['-pix_fmt', 'yuv420p'])
+        cmd.extend(['-movflags', '+faststart'])
+        cmd.extend(['-shortest'])
+        cmd.extend(['-y', output_path])
+        
+        print(f"FFmpeg command: {' '.join(cmd)}")
+        
+        # Execute FFmpeg
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        print(f"FFmpeg return code: {result.returncode}")
+        print(f"FFmpeg stdout: {result.stdout}")
+        if result.stderr:
+            print(f"FFmpeg stderr: {result.stderr}")
+        
+        # Check result
+        if result.returncode == 0 and os.path.exists(output_path):
+            output_size = os.path.getsize(output_path)
+            print(f"Conversion successful: {output_size} bytes")
+            
+            # Verify video integrity
+            verify_cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', output_path]
+            verify_result = subprocess.run(verify_cmd, capture_output=True, text=True)
+            
+            if verify_result.returncode == 0:
+                print(f"Video verification passed")
+                print(f"Video info: {verify_result.stdout[:200]}...")
+                return output_path
+            else:
+                print(f"Video verification failed: {verify_result.stderr}")
+                return None
+        else:
+            print(f"FFmpeg conversion failed")
+            return None
+            
+    except Exception as e:
+        print(f"Codec conversion error: {e}")
+        print(f"Exception traceback: {traceback.format_exc()}")
+        return None
+    
+    finally:
+        print(f"=== VIDEO CODEC CONVERSION END ===")
+
+def get_mimetype_for_codec(codec):
+    """Get MIME type for codec"""
+    mime_types = {
+        'h264_high': 'video/mp4',
+        'h264_medium': 'video/mp4',
+        'h264_fast': 'video/mp4',
+        'h265_high': 'video/mp4',
+        'webm_high': 'video/webm',
+        'webm_fast': 'video/webm'
+    }
+    return mime_types.get(codec, 'video/mp4')
+
+def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', quality='high'):
     """Generate SadTalker realistic avatar (placeholder for now)"""
+    print(f"SadTalker mode - codec: {codec}, quality: {quality}")
     print("SadTalker not yet implemented, using fallback")
     return False  # Will trigger fallback to MediaPipe
 
@@ -364,12 +513,24 @@ def debug_status():
             'tts_ready': tts is not None,
             'sadtalker_installed': False,  # Will be True when implemented
             'modes': ['simple', 'sadtalker'],
+            'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
+            'quality_levels': ['high', 'medium', 'fast'],
+            'default_codec': 'h264_high',
+            'ffmpeg_available': check_ffmpeg_available(),
             'disk_space': 'Available',
             'memory': 'Available'
         }
         return jsonify(status)
     except Exception as e:
         return jsonify({'error': str(e)})
+
+def check_ffmpeg_available():
+    """Check if FFmpeg is available"""
+    try:
+        result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+        return result.returncode == 0
+    except:
+        return False
 
 @app.route('/debug/logs')
 def debug_logs():
@@ -389,7 +550,14 @@ def health():
         'tts_ready': tts is not None,
         'models': 'TTS + MediaPipe',
         'modes': ['simple', 'sadtalker'],
-        'endpoints': ['/generate?mode=simple', '/generate?mode=sadtalker', '/debug/status', '/debug/logs']
+        'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
+        'default_codec': 'h264_high',
+        'endpoints': [
+            '/generate?mode=simple&codec=h264_high&quality=high',
+            '/generate?mode=sadtalker&codec=h264_medium&quality=medium',
+            '/debug/status',
+            '/debug/logs'
+        ]
     })
 
 if __name__ == '__main__':
