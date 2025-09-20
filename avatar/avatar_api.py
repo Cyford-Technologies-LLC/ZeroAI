@@ -17,7 +17,7 @@ OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
 
 # Initialize TTS with neural voice
 device = "cuda" if torch.cuda.is_available() else "cpu"
-tts = TTS("tts_models/en/ljspeech/tacotron2-DDC_ph").to(device)
+tts = TTS("tts_models/en/ljspeech/tacotron2-DDC_ph", gpu=(device=="cuda"))
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
