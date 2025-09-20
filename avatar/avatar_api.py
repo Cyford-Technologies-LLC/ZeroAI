@@ -68,7 +68,7 @@ def generate_avatar():
                 mp4_path = video_path.replace('.avi', '.mp4')
                 try:
                     import subprocess
-                    result = subprocess.run(['ffmpeg', '-i', video_path, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-y', mp4_path], 
+                    result = subprocess.run(['ffmpeg', '-i', video_path, '-i', audio_path, '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast', '-crf', '28', '-shortest', '-y', mp4_path], 
                                           capture_output=True, text=True)
                     if result.returncode == 0 and os.path.exists(mp4_path) and os.path.getsize(mp4_path) > 0:
                         print(f"Converted to MP4: {mp4_path} ({os.path.getsize(mp4_path)} bytes)")
@@ -197,19 +197,23 @@ def create_animated_face(img, detection, audio_path, output_path):
         for i in range(frames):
             frame = img.copy()
             
-            # Animate mouth area based on audio (simple sine wave)
-            mouth_scale = 1.0 + 0.3 * abs(np.sin(i * 0.3))
+            # More realistic mouth animation
+            mouth_open = 0.5 + 0.5 * abs(np.sin(i * 0.2)) * abs(np.sin(i * 0.05))
             
-            # Apply simple mouth animation
-            mouth_y = int(y + h * 0.7)
+            # Get mouth position
+            mouth_y = int(y + h * 0.75)
             mouth_x = int(x + w / 2)
+            mouth_w = int(w * 0.15)
+            mouth_h = int(mouth_open * 15)
             
-            # Draw animated mouth indicator
-            mouth_size = int(10 * mouth_scale)
-            cv2.circle(frame, (mouth_x, mouth_y), mouth_size, (0, 0, 255), 2)
+            # Draw realistic mouth opening
+            cv2.ellipse(frame, (mouth_x, mouth_y), (mouth_w, mouth_h), 0, 0, 180, (50, 50, 50), -1)
             
-            # Draw face detection box
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # Add subtle eye blinking
+            if i % 90 < 5:  # Blink every 3 seconds
+                eye_y = int(y + h * 0.4)
+                cv2.ellipse(frame, (int(x + w * 0.3), eye_y), (int(w * 0.08), 3), 0, 0, 180, (50, 50, 50), -1)
+                cv2.ellipse(frame, (int(x + w * 0.7), eye_y), (int(w * 0.08), 3), 0, 0, 180, (50, 50, 50), -1)
             
             out.write(frame)
         
@@ -257,18 +261,27 @@ def create_basic_avatar(audio_path, video_path, text):
     try:
         for i in range(frames):
             frame = np.zeros((480, 640, 3), dtype=np.uint8)
-            frame.fill(50)
+            frame.fill(30)
             
-            # Draw face
-            cv2.circle(frame, (320, 240), 100, (200, 180, 160), -1)
-            cv2.circle(frame, (290, 210), 10, (0, 0, 0), -1)
-            cv2.circle(frame, (350, 210), 10, (0, 0, 0), -1)
+            # Draw more realistic face
+            cv2.circle(frame, (320, 240), 100, (220, 200, 180), -1)  # Face
+            cv2.circle(frame, (295, 215), 12, (80, 60, 40), -1)  # Left eye
+            cv2.circle(frame, (345, 215), 12, (80, 60, 40), -1)  # Right eye
+            cv2.circle(frame, (297, 213), 4, (255, 255, 255), -1)  # Left eye highlight
+            cv2.circle(frame, (347, 213), 4, (255, 255, 255), -1)  # Right eye highlight
             
-            # Animate mouth
-            mouth_open = int(10 * abs(np.sin(i * 0.5)))
-            cv2.ellipse(frame, (320, 280), (20, mouth_open), 0, 0, 180, (0, 0, 0), -1)
+            # Nose
+            cv2.ellipse(frame, (320, 245), (8, 12), 0, 0, 180, (200, 180, 160), -1)
             
-            cv2.putText(frame, text[:30], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            # Realistic mouth animation
+            mouth_open = 5 + int(15 * abs(np.sin(i * 0.3)) * abs(np.sin(i * 0.1)))
+            cv2.ellipse(frame, (320, 275), (25, mouth_open), 0, 0, 180, (100, 80, 80), -1)
+            
+            # Add eyebrows
+            cv2.ellipse(frame, (295, 195), (15, 5), 0, 0, 180, (120, 100, 80), -1)
+            cv2.ellipse(frame, (345, 195), (15, 5), 0, 0, 180, (120, 100, 80), -1)
+            
+            cv2.putText(frame, text[:30], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
             
             out.write(frame)
         
