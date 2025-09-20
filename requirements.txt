@@ -23,7 +23,7 @@ tokenizers>=0.13.0
 # Cloud provider integrations (optional)
 openai>=1.0.0
 anthropic>=0.18.0
-docling==1.3.0
+# docling==1.3.0  # Removed due to broken dependencies
 # FastAPI form data processing dependency
 python-multipart>=0.0.6
 
