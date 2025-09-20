@@ -192,7 +192,7 @@
             try {
                 const startTime = Date.now();
                 
-                const response = await fetch('/avatar/api.php?action=generate', {
+                const response = await fetch(`/avatar/api.php?action=generate&mode=${currentMode}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
