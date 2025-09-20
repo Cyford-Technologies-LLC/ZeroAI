@@ -47,29 +47,30 @@ def generate_avatar():
 def generate_talking_face(image_path, audio_path, output_path):
     """Generate realistic talking face using face animation"""
     try:
-        # Use InsightFace for face detection and animation
-        import insightface
-        from insightface.app import FaceAnalysis
+        # Use MediaPipe for face detection
+        import mediapipe as mp
         
-        app = FaceAnalysis(providers=['CPUExecutionProvider'])
-        app.prepare(ctx_id=0, det_size=(640, 640))
+        mp_face_detection = mp.solutions.face_detection
+        mp_drawing = mp.solutions.drawing_utils
         
         # Load source image
         img = cv2.imread(image_path)
-        faces = app.get(img)
         
-        if len(faces) > 0:
-            # Create animated video with detected face
-            create_animated_face(img, faces[0], audio_path, output_path)
-        else:
-            # No face detected, use basic avatar
-            create_basic_avatar(audio_path, output_path, "No face detected")
+        with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
+            results = face_detection.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            
+            if results.detections:
+                # Create animated video with detected face
+                create_animated_face(img, results.detections[0], audio_path, output_path)
+            else:
+                # No face detected, use basic avatar
+                create_basic_avatar(audio_path, output_path, "No face detected")
             
     except Exception as e:
         # Fallback to basic avatar
         create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}")
 
-def create_animated_face(img, face, audio_path, output_path):
+def create_animated_face(img, detection, audio_path, output_path):
     """Create animated face video"""
     fps = 30
     duration = 5
@@ -79,8 +80,12 @@ def create_animated_face(img, face, audio_path, output_path):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     
-    # Get face landmarks
-    bbox = face.bbox.astype(int)
+    # Get face bounding box
+    bbox = detection.location_data.relative_bounding_box
+    x = int(bbox.xmin * width)
+    y = int(bbox.ymin * height)
+    w = int(bbox.width * width)
+    h = int(bbox.height * height)
     
     for i in range(frames):
         frame = img.copy()
@@ -89,12 +94,15 @@ def create_animated_face(img, face, audio_path, output_path):
         mouth_scale = 1.0 + 0.3 * abs(np.sin(i * 0.3))
         
         # Apply simple mouth animation
-        mouth_y = int(bbox[1] + (bbox[3] - bbox[1]) * 0.7)
-        mouth_x = int((bbox[0] + bbox[2]) / 2)
+        mouth_y = int(y + h * 0.7)
+        mouth_x = int(x + w / 2)
         
         # Draw animated mouth indicator
         mouth_size = int(10 * mouth_scale)
         cv2.circle(frame, (mouth_x, mouth_y), mouth_size, (0, 0, 255), 2)
+        
+        # Draw face detection box
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
         out.write(frame)
     
