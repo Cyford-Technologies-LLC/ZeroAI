@@ -20,8 +20,17 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create models directory
-RUN mkdir -p /app/models
+# Clone and setup SadTalker
+RUN git clone https://github.com/OpenTalker/SadTalker.git /app/SadTalker && \
+    cd /app/SadTalker && \
+    pip install -r requirements.txt
+
+# Create models directory and download checkpoints
+RUN mkdir -p /app/models /app/checkpoints && \
+    cd /app/checkpoints && \
+    wget -O SadTalker_V002.safetensors https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/SadTalker_V002.safetensors && \
+    wget -O mapping_00109-model.pth.tar https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00109-model.pth.tar
+
 COPY avatar_api.py .
 COPY create_face.py .
 RUN python create_face.py

@@ -13,3 +13,9 @@ requests==2.31.0
 # Face detection (compatible with Python 3.9)
 opencv-contrib-python==4.8.0.76
 mediapipe==0.10.7
+# SadTalker dependencies
+yacs==0.1.8
+facexlib==0.3.0
+gfpgan==1.3.8
+basicsr>=1.4.3
+realesrgan==0.3.0
