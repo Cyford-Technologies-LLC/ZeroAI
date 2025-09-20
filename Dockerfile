@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 # Install ALL system dependencies in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg git nano sudo cron bash dos2unix procps \
+    curl gnupg git nano sudo cron bash dos2unix procps wget unzip ca-certificates \
     nginx php-fpm php-sqlite3 php-curl php-json php-mbstring php-xml php-zip php-gd php-intl \
     php-apcu php-opcache php-redis \
     redis-server redis-tools \
@@ -26,6 +26,10 @@ RUN python -m venv /app/venv && \
 
 # Copy application code
 COPY . .
+
+# Install SadTalker
+COPY avatar/install_sadtalker.sh .
+RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
 
 # Fix ownership and git wrapper after copying code
 RUN mkdir -p /app/data /app/logs /app/knowledge \
