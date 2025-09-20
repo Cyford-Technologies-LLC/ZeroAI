@@ -23,19 +23,12 @@ def generate_avatar():
         data = request.json
         prompt = data.get('prompt', 'Hello')
         
-        # Create temp files
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
-            audio_path = audio_file.name
-        
+        # Create temp video file
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as video_file:
             video_path = video_file.name
         
-        # Generate speech
-        tts.save_to_file(prompt, audio_path)
-        tts.runAndWait()
-        
-        # Create simple avatar video (placeholder face with audio)
-        create_simple_avatar(audio_path, video_path, prompt)
+        # Skip TTS for now - just create video with text
+        create_simple_avatar(None, video_path, prompt)
         
         return send_file(video_path, mimetype='video/mp4')
         
