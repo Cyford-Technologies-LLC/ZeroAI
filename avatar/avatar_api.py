@@ -744,7 +744,7 @@ def debug_status():
             'timestamp': str(datetime.now()),
             'device': device,
             'tts_ready': tts is not None,
-            'sadtalker_installed': False,  # Will be True when implemented
+            'sadtalker_installed': os.path.exists('/app/SadTalker'),
             'modes': ['simple', 'sadtalker'],
             'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
             'quality_levels': ['high', 'medium', 'fast'],
