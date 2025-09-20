@@ -366,10 +366,10 @@ def convert_video_with_codec(video_path, audio_path, codec, quality):
         'h264_high': {
             'video_codec': 'libx264',
             'audio_codec': 'aac',
-            'preset': 'slow',
-            'crf': '18',
-            'profile': 'high',
-            'level': '4.1',
+            'preset': 'ultrafast',
+            'crf': '23',
+            'profile': 'baseline',
+            'level': '3.0',
             'extension': '.mp4'
         },
         'h264_medium': {
