@@ -60,9 +60,6 @@
             video.style.display = 'none';
             
             try {
-                // Store prompt for the video request
-                sessionStorage.setItem('avatarPrompt', prompt);
-                
                 const response = await fetch('/avatar/api.php?action=generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -77,17 +74,23 @@
                     if (contentType && contentType.includes('video')) {
                         const blob = await response.blob();
                         console.log('Blob size:', blob.size);
+                        
+                        // Create blob URL and set video source
                         const videoUrl = URL.createObjectURL(blob);
                         video.src = videoUrl;
                         video.style.display = 'block';
+                        video.load(); // Force reload
                         console.log('Video URL set:', videoUrl);
                         
-                        video.onloadeddata = () => console.log('Video loaded successfully');
-                        video.onerror = (e) => console.error('Video error:', e);
+                        video.onloadeddata = () => {
+                            console.log('Video loaded successfully');
+                            video.play().catch(e => console.log('Autoplay blocked:', e));
+                        };
+                        video.onerror = (e) => {
+                            console.error('Video error:', e);
+                            console.error('Video error details:', video.error);
+                        };
                         video.oncanplay = () => console.log('Video can play');
-                        
-                        // Try to play the video
-                        video.play().catch(e => console.log('Autoplay blocked:', e));
                     } else {
                         const result = await response.text();
                         console.log('Non-video response:', result);
