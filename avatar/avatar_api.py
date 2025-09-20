@@ -546,8 +546,9 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         cv2.imwrite(ref_image_path, default_face)
         print(f"Reference image created: {os.path.exists(ref_image_path)}")
         
-        # Run SadTalker via subprocess
+        # Run SadTalker via subprocess with low priority
         cmd = [
+            'nice', '-n', '10', 'ionice', '-c', '3',
             'python', f'{sadtalker_path}/inference.py',
             '--driven_audio', audio_path,
             '--source_image', ref_image_path,

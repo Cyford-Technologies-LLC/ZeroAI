@@ -37,4 +37,22 @@ else
     echo "✗ mapping_00229-model.pth.tar missing or empty"
 fi
 
+# Configure system to run Python at lower priority
+echo "Configuring system priority settings..."
+
+# Set default nice level for Python processes
+echo 'python* - priority 10' >> /etc/security/limits.conf
+echo 'root - priority 10' >> /etc/security/limits.conf
+
+# Create wrapper script for Python with nice and ionice priority
+cat > /usr/local/bin/python-nice << 'EOF'
+#!/bin/bash
+nice -n 10 ionice -c 3 python "$@"
+EOF
+chmod +x /usr/local/bin/python-nice
+
+# Configure CPU limits for intensive processes
+echo 'vm.swappiness=10' >> /etc/sysctl.conf
+echo 'kernel.sched_rt_runtime_us=950000' >> /etc/sysctl.conf
+
 echo "SadTalker installation complete"
