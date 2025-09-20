@@ -143,7 +143,7 @@ def create_animated_face(img, detection, audio_path, output_path):
     height, width = img.shape[:2]
     
     # Try multiple codecs until one works
-    codecs = ['MJPG', 'XVID', 'mp4v']
+    codecs = ['mp4v', 'MJPG', 'XVID']
     out = None
     final_path = output_path
     
@@ -218,7 +218,7 @@ def create_basic_avatar(audio_path, video_path, text):
     frames = fps * duration
     
     # Try multiple codecs
-    codecs = ['MJPG', 'XVID', 'mp4v']
+    codecs = ['mp4v', 'MJPG', 'XVID']
     out = None
     
     for codec in codecs:
