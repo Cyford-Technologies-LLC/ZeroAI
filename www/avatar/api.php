@@ -20,7 +20,7 @@ try {
         $prompt = $input['prompt'] ?? 'Hello!';
         
         // Call Docker container avatar service
-        $ch = curl_init('http://avatar:7860/generate');
+        $ch = curl_init('http://zeroai_avatar:7860/generate');
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['prompt' => $prompt]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -40,7 +40,7 @@ try {
         
     } elseif ($action === 'status') {
         // Check if avatar container is running
-        $ch = curl_init('http://avatar:7860/health');
+        $ch = curl_init('http://zeroai_avatar:7860/health');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         $result = curl_exec($ch);
