@@ -4,7 +4,7 @@ torchaudio==0.13.1
 transformers==4.21.3
 gradio==3.50.2
 pillow==9.5.0
-numpy==1.24.3
+numpy==1.22.0
 opencv-python==4.8.0.76
 scipy==1.10.1
 TTS==0.15.6
