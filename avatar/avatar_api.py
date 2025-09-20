@@ -77,7 +77,7 @@ def create_animated_face(img, detection, audio_path, output_path):
     frames = fps * duration
     
     height, width = img.shape[:2]
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     
     # Get face bounding box
@@ -114,7 +114,7 @@ def create_basic_avatar(audio_path, video_path, text):
     duration = 3
     frames = fps * duration
     
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
     out = cv2.VideoWriter(video_path, fourcc, fps, (640, 480))
     
     for i in range(frames):
