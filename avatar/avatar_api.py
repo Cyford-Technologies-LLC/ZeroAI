@@ -41,7 +41,7 @@ def generate_avatar():
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
             audio_path = audio_file.name
         
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as video_file:
+        with tempfile.NamedTemporaryFile(suffix='.avi', delete=False) as video_file:
             video_path = video_file.name
         
         try:
@@ -64,18 +64,19 @@ def generate_avatar():
             
             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                 print(f"Video created successfully: {os.path.getsize(video_path)} bytes")
-                return send_file(video_path, mimetype='video/mp4')
+                return send_file(video_path, mimetype='video/avi', as_attachment=False)
             else:
                 print("Video creation failed - file empty or missing")
                 return jsonify({'error': 'Video creation failed'}), 500
                 
         finally:
-            # Cleanup temp files
+            # Cleanup temp files after response
             try:
                 if os.path.exists(audio_path):
                     os.unlink(audio_path)
             except:
                 pass
+            # Don't delete video file here - Flask needs it for send_file
         
     except Exception as e:
         print(f"Avatar generation error: {str(e)}")
@@ -142,7 +143,7 @@ def create_animated_face(img, detection, audio_path, output_path):
     height, width = img.shape[:2]
     
     # Try multiple codecs until one works
-    codecs = ['mp4v', 'XVID', 'MJPG']
+    codecs = ['MJPG', 'XVID', 'mp4v']
     out = None
     final_path = output_path
     
@@ -217,7 +218,7 @@ def create_basic_avatar(audio_path, video_path, text):
     frames = fps * duration
     
     # Try multiple codecs
-    codecs = ['mp4v', 'XVID', 'MJPG']
+    codecs = ['MJPG', 'XVID', 'mp4v']
     out = None
     
     for codec in codecs:
