@@ -106,14 +106,52 @@
         let debugMode = true;
         let currentMode = 'simple';
         
-        // Console logging wrapper
+        // Enhanced console logging wrapper with stack traces
         function debugLog(message, data = null) {
             const timestamp = new Date().toISOString();
-            console.log(`[${timestamp}] ${message}`, data || '');
+            const stack = new Error().stack;
+            const caller = stack.split('\n')[2]?.trim() || 'unknown';
+            
+            // Console logging with styling
+            console.group(`🔍 [${timestamp}] ${message}`);
+            if (data) {
+                console.log('📊 Data:', data);
+            }
+            console.log('📍 Called from:', caller);
+            console.groupEnd();
             
             if (debugMode) {
-                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data) : ''}`;
+                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data, null, 2) : ''}\n📍 ${caller}`;
                 appendToLog('logContainer', logEntry);
+            }
+        }
+        
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            debugLog('🚨 Global JavaScript Error', {
+                message: e.message,
+                filename: e.filename,
+                lineno: e.lineno,
+                colno: e.colno,
+                error: e.error?.toString(),
+                stack: e.error?.stack
+            });
+        });
+        
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (e) => {
+            debugLog('🚨 Unhandled Promise Rejection', {
+                reason: e.reason,
+                promise: e.promise,
+                stack: e.reason?.stack
+            });
+        });
+        
+        // Performance monitoring
+        function logPerformance(label) {
+            if (performance.mark) {
+                performance.mark(label);
+                debugLog('⚡ Performance Mark', { label, timestamp: performance.now() });
             }
         }
         
@@ -139,7 +177,12 @@
             const video = document.getElementById('avatarVideo');
             const videoInfo = document.getElementById('videoInfo');
             
-            debugLog('Starting avatar generation', { mode: currentMode, prompt: prompt.substring(0, 50) });
+            debugLog('🚀 Starting avatar generation', { 
+                mode: currentMode, 
+                prompt: prompt.substring(0, 50),
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent.substring(0, 100)
+            });
             
             loading.style.display = 'block';
             result.style.display = 'none';
@@ -156,13 +199,19 @@
                 
                 const duration = Date.now() - startTime;
                 
-                debugLog('Avatar API response received', {
+                debugLog('📡 Avatar API response received', {
                     status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    redirected: response.redirected,
+                    type: response.type,
+                    url: response.url,
                     contentType: response.headers.get('content-type'),
                     contentLength: response.headers.get('content-length'),
                     avatarMode: response.headers.get('x-avatar-mode'),
                     avatarSize: response.headers.get('x-avatar-size'),
-                    duration: duration + 'ms'
+                    duration: duration + 'ms',
+                    allHeaders: Object.fromEntries(response.headers.entries())
                 });
                 
                 if (response.ok) {
@@ -184,21 +233,154 @@
                             URL: ${videoUrl}
                         `;
                         
-                        video.onloadeddata = () => {
-                            debugLog('Video loaded successfully', {
+                        // Comprehensive video debugging
+                        video.onloadstart = () => {
+                            debugLog('🎬 Video load started', {
+                                src: video.src,
+                                currentSrc: video.currentSrc,
+                                networkState: video.networkState,
+                                readyState: video.readyState
+                            });
+                        };
+                        
+                        video.onloadedmetadata = () => {
+                            debugLog('📊 Video metadata loaded', {
                                 duration: video.duration,
                                 videoWidth: video.videoWidth,
-                                videoHeight: video.videoHeight
+                                videoHeight: video.videoHeight,
+                                readyState: video.readyState,
+                                networkState: video.networkState
+                            });
+                        };
+                        
+                        video.onloadeddata = () => {
+                            debugLog('✅ Video data loaded successfully', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight,
+                                currentSrc: video.currentSrc,
+                                networkState: video.networkState,
+                                readyState: video.readyState,
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                seekable: video.seekable.length > 0 ? video.seekable.end(0) : 0
+                            });
+                        };
+                        
+                        video.oncanplay = () => {
+                            debugLog('▶️ Video can play', {
+                                paused: video.paused,
+                                ended: video.ended,
+                                currentTime: video.currentTime,
+                                duration: video.duration,
+                                readyState: video.readyState
+                            });
+                        };
+                        
+                        video.oncanplaythrough = () => {
+                            debugLog('🎯 Video can play through', {
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                duration: video.duration
                             });
                         };
                         
                         video.onerror = (e) => {
-                            debugLog('Video error', { error: e, videoError: video.error });
+                            debugLog('❌ Video error event', {
+                                event: e,
+                                error: video.error,
+                                code: video.error?.code,
+                                message: video.error?.message,
+                                networkState: video.networkState,
+                                readyState: video.readyState,
+                                src: video.src,
+                                currentSrc: video.currentSrc
+                            });
+                            
+                            // Detailed error analysis
+                            if (video.error) {
+                                const errorCodes = {
+                                    1: 'MEDIA_ERR_ABORTED - The user aborted the video',
+                                    2: 'MEDIA_ERR_NETWORK - A network error occurred',
+                                    3: 'MEDIA_ERR_DECODE - Error occurred when decoding',
+                                    4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format not supported'
+                                };
+                                debugLog('📋 Error meaning', errorCodes[video.error.code] || 'Unknown error');
+                            }
+                            
+                            // Browser capability check
+                            debugLog('🔍 Browser video support', {
+                                canPlayType_mp4: video.canPlayType('video/mp4'),
+                                canPlayType_h264: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+                                canPlayType_webm: video.canPlayType('video/webm'),
+                                canPlayType_avi: video.canPlayType('video/avi')
+                            });
                         };
                         
-                        debugLog('Avatar generation successful', {
+                        video.onstalled = () => debugLog('⏸️ Video stalled');
+                        video.onsuspend = () => debugLog('⏯️ Video suspended');
+                        video.onwaiting = () => debugLog('⏳ Video waiting');
+                        video.onprogress = () => {
+                            debugLog('📈 Video loading progress', {
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                duration: video.duration || 'unknown'
+                            });
+                        };
+                        video.onplay = () => debugLog('▶️ Video play started');
+                        video.onpause = () => debugLog('⏸️ Video paused');
+                        video.onended = () => debugLog('🏁 Video ended');
+                        video.ontimeupdate = () => {
+                            if (Math.floor(video.currentTime) % 1 === 0) { // Log every second
+                                debugLog('⏰ Video time update', {
+                                    currentTime: video.currentTime,
+                                    duration: video.duration
+                                });
+                            }
+                        };
+                        
+                        // Force load and try to play
+                        video.load();
+                        debugLog('🔄 Video load() called');
+                        
+                        // Try to play after a short delay
+                        setTimeout(() => {
+                            video.play().then(() => {
+                                debugLog('✅ Video play() succeeded');
+                            }).catch(e => {
+                                debugLog('🚫 Video play() failed', { error: e.message, name: e.name });
+                            });
+                        }, 100);
+                        
+                        debugLog('🎉 Avatar generation successful', {
                             blobSize: blob.size,
-                            videoUrl: videoUrl
+                            blobType: blob.type,
+                            videoUrl: videoUrl,
+                            urlLength: videoUrl.length
+                        });
+                        
+                        // Additional blob analysis
+                        debugLog('📦 Blob analysis', {
+                            constructor: blob.constructor.name,
+                            stream: typeof blob.stream === 'function',
+                            arrayBuffer: typeof blob.arrayBuffer === 'function',
+                            text: typeof blob.text === 'function'
+                        });
+                        
+                        // Browser environment check
+                        debugLog('🌐 Browser environment', {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            cookieEnabled: navigator.cookieEnabled,
+                            onLine: navigator.onLine,
+                            language: navigator.language,
+                            hardwareConcurrency: navigator.hardwareConcurrency,
+                            deviceMemory: navigator.deviceMemory || 'unknown'
+                        });
+                        
+                        // URL object analysis
+                        debugLog('🔗 URL object analysis', {
+                            protocol: new URL(videoUrl).protocol,
+                            host: new URL(videoUrl).host,
+                            pathname: new URL(videoUrl).pathname,
+                            search: new URL(videoUrl).search
                         });
                         
                     } else {
@@ -379,9 +561,57 @@
             debugLog('Debug logs downloaded');
         }
         
-        // Initialize
-        debugLog('Avatar Debug Console initialized');
-        getStatus();
+        // Enhanced initialization with environment detection
+        function initializeDebugConsole() {
+            debugLog('🎮 Avatar Debug Console initializing');
+            
+            // Browser capability detection
+            const capabilities = {
+                webGL: !!window.WebGLRenderingContext,
+                webGL2: !!window.WebGL2RenderingContext,
+                webRTC: !!window.RTCPeerConnection,
+                mediaDevices: !!navigator.mediaDevices,
+                serviceWorker: 'serviceWorker' in navigator,
+                webAssembly: typeof WebAssembly === 'object',
+                localStorage: typeof Storage !== 'undefined',
+                indexedDB: !!window.indexedDB,
+                webWorkers: typeof Worker !== 'undefined',
+                fetch: typeof fetch === 'function',
+                promises: typeof Promise === 'function',
+                asyncAwait: (async () => {}).constructor === (async function(){}).constructor
+            };
+            
+            debugLog('🔧 Browser Capabilities', capabilities);
+            
+            // Memory info if available
+            if (performance.memory) {
+                debugLog('💾 Memory Info', {
+                    usedJSHeapSize: performance.memory.usedJSHeapSize,
+                    totalJSHeapSize: performance.memory.totalJSHeapSize,
+                    jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+                });
+            }
+            
+            // Connection info if available
+            if (navigator.connection) {
+                debugLog('🌐 Connection Info', {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                });
+            }
+            
+            logPerformance('console-initialized');
+            getStatus();
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDebugConsole);
+        } else {
+            initializeDebugConsole();
+        }
     </script>
 </body>
 </html>
