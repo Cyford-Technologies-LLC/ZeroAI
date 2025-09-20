@@ -236,8 +236,8 @@ class AvatarManager
      */
     private function callAvatarService($prompt, $mode, $options = [])
     {
-        // Use WebM codec for better browser compatibility
-        $codec = $options['codec'] ?? 'webm_fast';
+        // Use H.264 baseline codec for maximum browser compatibility
+        $codec = $options['codec'] ?? 'h264_fast';
         $quality = $options['quality'] ?? 'high';
         
         $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;

@@ -194,7 +194,13 @@
                 const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify({ 
+                        prompt: prompt,
+                        options: {
+                            codec: 'h264_fast',
+                            quality: 'high'
+                        }
+                    })
                 });
                 
                 const duration = Date.now() - startTime;

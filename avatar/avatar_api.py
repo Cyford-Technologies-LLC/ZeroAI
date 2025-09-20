@@ -26,10 +26,13 @@ except Exception as e:
     print(f"TTS initialization failed: {e}")
     tts = None
 
+# Global default codec
+DEFAULT_CODEC = 'h264_fast'
+
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
     mode = request.args.get('mode', 'simple')
-    codec = request.args.get('codec', 'webm_fast')  # Add codec support - use WebM for better compatibility
+    codec = request.args.get('codec', DEFAULT_CODEC)  # Use global default
     quality = request.args.get('quality', 'high')   # Add quality support
     
     print(f"=== AVATAR GENERATION START ===")
@@ -408,8 +411,10 @@ def convert_video_with_codec(video_path, audio_path, codec, quality):
             'video_codec': 'libvpx',
             'audio_codec': 'libvorbis',
             'crf': '30',
-            'b:v': '800k',
-            'b:a': '128k',
+            'b:v': '500k',
+            'b:a': '96k',
+            'cpu-used': '5',
+            'deadline': 'realtime',
             'extension': '.webm'
         }
     }
@@ -441,10 +446,22 @@ def convert_video_with_codec(video_path, audio_path, codec, quality):
         
         # Audio codec settings
         cmd.extend(['-c:a', config['audio_codec']])
+        if 'b:a' in config:
+            cmd.extend(['-b:a', config['b:a']])
+        
+        # WebM-specific settings
+        if config['video_codec'] == 'libvpx':
+            if 'cpu-used' in config:
+                cmd.extend(['-cpu-used', config['cpu-used']])
+            if 'deadline' in config:
+                cmd.extend(['-deadline', config['deadline']])
+            cmd.extend(['-auto-alt-ref', '0'])  # Disable alt-ref for compatibility
+            cmd.extend(['-lag-in-frames', '0'])  # No frame delay
         
         # Universal compatibility settings
         cmd.extend(['-pix_fmt', 'yuv420p'])
-        cmd.extend(['-movflags', '+faststart'])
+        if config['extension'] == '.mp4':
+            cmd.extend(['-movflags', '+faststart'])
         cmd.extend(['-shortest'])
         cmd.extend(['-y', output_path])
         
@@ -543,6 +560,13 @@ def debug_logs():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/reload')
+def reload_config():
+    """Force reload configuration"""
+    global DEFAULT_CODEC
+    DEFAULT_CODEC = 'h264_fast'
+    return jsonify({'status': 'reloaded', 'default_codec': DEFAULT_CODEC})
+
 @app.route('/health')
 def health():
     return jsonify({
@@ -552,12 +576,13 @@ def health():
         'models': 'TTS + MediaPipe',
         'modes': ['simple', 'sadtalker'],
         'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
-        'default_codec': 'webm_fast',
+        'default_codec': 'h264_fast',
         'endpoints': [
             '/generate?mode=simple&codec=h264_high&quality=high',
             '/generate?mode=sadtalker&codec=h264_medium&quality=medium',
             '/debug/status',
-            '/debug/logs'
+            '/debug/logs',
+            '/reload'
         ]
     })
 
