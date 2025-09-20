@@ -8,14 +8,12 @@ import base64
 from pathlib import Path
 import cv2
 import numpy as np
-import pyttsx3
+import subprocess
+import threading
 
 app = Flask(__name__)
 CORS(app)
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
-
-# Initialize TTS
-tts = pyttsx3.init()
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
@@ -23,12 +21,18 @@ def generate_avatar():
         data = request.json
         prompt = data.get('prompt', 'Hello')
         
-        # Create temp video file
+        # Create temp files
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+            audio_path = audio_file.name
+        
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as video_file:
             video_path = video_file.name
         
-        # Skip TTS for now - just create video with text
-        create_simple_avatar(None, video_path, prompt)
+        # Generate speech using espeak directly
+        subprocess.run(['espeak', '-w', audio_path, prompt], check=True, timeout=10)
+        
+        # Create avatar video
+        create_simple_avatar(audio_path, video_path, prompt)
         
         return send_file(video_path, mimetype='video/mp4')
         
