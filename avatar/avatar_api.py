@@ -79,7 +79,7 @@ def generate_avatar():
                 mp4_path = video_path.replace('.avi', '.mp4')
                 try:
                     import subprocess
-                    result = subprocess.run(['ffmpeg', '-i', video_path, '-i', audio_path, '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast', '-crf', '28', '-shortest', '-y', mp4_path], 
+                    result = subprocess.run(['ffmpeg', '-i', video_path, '-i', audio_path, '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-shortest', '-y', mp4_path], 
                                           capture_output=True, text=True)
                     if result.returncode == 0 and os.path.exists(mp4_path) and os.path.getsize(mp4_path) > 0:
                         print(f"Converted to MP4: {mp4_path} ({os.path.getsize(mp4_path)} bytes)")
