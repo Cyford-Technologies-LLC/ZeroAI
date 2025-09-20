@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Create models directory
 RUN mkdir -p /app/models
-COPY avatar_api_simple.py ./avatar_api.py
+COPY avatar_api.py .
 COPY create_face.py .
 RUN python create_face.py
 
