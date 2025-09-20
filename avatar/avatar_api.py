@@ -29,7 +29,7 @@ except Exception as e:
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
     mode = request.args.get('mode', 'simple')
-    codec = request.args.get('codec', 'h264_high')  # Add codec support
+    codec = request.args.get('codec', 'webm_fast')  # Add codec support - use WebM for better compatibility
     quality = request.args.get('quality', 'high')   # Add quality support
     
     print(f"=== AVATAR GENERATION START ===")
@@ -407,8 +407,9 @@ def convert_video_with_codec(video_path, audio_path, codec, quality):
         'webm_fast': {
             'video_codec': 'libvpx',
             'audio_codec': 'libvorbis',
-            'crf': '25',
-            'b:v': '1M',
+            'crf': '30',
+            'b:v': '800k',
+            'b:a': '128k',
             'extension': '.webm'
         }
     }
@@ -515,7 +516,7 @@ def debug_status():
             'modes': ['simple', 'sadtalker'],
             'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
             'quality_levels': ['high', 'medium', 'fast'],
-            'default_codec': 'h264_high',
+            'default_codec': 'webm_fast',
             'ffmpeg_available': check_ffmpeg_available(),
             'disk_space': 'Available',
             'memory': 'Available'
@@ -551,7 +552,7 @@ def health():
         'models': 'TTS + MediaPipe',
         'modes': ['simple', 'sadtalker'],
         'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
-        'default_codec': 'h264_high',
+        'default_codec': 'webm_fast',
         'endpoints': [
             '/generate?mode=simple&codec=h264_high&quality=high',
             '/generate?mode=sadtalker&codec=h264_medium&quality=medium',
