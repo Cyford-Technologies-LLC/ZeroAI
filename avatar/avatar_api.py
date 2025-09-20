@@ -197,23 +197,35 @@ def create_animated_face(img, detection, audio_path, output_path):
         for i in range(frames):
             frame = img.copy()
             
-            # More realistic mouth animation
-            mouth_open = 0.5 + 0.5 * abs(np.sin(i * 0.2)) * abs(np.sin(i * 0.05))
+            # Realistic talking animation
+            mouth_intensity = abs(np.sin(i * 0.3)) * abs(np.sin(i * 0.1))
             
-            # Get mouth position
-            mouth_y = int(y + h * 0.75)
-            mouth_x = int(x + w / 2)
-            mouth_w = int(w * 0.15)
-            mouth_h = int(mouth_open * 15)
+            # Get face region
+            face_region = frame[y:y+h, x:x+w]
             
-            # Draw realistic mouth opening
-            cv2.ellipse(frame, (mouth_x, mouth_y), (mouth_w, mouth_h), 0, 0, 180, (50, 50, 50), -1)
+            # Mouth animation - modify the actual mouth area
+            mouth_y_rel = int(h * 0.7)
+            mouth_x_rel = int(w * 0.5)
+            mouth_w = int(w * 0.2)
+            mouth_h = int(5 + mouth_intensity * 20)
             
-            # Add subtle eye blinking
-            if i % 90 < 5:  # Blink every 3 seconds
-                eye_y = int(y + h * 0.4)
-                cv2.ellipse(frame, (int(x + w * 0.3), eye_y), (int(w * 0.08), 3), 0, 0, 180, (50, 50, 50), -1)
-                cv2.ellipse(frame, (int(x + w * 0.7), eye_y), (int(w * 0.08), 3), 0, 0, 180, (50, 50, 50), -1)
+            # Draw animated mouth on face
+            if mouth_y_rel < h and mouth_x_rel < w:
+                cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel), (mouth_w, mouth_h), 0, 0, 180, (120, 80, 80), -1)
+                # Add teeth when mouth is open
+                if mouth_h > 10:
+                    cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel-2), (mouth_w-5, 3), 0, 0, 180, (240, 240, 240), -1)
+            
+            # Eye blinking
+            if i % 120 < 8:  # Blink occasionally
+                eye_y_rel = int(h * 0.35)
+                left_eye_x = int(w * 0.35)
+                right_eye_x = int(w * 0.65)
+                cv2.ellipse(face_region, (left_eye_x, eye_y_rel), (int(w * 0.08), 4), 0, 0, 180, (200, 180, 160), -1)
+                cv2.ellipse(face_region, (right_eye_x, eye_y_rel), (int(w * 0.08), 4), 0, 0, 180, (200, 180, 160), -1)
+            
+            # Put modified face back
+            frame[y:y+h, x:x+w] = face_region
             
             out.write(frame)
         
