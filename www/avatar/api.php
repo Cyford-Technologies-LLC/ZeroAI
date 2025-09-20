@@ -25,8 +25,24 @@ try {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['prompt' => $prompt]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
         curl_close($ch);
+        
+        if ($error) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Curl error: ' . $error]);
+            return;
+        }
+        
+        if ($httpCode !== 200) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'HTTP error: ' . $httpCode]);
+            return;
+        }
         
         if ($result) {
             // Set proper headers for video response

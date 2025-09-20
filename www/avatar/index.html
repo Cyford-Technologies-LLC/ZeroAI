@@ -66,17 +66,21 @@
                     body: JSON.stringify({ prompt: prompt })
                 });
                 
-                if (response.headers.get('content-type')?.includes('video')) {
-                    const blob = await response.blob();
-                    const videoUrl = URL.createObjectURL(blob);
-                    video.src = videoUrl;
-                    video.style.display = 'block';
-                    loading.style.display = 'none';
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('video')) {
+                        const blob = await response.blob();
+                        const videoUrl = URL.createObjectURL(blob);
+                        video.src = videoUrl;
+                        video.style.display = 'block';
+                    } else {
+                        const result = await response.json();
+                        alert('Avatar Response: ' + JSON.stringify(result));
+                    }
                 } else {
-                    const result = await response.json();
-                    alert('Avatar Response: ' + JSON.stringify(result));
-                    loading.style.display = 'none';
+                    alert('Error: ' + response.status + ' ' + response.statusText);
                 }
+                loading.style.display = 'none';
             } catch (error) {
                 alert('Error: ' + error.message);
                 loading.style.display = 'none';
