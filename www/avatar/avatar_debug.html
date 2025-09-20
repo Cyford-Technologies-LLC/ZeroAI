@@ -85,6 +85,7 @@
                 <button onclick="refreshLogs()">Refresh Logs</button>
                 <button onclick="clearDebugLogs()" class="danger">Clear Debug Logs</button>
                 <button onclick="downloadLogs()">Download Logs</button>
+                <button onclick="copyLogsToClipboard()">Copy to Clipboard</button>
             </div>
             <div class="log-container" id="logContainer">
                 Click "Refresh Logs" to load debug information...
@@ -625,6 +626,17 @@
             a.click();
             URL.revokeObjectURL(url);
             debugLog('Debug logs downloaded');
+        }
+        
+        function copyLogsToClipboard() {
+            const logs = document.getElementById('logContainer').textContent;
+            navigator.clipboard.writeText(logs).then(() => {
+                debugLog('Debug logs copied to clipboard');
+                alert('✅ Logs copied to clipboard!');
+            }).catch(err => {
+                debugLog('Failed to copy logs to clipboard', { error: err.message });
+                alert('❌ Failed to copy logs: ' + err.message);
+            });
         }
         
         // Enhanced initialization with environment detection
