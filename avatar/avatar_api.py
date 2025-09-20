@@ -68,12 +68,16 @@ def generate_avatar():
                 mp4_path = video_path.replace('.avi', '.mp4')
                 try:
                     import subprocess
-                    subprocess.run(['ffmpeg', '-i', video_path, '-c:v', 'libx264', '-preset', 'fast', '-y', mp4_path], 
-                                 check=True, capture_output=True)
-                    print(f"Converted to MP4: {mp4_path}")
-                    return send_file(mp4_path, mimetype='video/mp4', as_attachment=False)
-                except:
-                    print("FFmpeg conversion failed, serving AVI")
+                    result = subprocess.run(['ffmpeg', '-i', video_path, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-y', mp4_path], 
+                                          capture_output=True, text=True)
+                    if result.returncode == 0 and os.path.exists(mp4_path) and os.path.getsize(mp4_path) > 0:
+                        print(f"Converted to MP4: {mp4_path} ({os.path.getsize(mp4_path)} bytes)")
+                        return send_file(mp4_path, mimetype='video/mp4', as_attachment=False)
+                    else:
+                        print(f"FFmpeg failed: {result.stderr}")
+                        return send_file(video_path, mimetype='video/avi', as_attachment=False)
+                except Exception as e:
+                    print(f"FFmpeg conversion error: {e}")
                     return send_file(video_path, mimetype='video/avi', as_attachment=False)
             else:
                 print("Video creation failed - file empty or missing")
