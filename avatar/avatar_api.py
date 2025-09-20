@@ -57,6 +57,11 @@ def generate_avatar():
             print("Face generation completed")
             
             # Check if video was created
+            print(f"Checking video file: {video_path}")
+            print(f"File exists: {os.path.exists(video_path)}")
+            if os.path.exists(video_path):
+                print(f"File size: {os.path.getsize(video_path)} bytes")
+            
             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                 print(f"Video created successfully: {os.path.getsize(video_path)} bytes")
                 return send_file(video_path, mimetype='video/mp4')
