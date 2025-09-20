@@ -236,7 +236,11 @@ class AvatarManager
      */
     private function callAvatarService($prompt, $mode, $options = [])
     {
-        $url = $this->avatarServiceUrl . '/generate?mode=' . $mode;
+        // Use WebM codec for better browser compatibility
+        $codec = $options['codec'] ?? 'webm_fast';
+        $quality = $options['quality'] ?? 'high';
+        
+        $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
         $data = json_encode([
             'prompt' => $prompt,
             'options' => $options
