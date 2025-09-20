@@ -17,32 +17,14 @@ langchain-ollama
 pysqlite3-binary
 pathvalidate>=3.0.0
 # ML framework dependencies (for embeddings and tokenizers)
-torch>=2.0.0
+torch==2.3.0
 transformers>=4.30.0
 tokenizers>=0.13.0
 # Cloud provider integrations (optional)
 openai>=1.0.0
 anthropic>=0.18.0
-# docling   # >=0.4.0 - Removed due to dependency conflicts
+docling==1.2.0
 # FastAPI form data processing dependency
 python-multipart>=0.0.6
 
-# Avatar Generation Dependencies
-gradio>=4.0.0
-pillow>=10.0.0
-numpy>=1.24.0
-opencv-python>=4.8.0
-scipy>=1.11.0
-
-# Text-to-Speech for Avatar
-TTS>=0.22.0
-pyttsx3>=2.90
-
-# Image Analysis for Avatar
-timm>=0.9.0
-sentence-transformers>=2.2.0
-
-# Video Processing for Avatar
-imageio>=2.31.0
-imageio-ffmpeg>=0.4.9
-moviepy>=1.0.3
+# Avatar dependencies moved to requirements-avatar.txt
