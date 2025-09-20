@@ -27,7 +27,8 @@ def generate_avatar():
         prompt = data.get('prompt', 'Hello')
         source_image = data.get('image', '/app/default_face.jpg')
         
-        print(f"Generating avatar for: {prompt}")
+        app.logger.info(f"Generating avatar for: {prompt}")
+        print(f"Generating avatar for: {prompt}", flush=True)
         
         # Create temp files
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
