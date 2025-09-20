@@ -560,6 +560,30 @@ def debug_logs():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/test-mp4')
+def test_mp4():
+    """Generate a minimal test MP4 to verify pipeline"""
+    try:
+        # Create a simple 1-second test video
+        test_path = '/app/test_video.mp4'
+        cmd = [
+            'ffmpeg', '-f', 'lavfi', '-i', 'testsrc=duration=1:size=320x240:rate=30',
+            '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1',
+            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.0',
+            '-c:a', 'aac', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+            '-y', test_path
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode == 0 and os.path.exists(test_path):
+            return send_file(test_path, mimetype='video/mp4', as_attachment=False)
+        else:
+            return jsonify({'error': 'Test MP4 generation failed', 'stderr': result.stderr}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/reload')
 def reload_config():
     """Force reload configuration"""

@@ -46,6 +46,7 @@
             
             <div class="controls">
                 <button onclick="generateAvatar()">Generate Avatar</button>
+                <button onclick="testMP4()" class="success">Test MP4 Pipeline</button>
                 <button onclick="testConnection()" class="success">Test Connection</button>
                 <button onclick="getStatus()">Get Status</button>
                 <button onclick="getLogs()">Get Logs</button>
@@ -191,16 +192,10 @@
             try {
                 const startTime = Date.now();
                 
-                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+                const response = await fetch('/avatar/api.php?action=generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        prompt: prompt,
-                        options: {
-                            codec: 'h264_fast',
-                            quality: 'high'
-                        }
-                    })
+                    body: JSON.stringify({ prompt: prompt })
                 });
                 
                 const duration = Date.now() - startTime;
@@ -370,6 +365,28 @@
                             text: typeof blob.text === 'function'
                         });
                         
+                        // Hex dump first 100 bytes to check file structure
+                        blob.arrayBuffer().then(buffer => {
+                            const bytes = new Uint8Array(buffer);
+                            const hexDump = Array.from(bytes.slice(0, 100))
+                                .map(b => b.toString(16).padStart(2, '0'))
+                                .join(' ');
+                            const asciiDump = Array.from(bytes.slice(0, 100))
+                                .map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')
+                                .join('');
+                            
+                            debugLog('🔍 File hex dump (first 100 bytes)', {
+                                hex: hexDump,
+                                ascii: asciiDump,
+                                fileSignature: hexDump.substring(0, 23), // First 8 bytes
+                                isMP4: hexDump.includes('66 74 79 70'), // 'ftyp' box
+                                isAVI: hexDump.startsWith('52 49 46 46'), // 'RIFF'
+                                isWebM: hexDump.startsWith('1a 45 df a3') // WebM signature
+                            });
+                        }).catch(e => {
+                            debugLog('❌ Failed to read file bytes', { error: e.message });
+                        });
+                        
                         // Browser environment check
                         debugLog('🌐 Browser environment', {
                             userAgent: navigator.userAgent,
@@ -406,6 +423,49 @@
                 error.style.display = 'block';
             } finally {
                 loading.style.display = 'none';
+            }
+        }
+        
+        async function testMP4() {
+            debugLog('Testing MP4 pipeline with minimal file');
+            
+            const video = document.getElementById('avatarVideo');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            
+            try {
+                const response = await fetch('http://zeroai.cyfordtechnologies.com:7860/test-mp4');
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const videoUrl = URL.createObjectURL(blob);
+                    
+                    video.src = videoUrl;
+                    result.style.display = 'block';
+                    error.style.display = 'none';
+                    
+                    debugLog('✅ Test MP4 loaded successfully', {
+                        size: blob.size,
+                        type: blob.type
+                    });
+                    
+                    // Test hex dump on this file too
+                    blob.arrayBuffer().then(buffer => {
+                        const bytes = new Uint8Array(buffer);
+                        const hexDump = Array.from(bytes.slice(0, 50))
+                            .map(b => b.toString(16).padStart(2, '0'))
+                            .join(' ');
+                        debugLog('🧪 Test MP4 hex dump', { hex: hexDump });
+                    });
+                    
+                } else {
+                    throw new Error(`Test MP4 failed: ${response.status}`);
+                }
+                
+            } catch (err) {
+                debugLog('❌ Test MP4 failed', { error: err.message });
+                error.textContent = 'Test MP4 Error: ' + err.message;
+                error.style.display = 'block';
             }
         }
         
