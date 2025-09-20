@@ -9,6 +9,10 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     libglib2.0-0 \
     libgomp1 \
+    espeak \
+    espeak-data \
+    libespeak1 \
+    libespeak-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
