@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
 COPY install_sadtalker.sh .
 RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
 
+# Download SadTalker models during build
+RUN cd /app/SadTalker && bash scripts/download_models.sh
+
 # Clear executable stack for libtorch_cpu.so
 RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -exec patchelf --clear-execstack {} \;
 

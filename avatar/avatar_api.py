@@ -207,13 +207,58 @@ def generate_talking_face(image_path, audio_path, output_path, codec='h264_high'
 
 
 def create_default_face():
-    """Create a default face image"""
-    img = np.ones((512, 512, 3), dtype=np.uint8) * 240
-    # Draw face
-    cv2.circle(img, (256, 256), 150, (200, 180, 160), -1)
-    cv2.circle(img, (220, 220), 15, (0, 0, 0), -1)
-    cv2.circle(img, (292, 220), 15, (0, 0, 0), -1)
-    cv2.ellipse(img, (256, 300), (30, 15), 0, 0, 180, (100, 50, 50), -1)
+    """Create a more realistic default face image that SadTalker can detect"""
+    # Use a larger, more realistic face
+    img = np.ones((512, 512, 3), dtype=np.uint8) * 245
+
+    # Draw a more proportional face
+    face_center = (256, 256)
+    face_width = 180
+    face_height = 220
+
+    # Face outline (oval shape)
+    cv2.ellipse(img, face_center, (face_width // 2, face_height // 2), 0, 0, 360, (220, 200, 180), -1)
+
+    # Eyes (larger and more defined)
+    left_eye_center = (200, 220)
+    right_eye_center = (312, 220)
+
+    # Eye whites
+    cv2.ellipse(img, left_eye_center, (25, 15), 0, 0, 360, (255, 255, 255), -1)
+    cv2.ellipse(img, right_eye_center, (25, 15), 0, 0, 360, (255, 255, 255), -1)
+
+    # Iris
+    cv2.circle(img, left_eye_center, 12, (100, 150, 200), -1)
+    cv2.circle(img, right_eye_center, 12, (100, 150, 200), -1)
+
+    # Pupils
+    cv2.circle(img, left_eye_center, 6, (20, 20, 20), -1)
+    cv2.circle(img, right_eye_center, 6, (20, 20, 20), -1)
+
+    # Eyebrows (more prominent)
+    cv2.ellipse(img, (200, 195), (30, 8), 0, 0, 180, (120, 100, 80), -1)
+    cv2.ellipse(img, (312, 195), (30, 8), 0, 0, 180, (120, 100, 80), -1)
+
+    # Nose (more defined)
+    nose_points = np.array([
+        [256, 240],
+        [248, 270],
+        [256, 280],
+        [264, 270]
+    ], np.int32)
+    cv2.fillPoly(img, [nose_points], (200, 180, 160))
+
+    # Nostrils
+    cv2.circle(img, (250, 275), 3, (180, 160, 140), -1)
+    cv2.circle(img, (262, 275), 3, (180, 160, 140), -1)
+
+    # Mouth (larger and more defined)
+    cv2.ellipse(img, (256, 320), (35, 12), 0, 0, 180, (150, 100, 100), -1)
+
+    # Add some facial contours for better detection
+    cv2.ellipse(img, (180, 280), (15, 40), 70, 0, 180, (200, 180, 160), -1)  # Left cheek
+    cv2.ellipse(img, (332, 280), (15, 40), 110, 0, 180, (200, 180, 160), -1)  # Right cheek
+
     return img
 
 
