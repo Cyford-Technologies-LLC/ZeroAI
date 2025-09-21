@@ -1,4 +1,4 @@
-  cd /opt/cyford/ZeroAI/
+cd /opt/cyford/ZeroAI/
 git reset --hard
 git pull
 docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml stop tts-service

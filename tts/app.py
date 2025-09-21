@@ -16,7 +16,7 @@ def synthesize():
     try:
         # Use espeak to generate speech
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
-            cmd = ['espeak', '-w', tmp_file.name, text]
+            cmd = ['espeak-ng', '-w', tmp_file.name, text]
             result = subprocess.run(cmd, capture_output=True, text=True)
 
             if result.returncode != 0:
