@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZeroAI Avatar Debug Console</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .controls { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        button.danger { background: #dc3545; }
+        button.success { background: #28a745; }
+        textarea { width: 100%; height: 100px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; }
+        .log-container { background: #000; color: #0f0; font-family: monospace; padding: 15px; height: 300px; overflow-y: auto; border: 1px solid #333; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .status-item { background: #333; padding: 15px; border-radius: 4px; }
+        .status-ok { border-left: 4px solid #28a745; }
+        .status-error { border-left: 4px solid #dc3545; }
+        .status-warning { border-left: 4px solid #ffc107; }
+        video { width: 100%; max-width: 500px; border: 2px solid #555; }
+        .debug-info { background: #1a1a2e; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .mode-selector { margin: 10px 0; }
+        .mode-selector input[type="radio"] { margin: 0 5px 0 15px; }
+        .loading { display: none; color: #ffc107; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 ZeroAI Avatar Debug Console</h1>
+        
+        <div class="section">
+            <h2>Avatar Generation</h2>
+            
+            <div class="mode-selector">
+                <strong>Mode:</strong>
+                <input type="radio" id="mode-simple" name="mode" value="simple" checked>
+                <label for="mode-simple">Simple Avatar</label>
+                <input type="radio" id="mode-sadtalker" name="mode" value="sadtalker">
+                <label for="mode-sadtalker">SadTalker (Realistic)</label>
+            </div>
+            
+            <textarea id="prompt" placeholder="Enter your prompt here...">Hello! This is a test of the avatar system with full debugging enabled.</textarea>
+            
+            <div class="controls">
+                <button onclick="generateAvatar()">Generate Avatar</button>
+                <button onclick="getServerInfo()">Get Server Info</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <p>🔄 Generating avatar... This may take a few minutes.</p>
+            </div>
+            
+            <div id="result" style="display: none;">
+                <h3>Generated Avatar:</h3>
+                <video id="avatarVideo" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <div class="debug-info" id="videoInfo"></div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Server Connection</h2>
+            <div class="status-grid" id="serverInfo">
+                <div class="status-item">Click "Get Server Info" to see which avatar server is being used...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Debug Logs</h2>
+            <div class="log-container" id="logContainer">
+                Debug logs will appear here...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'simple';
+        
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toISOString();
+            const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data, null, 2) : ''}`;
+            const container = document.getElementById('logContainer');
+            container.innerHTML += logEntry + '\n';
+            container.scrollTop = container.scrollHeight;
+            console.log(message, data);
+        }
+        
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                currentMode = this.value;
+                debugLog('Mode changed', { mode: currentMode });
+            });
+        });
+        
+        async function generateAvatar() {
+            const prompt = document.getElementById('prompt').value;
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            const video = document.getElementById('avatarVideo');
+            const videoInfo = document.getElementById('videoInfo');
+            
+            debugLog('🚀 Starting avatar generation', { 
+                mode: currentMode, 
+                prompt: prompt.substring(0, 50),
+                api_endpoint: `/web/api/avatar_dual.php?action=generate&mode=${currentMode}`
+            });
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const startTime = Date.now();
+                
+                // USING PEER SELECTION API
+                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                
+                const duration = Date.now() - startTime;
+                
+                debugLog('📡 Avatar API response received', {
+                    status: response.status,
+                    url: response.url,
+                    contentType: response.headers.get('content-type'),
+                    duration: duration + 'ms'
+                });
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('video')) {
+                        const blob = await response.blob();
+                        const videoUrl = URL.createObjectURL(blob);
+                        
+                        video.src = videoUrl;
+                        result.style.display = 'block';
+                        
+                        videoInfo.innerHTML = `
+                            <strong>Video Info:</strong><br>
+                            Mode: ${currentMode}<br>
+                            Size: ${blob.size} bytes<br>
+                            Type: ${contentType}<br>
+                            Generation Time: ${duration}ms<br>
+                            API: /web/api/avatar_dual.php (PEER SELECTION)
+                        `;
+                        
+                        debugLog('🎉 Avatar generation successful', {
+                            blobSize: blob.size,
+                            blobType: blob.type,
+                            api_used: 'avatar_dual.php (PEER SELECTION)'
+                        });
+                        
+                    } else {
+                        const text = await response.text();
+                        debugLog('Non-video response received', { response: text });
+                        throw new Error('Expected video response, got: ' + contentType);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+            } catch (err) {
+                debugLog('Avatar generation error', { error: err.message });
+                error.textContent = 'Error: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        async function getServerInfo() {
+            debugLog('Getting server connection info');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=server_info');
+                const result = await response.json();
+                
+                debugLog('Server info received', result);
+                
+                const container = document.getElementById('serverInfo');
+                const peer = result.current_peer;
+                
+                container.innerHTML = `
+                    <div class="status-item status-${peer.type === 'local' ? 'warning' : 'ok'}">
+                        <strong>Current Avatar Server:</strong><br>
+                        ${peer.name}<br>
+                        Type: ${peer.type}<br>
+                        ${peer.ip ? `IP: ${peer.ip}<br>` : ''}
+                        ${peer.gpu_memory ? `GPU: ${peer.gpu_memory}GB<br>` : ''}
+                        ${peer.memory ? `RAM: ${peer.memory}GB` : ''}
+                    </div>
+                `;
+                
+            } catch (error) {
+                debugLog('Server info retrieval error', { error: error.message });
+            }
+        }
+        
+        // Initialize
+        getServerInfo();
+    </script>
+</body>
+</html>
