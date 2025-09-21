@@ -5,12 +5,16 @@ WORKDIR /app
 # Install base system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg libsm6 libxext6 libxrender-dev libglib2.0-0 libgomp1 \
-    espeak espeak-data libespeak1 git
+    espeak espeak-data libespeak1 git  patchelf \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Copy and run SadTalker installation script
 COPY install_sadtalker.sh .
 RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
+
+# Clear executable stack for libtorch_cpu.so
+RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -exec patchelf --clear-execstack {} \;
 
 # Copy your application requirements file
 COPY requirements.txt .
