@@ -21,6 +21,27 @@ pip install -r requirements.txt
 echo "Running official SadTalker download script..."
 bash scripts/download_models.sh
 
+# Fix CUDA model loading issue for CPU-only systems
+echo "Patching SadTalker for CPU-only operation..."
+
+# Patch inference.py to force CPU device
+sed -i 's/device = "cuda"/device = "cpu"/g' inference.py
+sed -i 's/torch.cuda.is_available()/False/g' inference.py
+
+# Patch model loading to use CPU mapping
+find . -name "*.py" -exec sed -i 's/torch.load(/torch.load(/g; s/torch.load(\([^)]*\))/torch.load(\1, map_location="cpu")/g' {} \;
+
+# Create CPU-compatible wrapper script
+cat > inference_cpu.py << 'EOF'
+import sys
+import os
+sys.path.insert(0, '/app/SadTalker')
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
+import torch
+torch.cuda.is_available = lambda: False
+from inference import *
+EOF
+
 # Verify critical files exist and have content
 echo "Verifying checkpoint files..."
 ls -la checkpoints/
