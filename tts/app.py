@@ -1,50 +1,36 @@
 from flask import Flask, send_file, request
-import io
+import subprocess
+import tempfile
+import os
 
 app = Flask(__name__)
 
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
-    text = request.json.get('text') if request.json else None
+    text = request.json.get('text')
     if not text:
         return {"error": "No text provided"}, 400
 
     try:
-        # Create a simple WAV header manually
-        sample_rate = 44100
-        duration = 2
-        num_samples = sample_rate * duration
+        # Use system espeak command if available
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+            cmd = ['espeak', '-w', tmp_file.name, text]
+            subprocess.run(cmd, check=True)
 
-        # WAV file header
-        wav_data = bytearray()
-        wav_data.extend(b'RIFF')
-        wav_data.extend((36 + num_samples * 2).to_bytes(4, 'little'))
-        wav_data.extend(b'WAVE')
-        wav_data.extend(b'fmt ')
-        wav_data.extend((16).to_bytes(4, 'little'))
-        wav_data.extend((1).to_bytes(2, 'little'))
-        wav_data.extend((1).to_bytes(2, 'little'))
-        wav_data.extend(sample_rate.to_bytes(4, 'little'))
-        wav_data.extend((sample_rate * 2).to_bytes(4, 'little'))
-        wav_data.extend((2).to_bytes(2, 'little'))
-        wav_data.extend((16).to_bytes(2, 'little'))
-        wav_data.extend(b'data')
-        wav_data.extend((num_samples * 2).to_bytes(4, 'little'))
+            with open(tmp_file.name, 'rb') as f:
+                audio_data = f.read()
 
-        # Add simple audio data (silence)
-        for i in range(num_samples):
-            wav_data.extend((0).to_bytes(2, 'little', signed=True))
-
-        return send_file(io.BytesIO(wav_data), mimetype='audio/wav')
+            os.unlink(tmp_file.name)
+            return send_file(io.BytesIO(audio_data), mimetype='audio/wav')
 
     except Exception as e:
         return {"error": str(e)}, 500
 
 
-@app.route('/health', methods=['GET'])
+@app.route('/health')
 def health():
-    return {"status": "ok", "service": "TTS"}, 200
+    return {"status": "ok", "service": "TTS"}
 
 
 if __name__ == '__main__':
