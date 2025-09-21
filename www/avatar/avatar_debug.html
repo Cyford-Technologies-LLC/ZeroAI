@@ -203,7 +203,7 @@
             try {
                 const startTime = Date.now();
                 
-                const response = await fetch(`/avatar/api.php?action=generate&mode=${currentMode}`, {
+                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
