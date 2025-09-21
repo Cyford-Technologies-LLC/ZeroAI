@@ -11,40 +11,41 @@ cd /app
 git clone https://github.com/OpenTalker/SadTalker.git
 cd SadTalker
 
-# Use existing PyTorch installation (already installed via requirements.txt)
-echo "Using existing PyTorch installation..."
-python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
+# Install SadTalker requirements (their exact requirements.txt)
+#pip install -r requirements.txt
 
-# Install additional SadTalker requirements (avoiding conflicts with existing packages)
-echo "Installing additional SadTalker dependencies..."
-pip install --no-deps yacs==0.1.8 face-alignment==1.3.5 imageio==2.19.3 imageio-ffmpeg==0.4.7 librosa==0.8.1 numba==0.56.4 resampy==0.2.2 pydub==0.25.1 scipy==1.10.1 tqdm==4.64.1 gfpgan basicsr facexlib
-
-# Download models using official script
+# Download models - use wget with direct URLs since their script may fail in Docker
 echo "Downloading SadTalker models..."
-bash scripts/download_models.sh
+mkdir -p checkpoints gfpgan/weights
 
-# Verify installation
-echo "Verifying SadTalker installation..."
+# Download main models
+#wget -O checkpoints/SadTalker_V0.0.2_256.safetensors https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/SadTalker_V0.0.2_256.safetensors
+#wget -O checkpoints/mapping_00229-model.pth.tar https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00229-model.pth.tar
+#wget -O checkpoints/BFM_Fitting.zip https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/BFM_Fitting.zip
+#wget -O checkpoints/hub.zip https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/hub.zip
+
+# Extract archives
+unzip -o checkpoints/BFM_Fitting.zip -d checkpoints/
+unzip -o checkpoints/hub.zip -d checkpoints/
+
+# Download GFPGAN weights
+wget -O gfpgan/weights/alignment_WFLW_4HG.pth https://github.com/xinntao/facexlib/releases/download/v0.1.0/alignment_WFLW_4HG.pth
+wget -O gfpgan/weights/detection_Resnet50_Final.pth https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth
+wget -O gfpgan/weights/parsing_parsenet.pth https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth
+wget -O gfpgan/weights/GFPGANv1.4.pth https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth
+
+# Verify critical files downloaded
+echo "Verifying downloads..."
 ls -la checkpoints/
 ls -la gfpgan/weights/
 
-# Configure system priority settings
-echo "Configuring system priority settings..."
+# Create symlinks in /app/checkpoints/ where the API looks for them
+echo "Creating checkpoint symlinks..."
+mkdir -p /app/checkpoints
+ln -sf /app/SadTalker/checkpoints/* /app/checkpoints/
+
+# Configure system priority
 echo 'python* - priority 10' >> /etc/security/limits.conf
 echo 'root - priority 10' >> /etc/security/limits.conf
 
-# Configure CPU limits
-echo 'vm.swappiness=10' >> /etc/sysctl.conf
-echo 'kernel.sched_rt_runtime_us=950000' >> /etc/sysctl.conf
-
-# Create symlinks in /app/checkpoints/ where SadTalker actually looks for them
-echo "Creating checkpoint symlinks in /app/checkpoints/..."
-mkdir -p /app/checkpoints
-cd /app/checkpoints
-ln -sf /app/SadTalker/checkpoints/SadTalker_V0.0.2_256.safetensors epoch_20.pth
-ln -sf /app/SadTalker/checkpoints/mapping_00229-model.pth.tar mapping_00229-model.pth.tar
-
-echo "Verifying symlinks..."
-ls -la /app/checkpoints/
-
-echo "✅ SadTalker installation complete with all required files"
+echo "✅ SadTalker installation complete"
