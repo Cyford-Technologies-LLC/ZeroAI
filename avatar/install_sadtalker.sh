@@ -26,9 +26,36 @@ fi
 # Install other requirements
 pip install -r requirements.txt
 
-# Download checkpoints using official script
-echo "Running official SadTalker download script..."
-bash scripts/download_models.sh
+# Create checkpoints directory
+mkdir -p checkpoints
+
+# Download checkpoints manually with direct URLs
+echo "Downloading SadTalker checkpoints..."
+cd checkpoints
+
+# Download main SadTalker model
+echo "Downloading SadTalker_V0.0.2_256.safetensors..."
+wget -O SadTalker_V0.0.2_256.safetensors https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/SadTalker_V0.0.2_256.safetensors
+
+# Download mapping file
+echo "Downloading mapping_00229-model.pth.tar..."
+wget -O mapping_00229-model.pth.tar https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00229-model.pth.tar
+
+# Download additional required files
+echo "Downloading additional model files..."
+wget -O BFM_Fitting.zip https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/BFM_Fitting.zip
+unzip -o BFM_Fitting.zip
+
+# Download GFPGAN weights
+echo "Downloading GFPGAN weights..."
+mkdir -p ../gfpgan/weights
+cd ../gfpgan/weights
+wget -O alignment_WFLW_4HG.pth https://github.com/xinntao/facexlib/releases/download/v0.1.0/alignment_WFLW_4HG.pth
+wget -O detection_Resnet50_Final.pth https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth
+wget -O GFPGANv1.4.pth https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth
+wget -O parsing_parsenet.pth https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth
+
+cd /app/SadTalker
 
 # Create universal CPU/GPU compatible wrapper
 echo "Creating universal SadTalker wrapper..."
@@ -57,15 +84,25 @@ echo "Verifying checkpoint files..."
 ls -la checkpoints/
 
 if [ -f checkpoints/SadTalker_V0.0.2_256.safetensors ] && [ -s checkpoints/SadTalker_V0.0.2_256.safetensors ]; then
-    echo "✓ SadTalker_V0.0.2_256.safetensors downloaded successfully"
+    echo "✓ SadTalker_V0.0.2_256.safetensors downloaded successfully ($(stat -c%s checkpoints/SadTalker_V0.0.2_256.safetensors) bytes)"
 else
     echo "✗ SadTalker_V0.0.2_256.safetensors missing or empty"
+    exit 1
 fi
 
 if [ -f checkpoints/mapping_00229-model.pth.tar ] && [ -s checkpoints/mapping_00229-model.pth.tar ]; then
-    echo "✓ mapping_00229-model.pth.tar downloaded successfully"
+    echo "✓ mapping_00229-model.pth.tar downloaded successfully ($(stat -c%s checkpoints/mapping_00229-model.pth.tar) bytes)"
 else
     echo "✗ mapping_00229-model.pth.tar missing or empty"
+    exit 1
+fi
+
+# Verify GFPGAN weights
+if [ -f gfpgan/weights/GFPGANv1.4.pth ] && [ -s gfpgan/weights/GFPGANv1.4.pth ]; then
+    echo "✓ GFPGAN weights downloaded successfully"
+else
+    echo "✗ GFPGAN weights missing or empty"
+    exit 1
 fi
 
 # Configure system to run Python at lower priority
@@ -86,4 +123,4 @@ chmod +x /usr/local/bin/python-nice
 echo 'vm.swappiness=10' >> /etc/sysctl.conf
 echo 'kernel.sched_rt_runtime_us=950000' >> /etc/sysctl.conf
 
-echo "SadTalker installation complete"
+echo "✅ SadTalker installation complete with all required files"
