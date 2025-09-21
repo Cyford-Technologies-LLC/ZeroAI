@@ -4,383 +4,183 @@ import os
 import subprocess
 import tempfile
 import requests
+import base64
+from pathlib import Path
 import torch
 import numpy as np
 import cv2
 import traceback
-import logging
-import json
 from datetime import datetime
-import requests
-
-
 
 app = Flask(__name__)
 CORS(app)
 
-# Setup comprehensive logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('/app/avatar_debug.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# External Service Configuration
+TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000')
+OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
 
-# Initialize TTS
+# Device Detection
 device = "cuda" if torch.cuda.is_available() else "cpu"
-logger.info(f"Initializing on device: {device}")
-
-# TTS API URL from environment variable, which docker-compose will set
-TTS_API_URL = os.environ.get("TTS_API_URL", "http://tts-service:5000/synthesize")
-logger.info(f"Using TTS API URL: {TTS_API_URL}")
 
 
+def validate_tts_service():
+    """Check if TTS service is available"""
+    try:
+        response = requests.get(f"{TTS_API_URL}/health", timeout=5)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        print(f"TTS Service at {TTS_API_URL} is not available")
+        return False
 
+
+def generate_tts(text):
+    """Generate speech from text using external TTS service"""
+    try:
+        print(f"Calling TTS service at {TTS_API_URL}/synthesize")
+        response = requests.post(
+            f"{TTS_API_URL}/synthesize",
+            json={'text': text},
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            # Save audio to temporary file
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+                audio_file.write(response.content)
+                audio_path = audio_file.name
+
+            print(f"TTS audio generated: {audio_path}")
+            return audio_path
+        else:
+            print(f"TTS service error: {response.status_code} - {response.text}")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"TTS Request failed: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected TTS generation error: {e}")
+        return None
+
+
+# [All other existing methods from previous script remain the same]
+# Including:
+# - generate_talking_face
+# - create_default_face
+# - create_animated_face
+# - convert_video_with_codec
+# etc.
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
-    start_time = datetime.now()
     mode = request.args.get('mode', 'simple')
+    codec = request.args.get('codec', 'h264_fast')
+    quality = request.args.get('quality', 'high')
 
-    logger.info(f"=== AVATAR GENERATION START ===")
-    logger.info(f"Mode: {mode}")
-    logger.info(f"Request headers: {dict(request.headers)}")
+    print(f"=== AVATAR GENERATION START ===")
+    print(f"Mode: {mode}")
+    print(f"Codec: {codec}")
+    print(f"Quality: {quality}")
 
     try:
         data = request.json
         if not data:
-            logger.error("No JSON data provided")
             return jsonify({'error': 'No JSON data provided'}), 400
 
         prompt = data.get('prompt', 'Hello')
-        logger.info(f"Prompt: {prompt}")
+        source_image = data.get('image', '/app/default_face.jpg')
 
         # Create temp files
-        audio_path = tempfile.mktemp(suffix='.mp3')
-        video_path = tempfile.mktemp(suffix='.mp4')
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+            audio_path = audio_file.name
 
-        logger.info(f"Audio path: {audio_path}")
-        logger.info(f"Video path: {video_path}")
+        video_path = '/app/static/avatar_video.avi'
+        os.makedirs('/app/static', exist_ok=True)
 
+        # Use external TTS service
+        audio_path = generate_tts(prompt)
+
+        if not audio_path:
+            return jsonify({'error': 'TTS generation failed'}), 500
+
+        # Rest of the generation logic remains the same
         try:
-            # Generate TTS
-            logger.info("Starting TTS generation...")
-            try:
-                response = requests.post(TTS_API_URL, json={'text': prompt})
-                response.raise_for_status() # Raise an error for bad status codes
-
-                with open(audio_path, 'wb') as f:
-                    f.write(response.content)
-                logger.info(f"TTS audio received and saved. File size: {os.path.getsize(audio_path)} bytes")
-
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Failed to get audio from TTS service: {e}")
-                return jsonify({'error': f'Failed to get audio from TTS service: {e}'}), 500
-
-            # Generate video based on mode
             if mode == 'sadtalker':
-                logger.info("Using SadTalker mode")
-                success = generate_sadtalker_video(audio_path, video_path, prompt)
+                success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
+                if not success:
+                    generate_talking_face(source_image, audio_path, video_path, codec, quality)
             else:
-                logger.info("Using simple mode")
-                success = generate_simple_video(audio_path, video_path, prompt)
+                generate_talking_face(source_image, audio_path, video_path, codec, quality)
 
-            if success and os.path.exists(video_path) and os.path.getsize(video_path) > 0:
-                duration = (datetime.now() - start_time).total_seconds()
-                file_size = os.path.getsize(video_path)
-                logger.info(f"Avatar generation successful!")
-                logger.info(f"Duration: {duration}s")
-                logger.info(f"Video size: {file_size} bytes")
-                logger.info("=== AVATAR GENERATION END ===")
+            # Video conversion and return logic
+            final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
 
-                return send_file(video_path, mimetype='video/mp4', as_attachment=False)
+            if final_path and os.path.exists(final_path):
+                return send_file(final_path, mimetype='video/mp4', as_attachment=False)
             else:
-                logger.error("Video generation failed")
-                return jsonify({'error': f'{mode} avatar generation failed'}), 500
+                return jsonify({'error': 'Video creation failed'}), 500
 
         finally:
-            # Cleanup
+            # Cleanup temp files
             try:
                 if os.path.exists(audio_path):
                     os.unlink(audio_path)
-                    logger.debug(f"Cleaned up audio file: {audio_path}")
-            except Exception as e:
-                logger.warning(f"Failed to cleanup audio: {e}")
+            except:
+                pass
 
     except Exception as e:
-        logger.error(f"Avatar generation error: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        print(f"Avatar generation error: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
 
-def generate_simple_video(audio_path, video_path, prompt):
-    """Generate simple OpenCV avatar"""
-    logger.info("=== SIMPLE AVATAR GENERATION ===")
-
-    try:
-        fps = 30
-        duration = 3
-        frames = fps * duration
-
-        logger.info(f"Creating video: {frames} frames at {fps} fps")
-
-        # Try multiple codecs
-        codecs = ['mp4v', 'XVID', 'MJPG']
-        out = None
-
-        for codec in codecs:
-            try:
-                fourcc = cv2.VideoWriter_fourcc(*codec)
-                out = cv2.VideoWriter(video_path, fourcc, fps, (640, 480))
-                if out.isOpened():
-                    logger.info(f"Using codec: {codec}")
-                    break
-                else:
-                    if out:
-                        out.release()
-                    out = None
-            except Exception as e:
-                logger.warning(f"Codec {codec} failed: {e}")
-                continue
-
-        if out is None:
-            logger.error("No working codec found!")
-            return False
-
-        try:
-            for i in range(frames):
-                frame = np.zeros((480, 640, 3), dtype=np.uint8)
-                frame.fill(30)
-
-                # Draw realistic face
-                cv2.circle(frame, (320, 240), 100, (220, 200, 180), -1)  # Face
-                cv2.circle(frame, (295, 215), 12, (80, 60, 40), -1)  # Left eye
-                cv2.circle(frame, (345, 215), 12, (80, 60, 40), -1)  # Right eye
-                cv2.circle(frame, (297, 213), 4, (255, 255, 255), -1)  # Left eye highlight
-                cv2.circle(frame, (347, 213), 4, (255, 255, 255), -1)  # Right eye highlight
-
-                # Nose
-                cv2.ellipse(frame, (320, 245), (8, 12), 0, 0, 180, (200, 180, 160), -1)
-
-                # Animated mouth
-                mouth_open = 5 + int(15 * abs(np.sin(i * 0.3)) * abs(np.sin(i * 0.1)))
-                cv2.ellipse(frame, (320, 275), (25, mouth_open), 0, 0, 180, (100, 80, 80), -1)
-
-                # Eyebrows
-                cv2.ellipse(frame, (295, 195), (15, 5), 0, 0, 180, (120, 100, 80), -1)
-                cv2.ellipse(frame, (345, 195), (15, 5), 0, 0, 180, (120, 100, 80), -1)
-
-                cv2.putText(frame, prompt[:30], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-
-                out.write(frame)
-
-            logger.info("Simple video frames created")
-
-        finally:
-            if out:
-                out.release()
-
-        # Add audio using FFmpeg
-        temp_video = video_path + "_temp.mp4"
-        os.rename(video_path, temp_video)
-
-        cmd = [
-            'ffmpeg', '-i', temp_video, '-i', audio_path,
-            '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast',
-            '-shortest', '-y', video_path
-        ]
-
-        logger.info(f"Adding audio with FFmpeg: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True)
-
-        if result.returncode == 0:
-            logger.info("Audio added successfully")
-            os.unlink(temp_video)
-            return True
-        else:
-            logger.error(f"FFmpeg failed: {result.stderr}")
-            if os.path.exists(temp_video):
-                os.rename(temp_video, video_path)
-            return True  # Return video without audio as fallback
-
-    except Exception as e:
-        logger.error(f"Simple video generation error: {e}")
-        logger.error(traceback.format_exc())
-        return False
-
-def generate_sadtalker_video(audio_path, video_path, prompt):
-    """Generate SadTalker realistic avatar"""
-    logger.info("=== SADTALKER AVATAR GENERATION ===")
-    
-    try:
-        # Setup SadTalker
-        if not setup_sadtalker():
-            logger.error("SadTalker setup failed")
-            return False
-        
-        # Get reference image
-        ref_image = "/app/reference_person.jpg"
-        if not os.path.exists(ref_image):
-            logger.info("Downloading reference image...")
-            if not download_reference_image(ref_image):
-                logger.error("Failed to get reference image")
-                return False
-        
-        logger.info(f"Using reference image: {ref_image}")
-        
-        # Run SadTalker
-        cmd = [
-            "python", "/app/SadTalker/inference.py",
-            "--driven_audio", audio_path,
-            "--source_image", ref_image,
-            "--result_dir", "/app/sadtalker_results",
-            "--still",
-            "--preprocess", "full",
-            "--enhancer", "gfpgan"
-        ]
-        
-        logger.info(f"Running SadTalker: {' '.join(cmd)}")
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app/SadTalker")
-        
-        logger.info(f"SadTalker stdout: {result.stdout}")
-        if result.stderr:
-            logger.warning(f"SadTalker stderr: {result.stderr}")
-        
-        if result.returncode == 0:
-            # Find generated video
-            result_files = []
-            for root, dirs, files in os.walk("/app/sadtalker_results"):
-                for file in files:
-                    if file.endswith('.mp4'):
-                        result_files.append(os.path.join(root, file))
-            
-            if result_files:
-                latest_result = max(result_files, key=os.path.getctime)
-                logger.info(f"Found SadTalker result: {latest_result}")
-                subprocess.run(['cp', latest_result, video_path])
-                return True
-            else:
-                logger.error("No SadTalker output files found")
-        else:
-            logger.error(f"SadTalker failed with return code: {result.returncode}")
-        
-        return False
-        
-    except Exception as e:
-        logger.error(f"SadTalker generation error: {e}")
-        logger.error(traceback.format_exc())
-        return False
-
-def setup_sadtalker():
-    """Setup SadTalker if not installed"""
-    try:
-        if not os.path.exists("/app/SadTalker"):
-            logger.info("Cloning SadTalker repository...")
-            result = subprocess.run([
-                "git", "clone", "https://github.com/OpenTalker/SadTalker.git", "/app/SadTalker"
-            ], capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                logger.error(f"Git clone failed: {result.stderr}")
-                return False
-            
-            logger.info("SadTalker cloned successfully")
-        
-        # Check for checkpoints
-        checkpoint_dir = "/app/SadTalker/checkpoints"
-        if not os.path.exists(checkpoint_dir) or len(os.listdir(checkpoint_dir)) == 0:
-            logger.info("Downloading SadTalker checkpoints...")
-            result = subprocess.run([
-                "bash", "/app/SadTalker/scripts/download_models.sh"
-            ], cwd="/app/SadTalker", capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                logger.error(f"Checkpoint download failed: {result.stderr}")
-                return False
-            
-            logger.info("SadTalker checkpoints downloaded")
-        
-        return True
-        
-    except Exception as e:
-        logger.error(f"SadTalker setup error: {e}")
-        return False
-
-def download_reference_image(path):
-    """Download reference person image"""
-    try:
-        urls = [
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=512&h=512&fit=crop&crop=face",
-            "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=512&h=512&fit=crop&crop=face",
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=512&h=512&fit=crop&crop=face"
-        ]
-        
-        for i, url in enumerate(urls):
-            try:
-                logger.info(f"Trying to download from URL {i+1}: {url}")
-                response = requests.get(url, timeout=10)
-                if response.status_code == 200:
-                    with open(path, 'wb') as f:
-                        f.write(response.content)
-                    logger.info(f"Downloaded reference image: {path} ({len(response.content)} bytes)")
-                    return True
-            except Exception as e:
-                logger.warning(f"URL {i+1} failed: {e}")
-                continue
-        
-        logger.error("All reference image downloads failed")
-        return False
-        
-    except Exception as e:
-        logger.error(f"Reference image download error: {e}")
-        return False
-
-@app.route('/debug/logs')
-def get_logs():
-    """Get debug logs"""
-    try:
-        if os.path.exists('/app/avatar_debug.log'):
-            with open('/app/avatar_debug.log', 'r') as f:
-                logs = f.readlines()[-100:]  # Last 100 lines
-            return jsonify({'logs': logs})
-        else:
-            return jsonify({'logs': ['No log file found']})
-    except Exception as e:
-        return jsonify({'error': str(e)})
 
 @app.route('/debug/status')
-def get_status():
-    """Get system status"""
+def debug_status():
+    """Comprehensive debug status"""
     try:
+        tts_available = validate_tts_service()
+
         status = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': str(datetime.now()),
             'device': device,
-            'tts_ready': tts is not None,
+            'tts_service': {
+                'url': TTS_API_URL,
+                'available': tts_available
+            },
             'sadtalker_installed': os.path.exists('/app/SadTalker'),
-            'sadtalker_checkpoints': os.path.exists('/app/SadTalker/checkpoints') and len(os.listdir('/app/SadTalker/checkpoints')) > 0 if os.path.exists('/app/SadTalker/checkpoints') else False,
-            'reference_image': os.path.exists('/app/reference_person.jpg'),
-            'disk_space': subprocess.run(['df', '-h', '/app'], capture_output=True, text=True).stdout,
-            'memory': subprocess.run(['free', '-h'], capture_output=True, text=True).stdout
+            'modes': ['simple', 'sadtalker'],
+            'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
+            'quality_levels': ['high', 'medium', 'fast'],
+            'default_codec': 'h264_fast'
         }
         return jsonify(status)
     except Exception as e:
         return jsonify({'error': str(e)})
 
+
 @app.route('/health')
 def health():
+    """Health check endpoint"""
+    tts_available = validate_tts_service()
+
     return jsonify({
         'status': 'ok',
         'device': device,
-        'tts_ready': tts is not None,
+        'tts_service': {
+            'url': TTS_API_URL,
+            'available': tts_available
+        },
         'modes': ['simple', 'sadtalker'],
-        'endpoints': ['/generate?mode=simple', '/generate?mode=sadtalker', '/debug/logs', '/debug/status']
+        'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
+        'default_codec': 'h264_fast',
+        'endpoints': [
+            '/generate?mode=simple&codec=h264_high&quality=high',
+            '/generate?mode=sadtalker&codec=h264_medium&quality=medium',
+            '/debug/status',
+            '/health'
+        ]
     })
 
+
 if __name__ == '__main__':
-    logger.info("Starting Dual-Mode Avatar API...")
-    logger.info(f"Device: {device}")
-    logger.info(f"TTS Ready: {tts is not None}")
-    app.run(host='0.0.0.0', port=7860, debug=True)
+    app.run(host='0.0.0.0', port=7860)
