@@ -22,7 +22,8 @@ WORKDIR /app
 # Copy and install Python dependencies
 COPY requirements.txt .
 RUN python -m venv /app/venv && \
-    /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+    #/app/venv/bin/pip install --no-cache-dir -r requirements.txt \
+    /app/venv/bin/pip install -r requirements.txt
 
 # Copy application code
 COPY . .
