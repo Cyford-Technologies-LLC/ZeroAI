@@ -435,7 +435,7 @@
             const error = document.getElementById('error');
             
             try {
-                const response = await fetch('http://zeroai.cyfordtechnologies.com:7860/test-mp4');
+                const response = await fetch('/test-mp4');
                 
                 if (response.ok) {
                     const blob = await response.blob();
