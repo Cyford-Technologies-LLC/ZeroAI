@@ -13,8 +13,17 @@ tar -xzf sadtalker.tar.gz
 mv SadTalker-0.0.2-rc SadTalker
 cd SadTalker
 
-# Install Python dependencies
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Detect GPU and install appropriate PyTorch version
+echo "Detecting GPU availability..."
+if nvidia-smi > /dev/null 2>&1; then
+    echo "✓ NVIDIA GPU detected - installing CUDA PyTorch"
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+else
+    echo "✗ No NVIDIA GPU detected - installing CPU PyTorch"
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+fi
+
+# Install other requirements
 pip install -r requirements.txt
 
 # Download checkpoints using official script
