@@ -105,7 +105,7 @@ services:
     ports:
       - "0.0.0.0:444:7860"
     volumes:
-      - ./avatars:/app/avatars
+      - ./avatar:/app/avatar
       - avatar_models:/app/checkpoints
     environment:
       - OLLAMA_HOST=http://ollama:11434
