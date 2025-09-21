@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 COPY requirements_sadtalker.txt .
-RUN pip install --no-cache-dir -r requirements_sadtalker.txt
-
+#RUN pip install --no-cache-dir -r requirements_sadtalker.txt
+RUN pip install  -r requirements_sadtalker.txt
 # Copy avatar API
 COPY avatar_api_sadtalker.py avatar_api.py
 
