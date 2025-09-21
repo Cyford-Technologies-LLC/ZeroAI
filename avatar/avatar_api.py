@@ -563,7 +563,8 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
             '--source_image', ref_image_path,
             '--result_dir', sadtalker_output_dir,
             '--still',
-            '--preprocess', 'crop'
+            '--preprocess', 'crop',
+            '--enhancer', 'gfpgan'
         ]
         
         print(f"SadTalker command: {' '.join(cmd)}")
@@ -587,30 +588,40 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
                 if os.path.isdir(item_path):
                     print(f"Subdirectory {item}: {os.listdir(item_path)}")
             
-            # Look for any new MP4 files in result directory
+            # Look for any MP4 files in result directory and subdirectories
+            found_video = None
+            
+            # Check main directory first
             for file in os.listdir(result_dir):
-                if file.endswith('.mp4') and file != 'avatar_video.mp4':
-                    generated_path = os.path.join(result_dir, file)
-                    print(f"Found SadTalker video: {generated_path}")
-                    # Copy to expected location
-                    import shutil
-                    shutil.copy2(generated_path, video_path)
-                    print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
-                    return True
+                if file.endswith('.mp4'):
+                    found_video = os.path.join(result_dir, file)
+                    print(f"Found SadTalker video in main dir: {found_video}")
+                    break
             
-            # Also check subdirectories
+            # If not found, check all subdirectories
+            if not found_video:
+                for root, dirs, files in os.walk(result_dir):
+                    for file in files:
+                        if file.endswith('.mp4'):
+                            found_video = os.path.join(root, file)
+                            print(f"Found SadTalker video in subdir: {found_video}")
+                            break
+                    if found_video:
+                        break
+            
+            # Copy found video to expected location
+            if found_video and os.path.exists(found_video):
+                import shutil
+                shutil.copy2(found_video, video_path)
+                print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
+                return True
+            
+            print("FAILURE REASON: No MP4 result video found in any directory")
+            print(f"Main dir files: {os.listdir(result_dir)}")
+            # List all files in subdirectories
             for root, dirs, files in os.walk(result_dir):
-                for file in files:
-                    if file.endswith('.mp4') and 'ref_face' in file:
-                        generated_path = os.path.join(root, file)
-                        print(f"Found SadTalker video in subdir: {generated_path}")
-                        import shutil
-                        shutil.copy2(generated_path, video_path)
-                        print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
-                        return True
-            
-            print("FAILURE REASON: No SadTalker result video found")
-            print(f"Available files: {os.listdir(result_dir)}")
+                if root != result_dir:
+                    print(f"Subdir {root}: {files}")
         else:
             print(f"FAILURE REASON: SadTalker process failed with code {result.returncode}")
             print(f"STDERR: {result.stderr}")
