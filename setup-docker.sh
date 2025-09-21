@@ -75,6 +75,21 @@ if lspci | grep -i 'NVIDIA' > /dev/null; then
 
     sudo apt-get update
     sudo apt-get install -y nvidia-container-toolkit
+    
+    # CRITICAL: Restart Docker daemon to enable GPU support
+    log_info "Restarting Docker daemon to enable GPU support..."
+    sudo systemctl restart docker
+    
+    # Wait for Docker to fully restart
+    sleep 5
+    
+    # Test GPU access
+    log_info "Testing GPU access..."
+    if docker run --rm --gpus all nvidia/cuda:11.8-runtime-ubuntu22.04 nvidia-smi > /dev/null 2>&1; then
+        log_info "GPU access confirmed."
+    else
+        log_warn "GPU test failed, but continuing with setup..."
+    fi
 
     # Use env to ensure the variables are set for the docker compose command
     env LOCAL_UID=$HOST_UID LOCAL_GID=$HOST_GID docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up --build -d
