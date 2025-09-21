@@ -135,4 +135,14 @@ chmod +x /usr/local/bin/python-nice
 echo 'vm.swappiness=10' >> /etc/sysctl.conf
 echo 'kernel.sched_rt_runtime_us=950000' >> /etc/sysctl.conf
 
+# Create symlinks in /app/checkpoints/ where SadTalker actually looks for them
+echo "Creating checkpoint symlinks in /app/checkpoints/..."
+mkdir -p /app/checkpoints
+cd /app/checkpoints
+ln -sf /app/SadTalker/checkpoints/SadTalker_V0.0.2_256.safetensors epoch_20.pth
+ln -sf /app/SadTalker/checkpoints/mapping_00229-model.pth.tar mapping_00229-model.pth.tar
+
+echo "Verifying symlinks..."
+ls -la /app/checkpoints/
+
 echo "✅ SadTalker installation complete with all required files"
