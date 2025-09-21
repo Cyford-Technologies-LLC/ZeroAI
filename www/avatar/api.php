@@ -23,7 +23,9 @@ try {
         $mode = $_GET['mode'] ?? 'simple';
         
         // Call Docker container avatar service with mode
-        $ch = curl_init('http://zeroai_avatar:7860/generate?mode=' . $mode);
+        #$ch = curl_init('http://zeroai_avatar:7860/generate?mode=' . $mode);
+        $ch = curl_init('http://149.36.0.180:444/generate?mode=' . $mode);
+
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['prompt' => $prompt]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
