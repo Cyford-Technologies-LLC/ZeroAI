@@ -1,9 +1,15 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', '/tmp/avatar_api_errors.log');
+ob_clean(); // Clear any existing output
+ob_start(); // Start fresh output buffering
 
+// ... rest of existing code ...
+
+// Before echoing video data:
+ob_end_clean(); // Clear buffer before sending binary data
 require_once '../../src/autoload.php';
 
 use ZeroAI\Providers\AI\Local\AvatarManager;
