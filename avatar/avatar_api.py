@@ -552,12 +552,16 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         if not torch.cuda.is_available():
             env['CUDA_VISIBLE_DEVICES'] = ''
         
+        # Use a unique output directory to avoid conflicts
+        sadtalker_output_dir = os.path.join(os.path.dirname(video_path), 'sadtalker_output')
+        os.makedirs(sadtalker_output_dir, exist_ok=True)
+        
         cmd = [
             'nice', '-n', '10', 'ionice', '-c', '3',
             'python', f'{sadtalker_path}/inference_universal.py',
             '--driven_audio', audio_path,
             '--source_image', ref_image_path,
-            '--result_dir', os.path.dirname(video_path),
+            '--result_dir', sadtalker_output_dir,
             '--still',
             '--preprocess', 'crop'
         ]
@@ -573,19 +577,40 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         
         if result.returncode == 0:
             # Find generated video and move to expected location
-            result_dir = os.path.dirname(video_path)
+            result_dir = sadtalker_output_dir
             print(f"Checking result directory: {result_dir}")
             print(f"Directory contents: {os.listdir(result_dir)}")
             
+            # Also check for subdirectories
+            for item in os.listdir(result_dir):
+                item_path = os.path.join(result_dir, item)
+                if os.path.isdir(item_path):
+                    print(f"Subdirectory {item}: {os.listdir(item_path)}")
+            
+            # Look for any new MP4 files in result directory
             for file in os.listdir(result_dir):
-                if file.endswith('.mp4') and 'result' in file:
+                if file.endswith('.mp4') and file != 'avatar_video.mp4':
                     generated_path = os.path.join(result_dir, file)
-                    print(f"Found generated video: {generated_path}")
-                    os.rename(generated_path, video_path)
+                    print(f"Found SadTalker video: {generated_path}")
+                    # Copy to expected location
+                    import shutil
+                    shutil.copy2(generated_path, video_path)
                     print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
                     return True
             
-            print("FAILURE REASON: No result video found in output directory")
+            # Also check subdirectories
+            for root, dirs, files in os.walk(result_dir):
+                for file in files:
+                    if file.endswith('.mp4') and 'ref_face' in file:
+                        generated_path = os.path.join(root, file)
+                        print(f"Found SadTalker video in subdir: {generated_path}")
+                        import shutil
+                        shutil.copy2(generated_path, video_path)
+                        print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
+                        return True
+            
+            print("FAILURE REASON: No SadTalker result video found")
+            print(f"Available files: {os.listdir(result_dir)}")
         else:
             print(f"FAILURE REASON: SadTalker process failed with code {result.returncode}")
             print(f"STDERR: {result.stderr}")
