@@ -104,7 +104,7 @@ services:
     build: ./avatar
     container_name: zeroai_avatar
     ports:
-      - "0.0.0.0:7860:7860"
+      - "0.0.0.0:444:7860"
     volumes:
       - ./avatars:/app/avatars
       - avatar_models:/app/checkpoints
