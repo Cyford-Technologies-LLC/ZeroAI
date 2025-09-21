@@ -558,7 +558,7 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         
         cmd = [
             'nice', '-n', '10', 'ionice', '-c', '3',
-            'python', f'{sadtalker_path}/inference.py',
+            'python', f'{sadtalker_path}/inference_universal.py',
             '--driven_audio', audio_path,
             '--source_image', ref_image_path,
             '--result_dir', sadtalker_output_dir,

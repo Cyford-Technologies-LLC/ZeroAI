@@ -41,6 +41,10 @@ wget -O SadTalker_V0.0.2_256.safetensors https://github.com/OpenTalker/SadTalker
 echo "Downloading mapping_00229-model.pth.tar..."
 wget -O mapping_00229-model.pth.tar https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00229-model.pth.tar
 
+# Download epoch_20.pth
+echo "Downloading epoch_20.pth..."
+wget -O epoch_20.pth https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/epoch_20.pth
+
 # Download additional required files
 echo "Downloading additional model files..."
 wget -O BFM_Fitting.zip https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/BFM_Fitting.zip
