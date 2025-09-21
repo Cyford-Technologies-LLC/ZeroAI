@@ -12,7 +12,7 @@ COPY install_sadtalker.sh .
 RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
 
 # Copy your application requirements file
-COPY app/requirements.txt .
+COPY requirements.txt .
 
 # Install your API's specific Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
