@@ -1,4 +1,4 @@
-torch==2.3.0
+torch<=1.10.2
 torchvision==0.18.0
 torchaudio==2.3.0
 pillow==9.5.0
