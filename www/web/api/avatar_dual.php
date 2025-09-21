@@ -8,8 +8,7 @@ ob_start(); // Start fresh output buffering
 
 // ... rest of existing code ...
 
-// Before echoing video data:
-ob_end_clean(); // Clear buffer before sending binary data
+
 require_once '../../src/autoload.php';
 
 use ZeroAI\Providers\AI\Local\AvatarManager;
@@ -59,6 +58,8 @@ try {
             } else {
                 $result = $avatarManager->generateSimple($prompt, $input['options'] ?? []);
             }
+
+            ob_end_clean();
             
             // Return video data
             header('Content-Type: ' . $result['content_type']);
