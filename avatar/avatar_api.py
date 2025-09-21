@@ -620,6 +620,8 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         cv2.imwrite(ref_image_path, default_face)
         print(f"Reference image created: {os.path.exists(ref_image_path)}")
 
+        # ref_image_path = get_reference_face()
+
         # Run SadTalker via subprocess with universal CPU/GPU compatibility
         env = os.environ.copy()
         # Let SadTalker auto-detect device, but provide CPU fallback
@@ -796,6 +798,19 @@ def create_enhanced_realistic_face(audio_path, video_path, prompt, codec='h264_h
 
     finally:
         out.release()
+
+
+def get_reference_face():
+    """Get a reference face image - use real face if available"""
+    real_face_path = '/app/reference_face.jpg'
+
+    if os.path.exists(real_face_path):
+        return real_face_path
+
+    # Create and save a better default face
+    default_face = create_default_face()
+    cv2.imwrite(real_face_path, default_face)
+    return real_face_path
 
 
 def create_realistic_face():
