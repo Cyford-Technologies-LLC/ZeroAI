@@ -5,7 +5,7 @@ docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml stop ava
 docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f avatar
 docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build --no-cache avatar
 docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d avatar
-docker logs zeroai_avatar --follow
+#docker logs zeroai_avatar --follow
 
 
 
