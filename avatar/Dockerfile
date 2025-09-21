@@ -2,35 +2,26 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Install base system dependencies
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libglib2.0-0 \
-    libgomp1 \
-    espeak \
-    espeak-data \
-    libespeak1 \
-    libespeak-dev \
-    git \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    ffmpeg libsm6 libxext6 libxrender-dev libglib2.0-0 libgomp1 \
+    espeak espeak-data libespeak1 git
 
-COPY requirements.txt .
-#RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install  -r requirements.txt
-
-
-# Install SadTalker
-COPY install_sadtalker.sh .
+# Copy and run SadTalker installation script
+COPY avatar/install_sadtalker.sh .
 RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
 
-# Create models directory
-RUN mkdir -p /app/models
+# Copy your application requirements file
+COPY avatar/requirements.txt .
 
-COPY avatar_api.py .
-COPY create_face.py .
+# Install your API's specific Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy your Python application code
+COPY avatar/avatar_api.py .
+
+# Copy other necessary files
+COPY avatar/create_face.py .
 RUN python create_face.py
 
 EXPOSE 7860
