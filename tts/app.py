@@ -1,51 +1,48 @@
+cat > / app / tts / app.py << 'EOF'
 from flask import Flask, send_file, request
-import pyttsx3
 import io
-import tempfile
-import os
+import wave
+import struct
+import math
 
 app = Flask(__name__)
 
 
+def generate_sine_wave(frequency=440, duration=1, sample_rate=44100):
+    """Generate a sine wave audio"""
+    frames = int(duration * sample_rate)
+    audio_data = []
+
+    for i in range(frames):
+        value = int(32767 * math.sin(2 * math.pi * frequency * i / sample_rate))
+        audio_data.append(struct.pack('
+        return b''.join(audio_data)
+
+
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
-    text = request.json.get('text')
+    text = request.json.get('text') if request.json else None
     if not text:
         return {"error": "No text provided"}, 400
 
     try:
-        # Initialize pyttsx3 engine
-        engine = pyttsx3.init()
+        # Generate a simple tone (placeholder for actual TTS)
+        duration = min(len(text) * 0.1, 3)  # Duration based on text length, max 3 seconds
+        audio_data = generate_sine_wave(duration=duration)
 
-        # Optional: Set voice properties
-        rate = engine.getProperty('rate')
-        engine.setProperty('rate', rate - 50)  # Slower speech
+        # Create WAV file in memory
+        wav_buffer = io.BytesIO()
+        with wave.open(wav_buffer, 'wb') as wav_file:
+            wav_file.setnchannels(1)  # Mono
+            wav_file.setsampwidth(2)  # 2 bytes per sample
+            wav_file.setframerate(44100)  # Sample rate
+            wav_file.writeframes(audio_data)
 
-        voices = engine.getProperty('voices')
-        if voices:
-            engine.setProperty('voice', voices[0].id)  # Use first available voice
-
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
-            temp_path = tmp_file.name
-
-        # Save speech to file
-        engine.save_to_file(text, temp_path)
-        engine.runAndWait()
-
-        # Read the file and return it
-        if os.path.exists(temp_path):
-            with open(temp_path, 'rb') as f:
-                audio_data = f.read()
-
-            # Cleanup temp file
-            os.unlink(temp_path)
-
-            return send_file(io.BytesIO(audio_data), mimetype='audio/wav')
-        else:
-            return {"error": "Failed to generate audio file"}, 500
+        wav_buffer.seek(0)
+        return send_file(wav_buffer, mimetype='audio/wav', as_attachment=False)
 
     except Exception as e:
+        print(f"Error: {e}")
         return {"error": str(e)}, 500
 
 
@@ -55,4 +52,4 @@ def health():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
