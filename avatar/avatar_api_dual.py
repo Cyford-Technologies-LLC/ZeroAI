@@ -6,12 +6,14 @@ import tempfile
 import requests
 import torch
 import numpy as np
-from TTS.api import TTS
 import cv2
 import traceback
 import logging
 import json
 from datetime import datetime
+import requests
+
+
 
 app = Flask(__name__)
 CORS(app)
@@ -31,48 +33,53 @@ logger = logging.getLogger(__name__)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 logger.info(f"Initializing on device: {device}")
 
-try:
-    tts = TTS("tts_models/en/ljspeech/tacotron2-DDC_ph", gpu=(device=="cuda"))
-    logger.info("TTS initialized successfully")
-except Exception as e:
-    logger.error(f"TTS initialization failed: {e}")
-    tts = None
+# TTS API URL from environment variable, which docker-compose will set
+TTS_API_URL = os.environ.get("TTS_API_URL", "http://tts-service:5000/synthesize")
+logger.info(f"Using TTS API URL: {TTS_API_URL}")
+
+
+
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
     start_time = datetime.now()
     mode = request.args.get('mode', 'simple')
-    
+
     logger.info(f"=== AVATAR GENERATION START ===")
     logger.info(f"Mode: {mode}")
     logger.info(f"Request headers: {dict(request.headers)}")
-    
+
     try:
         data = request.json
         if not data:
             logger.error("No JSON data provided")
             return jsonify({'error': 'No JSON data provided'}), 400
-            
+
         prompt = data.get('prompt', 'Hello')
         logger.info(f"Prompt: {prompt}")
-        
+
         # Create temp files
-        audio_path = tempfile.mktemp(suffix='.wav')
+        audio_path = tempfile.mktemp(suffix='.mp3')
         video_path = tempfile.mktemp(suffix='.mp4')
-        
+
         logger.info(f"Audio path: {audio_path}")
         logger.info(f"Video path: {video_path}")
-        
+
         try:
             # Generate TTS
             logger.info("Starting TTS generation...")
-            if tts:
-                tts.tts_to_file(text=prompt, file_path=audio_path)
-                logger.info(f"TTS completed. Audio file size: {os.path.getsize(audio_path)} bytes")
-            else:
-                logger.error("TTS not available")
-                return jsonify({'error': 'TTS not available'}), 500
-            
+            try:
+                response = requests.post(TTS_API_URL, json={'text': prompt})
+                response.raise_for_status() # Raise an error for bad status codes
+
+                with open(audio_path, 'wb') as f:
+                    f.write(response.content)
+                logger.info(f"TTS audio received and saved. File size: {os.path.getsize(audio_path)} bytes")
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to get audio from TTS service: {e}")
+                return jsonify({'error': f'Failed to get audio from TTS service: {e}'}), 500
+
             # Generate video based on mode
             if mode == 'sadtalker':
                 logger.info("Using SadTalker mode")
@@ -80,7 +87,7 @@ def generate_avatar():
             else:
                 logger.info("Using simple mode")
                 success = generate_simple_video(audio_path, video_path, prompt)
-            
+
             if success and os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                 duration = (datetime.now() - start_time).total_seconds()
                 file_size = os.path.getsize(video_path)
@@ -88,12 +95,12 @@ def generate_avatar():
                 logger.info(f"Duration: {duration}s")
                 logger.info(f"Video size: {file_size} bytes")
                 logger.info("=== AVATAR GENERATION END ===")
-                
+
                 return send_file(video_path, mimetype='video/mp4', as_attachment=False)
             else:
                 logger.error("Video generation failed")
                 return jsonify({'error': f'{mode} avatar generation failed'}), 500
-                
+
         finally:
             # Cleanup
             try:
@@ -102,7 +109,7 @@ def generate_avatar():
                     logger.debug(f"Cleaned up audio file: {audio_path}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup audio: {e}")
-        
+
     except Exception as e:
         logger.error(f"Avatar generation error: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
@@ -111,18 +118,18 @@ def generate_avatar():
 def generate_simple_video(audio_path, video_path, prompt):
     """Generate simple OpenCV avatar"""
     logger.info("=== SIMPLE AVATAR GENERATION ===")
-    
+
     try:
         fps = 30
         duration = 3
         frames = fps * duration
-        
+
         logger.info(f"Creating video: {frames} frames at {fps} fps")
-        
+
         # Try multiple codecs
         codecs = ['mp4v', 'XVID', 'MJPG']
         out = None
-        
+
         for codec in codecs:
             try:
                 fourcc = cv2.VideoWriter_fourcc(*codec)
@@ -137,57 +144,57 @@ def generate_simple_video(audio_path, video_path, prompt):
             except Exception as e:
                 logger.warning(f"Codec {codec} failed: {e}")
                 continue
-        
+
         if out is None:
             logger.error("No working codec found!")
             return False
-        
+
         try:
             for i in range(frames):
                 frame = np.zeros((480, 640, 3), dtype=np.uint8)
                 frame.fill(30)
-                
+
                 # Draw realistic face
                 cv2.circle(frame, (320, 240), 100, (220, 200, 180), -1)  # Face
                 cv2.circle(frame, (295, 215), 12, (80, 60, 40), -1)  # Left eye
                 cv2.circle(frame, (345, 215), 12, (80, 60, 40), -1)  # Right eye
                 cv2.circle(frame, (297, 213), 4, (255, 255, 255), -1)  # Left eye highlight
                 cv2.circle(frame, (347, 213), 4, (255, 255, 255), -1)  # Right eye highlight
-                
+
                 # Nose
                 cv2.ellipse(frame, (320, 245), (8, 12), 0, 0, 180, (200, 180, 160), -1)
-                
+
                 # Animated mouth
                 mouth_open = 5 + int(15 * abs(np.sin(i * 0.3)) * abs(np.sin(i * 0.1)))
                 cv2.ellipse(frame, (320, 275), (25, mouth_open), 0, 0, 180, (100, 80, 80), -1)
-                
+
                 # Eyebrows
                 cv2.ellipse(frame, (295, 195), (15, 5), 0, 0, 180, (120, 100, 80), -1)
                 cv2.ellipse(frame, (345, 195), (15, 5), 0, 0, 180, (120, 100, 80), -1)
-                
+
                 cv2.putText(frame, prompt[:30], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-                
+
                 out.write(frame)
-            
+
             logger.info("Simple video frames created")
-            
+
         finally:
             if out:
                 out.release()
-        
+
         # Add audio using FFmpeg
         temp_video = video_path + "_temp.mp4"
         os.rename(video_path, temp_video)
-        
+
         cmd = [
             'ffmpeg', '-i', temp_video, '-i', audio_path,
             '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast',
             '-shortest', '-y', video_path
         ]
-        
+
         logger.info(f"Adding audio with FFmpeg: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, text=True)
-        
+
         if result.returncode == 0:
             logger.info("Audio added successfully")
             os.unlink(temp_video)
@@ -197,7 +204,7 @@ def generate_simple_video(audio_path, video_path, prompt):
             if os.path.exists(temp_video):
                 os.rename(temp_video, video_path)
             return True  # Return video without audio as fallback
-            
+
     except Exception as e:
         logger.error(f"Simple video generation error: {e}")
         logger.error(traceback.format_exc())
