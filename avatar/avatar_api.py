@@ -8,7 +8,6 @@ import base64
 from pathlib import Path
 import torch
 import numpy as np
-from TTS.api import TTS
 import cv2
 import traceback
 from datetime import datetime
@@ -17,14 +16,30 @@ app = Flask(__name__)
 CORS(app)
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
 
-# Initialize TTS with neural voice - with error handling
+# TTS Service Configuration
+TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
+
+# Device Detection
 device = "cuda" if torch.cuda.is_available() else "cpu"
-try:
-    tts = TTS("tts_models/en/ljspeech/tacotron2-DDC_ph", gpu=(device == "cuda"))
-    print("TTS initialized successfully")
-except Exception as e:
-    print(f"TTS initialization failed: {e}")
-    tts = None
+
+
+def call_tts_service(text, file_path):
+    """Call external TTS service to generate audio"""
+    try:
+        response = requests.post(TTS_API_URL, json={'text': text}, timeout=10)
+
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            print(f"TTS audio generated: {file_path}")
+            return True
+        else:
+            print(f"TTS service error: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"TTS service call failed: {e}")
+        return False
+
 
 # Global default codec
 DEFAULT_CODEC = 'h264_fast'
@@ -65,11 +80,13 @@ def generate_avatar():
         os.makedirs('/app/static', exist_ok=True)
 
         try:
-            # Generate high-quality TTS
-            if tts:
-                print("Generating TTS...")
-                tts.tts_to_file(text=prompt, file_path=audio_path)
+            # Generate high-quality TTS using external service
+            print("Generating TTS...")
+            if call_tts_service(prompt, audio_path):
                 print("TTS completed")
+            else:
+                print("TTS generation failed")
+                return jsonify({'error': 'TTS generation failed'}), 500
 
             # Generate based on mode
             if mode == 'sadtalker':
