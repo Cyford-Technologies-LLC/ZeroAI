@@ -1,3 +1,4 @@
+docker system prune --volumes
 cd /opt/cyford/ZeroAI/
 git reset --hard
 git pull
