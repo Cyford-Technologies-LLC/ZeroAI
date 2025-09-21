@@ -21,24 +21,25 @@ pip install -r requirements.txt
 echo "Running official SadTalker download script..."
 bash scripts/download_models.sh
 
-# Fix CUDA model loading issue for CPU-only systems
-echo "Patching SadTalker for CPU-only operation..."
-
-# Patch inference.py to force CPU device
-sed -i 's/device = "cuda"/device = "cpu"/g' inference.py
-sed -i 's/torch.cuda.is_available()/False/g' inference.py
-
-# Patch model loading to use CPU mapping
-find . -name "*.py" -exec sed -i 's/torch.load(/torch.load(/g; s/torch.load(\([^)]*\))/torch.load(\1, map_location="cpu")/g' {} \;
-
-# Create CPU-compatible wrapper script
-cat > inference_cpu.py << 'EOF'
+# Create universal CPU/GPU compatible wrapper
+echo "Creating universal SadTalker wrapper..."
+cat > inference_universal.py << 'EOF'
 import sys
 import os
-sys.path.insert(0, '/app/SadTalker')
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
 import torch
-torch.cuda.is_available = lambda: False
+sys.path.insert(0, '/app/SadTalker')
+
+# Auto-detect device and patch model loading for CPU compatibility
+if not torch.cuda.is_available() or os.environ.get('CUDA_VISIBLE_DEVICES') == '':
+    print("Running in CPU mode - patching model loading")
+    original_load = torch.load
+    def cpu_load(f, map_location=None, **kwargs):
+        if map_location is None:
+            map_location = 'cpu'
+        return original_load(f, map_location=map_location, **kwargs)
+    torch.load = cpu_load
+
+# Import and run original inference
 from inference import *
 EOF
 

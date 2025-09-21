@@ -546,20 +546,20 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         cv2.imwrite(ref_image_path, default_face)
         print(f"Reference image created: {os.path.exists(ref_image_path)}")
         
-        # Run SadTalker via subprocess with CPU-only mode and low priority
+        # Run SadTalker via subprocess with universal CPU/GPU compatibility
         env = os.environ.copy()
-        env['CUDA_VISIBLE_DEVICES'] = ''  # Force CPU-only
-        env['TORCH_DEVICE'] = 'cpu'
+        # Let SadTalker auto-detect device, but provide CPU fallback
+        if not torch.cuda.is_available():
+            env['CUDA_VISIBLE_DEVICES'] = ''
         
         cmd = [
             'nice', '-n', '10', 'ionice', '-c', '3',
-            'python', f'{sadtalker_path}/inference_cpu.py',
+            'python', f'{sadtalker_path}/inference_universal.py',
             '--driven_audio', audio_path,
             '--source_image', ref_image_path,
             '--result_dir', os.path.dirname(video_path),
             '--still',
-            '--preprocess', 'crop',
-            '--device', 'cpu'
+            '--preprocess', 'crop'
         ]
         
         print(f"SadTalker command: {' '.join(cmd)}")
