@@ -93,6 +93,16 @@ try {
             echo json_encode(['cleared' => $cleared]);
             break;
             
+        case 'server_info':
+            error_log('Getting server connection info');
+            $currentPeer = $avatarManager->getCurrentPeer();
+            $availablePeers = $avatarManager->getAvailablePeers();
+            echo json_encode([
+                'current_peer' => $currentPeer,
+                'available_peers' => $availablePeers
+            ]);
+            break;
+            
         default:
             throw new Exception('Unknown action: ' . $action);
     }

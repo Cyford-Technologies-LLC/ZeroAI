@@ -70,6 +70,16 @@
         </div>
         
         <div class="section">
+            <h2>Server Connection</h2>
+            <div class="controls">
+                <button onclick="getServerInfo()">Get Server Info</button>
+            </div>
+            <div class="status-grid" id="serverInfo">
+                <div class="status-item">Click "Get Server Info" to see which avatar server is being used...</div>
+            </div>
+        </div>
+        
+        <div class="section">
             <h2>System Status</h2>
             <div class="controls">
                 <button onclick="refreshStatus()">Refresh Status</button>
@@ -490,6 +500,56 @@
             }
         }
         
+        async function getServerInfo() {
+            debugLog('Getting server connection info');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=server_info');
+                const result = await response.json();
+                
+                debugLog('Server info received', result);
+                displayServerInfo(result);
+                
+            } catch (error) {
+                debugLog('Server info retrieval error', { error: error.message });
+                console.error('Server info error:', error);
+            }
+        }
+        
+        function displayServerInfo(info) {
+            const container = document.getElementById('serverInfo');
+            
+            if (!info || !info.current_peer) {
+                container.innerHTML = '<div class="status-item status-error">No server info available</div>';
+                return;
+            }
+            
+            const peer = info.current_peer;
+            const available = info.available_peers || [];
+            
+            let html = `
+                <div class="status-item status-${peer.type === 'local' ? 'warning' : 'ok'}">
+                    <strong>Current Avatar Server:</strong><br>
+                    ${peer.name}<br>
+                    Type: ${peer.type}<br>
+                    ${peer.ip ? `IP: ${peer.ip}<br>` : ''}
+                    ${peer.gpu_memory ? `GPU: ${peer.gpu_memory}GB<br>` : ''}
+                    ${peer.memory ? `RAM: ${peer.memory}GB` : ''}
+                </div>
+            `;
+            
+            if (available.length > 0) {
+                html += `
+                    <div class="status-item status-ok">
+                        <strong>Available Servers:</strong><br>
+                        ${available.map(p => `${p.name} (${p.type})`).join('<br>')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
         async function getStatus() {
             debugLog('Getting system status');
             
@@ -698,6 +758,7 @@
             }
             
             logPerformance('console-initialized');
+            getServerInfo();
             getStatus();
         }
         
