@@ -1,3 +1,2 @@
 flask
-piper-tts-py
-onnxruntime
+pyttsx3==2.90
