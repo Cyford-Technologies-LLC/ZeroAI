@@ -11,12 +11,19 @@ class AvatarProvider
 
     public function __construct()
     {
+
+        ini_set('max_execution_time', 300);  // 5 minutes
+        set_time_limit(300);                 // 5 minutes
+
         $this->logger = Logger::getInstance();
         $this->avatarServiceUrl = 'http://zeroai_avatar:7860';
     }
 
     public function generateAvatar($prompt, $image = 'examples/source_image/art_0.png')
     {
+        ini_set('max_execution_time', 300);
+        set_time_limit(300);
+
         $this->logger->info('Avatar generation requested', [
             'prompt' => substr($prompt, 0, 100),
             'image' => $image
