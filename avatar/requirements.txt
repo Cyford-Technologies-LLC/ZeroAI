@@ -3,6 +3,7 @@ flask-cors==4.0.0
 python-dotenv==1.0.0
 requests==2.31.0
 torch
-numpy
+numpy==1.21.6
 opencv-python-headless
 mediapipe
+scikit-image==0.19.3
