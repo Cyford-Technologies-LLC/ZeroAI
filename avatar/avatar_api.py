@@ -23,6 +23,25 @@ TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+def generate_elevenlabs_tts(text, voice_id="21m00Tcm4TlvDq8ikWAM"):  # Rachel voice
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": "YOUR_API_KEY"  # Get from elevenlabs.io
+    }
+    data = {
+        "text": text,
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.5
+        }
+    }
+    response = requests.post(url, json=data, headers=headers)
+    return response.content
+
+
 def call_tts_service(text, file_path):
     """Call external TTS service to generate audio"""
     try:

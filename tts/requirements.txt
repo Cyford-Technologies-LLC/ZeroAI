@@ -1,2 +1,11 @@
 flask
-pyttsx3==2.90
+requests
+openai
+TTS
+edge-tts
+asyncio
+pydub
+numpy
+torch
+torchaudio
+soundfile
