@@ -117,6 +117,9 @@
     <script>
         let debugMode = true;
         let currentMode = 'simple';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes instead of 1 minute
         
         // Enhanced console logging wrapper with stack traces
         function debugLog(message, data = null) {
