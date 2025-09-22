@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy and run SadTalker installation script
 COPY install_sadtalker.sh .
-COPY avatar/faces /app/faces
+COPY faces /app/faces
 RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
 
 # Download SadTalker models during build
