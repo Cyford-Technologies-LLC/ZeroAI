@@ -1,10 +1,13 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', '/tmp/avatar_api_errors.log');
 ob_clean(); // Clear any existing output
 ob_start(); // Start fresh output buffering
+ini_set('max_execution_time', 300);
+set_time_limit(300);
+
 
 // ... rest of existing code ...
 
