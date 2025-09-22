@@ -672,11 +672,18 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
             found_video = None
 
             # Check main directory first
-            for file in os.listdir(result_dir):
-                if file.endswith('.mp4'):
-                    found_video = os.path.join(result_dir, file)
-                    print(f"Found SadTalker video in main dir: {found_video}")
-                    break
+            # for file in os.listdir(result_dir):
+            #     if file.endswith('.mp4'):
+            #         found_video = os.path.join(result_dir, file)
+            #         print(f"Found SadTalker video in main dir: {found_video}")
+            #         break
+
+            mp4_files = [f for f in os.listdir(result_dir) if f.endswith('.mp4')]
+            if mp4_files:
+                # Sort by modification time - newest first
+                newest_file = max(mp4_files, key=lambda f: os.path.getmtime(os.path.join(result_dir, f)))
+                found_video = os.path.join(result_dir, newest_file)
+                print(f"Found newest SadTalker video: {found_video}")
 
             # If not found, check all subdirectories
             if not found_video:
