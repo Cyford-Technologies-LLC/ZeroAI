@@ -18,6 +18,7 @@ services:
   zeroai:
     build: .
     container_name: zeroai_api-prod
+    network_mode: "host"
     ports:
       - "0.0.0.0:3939:3939"
       - "0.0.0.0:333:333"
