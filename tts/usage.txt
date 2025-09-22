@@ -1,0 +1,23 @@
+
+bash
+# Test espeak (Free tier - robotic)
+curl -X POST http://localhost:5000/synthesize \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Free tier voice", "engine":"espeak"}' \
+  -o free_tier.wav
+
+# Test Edge (Basic tier - natural)
+curl -X POST http://localhost:5000/synthesize \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Basic tier voice", "engine":"edge", "voice":"en-US-JennyNeural"}' \
+  -o basic_tier.wav
+
+# Test Coqui (Pro tier - high quality)
+curl -X POST http://localhost:5000/synthesize \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Pro tier voice", "engine":"coqui"}' \
+  -o pro_tier.wav
+
+# Check available engines
+curl http://localhost:5000/engines
+curl http://localhost:5000/voices
