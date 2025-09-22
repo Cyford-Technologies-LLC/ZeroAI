@@ -614,11 +614,15 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
             return False
 
         # Create reference image
-        ref_image_path = os.path.join(os.path.dirname(video_path), 'ref_face.jpg')
-        print(f"Creating reference image: {ref_image_path}")
-        default_face = create_default_face()
-        cv2.imwrite(ref_image_path, default_face)
-        print(f"Reference image created: {os.path.exists(ref_image_path)}")
+        # ref_image_path = os.path.join(os.path.dirname(video_path), 'ref_face.jpg')
+        # print(f"Creating reference image: {ref_image_path}")
+        # default_face = create_default_face()
+        # cv2.imwrite(ref_image_path, default_face)
+        # print(f"Reference image created: {os.path.exists(ref_image_path)}")
+        # Use real reference image
+        ref_image_path = '/app/faces/2.jpg'
+        print(f"Using reference image: {ref_image_path}")
+        print(f"Reference image exists: {os.path.exists(ref_image_path)}")
 
         # ref_image_path = get_reference_face()
 
