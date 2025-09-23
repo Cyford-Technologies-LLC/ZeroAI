@@ -144,7 +144,16 @@ from { opacity: 0; transform: translateY(10px); }
 to { opacity: 1; transform: translateY(0); }
 }
 
-
+.code-block {
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: auto;
+}
 </style>
 
 
