@@ -100,7 +100,9 @@ class ClaudeCommands {
         
         $dir = dirname($path);
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
+            }
         }
         
         if (file_put_contents($path, $content)) {
@@ -144,7 +146,7 @@ class ClaudeCommands {
     
     private function listAgents() {
         try {
-            $db = new \ZeroAI\Core\DatabaseManager();
+           $db = new \ZeroAI\Core\DatabaseManager();
             $result = $db->query("SELECT * FROM agents ORDER BY id");
             
             $output = "\n\n🤖 Agents:\n";
@@ -235,7 +237,9 @@ class ClaudeCommands {
         try {
             $memoryDir = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data';
             if (!is_dir($memoryDir)) {
-                mkdir($memoryDir, 0777, true);
+                if (!mkdir($memoryDir, 0777, true) && !is_dir($memoryDir)) {
+                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $memoryDir));
+                }
             }
             
             $dbPath = $memoryDir . '/claude_memory.db';

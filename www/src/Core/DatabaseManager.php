@@ -17,7 +17,7 @@ class DatabaseManager {
     private $db;
     private $cache;
     
-    private function __construct() {
+    public function __construct() {
         require_once __DIR__ . '/../../config/database.php';
         $this->db = new \Database();
         $this->cache = \ZeroAI\Core\CacheManager::getInstance();
