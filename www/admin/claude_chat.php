@@ -397,7 +397,7 @@ function addMessageToChat(sender, message) {
     const codeBlocks = [];
     const details = [];
 
-    // --- Step 1: Replace special sections with placeholders ---
+    // --- Step 1: Extract code/details placeholders before escaping ---
 
     // Markdown code blocks: ```lang\ncode```
     processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
@@ -416,7 +416,7 @@ function addMessageToChat(sender, message) {
         return placeholder;
     });
 
-    // Directory blocks: 📁 Directory: path\ncontent
+    // Directory blocks
     processedMessage = processedMessage.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n{2,}|🤖 Claude|👤 You:|$)/g, (match, path, content) => {
         const formattedContent = escapeHtml(content.trim()).replace(/\n/g, '<br>');
         const placeholder = `@@DETAIL_PLACEHOLDER_${details.length}@@`;
@@ -424,7 +424,7 @@ function addMessageToChat(sender, message) {
         return placeholder;
     });
 
-    // File blocks: 📄 File: path\n<pre class="code-block">content</pre>
+    // File blocks
     processedMessage = processedMessage.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block">([\s\S]*?)<\/pre>/g, (match, path, content) => {
         const escapedContent = escapeHtml(content.trim());
         const placeholder = `@@DETAIL_PLACEHOLDER_${details.length}@@`;
@@ -440,11 +440,10 @@ function addMessageToChat(sender, message) {
         return `<code class="inline-code">${escapeHtml(code)}</code>`;
     });
 
-    // --- Step 4: Replace placeholders ---
+    // --- Step 4: Put placeholders back ---
     codeBlocks.forEach((codeHtml, index) => {
         processedMessage = processedMessage.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
     });
-
     details.forEach((detailHtml, index) => {
         processedMessage = processedMessage.replace(`@@DETAIL_PLACEHOLDER_${index}@@`, detailHtml);
     });
@@ -452,7 +451,7 @@ function addMessageToChat(sender, message) {
     // --- Step 5: Replace remaining newlines with <br> ---
     processedMessage = processedMessage.replace(/\n/g, '<br>');
 
-    // --- Step 6: Final rendering ---
+    // --- Step 6: Render ---
     messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${processedMessage}`;
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
