@@ -306,20 +306,35 @@ class ClaudeIntegration extends BaseAIProvider {
         if ($mode === 'autonomous') $mode = 'agentic';
         
         // Process @exec commands
-        if (preg_match_all('/@exec\s+([^\s]+)\s+(.+?)(?=\n@|\n\n|$)/ms', $message, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all(
+            '/@exec\s+([^\s]+)\s+((?:.|\n)*?)(?=\n@|\n\n|$)/m',
+            $message,
+            $matches,
+            PREG_SET_ORDER
+        )) {
             foreach ($matches as $match) {
                 $container = trim($match[1]);
-                $command = trim($match[2]);
-                if ($container && $command) {
-                    $result = $this->toolSystem->execute('exec', [$container, $command], $mode);
-                    if (isset($result['success'])) {
-                        $results .= $result['formatted'] . "\n\n";
-                    } else {
-                        $results .= "❌ " . $result['error'] . "\n\n";
+                $command   = rtrim($match[2]);
+
+                // Normalize heredoc EOF detection
+                if (preg_match('/<<\s*[\'"]?(\w+)[\'"]?/', $command, $eofMatch)) {
+                    $terminator = $eofMatch[1];
+                    // Ensure we actually capture up to terminator
+                    if (!str_ends_with($command, $terminator)) {
+                        // Add missing terminator if regex didn’t include it
+                        if (preg_match('/(.*?' . $terminator . ')/s', $message, $fullMatch)) {
+                            $command = $fullMatch[1];
+                        }
                     }
                 }
+
+                $result = $this->toolSystem->execute('exec', [$container, $command], $mode);
+                $results .= isset($result['success'])
+                    ? $result['formatted'] . "\n\n"
+                    : "❌ " . $result['error'] . "\n\n";
             }
         }
+
         
         // Process @file commands
         if (preg_match_all('/@file\s+([^\s]+)/m', $message, $matches, PREG_SET_ORDER)) {
