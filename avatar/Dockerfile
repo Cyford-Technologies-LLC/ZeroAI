@@ -23,9 +23,7 @@ RUN cd /app/SadTalker && bash scripts/download_models.sh  || true
 RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -exec patchelf --clear-execstack {} \; || echo "PyTorch not found, skipping patchelf"
 
 
-# Fix numpy compatibility issues in SadTalker
 RUN cd /app/SadTalker && \
-    sed -i 's/np\.float/np.float64/g' src/fa/face3d/util/my_awing_arch.py && \
     find . -name "*.py" -exec sed -i 's/np\.float/np.float64/g' {} \; && \
     find . -name "*.py" -exec sed -i 's/np\.int/np.int32/g' {} \;
 
