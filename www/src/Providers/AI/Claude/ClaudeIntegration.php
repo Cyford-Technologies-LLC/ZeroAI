@@ -285,7 +285,7 @@ class ClaudeIntegration extends BaseAIProvider {
     
     private function formatResponse($response) {
         // Format code blocks
-        $response = preg_replace('/```([a-zA-Z]*\n[^`]+)```/', '<pre><code>$1</code></pre>', $response);
+//        $response = preg_replace('/```([a-zA-Z]*\n[^`]+)```/', '<pre><code>$1</code></pre>', $response);
         
         // Format tool results sections
         $response = preg_replace('/Tool Results:\n([^\n]+(?:\n[^\n]+)*)/m', '<div class="tool-results"><strong>🔧 Tool Results:</strong><br>$1</div>', $response);
