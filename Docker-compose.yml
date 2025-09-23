@@ -29,6 +29,9 @@ services:
       - /etc/cyford/zeroai/backup:/app/backup
       - /etc/cyford/zeroai/.env:/app/.env:ro
       - /var/run/docker.sock:/var/run/docker.sock
+    user: root
+    group_add:
+      - systemd-journal
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
