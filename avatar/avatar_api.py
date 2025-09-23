@@ -42,18 +42,29 @@ def generate_elevenlabs_tts(text, voice_id="21m00Tcm4TlvDq8ikWAM"):  # Rachel vo
     return response.content
 
 
-def call_tts_service(text, file_path):
-    """Call external TTS service to generate audio"""
+def call_tts_service(text, file_path, tts_engine='espeak', tts_options=None):
+    """Call external TTS service with engine selection and options"""
     try:
-        response = requests.post(TTS_API_URL, json={'text': text}, timeout=10)
+        payload = {
+            'text': text,
+            'engine': tts_engine
+        }
+
+        # Add TTS-specific options
+        if tts_options:
+            payload.update(tts_options)
+
+        print(f"TTS Request: {payload}")
+
+        response = requests.post(TTS_API_URL, json=payload, timeout=30)
 
         if response.status_code == 200:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
-            print(f"TTS audio generated: {file_path}")
+            print(f"TTS audio generated: {file_path} ({len(response.content)} bytes)")
             return True
         else:
-            print(f"TTS service error: {response.status_code}")
+            print(f"TTS service error: {response.status_code} - {response.text}")
             return False
     except Exception as e:
         print(f"TTS service call failed: {e}")
@@ -155,74 +166,140 @@ def generate_avatar():
         return jsonify({'error': str(e)}), 500
 
 
-def generate_talking_face(image_path, audio_path, output_path, codec='h264_high', quality='high'):
-    """Generate realistic talking face using MediaPipe"""
+@app.route('/generate', methods=['POST'])
+def generate_avatar():
+    mode = request.args.get('mode', 'simple')
+    codec = request.args.get('codec', DEFAULT_CODEC)
+    quality = request.args.get('quality', 'high')
+
+    print(f"=== AVATAR GENERATION START ===")
+    print(f"Mode: {mode}")
+    print(f"Codec: {codec}")
+    print(f"Quality: {quality}")
+    print(f"Request args: {dict(request.args)}")
+
     try:
-        print("Starting face detection...")
-        # Use MediaPipe for face detection
-        import mediapipe as mp
+        data = request.json
+        if not data:
+            print("ERROR: No JSON data provided")
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-        mp_face_detection = mp.solutions.face_detection
-        mp_drawing = mp.solutions.drawing_utils
+        prompt = data.get('prompt', 'Hello')
+        source_image = data.get('image', '/app/default_face.jpg')
+        codec_options = data.get('codec_options', {})
 
-        # Load source image or create default
-        if os.path.exists(image_path):
-            img = cv2.imread(image_path)
-            print(f"Loaded image: {image_path}")
-        else:
-            print("Creating default face image...")
-            img = create_default_face()
+        # NEW: TTS Engine Selection with Full Options Support
+        tts_engine = data.get('tts_engine', 'espeak')  # Default to free tier
+        tts_options = data.get('tts_options', {})
 
-        if img is None:
-            print("Image is None, creating default")
-            img = create_default_face()
+        print(f"Prompt: {prompt[:50]}...")
+        print(f"Source image: {source_image}")
+        print(f"Codec options: {codec_options}")
+        print(f"TTS Engine: {tts_engine}")
+        print(f"TTS Options: {tts_options}")
 
-        print(f"Image loaded successfully, shape: {img.shape}")
-        print(f"Image dtype: {img.dtype}, min: {img.min()}, max: {img.max()}")
+        # Create temp files
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+            audio_path = audio_file.name
 
-        # Save debug image
-        cv2.imwrite('/app/debug_input.jpg', img)
-        print("Debug image saved to /app/debug_input.jpg")
+        # Use static video file path
+        video_path = '/app/static/avatar_video.avi'
+        os.makedirs('/app/static', exist_ok=True)
 
-        with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.3) as face_detection:
-            # Convert to RGB for MediaPipe
-            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            print(f"RGB image shape: {rgb_img.shape}")
-
-            results = face_detection.process(rgb_img)
-            print(f"MediaPipe processing completed")
-            print(f"Results: {results}")
-            print(f"Has detections: {hasattr(results, 'detections')}")
-
-            if results.detections:
-                print(f"Found {len(results.detections)} faces")
-                for i, detection in enumerate(results.detections):
-                    print(f"Face {i}: confidence = {detection.score}")
-                    bbox = detection.location_data.relative_bounding_box
-                    print(f"Face {i}: bbox = x:{bbox.xmin}, y:{bbox.ymin}, w:{bbox.width}, h:{bbox.height}")
-
-                # Create animated video with detected face
-                create_animated_face(img, results.detections[0], audio_path, output_path, codec, quality)
+        try:
+            # Generate TTS using external service with engine selection
+            print("Generating TTS...")
+            if call_tts_service_with_options(prompt, audio_path, tts_engine, tts_options):
+                print("TTS completed")
             else:
-                print("No face detected by MediaPipe")
-                print("Trying with lower confidence threshold...")
+                print("TTS generation failed")
+                return jsonify({'error': 'TTS generation failed'}), 500
 
-                # Try with very low confidence
-                with mp_face_detection.FaceDetection(model_selection=0,
-                                                     min_detection_confidence=0.1) as face_detection_low:
-                    results_low = face_detection_low.process(rgb_img)
-                    if results_low.detections:
-                        print(f"Found {len(results_low.detections)} faces with low confidence")
-                        create_animated_face(img, results_low.detections[0], audio_path, output_path, codec, quality)
-                    else:
-                        print("Still no face detected, using basic avatar")
-                        create_basic_avatar(audio_path, output_path, "No face detected", codec, quality)
+            # Generate based on mode
+            if mode == 'sadtalker':
+                print("=== ATTEMPTING SADTALKER MODE ===")
+                success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
+                if not success:
+                    print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
+                    generate_talking_face(source_image, audio_path, video_path, codec, quality)
+                else:
+                    print("=== SADTALKER SUCCESS ===")
+            else:
+                print("=== USING SIMPLE/MEDIAPIPE MODE ===")
+                generate_talking_face(source_image, audio_path, video_path, codec, quality)
+            print("Face generation completed")
+
+            # Check if video was created
+            print(f"Checking video file: {video_path}")
+            print(f"File exists: {os.path.exists(video_path)}")
+            if os.path.exists(video_path):
+                print(f"File size: {os.path.getsize(video_path)} bytes")
+
+            if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+                # Convert to final format using FFmpeg with codec support
+                final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
+                if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
+                    print(f"Final video: {final_path} ({os.path.getsize(final_path)} bytes)")
+                    return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
+                else:
+                    print("Codec conversion failed, returning original AVI")
+                    return send_file(video_path, mimetype='video/avi', as_attachment=False)
+            else:
+                print("Video creation failed - file empty or missing")
+                return jsonify({'error': 'Video creation failed'}), 500
+
+        finally:
+            # Cleanup temp files after response
+            try:
+                if os.path.exists(audio_path):
+                    os.unlink(audio_path)
+            except:
+                pass
 
     except Exception as e:
-        print(f"Face generation error: {str(e)}")
+        print(f"Avatar generation error: {str(e)}")
         print(traceback.format_exc())
-        # Fallback to basic avatar
-        create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}", codec, quality)
+        return jsonify({'error': str(e)}), 500
+
+
+def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_options=None):
+    """Call external TTS service with full engine and options support"""
+    try:
+        # Build TTS request payload
+        payload = {
+            'text': text,
+            'engine': tts_engine
+        }
+
+        # Add engine-specific options
+        if tts_options:
+            payload.update(tts_options)
+
+        print(f"TTS Request: engine={tts_engine}, options={tts_options}")
+        print(f"Full payload: {payload}")
+
+        # Call TTS service
+        response = requests.post(TTS_API_URL, json=payload, timeout=60)
+
+        print(
+            f"TTS Response: status={response.status_code}, size={len(response.content) if response.content else 0} bytes")
+
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            print(f"TTS audio saved: {file_path} ({len(response.content)} bytes)")
+            return True
+        else:
+            print(f"TTS service error: {response.status_code}")
+            print(f"Error response: {response.text[:200]}...")
+            return False
+
+    except requests.exceptions.Timeout:
+        print("TTS service timeout - some engines take longer")
+        return False
+    except Exception as e:
+        print(f"TTS service call failed: {e}")
+        return False
 
 
 def create_default_face():
