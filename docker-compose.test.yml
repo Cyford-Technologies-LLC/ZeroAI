@@ -1,3 +1,4 @@
+yaml
 version: '3.8'
 
 services:
@@ -99,6 +100,19 @@ services:
         reservations:
           memory: 4G
 
+  tts-service:
+    build: ./tts
+    container_name: zeroai_tts-service-test
+    ports:
+      - "0.0.0.0:5001:5000"  # Different port to avoid conflict
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
   avatar:
     build: ./avatar
     container_name: zeroai_avatar-test
@@ -109,8 +123,10 @@ services:
       - avatar_models_test:/app/checkpoints
     environment:
       - OLLAMA_HOST=http://ollama:11434
+      - TTS_API_URL=http://tts-service:5000/synthesize  # ADDED TTS CONNECTION
     depends_on:
       - ollama
+      - tts-service  # ADDED TTS DEPENDENCY
     restart: unless-stopped
     deploy:
       resources:
