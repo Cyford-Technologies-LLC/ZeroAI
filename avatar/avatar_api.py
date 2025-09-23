@@ -75,95 +75,95 @@ def call_tts_service(text, file_path, tts_engine='espeak', tts_options=None):
 DEFAULT_CODEC = 'h264_fast'
 
 
-@app.route('/generate', methods=['POST'])
-def generate_avatar():
-    mode = request.args.get('mode', 'simple')
-    codec = request.args.get('codec', DEFAULT_CODEC)  # Use global default
-    quality = request.args.get('quality', 'high')  # Add quality support
-
-    print(f"=== AVATAR GENERATION START ===")
-    print(f"Mode: {mode}")
-    print(f"Codec: {codec}")
-    print(f"Quality: {quality}")
-    print(f"Request args: {dict(request.args)}")
-
-    try:
-        data = request.json
-        if not data:
-            print("ERROR: No JSON data provided")
-            return jsonify({'error': 'No JSON data provided'}), 400
-
-        prompt = data.get('prompt', 'Hello')
-        source_image = data.get('image', '/app/default_face.jpg')
-        codec_options = data.get('codec_options', {})
-
-        print(f"Prompt: {prompt[:50]}...")
-        print(f"Source image: {source_image}")
-        print(f"Codec options: {codec_options}")
-
-        # Create temp files
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
-            audio_path = audio_file.name
-
-        # Use static video file path
-        video_path = '/app/static/avatar_video.avi'
-        os.makedirs('/app/static', exist_ok=True)
-
-        try:
-            # Generate high-quality TTS using external service
-            print("Generating TTS...")
-            if call_tts_service(prompt, audio_path):
-                print("TTS completed")
-            else:
-                print("TTS generation failed")
-                return jsonify({'error': 'TTS generation failed'}), 500
-
-            # Generate based on mode
-            if mode == 'sadtalker':
-                print("=== ATTEMPTING SADTALKER MODE ===")
-                success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
-                if not success:
-                    print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
-                    generate_talking_face(source_image, audio_path, video_path, codec, quality)
-                else:
-                    print("=== SADTALKER SUCCESS ===")
-            else:
-                print("=== USING SIMPLE/MEDIAPIPE MODE ===")
-                generate_talking_face(source_image, audio_path, video_path, codec, quality)
-            print("Face generation completed")
-
-            # Check if video was created
-            print(f"Checking video file: {video_path}")
-            print(f"File exists: {os.path.exists(video_path)}")
-            if os.path.exists(video_path):
-                print(f"File size: {os.path.getsize(video_path)} bytes")
-
-            if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
-                # Convert to final format using FFmpeg with codec support
-                final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
-                if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
-                    print(f"Final video: {final_path} ({os.path.getsize(final_path)} bytes)")
-                    return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
-                else:
-                    print("Codec conversion failed, returning original AVI")
-                    return send_file(video_path, mimetype='video/avi', as_attachment=False)
-            else:
-                print("Video creation failed - file empty or missing")
-                return jsonify({'error': 'Video creation failed'}), 500
-
-        finally:
-            # Cleanup temp files after response
-            try:
-                if os.path.exists(audio_path):
-                    os.unlink(audio_path)
-            except:
-                pass
-            # Don't delete video file here - Flask needs it for send_file
-
-    except Exception as e:
-        print(f"Avatar generation error: {str(e)}")
-        print(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+# @app.route('/generate', methods=['POST'])
+# def generate_avatar():
+#     mode = request.args.get('mode', 'simple')
+#     codec = request.args.get('codec', DEFAULT_CODEC)  # Use global default
+#     quality = request.args.get('quality', 'high')  # Add quality support
+#
+#     print(f"=== AVATAR GENERATION START ===")
+#     print(f"Mode: {mode}")
+#     print(f"Codec: {codec}")
+#     print(f"Quality: {quality}")
+#     print(f"Request args: {dict(request.args)}")
+#
+#     try:
+#         data = request.json
+#         if not data:
+#             print("ERROR: No JSON data provided")
+#             return jsonify({'error': 'No JSON data provided'}), 400
+#
+#         prompt = data.get('prompt', 'Hello')
+#         source_image = data.get('image', '/app/default_face.jpg')
+#         codec_options = data.get('codec_options', {})
+#
+#         print(f"Prompt: {prompt[:50]}...")
+#         print(f"Source image: {source_image}")
+#         print(f"Codec options: {codec_options}")
+#
+#         # Create temp files
+#         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+#             audio_path = audio_file.name
+#
+#         # Use static video file path
+#         video_path = '/app/static/avatar_video.avi'
+#         os.makedirs('/app/static', exist_ok=True)
+#
+#         try:
+#             # Generate high-quality TTS using external service
+#             print("Generating TTS...")
+#             if call_tts_service(prompt, audio_path):
+#                 print("TTS completed")
+#             else:
+#                 print("TTS generation failed")
+#                 return jsonify({'error': 'TTS generation failed'}), 500
+#
+#             # Generate based on mode
+#             if mode == 'sadtalker':
+#                 print("=== ATTEMPTING SADTALKER MODE ===")
+#                 success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
+#                 if not success:
+#                     print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
+#                     generate_talking_face(source_image, audio_path, video_path, codec, quality)
+#                 else:
+#                     print("=== SADTALKER SUCCESS ===")
+#             else:
+#                 print("=== USING SIMPLE/MEDIAPIPE MODE ===")
+#                 generate_talking_face(source_image, audio_path, video_path, codec, quality)
+#             print("Face generation completed")
+#
+#             # Check if video was created
+#             print(f"Checking video file: {video_path}")
+#             print(f"File exists: {os.path.exists(video_path)}")
+#             if os.path.exists(video_path):
+#                 print(f"File size: {os.path.getsize(video_path)} bytes")
+#
+#             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+#                 # Convert to final format using FFmpeg with codec support
+#                 final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
+#                 if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
+#                     print(f"Final video: {final_path} ({os.path.getsize(final_path)} bytes)")
+#                     return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
+#                 else:
+#                     print("Codec conversion failed, returning original AVI")
+#                     return send_file(video_path, mimetype='video/avi', as_attachment=False)
+#             else:
+#                 print("Video creation failed - file empty or missing")
+#                 return jsonify({'error': 'Video creation failed'}), 500
+#
+#         finally:
+#             # Cleanup temp files after response
+#             try:
+#                 if os.path.exists(audio_path):
+#                     os.unlink(audio_path)
+#             except:
+#                 pass
+#             # Don't delete video file here - Flask needs it for send_file
+#
+#     except Exception as e:
+#         print(f"Avatar generation error: {str(e)}")
+#         print(traceback.format_exc())
+#         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/generate', methods=['POST'])
