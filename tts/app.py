@@ -15,8 +15,8 @@ class MultiTTSEngine:
     def __init__(self):
         try:
             from TTS.api import TTS
-            #self.coqui_tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC_ph")
-            self.coqui_tts = None
+            self.coqui_tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC_ph")
+            #self.coqui_tts = None
             print("Coqui TTS initialized")
         except Exception as e:
             print(f"Coqui TTS failed to initialize: {e}")
