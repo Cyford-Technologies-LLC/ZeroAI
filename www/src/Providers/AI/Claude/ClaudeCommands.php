@@ -165,7 +165,16 @@ class ClaudeCommands {
     
     private function dockerCommand($matches) {
         $cmd = escapeshellcmd($matches[1]);
-        $result = shell_exec("docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1");
+//         $result = shell_exec("docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1");
+          $fullCommand = "docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1; echo '|EXIT_CODE:'$?";
+          $output = shell_exec($fullCommand);
+
+          // Check if command actually succeeded
+          if (strpos($output, '|EXIT_CODE:0') === false) {
+               $result = "Command failed: " . $output;
+          } else {
+          $result = str_replace('|EXIT_CODE:0', '', $output);
+          }
         return "\n\n🐳 Docker: {$matches[1]}\n" . ($result ?: "No output") . "\n";
     }
     
