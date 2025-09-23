@@ -386,12 +386,7 @@ function sendMessage() {
 // Enhanced message display with proper code handling
 
 
-/**
- * Safely adds a new message to the chat container, preventing raw HTML rendering
- * and formatting code blocks and commands correctly.
- * @param {string} sender - The sender of the message ('user' or 'assistant').
- * @param {string} message - The raw message content from the AI.
- */
+
 function addMessageToChat(sender, message) {
     const container = document.getElementById('chat-container');
     const messageDiv = document.createElement('div');
@@ -399,48 +394,50 @@ function addMessageToChat(sender, message) {
 
     let processedMessage = message;
 
-    // --- Step 1: Replace code blocks and commands with placeholders ---
     const codeBlocks = [];
     const details = [];
 
-    // Identify and replace standard Markdown code blocks
+    // --- Step 1: Replace code blocks and commands with placeholders ---
+
+    // Markdown code blocks: ```lang\ncode```
     processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
         const languageClass = lang ? `data-lang="${lang}"` : '';
-        const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escapedCode = escapeHtml(code.trim());
         const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
-        codeBlocks.push(`<pre class="code-block" ${languageClass}><code>${escapedCode.trim()}</code></pre>`);
+        codeBlocks.push(`<pre class="code-block" ${languageClass}><code>${escapedCode}</code></pre>`);
         return placeholder;
     });
 
-    // Identify and replace `<pre><html>` code blocks sent by the AI
+    // AI-sent <pre><html>...</pre><html> blocks (possible malformed format fixed)
     processedMessage = processedMessage.replace(/<pre><html>([\s\S]*?)<\/pre><html>/g, (match, code) => {
-        const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escapedCode = escapeHtml(code.trim());
         const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
-        codeBlocks.push(`<pre class="code-block" data-lang="html"><code>${escapedCode.trim()}</code></pre>`);
+        codeBlocks.push(`<pre class="code-block" data-lang="html"><code>${escapedCode}</code></pre>`);
         return placeholder;
     });
 
-    // Identify and replace directory commands
-    processedMessage = processedMessage.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n\n|🤖 Claude|$)/g, (match, path, content) => {
-        const formattedContent = content.replace(/\n/g, '<br>');
+    // Directory blocks: 📁 Directory: path\ncontent
+    processedMessage = processedMessage.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n{2,}|🤖 Claude|👤 You:|$)/g, (match, path, content) => {
+        const formattedContent = escapeHtml(content.trim()).replace(/\n/g, '<br>');
         const placeholder = `@@DETAIL_PLACEHOLDER_${details.length}@@`;
-        details.push(`<details class="background-command"><summary><span class="icon">\uD83D\uDCC1</span> Directory: ${path}</summary><pre>${formattedContent.trim()}</pre></details>`);
+        details.push(`<details class="background-command"><summary><span class="icon">📁</span> Directory: ${escapeHtml(path)}</summary><pre>${formattedContent}</pre></details>`);
         return placeholder;
     });
 
-    // Identify and replace file commands
+    // File blocks: 📄 File: path\n<pre class="code-block">content</pre>
     processedMessage = processedMessage.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block">([\s\S]*?)<\/pre>/g, (match, path, content) => {
+        const escapedContent = escapeHtml(content.trim());
         const placeholder = `@@DETAIL_PLACEHOLDER_${details.length}@@`;
-        details.push(`<details class="background-command"><summary><span class="icon">\uD83D\uDCC4</span> File: ${path}</summary><pre class="code-block">${content}</pre></details>`);
+        details.push(`<details class="background-command"><summary><span class="icon">📄</span> File: ${escapeHtml(path)}</summary><pre class="code-block"><code>${escapedContent}</code></pre></details>`);
         return placeholder;
     });
 
-    // --- Step 2: Escape remaining HTML in the message ---
+    // --- Step 2: Escape remaining message text ---
     const tempDiv = document.createElement('div');
     tempDiv.textContent = processedMessage;
     let safeHtml = tempDiv.innerHTML;
 
-    // --- Step 3: Replace placeholders with the actual HTML structure ---
+    // --- Step 3: Reinsert code blocks and details ---
     codeBlocks.forEach((codeHtml, index) => {
         safeHtml = safeHtml.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
     });
@@ -449,19 +446,25 @@ function addMessageToChat(sender, message) {
         safeHtml = safeHtml.replace(`@@DETAIL_PLACEHOLDER_${index}@@`, detailHtml);
     });
 
-    // Handle inline code after placeholders are replaced
+    // --- Step 4: Handle inline code ---
     safeHtml = safeHtml.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
-    // Handle remaining newlines
+    // --- Step 5: Replace remaining newlines with <br> ---
     safeHtml = safeHtml.replace(/\n/g, '<br>');
 
-    // Construct the final message HTML
+    // --- Step 6: Final HTML construction ---
     messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${safeHtml}`;
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
 }
 
-
+// --- Utility function to escape HTML ---
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
 
 
 

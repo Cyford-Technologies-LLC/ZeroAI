@@ -219,7 +219,8 @@ class ClaudeCommands {
         return "\n\n🐳 Exec {$matches[1]}: {$matches[2]}\n" . ($result ?: "No output") . "\n";
     }
     
-    private function bashCommand($matches) {
+    private function bashCommand($matches): string
+    {
         if (!$this->security->hasPermission('claude', 'cmd_exec', 'hybrid')) {
             return "\n❌ Permission denied: bash command\n";
         }
