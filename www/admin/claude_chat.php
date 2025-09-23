@@ -26,134 +26,30 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
 
 ?>
 <style>
-/* Code block styling */
-.code-block {
-background: #1e1e1e;
-color: #d4d4d4;
-padding: 15px;
-border-radius: 8px;
-overflow-x: auto;
-margin: 10px 0;
-font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-font-size: 14px;
-line-height: 1.5;
-position: relative;
-/* This ensures a smooth transition if code blocks change size */
-transition: all 0.3s ease;
-}
+    /* Style for code blocks */
+    pre code {
+        display: block;
+        background: #2d2d2d;   /* dark grey */
+        color: #f8f8f2;        /* light text */
+        padding: 10px;
+        border-radius: 8px;
+        font-family: "Fira Code", "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.4;
+        overflow-x: auto;      /* scroll horizontally if too wide */
+        white-space: pre-wrap; /* wrap long lines */
+    }
 
-.code-block::before {
-content: attr(data-lang);
-position: absolute;
-top: 5px;
-right: 10px;
-font-size: 11px;
-color: #888;
-text-transform: uppercase;
-}
+    /* Inline code (`like this`) */
+    code {
+        background: #eee;
+        color: #333;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-family: "Fira Code", "Courier New", monospace;
+        font-size: 13px;
+    }
 
-.code-block code {
-/* Ensure code inside pre blocks also uses monospace font */
-font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-}
-
-.inline-code {
-background: #f4f4f4;
-padding: 2px 6px;
-border-radius: 3px;
-font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-font-size: 0.9em;
-color: #e83e8c;
-}
-
-/* Background command styling (collapsible) */
-.background-command {
-background: #f8f9fa;
-border: 1px solid #dee2e6;
-border-radius: 5px;
-margin: 8px 0;
-padding: 8px;
-font-size: 0.85em;
-}
-
-.background-command summary {
-cursor: pointer;
-font-weight: 500;
-color: #6c757d;
-user-select: none;
-}
-
-.background-command summary:hover {
-color: #495057;
-}
-
-.background-command[open] summary {
-margin-bottom: 10px;
-color: #495057;
-}
-
-.background-command pre {
-margin: 0;
-background: white;
-padding: 10px;
-border-radius: 4px;
-max-height: 300px;
-overflow-y: auto;
-}
-
-/* Styling for icons to ensure they render correctly */
-.icon {
-font-family: Arial, sans-serif;
-font-size: 1em;
-font-weight: normal;
-font-style: normal;
-}
-
-/* Usage info styling */
-.usage-info {
-font-size: 11px;
-color: #666;
-text-align: right;
-margin: 5px 0;
-padding: 5px;
-background: #f8f9fa;
-border-radius: 4px;
-opacity: 0.7;
-}
-
-/* Message styling improvements */
-.message {
-margin-bottom: 15px;
-padding: 12px;
-border-radius: 8px;
-animation: fadeIn 0.3s;
-}
-
-.message.user {
-background: #e3f2fd;
-border-left: 4px solid #2196f3;
-}
-
-.message.assistant {
-background: #f5f5f5;
-border-left: 4px solid #4caf50;
-}
-
-@keyframes fadeIn {
-from { opacity: 0; transform: translateY(10px); }
-to { opacity: 1; transform: translateY(0); }
-}
-
-.code-block {
-    background-color: #f4f4f4;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px;
-    font-family: monospace;
-    white-space: pre-wrap;
-    word-break: break-all;
-    overflow-x: auto;
-}
 </style>
 
 
