@@ -388,7 +388,7 @@ function sendMessage() {
 
 
 function addMessageToChat(sender, message) {
-    console.log("RAW MESSAGE FROM", sender, ":", JSON.stringify(message));
+    console.log("RAW MESSAGE FROM", sender, ":", message);
 
 
 
