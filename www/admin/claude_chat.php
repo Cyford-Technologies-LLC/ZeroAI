@@ -397,18 +397,18 @@ function addMessageToChat(sender, message) {
     const codeBlocks = [];
     const details = [];
 
-    // --- Step 1: Replace code blocks and commands with placeholders ---
+    // --- Step 1: Replace special sections with placeholders ---
 
     // Markdown code blocks: ```lang\ncode```
     processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-        const languageClass = lang ? `data-lang="${lang}"` : '';
+        const languageClass = lang ? `data-lang="${escapeHtml(lang)}"` : '';
         const escapedCode = escapeHtml(code.trim());
         const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
         codeBlocks.push(`<pre class="code-block" ${languageClass}><code>${escapedCode}</code></pre>`);
         return placeholder;
     });
 
-    // AI-sent <pre><html>...</pre><html> blocks (possible malformed format fixed)
+    // Malformed <pre><html>...</pre><html>
     processedMessage = processedMessage.replace(/<pre><html>([\s\S]*?)<\/pre><html>/g, (match, code) => {
         const escapedCode = escapeHtml(code.trim());
         const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
@@ -432,39 +432,43 @@ function addMessageToChat(sender, message) {
         return placeholder;
     });
 
-    // --- Step 2: Escape remaining message text ---
-    const tempDiv = document.createElement('div');
-    tempDiv.textContent = processedMessage;
-    let safeHtml = tempDiv.innerHTML;
+    // --- Step 2: Escape everything else ---
+    processedMessage = escapeHtml(processedMessage);
 
-    // --- Step 3: Reinsert code blocks and details ---
+    // --- Step 3: Handle inline code ---
+    processedMessage = processedMessage.replace(/`([^`]+)`/g, (match, code) => {
+        return `<code class="inline-code">${escapeHtml(code)}</code>`;
+    });
+
+    // --- Step 4: Replace placeholders ---
     codeBlocks.forEach((codeHtml, index) => {
-        safeHtml = safeHtml.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
+        processedMessage = processedMessage.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
     });
 
     details.forEach((detailHtml, index) => {
-        safeHtml = safeHtml.replace(`@@DETAIL_PLACEHOLDER_${index}@@`, detailHtml);
+        processedMessage = processedMessage.replace(`@@DETAIL_PLACEHOLDER_${index}@@`, detailHtml);
     });
 
-    // --- Step 4: Handle inline code ---
-    safeHtml = safeHtml.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-
     // --- Step 5: Replace remaining newlines with <br> ---
-    safeHtml = safeHtml.replace(/\n/g, '<br>');
+    processedMessage = processedMessage.replace(/\n/g, '<br>');
 
-    // --- Step 6: Final HTML construction ---
-    messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${safeHtml}`;
+    // --- Step 6: Final rendering ---
+    messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${processedMessage}`;
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
 }
 
-// --- Utility function to escape HTML ---
+// --- Utility function ---
 function escapeHtml(str) {
+    if (!str) return '';
     return str
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
+
 
 
 
