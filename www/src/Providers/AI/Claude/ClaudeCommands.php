@@ -187,7 +187,9 @@ class ClaudeCommands {
         
         $container = escapeshellarg($matches[1]);
         $cmd = $matches[2];
-        $result = shell_exec("docker exec {$container} {$cmd} 2>&1");
+//         $result = shell_exec("docker exec {$container} {$cmd} 2>&1");
+        $result = shell_exec("docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1");
+
         
         // Track command like old system
         $GLOBALS['executedCommands'][] = [
