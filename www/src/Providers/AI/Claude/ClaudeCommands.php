@@ -42,7 +42,12 @@ class ClaudeCommands {
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
         $originalLength = strlen($message);
         // Handle both @exec and exec patterns
-        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+((?:.*?(?:<<\s*[\'"]?\w+[\'"]?\s*\n.*?\n\w+)|.*?))/ms', [$this, 'execContainer'], $message);
+//        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+((?:.*?(?:<<\s*[\'"]?\w+[\'"]?\s*\n.*?\n\w+)|.*?))/ms', [$this, 'execContainer'], $message);
+        $message = preg_replace_callback(
+            '/\@exec\s+([^\s]+)\s+([\s\S]+)/m',
+            [$this, 'execContainer'],
+            $message
+        );
 //         $message = preg_replace_callback('/^exec\s+([^\s]+)\s+(.+)/m', [$this, 'execContainer'], $message);
         if (strlen($message) > $originalLength) {
             error_log("[CLAUDE_COMMANDS] Exec command processed successfully");
@@ -191,34 +196,64 @@ class ClaudeCommands {
         return "\n\n🐳 Running Containers:\n" . ($result ?: "No containers") . "\n";
     }
     
+//    private function execContainer($matches) {
+//        if (!$this->security->hasPermission('claude', 'docker_exec', 'hybrid')) {
+//            return "\n❌ Permission denied: docker exec\n";
+//        }
+//         // Special handling for heredoc (EOF) syntax
+//        if (preg_match('/cat\s*>\s*.*<<\s*[\'"]?EOF[\'"]?\s*$/m', $cmd)) {
+//           // Extract everything until the closing EOF
+//           $eofPattern = '/^(.*?)^EOF$/ms';
+//        if (preg_match($eofPattern, $cmd . "\nEOF", $eofMatches)) {
+//        $cmd = $eofMatches[1] . "EOF";
+//         }
+//     }
+//
+//        $container = escapeshellarg($matches[1]);
+//        $cmd = $matches[2];
+////         $result = shell_exec("docker exec {$container} {$cmd} 2>&1");
+//        $result = shell_exec("docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1");
+//
+//
+//        // Track command like old system
+//        $GLOBALS['executedCommands'][] = [
+//            'command' => "exec {$matches[1]} {$matches[2]}",
+//            'output' => $result ?: "No output"
+//        ];
+//
+//        return "\n\n🐳 Exec {$matches[1]}: {$matches[2]}\n" . ($result ?: "No output") . "\n";
+//    }
+
+
     private function execContainer($matches) {
         if (!$this->security->hasPermission('claude', 'docker_exec', 'hybrid')) {
             return "\n❌ Permission denied: docker exec\n";
         }
-         // Special handling for heredoc (EOF) syntax
-        if (preg_match('/cat\s*>\s*.*<<\s*[\'"]?EOF[\'"]?\s*$/m', $cmd)) {
-           // Extract everything until the closing EOF
-           $eofPattern = '/^(.*?)^EOF$/ms';
-        if (preg_match($eofPattern, $cmd . "\nEOF", $eofMatches)) {
-        $cmd = $eofMatches[1] . "EOF";
-         }
-     }
-        
-        $container = escapeshellarg($matches[1]);
-        $cmd = $matches[2];
-//         $result = shell_exec("docker exec {$container} {$cmd} 2>&1");
-        $result = shell_exec("docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1");
 
-        
-        // Track command like old system
+        $container = escapeshellarg($matches[1]);
+        $cmd = $matches[2]; // define before using
+
+        // Handle heredoc (<<EOF ... EOF)
+        if (preg_match('/<<\s*[\'"]?(\w+)[\'"]?/', $cmd, $eofMatch)) {
+            $eofMarker = $eofMatch[1];
+            // Ensure heredoc closes correctly
+            if (!preg_match("/\n$eofMarker$/m", $cmd)) {
+                $cmd .= "\n$eofMarker";
+            }
+        }
+
+        $fullCommand = "docker exec {$container} bash -c " . escapeshellarg($cmd) . " 2>&1";
+        $result = shell_exec($fullCommand);
+
         $GLOBALS['executedCommands'][] = [
-            'command' => "exec {$matches[1]} {$matches[2]}",
-            'output' => $result ?: "No output"
+            'command' => "exec {$matches[1]} {$cmd}",
+            'output'  => $result ?: "No output"
         ];
-        
-        return "\n\n🐳 Exec {$matches[1]}: {$matches[2]}\n" . ($result ?: "No output") . "\n";
+
+        return "\n\n🐳 Exec {$matches[1]}:\n{$cmd}\n" . ($result ?: "No output") . "\n";
     }
-    
+
+
     private function bashCommand($matches): string
     {
         if (!$this->security->hasPermission('claude', 'cmd_exec', 'hybrid')) {
