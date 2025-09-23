@@ -16,6 +16,9 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd -g 999 docker || true
+RUN usermod -aG docker www-data || true
+
 # Set working directory
 WORKDIR /app
 

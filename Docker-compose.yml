@@ -28,7 +28,7 @@ services:
       - /etc/cyford/zeroai/data:/app/data
       - /etc/cyford/zeroai/backup:/app/backup
       - /etc/cyford/zeroai/.env:/app/.env:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONPATH=/app
       - OLLAMA_HOST=http://ollama:11434
