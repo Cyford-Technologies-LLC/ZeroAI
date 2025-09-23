@@ -253,14 +253,18 @@ function sendMessage() {
 // }
 
 // Enhanced message display with proper code handling
+// Enhanced message display with proper code handling
 function addMessageToChat(sender, message) {
     const container = document.getElementById('chat-container');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ' + sender;
 
-    const contentDiv = document.createElement('div');
-    contentDiv.textContent = message;
-    let processedHtml = contentDiv.innerHTML;
+    // Use a temporary div to escape all HTML in the incoming message
+    const tempDiv = document.createElement('div');
+    tempDiv.textContent = message;
+    let processedHtml = tempDiv.innerHTML; // This gets the safely escaped HTML string
+
+    // Process the escaped string for formatting
 
     // Convert triple backticks to styled code blocks
     processedHtml = processedHtml.replace(/```(\w+)?\n?([\s\S]*?)```/g, function(match, lang, code) {
@@ -272,18 +276,16 @@ function addMessageToChat(sender, message) {
     // Convert single backticks to styled inline code
     processedHtml = processedHtml.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
-    // Revised regex for background command outputs.
-    // Use a non-greedy match to capture content after the icon.
+    // Regex using Unicode escapes for the icons, wrapped in a span
     processedHtml = processedHtml.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n\n|🤖 Claude|$)/g, function(match, path, content) {
-        const escapedContent = content.replace(/\n/g, '<br>');
-        return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC1</span> Directory: ${path}</summary><pre>${escapedContent.trim()}</pre></details>`;
+        // The HTML is already escaped, so we just need to handle newlines
+        const formattedContent = content.replace(/\n/g, '<br>');
+        return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC1</span> Directory: ${path}</summary><pre>${formattedContent.trim()}</pre></details>`;
     });
 
-    // Revised regex for file content display.
     processedHtml = processedHtml.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block"([\s\S]*?)<\/pre>/g, function(match, path, content) {
         return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC4</span> File: ${path}</summary><pre class="code-block"${content}</pre></details>`;
     });
-
 
     // Replace newlines with <br> for proper formatting outside of code blocks
     processedHtml = processedHtml.replace(/\n/g, '<br>');
@@ -293,6 +295,7 @@ function addMessageToChat(sender, message) {
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
 }
+
 
 
 function insertCommand(command) {
