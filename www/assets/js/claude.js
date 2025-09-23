@@ -48,9 +48,26 @@ function decodeHtmlEntities(text) {
 }
 
 function formatMessage(text) {
-    // Convert newlines to <br> and preserve formatting
+    // Convert triple backtick code blocks
+    text = text.replace(/```([a-zA-Z0-9]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`;
+    });
+
+    // Convert inline code
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Convert newlines to <br>
     return text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
 }
+
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 
 function addSystemMessage(content) {
     addMessage('system', content, 'System');
