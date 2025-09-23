@@ -388,6 +388,10 @@ function sendMessage() {
 
 
 function addMessageToChat(sender, message) {
+    console.log("RAW MESSAGE FROM", sender, ":", JSON.stringify(message));
+
+
+
     const container = document.getElementById('chat-container');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ' + sender;
