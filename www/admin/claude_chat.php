@@ -387,49 +387,49 @@ function sendMessage() {
 
 
 
-function addMessageToChat(sender, message) {
-    console.log("RAW MESSAGE FROM", sender, ":", message);
-
-
-
-    const container = document.getElementById('chat-container');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ' + sender;
-
-    let processedMessage = message;
-
-    const codeBlocks = [];
-
-    // --- Step 1: Extract ```lang\ncode``` blocks ---
-    processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-        const languageClass = lang ? `data-lang="${escapeHtml(lang)}"` : '';
-        const escapedCode = escapeHtml(code.trim());
-        const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
-        codeBlocks.push(`<pre class="code-block" ${languageClass}><code>${escapedCode}</code></pre>`);
-        return placeholder;
-    });
-
-    // --- Step 2: Escape everything else ---
-    processedMessage = escapeHtml(processedMessage);
-
-    // --- Step 3: Inline code (`like this`) ---
-    processedMessage = processedMessage.replace(/`([^`]+)`/g, (match, code) => {
-        return `<code class="inline-code">${escapeHtml(code)}</code>`;
-    });
-
-    // --- Step 4: Put code blocks back ---
-    codeBlocks.forEach((codeHtml, index) => {
-        processedMessage = processedMessage.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
-    });
-
-    // --- Step 5: Replace remaining newlines with <br> ---
-    processedMessage = processedMessage.replace(/\n/g, '<br>');
-
-    // --- Step 6: Render ---
-    messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${processedMessage}`;
-    container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
-}
+// function addMessageToChat(sender, message) {
+//     console.log("RAW MESSAGE FROM", sender, ":", message);
+//
+//
+//
+//     const container = document.getElementById('chat-container');
+//     const messageDiv = document.createElement('div');
+//     messageDiv.className = 'message ' + sender;
+//
+//     let processedMessage = message;
+//
+//     const codeBlocks = [];
+//
+//     // --- Step 1: Extract ```lang\ncode``` blocks ---
+//     processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+//         const languageClass = lang ? `data-lang="${escapeHtml(lang)}"` : '';
+//         const escapedCode = escapeHtml(code.trim());
+//         const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
+//         codeBlocks.push(`<pre class="code-block" ${languageClass}><code>${escapedCode}</code></pre>`);
+//         return placeholder;
+//     });
+//
+//     // --- Step 2: Escape everything else ---
+//     processedMessage = escapeHtml(processedMessage);
+//
+//     // --- Step 3: Inline code (`like this`) ---
+//     processedMessage = processedMessage.replace(/`([^`]+)`/g, (match, code) => {
+//         return `<code class="inline-code">${escapeHtml(code)}</code>`;
+//     });
+//
+//     // --- Step 4: Put code blocks back ---
+//     codeBlocks.forEach((codeHtml, index) => {
+//         processedMessage = processedMessage.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
+//     });
+//
+//     // --- Step 5: Replace remaining newlines with <br> ---
+//     processedMessage = processedMessage.replace(/\n/g, '<br>');
+//
+//     // --- Step 6: Render ---
+//     messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${processedMessage}`;
+//     container.appendChild(messageDiv);
+//     container.scrollTop = container.scrollHeight;
+// }
 
 // --- Utility function ---
 function escapeHtml(str) {
