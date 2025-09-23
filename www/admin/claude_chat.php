@@ -254,47 +254,74 @@ function sendMessage() {
 
 // Enhanced message display with proper code handling
 // Enhanced message display with proper code handling
+/**
+ * Safely adds a new message to the chat container, preventing raw HTML rendering
+ * and formatting code blocks and commands correctly.
+ * @param {string} sender - The sender of the message ('user' or 'assistant').
+ * @param {string} message - The raw message content.
+ */
 function addMessageToChat(sender, message) {
     const container = document.getElementById('chat-container');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ' + sender;
 
-    // Use a temporary div to escape all HTML in the incoming message
-    const tempDiv = document.createElement('div');
-    tempDiv.textContent = message;
-    let processedHtml = tempDiv.innerHTML; // This gets the safely escaped HTML string
+    let processedMessage = message;
 
-    // Process the escaped string for formatting
+    // --- Step 1: Replace code blocks and commands with placeholders ---
+    const codeBlockPlaceholder = '@@CODE_BLOCK_PLACEHOLDER@@';
+    const detailPlaceholder = '@@DETAIL_PLACEHOLDER@@';
 
-    // Convert triple backticks to styled code blocks
-    processedHtml = processedHtml.replace(/```(\w+)?\n?([\s\S]*?)```/g, function(match, lang, code) {
+    // Replace code blocks with placeholders
+    const codeBlocks = [];
+    processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+        // Store the code block HTML and replace it with a placeholder
         const languageClass = lang ? `data-lang="${lang}"` : '';
-        // Ensure the code content is placed inside a <code> tag within <pre>
-        return `<pre class="code-block" ${languageClass}><code>${code.trim()}</code></pre>`;
+        const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        codeBlocks.push(`<pre class="code-block" ${languageClass}><code>${escapedCode.trim()}</code></pre>`);
+        return codeBlockPlaceholder;
     });
 
-    // Convert single backticks to styled inline code
-    processedHtml = processedHtml.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-
-    // Regex using Unicode escapes for the icons, wrapped in a span
-    processedHtml = processedHtml.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n\n|🤖 Claude|$)/g, function(match, path, content) {
-        // The HTML is already escaped, so we just need to handle newlines
+    // Replace directory commands with placeholders
+    const details = [];
+    processedMessage = processedMessage.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n\n|🤖 Claude|$)/g, (match, path, content) => {
         const formattedContent = content.replace(/\n/g, '<br>');
-        return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC1</span> Directory: ${path}</summary><pre>${formattedContent.trim()}</pre></details>`;
+        details.push(`<details class="background-command"><summary><span class="icon">\uD83D\uDCC1</span> Directory: ${path}</summary><pre>${formattedContent.trim()}</pre></details>`);
+        return detailPlaceholder;
     });
 
-    processedHtml = processedHtml.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block"([\s\S]*?)<\/pre>/g, function(match, path, content) {
-        return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC4</span> File: ${path}</summary><pre class="code-block"${content}</pre></details>`;
+    // Replace file commands with placeholders
+    processedMessage = processedMessage.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block">([\s\S]*?)<\/pre>/g, (match, path, content) => {
+        details.push(`<details class="background-command"><summary><span class="icon">\uD83D\uDCC4</span> File: ${path}</summary><pre class="code-block">${content}</pre></details>`);
+        return detailPlaceholder;
     });
 
-    // Replace newlines with <br> for proper formatting outside of code blocks
-    processedHtml = processedHtml.replace(/\n/g, '<br>');
+    // --- Step 2: Escape remaining HTML in the message ---
+    // This is the crucial step to prevent rendering any accidental HTML.
+    const tempDiv = document.createElement('div');
+    tempDiv.textContent = processedMessage;
+    let safeHtml = tempDiv.innerHTML;
+
+    // Handle inline code *after* escaping the rest of the message
+    safeHtml = safeHtml.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+    // Handle remaining newlines
+    safeHtml = safeHtml.replace(/\n/g, '<br>');
+
+    // --- Step 3: Replace placeholders with the actual HTML structure ---
+    codeBlocks.forEach(codeHtml => {
+        safeHtml = safeHtml.replace(codeBlockPlaceholder, codeHtml);
+    });
+
+    details.forEach(detailHtml => {
+        safeHtml = safeHtml.replace(detailPlaceholder, detailHtml);
+    });
 
     // Construct the final message HTML
-    messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${processedHtml}`;
+    messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${safeHtml}`;
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
 }
+
 
 
 
