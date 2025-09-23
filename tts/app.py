@@ -57,7 +57,9 @@ class MultiTTSEngine:
     def generate_coqui_tts(self, text):
         """Coqui TTS - Pro tier"""
         if not self.coqui_tts:
-            raise Exception("Coqui TTS not available")
+            from TTS.api import TTS
+            # Use the model that was pre-downloaded during build
+            self.coqui_tts = TTS(model_name="tts_models/en/ljspeech/fast_pitch")
 
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
             self.coqui_tts.tts_to_file(text=text, file_path=tmp_file.name)
