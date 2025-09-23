@@ -42,9 +42,8 @@ class ClaudeCommands {
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
         $originalLength = strlen($message);
         // Handle both @exec and exec patterns
-//         $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/s', [$this, 'execContainer'], $message);
-        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+?)(?=\n\n|$)/s', [$this, 'execContainer'], $message);
-        $message = preg_replace_callback('/^exec\s+([^\s]+)\s+(.+)/m', [$this, 'execContainer'], $message);
+        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+((?:.*?(?:<<\s*[\'"]?\w+[\'"]?\s*\n.*?\n\w+)|.*?))/ms', [$this, 'execContainer'], $message);
+//         $message = preg_replace_callback('/^exec\s+([^\s]+)\s+(.+)/m', [$this, 'execContainer'], $message);
         if (strlen($message) > $originalLength) {
             error_log("[CLAUDE_COMMANDS] Exec command processed successfully");
         } else if (strpos($message, '@exec') !== false) {
