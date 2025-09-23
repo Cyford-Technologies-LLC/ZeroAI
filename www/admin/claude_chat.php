@@ -395,11 +395,8 @@ function addMessageToChat(sender, message) {
     let processedMessage = message;
 
     const codeBlocks = [];
-    const details = [];
 
-    // --- Step 1: Extract code/details placeholders before escaping ---
-
-    // Markdown code blocks: ```lang\ncode```
+    // --- Step 1: Extract ```lang\ncode``` blocks ---
     processedMessage = processedMessage.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
         const languageClass = lang ? `data-lang="${escapeHtml(lang)}"` : '';
         const escapedCode = escapeHtml(code.trim());
@@ -408,44 +405,17 @@ function addMessageToChat(sender, message) {
         return placeholder;
     });
 
-    // Malformed <pre><html>...</pre><html>
-    processedMessage = processedMessage.replace(/<pre><html>([\s\S]*?)<\/pre><html>/g, (match, code) => {
-        const escapedCode = escapeHtml(code.trim());
-        const placeholder = `@@CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}@@`;
-        codeBlocks.push(`<pre class="code-block" data-lang="html"><code>${escapedCode}</code></pre>`);
-        return placeholder;
-    });
-
-    // Directory blocks
-    processedMessage = processedMessage.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n{2,}|🤖 Claude|👤 You:|$)/g, (match, path, content) => {
-        const formattedContent = escapeHtml(content.trim()).replace(/\n/g, '<br>');
-        const placeholder = `@@DETAIL_PLACEHOLDER_${details.length}@@`;
-        details.push(`<details class="background-command"><summary><span class="icon">📁</span> Directory: ${escapeHtml(path)}</summary><pre>${formattedContent}</pre></details>`);
-        return placeholder;
-    });
-
-    // File blocks
-    processedMessage = processedMessage.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block">([\s\S]*?)<\/pre>/g, (match, path, content) => {
-        const escapedContent = escapeHtml(content.trim());
-        const placeholder = `@@DETAIL_PLACEHOLDER_${details.length}@@`;
-        details.push(`<details class="background-command"><summary><span class="icon">📄</span> File: ${escapeHtml(path)}</summary><pre class="code-block"><code>${escapedContent}</code></pre></details>`);
-        return placeholder;
-    });
-
     // --- Step 2: Escape everything else ---
     processedMessage = escapeHtml(processedMessage);
 
-    // --- Step 3: Handle inline code ---
+    // --- Step 3: Inline code (`like this`) ---
     processedMessage = processedMessage.replace(/`([^`]+)`/g, (match, code) => {
         return `<code class="inline-code">${escapeHtml(code)}</code>`;
     });
 
-    // --- Step 4: Put placeholders back ---
+    // --- Step 4: Put code blocks back ---
     codeBlocks.forEach((codeHtml, index) => {
         processedMessage = processedMessage.replace(`@@CODE_BLOCK_PLACEHOLDER_${index}@@`, codeHtml);
-    });
-    details.forEach((detailHtml, index) => {
-        processedMessage = processedMessage.replace(`@@DETAIL_PLACEHOLDER_${index}@@`, detailHtml);
     });
 
     // --- Step 5: Replace remaining newlines with <br> ---
