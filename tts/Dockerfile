@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python -c "from TTS.api import TTS; TTS(model_name='tts_models/en/ljspeech/tacotron2-DDC_ph')"
+RUN python -c "from TTS.api import TTS; TTS(model_name='tts_models/en/ljspeech/fast_pitch')" || echo "Model download failed, will download at runtime"
 
 
 COPY app.py .
