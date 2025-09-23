@@ -134,7 +134,7 @@ services:
 #        reservations:
 #          memory: 3G
 
-volumes:
-  ollama_data_test:
-  redis_data_test:
-  avatar_models_test:
+#volumes:
+#  ollama_data_test:
+#  redis_data_test:
+#  avatar_models_test:
