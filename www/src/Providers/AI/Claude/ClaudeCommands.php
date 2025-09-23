@@ -42,7 +42,8 @@ class ClaudeCommands {
         $message = preg_replace_callback('/\@ps/', [$this, 'showContainers'], $message);
         $originalLength = strlen($message);
         // Handle both @exec and exec patterns
-        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/s', [$this, 'execContainer'], $message);
+//         $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+)/s', [$this, 'execContainer'], $message);
+        $message = preg_replace_callback('/\@exec\s+([^\s]+)\s+(.+?)(?=\n\n|$)/s', [$this, 'execContainer'], $message);
         $message = preg_replace_callback('/^exec\s+([^\s]+)\s+(.+)/m', [$this, 'execContainer'], $message);
         if (strlen($message) > $originalLength) {
             error_log("[CLAUDE_COMMANDS] Exec command processed successfully");
@@ -184,6 +185,14 @@ class ClaudeCommands {
         if (!$this->security->hasPermission('claude', 'docker_exec', 'hybrid')) {
             return "\n❌ Permission denied: docker exec\n";
         }
+         // Special handling for heredoc (EOF) syntax
+        if (preg_match('/cat\s*>\s*.*<<\s*[\'"]?EOF[\'"]?\s*$/m', $cmd)) {
+           // Extract everything until the closing EOF
+           $eofPattern = '/^(.*?)^EOF$/ms';
+        if (preg_match($eofPattern, $cmd . "\nEOF", $eofMatches)) {
+        $cmd = $eofMatches[1] . "EOF";
+         }
+     }
         
         $container = escapeshellarg($matches[1]);
         $cmd = $matches[2];
