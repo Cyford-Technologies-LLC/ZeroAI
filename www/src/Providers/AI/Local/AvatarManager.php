@@ -89,6 +89,22 @@ class AvatarManager
     /**
      * Set specific peer for avatar generation
      */
+
+
+
+    public function generateWithTTS($prompt, $mode = 'simple', $ttsEngine = 'espeak', $ttsOptions = [], $options = [])
+{
+    $options['tts_engine'] = $ttsEngine;
+    $options['tts_options'] = $ttsOptions;
+
+    if ($mode === 'sadtalker') {
+        return $this->generateSadTalker($prompt, $options);
+    } else {
+        return $this->generateSimple($prompt, $options);
+    }
+}
+
+
     public function setPeer($peerIp = null)
     {
         if ($peerIp === null) {
@@ -473,16 +489,21 @@ class AvatarManager
      * Call avatar service with specified mode
      */
     private function callAvatarService($prompt, $mode, $options = [])
-    {
-        // Use H.264 baseline codec for maximum browser compatibility
-        $codec = $options['codec'] ?? 'h264_fast';
-        $quality = $options['quality'] ?? 'high';
-        
-        $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
-        $data = json_encode([
-            'prompt' => $prompt,
-            'options' => $options
-        ]);
+{
+    $codec = $options['codec'] ?? 'h264_fast';
+    $quality = $options['quality'] ?? 'high';
+    $ttsEngine = $options['tts_engine'] ?? 'espeak';
+    $ttsOptions = $options['tts_options'] ?? [];
+
+    $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
+
+    $payload = [
+        'prompt' => $prompt,
+        'tts_engine' => $ttsEngine,
+        'tts_options' => $ttsOptions
+    ];
+
+    $data = json_encode($payload);
         
         $this->logger->debug('Calling avatar service', [
             'url' => $url,
