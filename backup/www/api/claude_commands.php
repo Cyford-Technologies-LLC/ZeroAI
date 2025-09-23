@@ -192,10 +192,17 @@ function processClaudeCommands(&$message) {
     }
 
     // @exec command - Check permissions first
-    if (preg_match_all('/@exec\s+([^\s]+)\s+((?:.|\n)*?)(?=\n@|\n\n|$)/m', $message, $matches, PREG_SET_ORDER)) {
+    // Process @exec commands (multi-line safe, handles heredocs)
+    if (preg_match_all(
+        '/@exec\s+([^\s]+)\s+((?:.|\n)*?)(?=\n@|$)/m',
+        $message,
+        $matches,
+        PREG_SET_ORDER
+    )) {
         if (isset($GLOBALS['debugMode']) && $GLOBALS['debugMode']) {
             error_log("DEBUG: @exec command detected - Found " . count($matches) . " matches");
         }
+
         global $claudeMode;
         $currentMode = $claudeMode ?? 'hybrid';
 
@@ -207,22 +214,37 @@ function processClaudeCommands(&$message) {
             $message .= "\n\n" . getPermissionError('exec', $currentMode);
         } else {
             foreach ($matches as $match) {
-                $containerName = trim($match[1]);
-                $command       = rtrim($match[2]);
+                // Sanitize container name
+                $containerName = escapeshellarg(trim($match[1]));
 
-                // logging (same as before)...
+                // Keep newlines inside heredocs, just strip carriage returns
+                $command = rtrim($match[2], "\r");
+
+                // Encode for safe transport into docker exec
                 $encodedCommand = base64_encode($command);
-                $output = shell_exec("timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash' 2>&1");
 
-                $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
+                $execCmd = "timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash'";
+                $output  = shell_exec($execCmd . " 2>&1");
 
+                error_log("EXEC DEBUG - Container: " . trim($match[1]) .
+                    " | Command length: " . strlen($command) .
+                    " | Output length: " . strlen($output ?: ''));
+
+                // Append result to chat
+                $message .= "\n\n💻 Exec [" . trim($match[1]) . "]: $command\n" . ($output ?: "Command executed");
+
+                // Track executed commands
+                if (!isset($GLOBALS['executedCommands'])) {
+                    $GLOBALS['executedCommands'] = [];
+                }
                 $GLOBALS['executedCommands'][] = [
-                    'command' => "@exec $containerName $command",
+                    'command' => "@exec " . trim($match[1]) . " $command",
                     'output'  => $output ?: "Command executed"
                 ];
             }
         }
     }
+
 
     // @inspect command
     if (preg_match('/\@inspect\s+([^\s]+)/', $message, $matches)) {
