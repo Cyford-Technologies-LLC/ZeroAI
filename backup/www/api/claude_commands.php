@@ -193,6 +193,52 @@ function processClaudeCommands(&$message) {
 
     // @exec command - Check permissions first
     if (preg_match_all('/@exec\s+([^\s]+)\s+((?:.|\n)*?)(?=\n@|\n\n|$)/m', $message, $matches, PREG_SET_ORDER)) {
+        if (isset($GLOBALS['debugMode']) && $GLOBALS['debugMode']) {
+            error_log("DEBUG: @exec command detected - Found " . count($matches) . " matches");
+        }
+        // Get current mode from global or default to hybrid
+        global $claudeMode;
+        $currentMode = $claudeMode ?? 'hybrid';
+
+        // Check permission
+        require_once __DIR__ . '/check_command_permission.php';
+        $hasPermission = checkCommandPermission('exec', $currentMode);
+        error_log("PERMISSION CHECK - Command: exec, Mode: $currentMode, Allowed: " . ($hasPermission ? 'YES' : 'NO'));
+        if (!$hasPermission) {
+            $message .= "\n\n" . getPermissionError('exec', $currentMode);
+        } else {
+        foreach ($matches as $match) {
+            $containerName = trim($match[1]);
+            $command = trim($match[2]);
+            // Log directly to Claude's database instead of file
+            try {
+                $dbPath = '/app/knowledge/internal_crew/agent_learning/self/claude/sessions_data/claude_memory.db';
+                $logPdo = new PDO("sqlite:$dbPath");
+                $logPdo->prepare("INSERT INTO command_history (command, output, status, model_used, timestamp) VALUES (?, ?, ?, ?, datetime('now'))")
+                       ->execute(["@exec $containerName $command", 'Executing...', 'running', 'claude', time()]);
+            } catch (Exception $e) {}
+
+            @file_put_contents('/app/logs/claude_commands.log', date('Y-m-d H:i:s') . " @exec: $containerName $command\n", FILE_APPEND);
+            // Use base64 encoding to safely pass complex commands
+            $encodedCommand = base64_encode($command);
+            $output = shell_exec("timeout 15 docker exec $containerName bash -c 'echo $encodedCommand | base64 -d | bash' 2>&1");
+            error_log("EXEC DEBUG - Command: $command, Output length: " . strlen($output ?: ''));
+            error_log("EXEC DEBUG - Raw output: " . ($output ?: 'EMPTY'));
+            $message .= "\n\n💻 Exec [$containerName]: $command\n" . ($output ?: "Command executed");
+            if (isset($GLOBALS['debugMode']) && $GLOBALS['debugMode']) {
+                error_log("DEBUG: Added exec output to message - Output length: " . strlen($output ?: ''));
+                error_log("DEBUG: Message length after adding output: " . strlen($message));
+            }
+
+            // Capture for database
+            if (!isset($GLOBALS['executedCommands'])) $GLOBALS['executedCommands'] = [];
+            $GLOBALS['executedCommands'][] = [
+                'command' => "@exec $containerName $command",
+                'output' => $output ?: "Command executed"
+            ];
+        }
+        }
+    }
 
     // @inspect command
     if (preg_match('/\@inspect\s+([^\s]+)/', $message, $matches)) {
