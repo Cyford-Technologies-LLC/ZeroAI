@@ -45,6 +45,14 @@ try {
             }
             
             $input = json_decode(file_get_contents('php://input'), true);
+            // Pass through new TTS fields
+            if (isset($input['tts_engine'])) {
+                $options['tts_engine'] = $input['tts_engine'];
+            }
+            if (isset($input['tts_options'])) {
+                $options['tts_options'] = $input['tts_options'];
+            }
+
             if (!$input) {
                 throw new Exception('Invalid JSON input');
             }
@@ -53,13 +61,15 @@ try {
             if (empty($prompt)) {
                 throw new Exception('Prompt is required');
             }
-            
+
             error_log("Generating avatar - Mode: $mode, Prompt: " . substr($prompt, 0, 50));
-            
+            error_log("Options: " . json_encode($options));
+
+
             if ($mode === 'sadtalker') {
-                $result = $avatarManager->generateSadTalker($prompt, $input['options'] ?? []);
+                $result = $avatarManager->generateSadTalker($prompt, $options);
             } else {
-                $result = $avatarManager->generateSimple($prompt, $input['options'] ?? []);
+                $result = $avatarManager->generateSimple($prompt, $options);
             }
 
             ob_end_clean();

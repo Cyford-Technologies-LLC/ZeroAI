@@ -94,14 +94,15 @@ class AvatarManager
 
     public function generateWithTTS($prompt, $mode = 'simple', $ttsEngine = 'espeak', $ttsOptions = [], $options = [])
 {
-    $options['tts_engine'] = $ttsEngine;
+    if (!is_array($ttsOptions)) {
+        $ttsOptions = [];
+    }
+    $options['tts_engine'] = $ttsEngine ?: 'espeak';
     $options['tts_options'] = $ttsOptions;
 
-    if ($mode === 'sadtalker') {
-        return $this->generateSadTalker($prompt, $options);
-    } else {
-        return $this->generateSimple($prompt, $options);
-    }
+    return $mode === 'sadtalker'
+        ? $this->generateSadTalker($prompt, $options)
+        : $this->generateSimple($prompt, $options);
 }
 
 
@@ -504,12 +505,14 @@ class AvatarManager
     ];
 
     $data = json_encode($payload);
-        
-        $this->logger->debug('Calling avatar service', [
-            'url' => $url,
-            'data_length' => strlen($data),
-            'mode' => $mode
-        ]);
+
+    $this->logger->debug('Calling avatar service', [
+        'url'        => $url,
+        'data_length'=> strlen($data),
+        'mode'       => $mode,
+        'tts_engine' => $ttsEngine,
+        'tts_options'=> $ttsOptions
+    ]);
         
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, 1);
