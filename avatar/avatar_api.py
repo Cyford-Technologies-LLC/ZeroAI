@@ -22,7 +22,7 @@ TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
 # Device Detection
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def generate_talking_face(image_path, audio_path, output_path):
+def generate_talking_face(image_path, audio_path, output_path, codec=None, quality=None):
     """Generate realistic talking face using MediaPipe"""
     try:
         print("Starting face detection...")

@@ -133,7 +133,7 @@ def generate_avatar():
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-def generate_talking_face(image_path, audio_path, output_path):
+def generate_talking_face(image_path, audio_path, output_path, codec=None, quality=None):
     """Generate realistic talking face using MediaPipe"""
     try:
         print("Starting face detection...")
