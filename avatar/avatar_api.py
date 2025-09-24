@@ -257,6 +257,7 @@ def generate_avatar():
                 success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
                 if not success:
                     print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
+                    source_image = data.get('image', '/app/default_face.jpg')
                     generate_talking_face(source_image, audio_path, video_path, codec, quality)
                 else:
                     print("=== SADTALKER SUCCESS ===")
