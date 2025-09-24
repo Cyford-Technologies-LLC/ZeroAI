@@ -24,6 +24,7 @@ RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -
 
 
 RUN cd /app/SadTalker && \
+    find . -name "*.py" -exec sed -i 's/\bnp\.float\b/float/g' {} \; && \
     find . -name "*.py" -exec sed -i 's/\bnp\.int\b/np.int32/g' {} \;
 
 
