@@ -441,6 +441,113 @@
         // }
 
 
+        async function generateAvatar() {
+            const prompt = document.getElementById('prompt').value;
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            const video = document.getElementById('avatarVideo');
+            const videoInfo = document.getElementById('videoInfo');
+
+            // Get TTS engine from the select element (add this select to your HTML)
+            const ttsEngine = document.getElementById('ttsEngine')?.value || 'espeak';
+            const ttsSpeed = parseInt(document.getElementById('ttsSpeed')?.value) || 160;
+            const ttsVoice = document.getElementById('ttsVoice')?.value || '';
+
+            // Build request with TTS parameters
+            const requestData = {
+                prompt: prompt,
+                tts_engine: ttsEngine,
+                tts_options: {
+                    speed: ttsSpeed
+                }
+            };
+
+            // Add voice if selected
+            if (ttsVoice) {
+                requestData.tts_options.voice = ttsVoice;
+            }
+
+            debugLog('🚀 Starting avatar generation with TTS', {
+                mode: currentMode,
+                tts_engine: ttsEngine,
+                tts_speed: ttsSpeed,
+                prompt: prompt.substring(0, 50),
+                timestamp: new Date().toISOString()
+            });
+
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            error.style.display = 'none';
+
+            try {
+                const startTime = Date.now();
+
+                // Call GPU peer with TTS parameters
+                debugLog('📡 Calling GPU peer with TTS', { url: 'http://149.36.0.180:444', engine: ttsEngine });
+
+                const response = await fetch(
+                    `http://149.36.0.180:444/generate?mode=${currentMode}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData)
+                    }
+                );
+
+                debugLog('Response received', {
+                    status: response.status,
+                    ok: response.ok,
+                    duration: Date.now() - startTime
+                });
+
+                if (!response.ok) {
+                    // Fallback to espeak if other engine fails
+                    if (response.status === 500 && ttsEngine !== 'espeak') {
+                        debugLog('⚠️ Retrying with espeak (fallback)');
+
+                        const fallbackData = {
+                            prompt: prompt,
+                            tts_engine: 'espeak',
+                            tts_options: { speed: 160 }
+                        };
+
+                        const fallbackResponse = await fetch(
+                            `http://149.36.0.180:444/generate?mode=${currentMode}`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(fallbackData)
+                            }
+                        );
+
+                        if (fallbackResponse.ok) {
+                            const blob = await fallbackResponse.blob();
+                            processVideoBlob(blob, 'espeak (fallback)');
+                        } else {
+                            throw new Error(`Avatar generation failed: ${fallbackResponse.status}`);
+                        }
+                    } else {
+                        throw new Error(`Avatar generation failed: ${response.status}`);
+                    }
+                } else {
+                    const blob = await response.blob();
+                    processVideoBlob(blob, ttsEngine);
+                }
+
+            } catch (err) {
+                debugLog('❌ Avatar generation error', { error: err.message, stack: err.stack });
+                error.textContent = 'Error: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
         // Add this new function to process video blob
         function processVideoBlob(blob, usedEngine) {
             const video = document.getElementById('avatarVideo');
