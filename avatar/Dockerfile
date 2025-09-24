@@ -24,8 +24,7 @@ RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -
 
 
 RUN cd /app/SadTalker && \
-    find . -name "*.py" -exec sed -i 's/np\.float/np.float64/g' {} \; && \
-    find . -name "*.py" -exec sed -i 's/np\.int/np.int32/g' {} \;
+    find . -name "*.py" -exec sed -i 's/\bnp\.int\b/np.int32/g' {} \;
 
 
 # Copy your application requirements file
