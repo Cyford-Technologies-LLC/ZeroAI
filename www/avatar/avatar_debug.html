@@ -184,262 +184,334 @@
             });
         });
         
-        async function generateAvatar() {
-            const prompt = document.getElementById('prompt').value;
-            const loading = document.getElementById('loading');
-            const result = document.getElementById('result');
-            const error = document.getElementById('error');
+        // async function generateAvatar() {
+        //     const prompt = document.getElementById('prompt').value;
+        //     const loading = document.getElementById('loading');
+        //     const result = document.getElementById('result');
+        //     const error = document.getElementById('error');
+        //     const video = document.getElementById('avatarVideo');
+        //     const videoInfo = document.getElementById('videoInfo');
+        //
+        //     debugLog('🚀 Starting avatar generation', {
+        //         mode: currentMode,
+        //         prompt: prompt.substring(0, 50),
+        //         timestamp: new Date().toISOString(),
+        //         userAgent: navigator.userAgent.substring(0, 100)
+        //     });
+        //
+        //     loading.style.display = 'block';
+        //     result.style.display = 'none';
+        //     error.style.display = 'none';
+        //
+        //     try {
+        //         const startTime = Date.now();
+        //
+        //         const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+        //             method: 'POST',
+        //             headers: { 'Content-Type': 'application/json' },
+        //             body: JSON.stringify({ prompt: prompt })
+        //         });
+        //
+        //         const duration = Date.now() - startTime;
+        //
+        //         debugLog('📡 Avatar API response received', {
+        //             status: response.status,
+        //             statusText: response.statusText,
+        //             ok: response.ok,
+        //             redirected: response.redirected,
+        //             type: response.type,
+        //             url: response.url,
+        //             contentType: response.headers.get('content-type'),
+        //             contentLength: response.headers.get('content-length'),
+        //             avatarMode: response.headers.get('x-avatar-mode'),
+        //             avatarSize: response.headers.get('x-avatar-size'),
+        //             duration: duration + 'ms',
+        //             allHeaders: Object.fromEntries(response.headers.entries())
+        //         });
+        //
+        //         if (response.ok) {
+        //             const contentType = response.headers.get('content-type');
+        //
+        //             if (contentType && contentType.includes('video')) {
+        //                 const blob = await response.blob();
+        //                 const videoUrl = URL.createObjectURL(blob);
+        //
+        //                 video.src = videoUrl;
+        //                 result.style.display = 'block';
+        //
+        //                 videoInfo.innerHTML = `
+        //                     <strong>Video Info:</strong><br>
+        //                     Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
+        //                     Size: ${blob.size} bytes<br>
+        //                     Type: ${contentType}<br>
+        //                     Generation Time: ${duration}ms<br>
+        //                     URL: ${videoUrl}
+        //                 `;
+        //
+        //                 // Comprehensive video debugging
+        //                 video.onloadstart = () => {
+        //                     debugLog('🎬 Video load started', {
+        //                         src: video.src,
+        //                         currentSrc: video.currentSrc,
+        //                         networkState: video.networkState,
+        //                         readyState: video.readyState
+        //                     });
+        //                 };
+        //
+        //                 video.onloadedmetadata = () => {
+        //                     debugLog('📊 Video metadata loaded', {
+        //                         duration: video.duration,
+        //                         videoWidth: video.videoWidth,
+        //                         videoHeight: video.videoHeight,
+        //                         readyState: video.readyState,
+        //                         networkState: video.networkState
+        //                     });
+        //                 };
+        //
+        //                 video.onloadeddata = () => {
+        //                     debugLog('✅ Video data loaded successfully', {
+        //                         duration: video.duration,
+        //                         videoWidth: video.videoWidth,
+        //                         videoHeight: video.videoHeight,
+        //                         currentSrc: video.currentSrc,
+        //                         networkState: video.networkState,
+        //                         readyState: video.readyState,
+        //                         buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+        //                         seekable: video.seekable.length > 0 ? video.seekable.end(0) : 0
+        //                     });
+        //                 };
+        //
+        //                 video.oncanplay = () => {
+        //                     debugLog('▶️ Video can play', {
+        //                         paused: video.paused,
+        //                         ended: video.ended,
+        //                         currentTime: video.currentTime,
+        //                         duration: video.duration,
+        //                         readyState: video.readyState
+        //                     });
+        //                 };
+        //
+        //                 video.oncanplaythrough = () => {
+        //                     debugLog('🎯 Video can play through', {
+        //                         buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+        //                         duration: video.duration
+        //                     });
+        //                 };
+        //
+        //                 video.onerror = (e) => {
+        //                     debugLog('❌ Video error event', {
+        //                         event: e,
+        //                         error: video.error,
+        //                         code: video.error?.code,
+        //                         message: video.error?.message,
+        //                         networkState: video.networkState,
+        //                         readyState: video.readyState,
+        //                         src: video.src,
+        //                         currentSrc: video.currentSrc
+        //                     });
+        //
+        //                     // Detailed error analysis
+        //                     if (video.error) {
+        //                         const errorCodes = {
+        //                             1: 'MEDIA_ERR_ABORTED - The user aborted the video',
+        //                             2: 'MEDIA_ERR_NETWORK - A network error occurred',
+        //                             3: 'MEDIA_ERR_DECODE - Error occurred when decoding',
+        //                             4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format not supported'
+        //                         };
+        //                         debugLog('📋 Error meaning', errorCodes[video.error.code] || 'Unknown error');
+        //                     }
+        //
+        //                     // Browser capability check
+        //                     debugLog('🔍 Browser video support', {
+        //                         canPlayType_mp4: video.canPlayType('video/mp4'),
+        //                         canPlayType_h264: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+        //                         canPlayType_webm: video.canPlayType('video/webm'),
+        //                         canPlayType_avi: video.canPlayType('video/avi')
+        //                     });
+        //                 };
+        //
+        //                 video.onstalled = () => debugLog('⏸️ Video stalled');
+        //                 video.onsuspend = () => debugLog('⏯️ Video suspended');
+        //                 video.onwaiting = () => debugLog('⏳ Video waiting');
+        //                 video.onprogress = () => {
+        //                     debugLog('📈 Video loading progress', {
+        //                         buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+        //                         duration: video.duration || 'unknown'
+        //                     });
+        //                 };
+        //                 video.onplay = () => debugLog('▶️ Video play started');
+        //                 video.onpause = () => debugLog('⏸️ Video paused');
+        //                 video.onended = () => debugLog('🏁 Video ended');
+        //                 video.ontimeupdate = () => {
+        //                     if (Math.floor(video.currentTime) % 1 === 0) { // Log every second
+        //                         debugLog('⏰ Video time update', {
+        //                             currentTime: video.currentTime,
+        //                             duration: video.duration
+        //                         });
+        //                     }
+        //                 };
+        //
+        //                 // Force load and try to play
+        //                 video.load();
+        //                 debugLog('🔄 Video load() called');
+        //
+        //                 // Try to play after a short delay
+        //                 setTimeout(() => {
+        //                     video.play().then(() => {
+        //                         debugLog('✅ Video play() succeeded');
+        //                     }).catch(e => {
+        //                         debugLog('🚫 Video play() failed', { error: e.message, name: e.name });
+        //                     });
+        //                 }, 100);
+        //
+        //                 debugLog('🎉 Avatar generation successful', {
+        //                     blobSize: blob.size,
+        //                     blobType: blob.type,
+        //                     videoUrl: videoUrl,
+        //                     urlLength: videoUrl.length
+        //                 });
+        //
+        //                 // Additional blob analysis
+        //                 debugLog('📦 Blob analysis', {
+        //                     constructor: blob.constructor.name,
+        //                     stream: typeof blob.stream === 'function',
+        //                     arrayBuffer: typeof blob.arrayBuffer === 'function',
+        //                     text: typeof blob.text === 'function'
+        //                 });
+        //
+        //                 // Hex dump first 100 bytes to check file structure
+        //                 blob.arrayBuffer().then(buffer => {
+        //                     const bytes = new Uint8Array(buffer);
+        //                     const hexDump = Array.from(bytes.slice(0, 100))
+        //                         .map(b => b.toString(16).padStart(2, '0'))
+        //                         .join(' ');
+        //                     const asciiDump = Array.from(bytes.slice(0, 100))
+        //                         .map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')
+        //                         .join('');
+        //
+        //                     debugLog('🔍 File hex dump (first 100 bytes)', {
+        //                         hex: hexDump,
+        //                         ascii: asciiDump,
+        //                         fileSignature: hexDump.substring(0, 23), // First 8 bytes
+        //                         isMP4: hexDump.includes('66 74 79 70'), // 'ftyp' box
+        //                         isAVI: hexDump.startsWith('52 49 46 46'), // 'RIFF'
+        //                         isWebM: hexDump.startsWith('1a 45 df a3') // WebM signature
+        //                     });
+        //                 }).catch(e => {
+        //                     debugLog('❌ Failed to read file bytes', { error: e.message });
+        //                 });
+        //
+        //                 // Browser environment check
+        //                 debugLog('🌐 Browser environment', {
+        //                     userAgent: navigator.userAgent,
+        //                     platform: navigator.platform,
+        //                     cookieEnabled: navigator.cookieEnabled,
+        //                     onLine: navigator.onLine,
+        //                     language: navigator.language,
+        //                     hardwareConcurrency: navigator.hardwareConcurrency,
+        //                     deviceMemory: navigator.deviceMemory || 'unknown'
+        //                 });
+        //
+        //                 // URL object analysis
+        //                 debugLog('🔗 URL object analysis', {
+        //                     protocol: new URL(videoUrl).protocol,
+        //                     host: new URL(videoUrl).host,
+        //                     pathname: new URL(videoUrl).pathname,
+        //                     search: new URL(videoUrl).search
+        //                 });
+        //
+        //             } else {
+        //                 const text = await response.text();
+        //                 debugLog('Non-video response received', { response: text });
+        //                 throw new Error('Expected video response, got: ' + contentType);
+        //             }
+        //         } else {
+        //             const errorText = await response.text();
+        //             debugLog('Avatar generation failed', { status: response.status, error: errorText });
+        //             throw new Error(`HTTP ${response.status}: ${errorText}`);
+        //         }
+        //
+        //     } catch (err) {
+        //         debugLog('Avatar generation error', { error: err.message, stack: err.stack });
+        //         error.textContent = 'Error: ' + err.message;
+        //         error.style.display = 'block';
+        //     } finally {
+        //         loading.style.display = 'none';
+        //     }
+        // }
+
+
+        // Add this new function to process video blob
+        function processVideoBlob(blob, usedEngine) {
             const video = document.getElementById('avatarVideo');
+            const result = document.getElementById('result');
             const videoInfo = document.getElementById('videoInfo');
-            
-            debugLog('🚀 Starting avatar generation', { 
-                mode: currentMode, 
-                prompt: prompt.substring(0, 50),
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent.substring(0, 100)
+
+            debugLog('📦 Processing video blob', { size: blob.size, type: blob.type, engine: usedEngine });
+
+            const videoUrl = URL.createObjectURL(blob);
+            video.src = videoUrl;
+
+            const sizeMB = (blob.size / 1024 / 1024).toFixed(2);
+            videoInfo.innerHTML = `
+        <strong>Video Info:</strong><br>
+        Size: ${sizeMB} MB<br>
+        Type: ${blob.type || 'video/mp4'}<br>
+        Mode: ${currentMode}<br>
+        TTS Engine: ${usedEngine}<br>
+        Generated: ${new Date().toLocaleTimeString()}
+    `;
+
+            result.style.display = 'block';
+
+            debugLog('✅ Avatar generation complete', {
+                size: blob.size,
+                engine: usedEngine
             });
-            
-            loading.style.display = 'block';
-            result.style.display = 'none';
-            error.style.display = 'none';
-            
-            try {
-                const startTime = Date.now();
-                
-                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
-                });
-                
-                const duration = Date.now() - startTime;
-                
-                debugLog('📡 Avatar API response received', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    ok: response.ok,
-                    redirected: response.redirected,
-                    type: response.type,
-                    url: response.url,
-                    contentType: response.headers.get('content-type'),
-                    contentLength: response.headers.get('content-length'),
-                    avatarMode: response.headers.get('x-avatar-mode'),
-                    avatarSize: response.headers.get('x-avatar-size'),
-                    duration: duration + 'ms',
-                    allHeaders: Object.fromEntries(response.headers.entries())
-                });
-                
-                if (response.ok) {
-                    const contentType = response.headers.get('content-type');
-                    
-                    if (contentType && contentType.includes('video')) {
-                        const blob = await response.blob();
-                        const videoUrl = URL.createObjectURL(blob);
-                        
-                        video.src = videoUrl;
-                        result.style.display = 'block';
-                        
-                        videoInfo.innerHTML = `
-                            <strong>Video Info:</strong><br>
-                            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
-                            Size: ${blob.size} bytes<br>
-                            Type: ${contentType}<br>
-                            Generation Time: ${duration}ms<br>
-                            URL: ${videoUrl}
-                        `;
-                        
-                        // Comprehensive video debugging
-                        video.onloadstart = () => {
-                            debugLog('🎬 Video load started', {
-                                src: video.src,
-                                currentSrc: video.currentSrc,
-                                networkState: video.networkState,
-                                readyState: video.readyState
-                            });
-                        };
-                        
-                        video.onloadedmetadata = () => {
-                            debugLog('📊 Video metadata loaded', {
-                                duration: video.duration,
-                                videoWidth: video.videoWidth,
-                                videoHeight: video.videoHeight,
-                                readyState: video.readyState,
-                                networkState: video.networkState
-                            });
-                        };
-                        
-                        video.onloadeddata = () => {
-                            debugLog('✅ Video data loaded successfully', {
-                                duration: video.duration,
-                                videoWidth: video.videoWidth,
-                                videoHeight: video.videoHeight,
-                                currentSrc: video.currentSrc,
-                                networkState: video.networkState,
-                                readyState: video.readyState,
-                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
-                                seekable: video.seekable.length > 0 ? video.seekable.end(0) : 0
-                            });
-                        };
-                        
-                        video.oncanplay = () => {
-                            debugLog('▶️ Video can play', {
-                                paused: video.paused,
-                                ended: video.ended,
-                                currentTime: video.currentTime,
-                                duration: video.duration,
-                                readyState: video.readyState
-                            });
-                        };
-                        
-                        video.oncanplaythrough = () => {
-                            debugLog('🎯 Video can play through', {
-                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
-                                duration: video.duration
-                            });
-                        };
-                        
-                        video.onerror = (e) => {
-                            debugLog('❌ Video error event', {
-                                event: e,
-                                error: video.error,
-                                code: video.error?.code,
-                                message: video.error?.message,
-                                networkState: video.networkState,
-                                readyState: video.readyState,
-                                src: video.src,
-                                currentSrc: video.currentSrc
-                            });
-                            
-                            // Detailed error analysis
-                            if (video.error) {
-                                const errorCodes = {
-                                    1: 'MEDIA_ERR_ABORTED - The user aborted the video',
-                                    2: 'MEDIA_ERR_NETWORK - A network error occurred',
-                                    3: 'MEDIA_ERR_DECODE - Error occurred when decoding',
-                                    4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format not supported'
-                                };
-                                debugLog('📋 Error meaning', errorCodes[video.error.code] || 'Unknown error');
-                            }
-                            
-                            // Browser capability check
-                            debugLog('🔍 Browser video support', {
-                                canPlayType_mp4: video.canPlayType('video/mp4'),
-                                canPlayType_h264: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
-                                canPlayType_webm: video.canPlayType('video/webm'),
-                                canPlayType_avi: video.canPlayType('video/avi')
-                            });
-                        };
-                        
-                        video.onstalled = () => debugLog('⏸️ Video stalled');
-                        video.onsuspend = () => debugLog('⏯️ Video suspended');
-                        video.onwaiting = () => debugLog('⏳ Video waiting');
-                        video.onprogress = () => {
-                            debugLog('📈 Video loading progress', {
-                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
-                                duration: video.duration || 'unknown'
-                            });
-                        };
-                        video.onplay = () => debugLog('▶️ Video play started');
-                        video.onpause = () => debugLog('⏸️ Video paused');
-                        video.onended = () => debugLog('🏁 Video ended');
-                        video.ontimeupdate = () => {
-                            if (Math.floor(video.currentTime) % 1 === 0) { // Log every second
-                                debugLog('⏰ Video time update', {
-                                    currentTime: video.currentTime,
-                                    duration: video.duration
-                                });
-                            }
-                        };
-                        
-                        // Force load and try to play
-                        video.load();
-                        debugLog('🔄 Video load() called');
-                        
-                        // Try to play after a short delay
-                        setTimeout(() => {
-                            video.play().then(() => {
-                                debugLog('✅ Video play() succeeded');
-                            }).catch(e => {
-                                debugLog('🚫 Video play() failed', { error: e.message, name: e.name });
-                            });
-                        }, 100);
-                        
-                        debugLog('🎉 Avatar generation successful', {
-                            blobSize: blob.size,
-                            blobType: blob.type,
-                            videoUrl: videoUrl,
-                            urlLength: videoUrl.length
-                        });
-                        
-                        // Additional blob analysis
-                        debugLog('📦 Blob analysis', {
-                            constructor: blob.constructor.name,
-                            stream: typeof blob.stream === 'function',
-                            arrayBuffer: typeof blob.arrayBuffer === 'function',
-                            text: typeof blob.text === 'function'
-                        });
-                        
-                        // Hex dump first 100 bytes to check file structure
-                        blob.arrayBuffer().then(buffer => {
-                            const bytes = new Uint8Array(buffer);
-                            const hexDump = Array.from(bytes.slice(0, 100))
-                                .map(b => b.toString(16).padStart(2, '0'))
-                                .join(' ');
-                            const asciiDump = Array.from(bytes.slice(0, 100))
-                                .map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')
-                                .join('');
-                            
-                            debugLog('🔍 File hex dump (first 100 bytes)', {
-                                hex: hexDump,
-                                ascii: asciiDump,
-                                fileSignature: hexDump.substring(0, 23), // First 8 bytes
-                                isMP4: hexDump.includes('66 74 79 70'), // 'ftyp' box
-                                isAVI: hexDump.startsWith('52 49 46 46'), // 'RIFF'
-                                isWebM: hexDump.startsWith('1a 45 df a3') // WebM signature
-                            });
-                        }).catch(e => {
-                            debugLog('❌ Failed to read file bytes', { error: e.message });
-                        });
-                        
-                        // Browser environment check
-                        debugLog('🌐 Browser environment', {
-                            userAgent: navigator.userAgent,
-                            platform: navigator.platform,
-                            cookieEnabled: navigator.cookieEnabled,
-                            onLine: navigator.onLine,
-                            language: navigator.language,
-                            hardwareConcurrency: navigator.hardwareConcurrency,
-                            deviceMemory: navigator.deviceMemory || 'unknown'
-                        });
-                        
-                        // URL object analysis
-                        debugLog('🔗 URL object analysis', {
-                            protocol: new URL(videoUrl).protocol,
-                            host: new URL(videoUrl).host,
-                            pathname: new URL(videoUrl).pathname,
-                            search: new URL(videoUrl).search
-                        });
-                        
-                    } else {
-                        const text = await response.text();
-                        debugLog('Non-video response received', { response: text });
-                        throw new Error('Expected video response, got: ' + contentType);
-                    }
-                } else {
-                    const errorText = await response.text();
-                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-            } catch (err) {
-                debugLog('Avatar generation error', { error: err.message, stack: err.stack });
-                error.textContent = 'Error: ' + err.message;
-                error.style.display = 'block';
-            } finally {
-                loading.style.display = 'none';
+        }
+
+        // Add this function to update TTS options when engine changes
+        function updateTTSOptions() {
+            const engine = document.getElementById('ttsEngine').value;
+            const voiceGroup = document.getElementById('voiceGroup');
+            const voiceSelect = document.getElementById('ttsVoice');
+
+            debugLog('TTS engine changed', { engine });
+
+            const voices = {
+                edge: [
+                    { value: 'en-US-AriaNeural', label: 'Aria (Female)' },
+                    { value: 'en-US-JennyNeural', label: 'Jenny (Female)' },
+                    { value: 'en-US-GuyNeural', label: 'Guy (Male)' },
+                    { value: 'en-US-ChristopherNeural', label: 'Christopher (Male)' }
+                ],
+                openai: [
+                    { value: 'alloy', label: 'Alloy' },
+                    { value: 'echo', label: 'Echo' },
+                    { value: 'fable', label: 'Fable' },
+                    { value: 'onyx', label: 'Onyx' },
+                    { value: 'nova', label: 'Nova' },
+                    { value: 'shimmer', label: 'Shimmer' }
+                ],
+                elevenlabs: [
+                    { value: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel' },
+                    { value: 'AZnzlk1XvdvUeBnXmlld', label: 'Domi' }
+                ]
+            };
+
+            // Show/hide voice selection
+            if (voices[engine]) {
+                voiceGroup.style.display = 'block';
+                voiceSelect.innerHTML = voices[engine].map(v =>
+                    `<option value="${v.value}">${v.label}</option>`
+                ).join('');
+            } else {
+                voiceGroup.style.display = 'none';
             }
         }
-        
+
+
+
         async function testMP4() {
             debugLog('Testing MP4 pipeline with minimal file');
             
