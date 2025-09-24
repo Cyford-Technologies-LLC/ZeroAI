@@ -133,6 +133,43 @@ def generate_avatar():
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
+def generate_talking_face(image_path, audio_path, output_path):
+    """Generate realistic talking face using MediaPipe"""
+    try:
+        print("Starting face detection...")
+        # Use MediaPipe for face detection
+        import mediapipe as mp
+
+        mp_face_detection = mp.solutions.face_detection
+        mp_drawing = mp.solutions.drawing_utils
+
+        # Load source image or create default
+        if os.path.exists(image_path):
+            img = cv2.imread(image_path)
+            print(f"Loaded image: {image_path}")
+        else:
+            print("Creating default face image...")
+            img = create_default_face()
+
+        with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
+            results = face_detection.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+            if results.detections:
+                print(f"Found {len(results.detections)} faces")
+                # Create animated video with detected face
+                create_animated_face(img, results.detections[0], audio_path, output_path)
+            else:
+                print("No face detected, using basic avatar")
+                # No face detected, use basic avatar
+                create_basic_avatar(audio_path, output_path, "No face detected")
+
+    except Exception as e:
+        print(f"Face generation error: {str(e)}")
+        # Fallback to basic avatar
+        create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}")
+
+
+
 
 @app.route('/debug/status')
 def debug_status():
