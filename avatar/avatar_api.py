@@ -246,6 +246,7 @@ def generate_avatar():
             print("Generating TTS...")
             if call_tts_service_with_options(prompt, audio_path, tts_engine, tts_options):
                 print("TTS completed")
+                audio_path = normalize_audio(audio_path)  # ensure SadTalker gets clean audio
             else:
                 print("TTS generation failed")
                 return jsonify({'error': 'TTS generation failed'}), 500
@@ -335,6 +336,19 @@ def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_opti
     except Exception as e:
         print(f"TTS service call failed: {e}")
         return False
+
+def normalize_audio(audio_path):
+    fixed_path = audio_path.replace('.wav', '_fixed.wav')
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", audio_path,
+        "-ac", "1",        # mono
+        "-ar", "16000",    # 16k sample rate
+        "-acodec", "pcm_s16le",  # raw PCM
+        fixed_path
+    ]
+    subprocess.run(cmd, check=True)
+    return fixed_path
 
 
 def create_default_face():
