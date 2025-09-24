@@ -199,7 +199,7 @@ DEFAULT_CODEC = 'h264_fast'
 #         print(f"Avatar generation error: {str(e)}")
 #         print(traceback.format_exc())
 #         return jsonify({'error': str(e)}), 500
-
+ref_image_path = '/app/faces/2.jpg'
 
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
@@ -220,7 +220,7 @@ def generate_avatar():
             return jsonify({'error': 'No JSON data provided'}), 400
 
         prompt = data.get('prompt', 'Hello')
-        source_image = data.get('image', '/app/default_face.jpg')
+        source_image = data.get('image', f"{ref_image_path}")
         codec_options = data.get('codec_options', {})
 
         # NEW: TTS Engine Selection with Full Options Support
@@ -751,7 +751,7 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', 
         # cv2.imwrite(ref_image_path, default_face)
         # print(f"Reference image created: {os.path.exists(ref_image_path)}")
         # Use real reference image
-        ref_image_path = '/app/faces/2.jpg'
+
         print(f"Using reference image: {ref_image_path}")
         print(f"Reference image exists: {os.path.exists(ref_image_path)}")
 
