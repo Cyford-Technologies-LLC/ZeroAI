@@ -262,6 +262,7 @@ def generate_avatar():
                     print("=== SADTALKER SUCCESS ===")
             else:
                 print("=== USING SIMPLE/MEDIAPIPE MODE ===")
+                source_image = data.get('image', '/app/default_face.jpg')
                 generate_talking_face(source_image, audio_path, video_path, codec, quality)
             print("Face generation completed")
 
