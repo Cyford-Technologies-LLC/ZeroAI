@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZeroAI Avatar Debug Console</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .controls { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        button.danger { background: #dc3545; }
+        button.success { background: #28a745; }
+        textarea { width: 100%; height: 100px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; }
+        .log-container { background: #000; color: #0f0; font-family: monospace; padding: 15px; height: 300px; overflow-y: auto; border: 1px solid #333; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .status-item { background: #333; padding: 15px; border-radius: 4px; }
+        .status-ok { border-left: 4px solid #28a745; }
+        .status-error { border-left: 4px solid #dc3545; }
+        .status-warning { border-left: 4px solid #ffc107; }
+        video { width: 100%; max-width: 500px; border: 2px solid #555; }
+        .debug-info { background: #1a1a2e; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .mode-selector { margin: 10px 0; }
+        .mode-selector input[type="radio"] { margin: 0 5px 0 15px; }
+        .loading { display: none; color: #ffc107; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 ZeroAI Avatar Debug Console</h1>
+        
+        <div class="section">
+            <h2>Avatar Generation</h2>
+            
+            <div class="mode-selector">
+                <strong>Mode:</strong>
+                <input type="radio" id="mode-simple" name="mode" value="simple" checked>
+                <label for="mode-simple">Simple Avatar</label>
+                <input type="radio" id="mode-sadtalker" name="mode" value="sadtalker">
+                <label for="mode-sadtalker">SadTalker (Realistic)</label>
+            </div>
+            
+            <textarea id="prompt" placeholder="Enter your prompt here...">Hello! This is a test of the avatar system with full debugging enabled.</textarea>
+            
+            <div class="controls">
+                <button onclick="generateAvatar()">Generate Avatar</button>
+                <button onclick="testMP4()" class="success">Test MP4 Pipeline</button>
+                <button onclick="testConnection()" class="success">Test Connection</button>
+                <button onclick="getStatus()">Get Status</button>
+                <button onclick="getLogs()">Get Logs</button>
+                <button onclick="clearLogs()" class="danger">Clear Logs</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <p>🔄 Generating avatar... This may take a few minutes.</p>
+                <div id="progress"></div>
+            </div>
+            
+            <div id="result" style="display: none;">
+                <h3>Generated Avatar:</h3>
+                <video id="avatarVideo" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <div class="debug-info" id="videoInfo"></div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Server Connection</h2>
+            <div class="controls">
+                <button onclick="getServerInfo()">Get Server Info</button>
+            </div>
+            <div class="status-grid" id="serverInfo">
+                <div class="status-item">Click "Get Server Info" to see which avatar server is being used...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>System Status</h2>
+            <div class="controls">
+                <button onclick="refreshStatus()">Refresh Status</button>
+            </div>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-item">Loading status...</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Debug Logs</h2>
+            <div class="controls">
+                <button onclick="refreshLogs()">Refresh Logs</button>
+                <button onclick="clearDebugLogs()" class="danger">Clear Debug Logs</button>
+                <button onclick="downloadLogs()">Download Logs</button>
+                <button onclick="copyLogsToClipboard()">Copy to Clipboard</button>
+            </div>
+            <div class="log-container" id="logContainer">
+                Click "Refresh Logs" to load debug information...
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>PHP Error Logs</h2>
+            <div class="controls">
+                <button onclick="getPhpErrors()">Get PHP Errors</button>
+                <button onclick="clearPhpErrors()" class="danger">Clear PHP Errors</button>
+            </div>
+            <div class="log-container" id="phpErrorContainer">
+                Click "Get PHP Errors" to load PHP error logs...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let debugMode = true;
+        let currentMode = 'simple';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes instead of 1 minute
+        
+        // Enhanced console logging wrapper with stack traces
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toISOString();
+            const stack = new Error().stack;
+            const caller = stack.split('\n')[2]?.trim() || 'unknown';
+            
+            // Console logging with styling
+            console.group(`🔍 [${timestamp}] ${message}`);
+            if (data) {
+                console.log('📊 Data:', data);
+            }
+            console.log('📍 Called from:', caller);
+            console.groupEnd();
+            
+            if (debugMode) {
+                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data, null, 2) : ''}\n📍 ${caller}`;
+                appendToLog('logContainer', logEntry);
+            }
+        }
+        
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            debugLog('🚨 Global JavaScript Error', {
+                message: e.message,
+                filename: e.filename,
+                lineno: e.lineno,
+                colno: e.colno,
+                error: e.error?.toString(),
+                stack: e.error?.stack
+            });
+        });
+        
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (e) => {
+            debugLog('🚨 Unhandled Promise Rejection', {
+                reason: e.reason,
+                promise: e.promise,
+                stack: e.reason?.stack
+            });
+        });
+        
+        // Performance monitoring
+        function logPerformance(label) {
+            if (performance.mark) {
+                performance.mark(label);
+                debugLog('⚡ Performance Mark', { label, timestamp: performance.now() });
+            }
+        }
+        
+        function appendToLog(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML += message + '\n';
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Update mode when radio buttons change
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                currentMode = this.value;
+                debugLog('Mode changed', { mode: currentMode });
+            });
+        });
+        
+        async function generateAvatar() {
+            const prompt = document.getElementById('prompt').value;
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            const video = document.getElementById('avatarVideo');
+            const videoInfo = document.getElementById('videoInfo');
+            
+            debugLog('🚀 Starting avatar generation', { 
+                mode: currentMode, 
+                prompt: prompt.substring(0, 50),
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent.substring(0, 100)
+            });
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                
+                const duration = Date.now() - startTime;
+                
+                debugLog('📡 Avatar API response received', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    redirected: response.redirected,
+                    type: response.type,
+                    url: response.url,
+                    contentType: response.headers.get('content-type'),
+                    contentLength: response.headers.get('content-length'),
+                    avatarMode: response.headers.get('x-avatar-mode'),
+                    avatarSize: response.headers.get('x-avatar-size'),
+                    duration: duration + 'ms',
+                    allHeaders: Object.fromEntries(response.headers.entries())
+                });
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('video')) {
+                        const blob = await response.blob();
+                        const videoUrl = URL.createObjectURL(blob);
+                        
+                        video.src = videoUrl;
+                        result.style.display = 'block';
+                        
+                        videoInfo.innerHTML = `
+                            <strong>Video Info:</strong><br>
+                            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
+                            Size: ${blob.size} bytes<br>
+                            Type: ${contentType}<br>
+                            Generation Time: ${duration}ms<br>
+                            URL: ${videoUrl}
+                        `;
+                        
+                        // Comprehensive video debugging
+                        video.onloadstart = () => {
+                            debugLog('🎬 Video load started', {
+                                src: video.src,
+                                currentSrc: video.currentSrc,
+                                networkState: video.networkState,
+                                readyState: video.readyState
+                            });
+                        };
+                        
+                        video.onloadedmetadata = () => {
+                            debugLog('📊 Video metadata loaded', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight,
+                                readyState: video.readyState,
+                                networkState: video.networkState
+                            });
+                        };
+                        
+                        video.onloadeddata = () => {
+                            debugLog('✅ Video data loaded successfully', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight,
+                                currentSrc: video.currentSrc,
+                                networkState: video.networkState,
+                                readyState: video.readyState,
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                seekable: video.seekable.length > 0 ? video.seekable.end(0) : 0
+                            });
+                        };
+                        
+                        video.oncanplay = () => {
+                            debugLog('▶️ Video can play', {
+                                paused: video.paused,
+                                ended: video.ended,
+                                currentTime: video.currentTime,
+                                duration: video.duration,
+                                readyState: video.readyState
+                            });
+                        };
+                        
+                        video.oncanplaythrough = () => {
+                            debugLog('🎯 Video can play through', {
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                duration: video.duration
+                            });
+                        };
+                        
+                        video.onerror = (e) => {
+                            debugLog('❌ Video error event', {
+                                event: e,
+                                error: video.error,
+                                code: video.error?.code,
+                                message: video.error?.message,
+                                networkState: video.networkState,
+                                readyState: video.readyState,
+                                src: video.src,
+                                currentSrc: video.currentSrc
+                            });
+                            
+                            // Detailed error analysis
+                            if (video.error) {
+                                const errorCodes = {
+                                    1: 'MEDIA_ERR_ABORTED - The user aborted the video',
+                                    2: 'MEDIA_ERR_NETWORK - A network error occurred',
+                                    3: 'MEDIA_ERR_DECODE - Error occurred when decoding',
+                                    4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format not supported'
+                                };
+                                debugLog('📋 Error meaning', errorCodes[video.error.code] || 'Unknown error');
+                            }
+                            
+                            // Browser capability check
+                            debugLog('🔍 Browser video support', {
+                                canPlayType_mp4: video.canPlayType('video/mp4'),
+                                canPlayType_h264: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+                                canPlayType_webm: video.canPlayType('video/webm'),
+                                canPlayType_avi: video.canPlayType('video/avi')
+                            });
+                        };
+                        
+                        video.onstalled = () => debugLog('⏸️ Video stalled');
+                        video.onsuspend = () => debugLog('⏯️ Video suspended');
+                        video.onwaiting = () => debugLog('⏳ Video waiting');
+                        video.onprogress = () => {
+                            debugLog('📈 Video loading progress', {
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                duration: video.duration || 'unknown'
+                            });
+                        };
+                        video.onplay = () => debugLog('▶️ Video play started');
+                        video.onpause = () => debugLog('⏸️ Video paused');
+                        video.onended = () => debugLog('🏁 Video ended');
+                        video.ontimeupdate = () => {
+                            if (Math.floor(video.currentTime) % 1 === 0) { // Log every second
+                                debugLog('⏰ Video time update', {
+                                    currentTime: video.currentTime,
+                                    duration: video.duration
+                                });
+                            }
+                        };
+                        
+                        // Force load and try to play
+                        video.load();
+                        debugLog('🔄 Video load() called');
+                        
+                        // Try to play after a short delay
+                        setTimeout(() => {
+                            video.play().then(() => {
+                                debugLog('✅ Video play() succeeded');
+                            }).catch(e => {
+                                debugLog('🚫 Video play() failed', { error: e.message, name: e.name });
+                            });
+                        }, 100);
+                        
+                        debugLog('🎉 Avatar generation successful', {
+                            blobSize: blob.size,
+                            blobType: blob.type,
+                            videoUrl: videoUrl,
+                            urlLength: videoUrl.length
+                        });
+                        
+                        // Additional blob analysis
+                        debugLog('📦 Blob analysis', {
+                            constructor: blob.constructor.name,
+                            stream: typeof blob.stream === 'function',
+                            arrayBuffer: typeof blob.arrayBuffer === 'function',
+                            text: typeof blob.text === 'function'
+                        });
+                        
+                        // Hex dump first 100 bytes to check file structure
+                        blob.arrayBuffer().then(buffer => {
+                            const bytes = new Uint8Array(buffer);
+                            const hexDump = Array.from(bytes.slice(0, 100))
+                                .map(b => b.toString(16).padStart(2, '0'))
+                                .join(' ');
+                            const asciiDump = Array.from(bytes.slice(0, 100))
+                                .map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')
+                                .join('');
+                            
+                            debugLog('🔍 File hex dump (first 100 bytes)', {
+                                hex: hexDump,
+                                ascii: asciiDump,
+                                fileSignature: hexDump.substring(0, 23), // First 8 bytes
+                                isMP4: hexDump.includes('66 74 79 70'), // 'ftyp' box
+                                isAVI: hexDump.startsWith('52 49 46 46'), // 'RIFF'
+                                isWebM: hexDump.startsWith('1a 45 df a3') // WebM signature
+                            });
+                        }).catch(e => {
+                            debugLog('❌ Failed to read file bytes', { error: e.message });
+                        });
+                        
+                        // Browser environment check
+                        debugLog('🌐 Browser environment', {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            cookieEnabled: navigator.cookieEnabled,
+                            onLine: navigator.onLine,
+                            language: navigator.language,
+                            hardwareConcurrency: navigator.hardwareConcurrency,
+                            deviceMemory: navigator.deviceMemory || 'unknown'
+                        });
+                        
+                        // URL object analysis
+                        debugLog('🔗 URL object analysis', {
+                            protocol: new URL(videoUrl).protocol,
+                            host: new URL(videoUrl).host,
+                            pathname: new URL(videoUrl).pathname,
+                            search: new URL(videoUrl).search
+                        });
+                        
+                    } else {
+                        const text = await response.text();
+                        debugLog('Non-video response received', { response: text });
+                        throw new Error('Expected video response, got: ' + contentType);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+            } catch (err) {
+                debugLog('Avatar generation error', { error: err.message, stack: err.stack });
+                error.textContent = 'Error: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        async function testMP4() {
+            debugLog('Testing MP4 pipeline with minimal file');
+            
+            const video = document.getElementById('avatarVideo');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            
+            try {
+                const response = await fetch('/test-mp4');
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const videoUrl = URL.createObjectURL(blob);
+                    
+                    video.src = videoUrl;
+                    result.style.display = 'block';
+                    error.style.display = 'none';
+                    
+                    debugLog('✅ Test MP4 loaded successfully', {
+                        size: blob.size,
+                        type: blob.type
+                    });
+                    
+                    // Test hex dump on this file too
+                    blob.arrayBuffer().then(buffer => {
+                        const bytes = new Uint8Array(buffer);
+                        const hexDump = Array.from(bytes.slice(0, 50))
+                            .map(b => b.toString(16).padStart(2, '0'))
+                            .join(' ');
+                        debugLog('🧪 Test MP4 hex dump', { hex: hexDump });
+                    });
+                    
+                } else {
+                    throw new Error(`Test MP4 failed: ${response.status}`);
+                }
+                
+            } catch (err) {
+                debugLog('❌ Test MP4 failed', { error: err.message });
+                error.textContent = 'Test MP4 Error: ' + err.message;
+                error.style.display = 'block';
+            }
+        }
+        
+        async function testConnection() {
+            debugLog('Testing avatar service connection');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=test');
+                const result = await response.json();
+                
+                debugLog('Connection test result', result);
+                
+                if (result.status === 'success') {
+                    alert('✅ Connection successful: ' + result.message);
+                } else {
+                    alert('❌ Connection failed: ' + result.message);
+                }
+            } catch (error) {
+                debugLog('Connection test error', { error: error.message });
+                alert('❌ Connection test failed: ' + error.message);
+            }
+        }
+        
+        async function getServerInfo() {
+            debugLog('Getting server connection info');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=server_info');
+                const result = await response.json();
+                
+                debugLog('Server info received', result);
+                displayServerInfo(result);
+                
+            } catch (error) {
+                debugLog('Server info retrieval error', { error: error.message });
+                console.error('Server info error:', error);
+            }
+        }
+        
+        function displayServerInfo(info) {
+            const container = document.getElementById('serverInfo');
+            
+            if (!info || !info.current_peer) {
+                container.innerHTML = '<div class="status-item status-error">No server info available</div>';
+                return;
+            }
+            
+            const peer = info.current_peer;
+            const available = info.available_peers || [];
+            
+            let html = `
+                <div class="status-item status-${peer.type === 'local' ? 'warning' : 'ok'}">
+                    <strong>Current Avatar Server:</strong><br>
+                    ${peer.name}<br>
+                    Type: ${peer.type}<br>
+                    ${peer.ip ? `IP: ${peer.ip}<br>` : ''}
+                    ${peer.gpu_memory ? `GPU: ${peer.gpu_memory}GB<br>` : ''}
+                    ${peer.memory ? `RAM: ${peer.memory}GB` : ''}
+                </div>
+            `;
+            
+            if (available.length > 0) {
+                html += `
+                    <div class="status-item status-ok">
+                        <strong>Available Servers:</strong><br>
+                        ${available.map(p => `${p.name} (${p.type})`).join('<br>')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function getStatus() {
+            debugLog('Getting system status');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=status');
+                const result = await response.json();
+                
+                debugLog('System status received', result);
+                displayStatus(result.data || result);
+                
+            } catch (error) {
+                debugLog('Status retrieval error', { error: error.message });
+                console.error('Status error:', error);
+            }
+        }
+        
+        function displayStatus(status) {
+            const grid = document.getElementById('statusGrid');
+            
+            if (!status) {
+                grid.innerHTML = '<div class="status-item status-error">No status data available</div>';
+                return;
+            }
+            
+            const items = [
+                { label: 'Timestamp', value: status.timestamp, status: 'ok' },
+                { label: 'Device', value: status.device, status: 'ok' },
+                { label: 'TTS Ready', value: status.tts_ready ? 'Yes' : 'No', status: status.tts_ready ? 'ok' : 'error' },
+                { label: 'SadTalker Installed', value: status.sadtalker_installed ? 'Yes' : 'No', status: status.sadtalker_installed ? 'ok' : 'warning' },
+                { label: 'SadTalker Checkpoints', value: status.sadtalker_checkpoints ? 'Yes' : 'No', status: status.sadtalker_checkpoints ? 'ok' : 'warning' },
+                { label: 'Reference Image', value: status.reference_image ? 'Yes' : 'No', status: status.reference_image ? 'ok' : 'warning' }
+            ];
+            
+            grid.innerHTML = items.map(item => `
+                <div class="status-item status-${item.status}">
+                    <strong>${item.label}:</strong><br>
+                    ${item.value}
+                </div>
+            `).join('');
+        }
+        
+        async function getLogs() {
+            debugLog('Getting avatar service logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=logs');
+                const result = await response.json();
+                
+                debugLog('Logs received', { logCount: result.data?.logs?.length || 0 });
+                
+                const container = document.getElementById('logContainer');
+                if (result.data && result.data.logs) {
+                    container.innerHTML = result.data.logs.join('\n');
+                } else {
+                    container.innerHTML = 'No logs available';
+                }
+                
+            } catch (error) {
+                debugLog('Log retrieval error', { error: error.message });
+                console.error('Logs error:', error);
+            }
+        }
+        
+        async function getPhpErrors() {
+            debugLog('Getting PHP error logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=php_errors');
+                const result = await response.json();
+                
+                debugLog('PHP errors received', { errorCount: result.errors?.length || 0 });
+                
+                const container = document.getElementById('phpErrorContainer');
+                if (result.errors && result.errors.length > 0) {
+                    container.innerHTML = result.errors.join('\n');
+                } else {
+                    container.innerHTML = 'No PHP errors found';
+                }
+                
+            } catch (error) {
+                debugLog('PHP error retrieval error', { error: error.message });
+                console.error('PHP errors error:', error);
+            }
+        }
+        
+        async function clearPhpErrors() {
+            debugLog('Clearing PHP error logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=clear_errors');
+                const result = await response.json();
+                
+                debugLog('PHP errors cleared', result);
+                
+                if (result.cleared) {
+                    document.getElementById('phpErrorContainer').innerHTML = 'PHP error logs cleared';
+                    alert('✅ PHP error logs cleared');
+                } else {
+                    alert('❌ Failed to clear PHP error logs');
+                }
+                
+            } catch (error) {
+                debugLog('PHP error clearing error', { error: error.message });
+                console.error('Clear PHP errors error:', error);
+            }
+        }
+        
+        function refreshStatus() {
+            getStatus();
+        }
+        
+        function refreshLogs() {
+            getLogs();
+        }
+        
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = 'Logs cleared';
+            debugLog('Debug logs cleared');
+        }
+        
+        function clearDebugLogs() {
+            document.getElementById('logContainer').innerHTML = 'Debug logs cleared';
+            console.clear();
+            debugLog('Debug console cleared');
+        }
+        
+        function downloadLogs() {
+            const logs = document.getElementById('logContainer').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `avatar_debug_logs_${new Date().toISOString()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            debugLog('Debug logs downloaded');
+        }
+        
+        function copyLogsToClipboard() {
+            const logs = document.getElementById('logContainer').textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(logs).then(() => {
+                    debugLog('Debug logs copied to clipboard');
+                    alert('✅ Logs copied to clipboard!');
+                }).catch(err => {
+                    debugLog('Failed to copy logs to clipboard', { error: err.message });
+                    alert('❌ Failed to copy logs: ' + err.message);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = logs;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    debugLog('Debug logs copied to clipboard (fallback)');
+                    alert('✅ Logs copied to clipboard!');
+                } catch (err) {
+                    debugLog('Failed to copy logs to clipboard (fallback)', { error: err.message });
+                    alert('❌ Failed to copy logs: ' + err.message);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        // Enhanced initialization with environment detection
+        function initializeDebugConsole() {
+            debugLog('🎮 Avatar Debug Console initializing');
+            
+            // Browser capability detection
+            const capabilities = {
+                webGL: !!window.WebGLRenderingContext,
+                webGL2: !!window.WebGL2RenderingContext,
+                webRTC: !!window.RTCPeerConnection,
+                mediaDevices: !!navigator.mediaDevices,
+                serviceWorker: 'serviceWorker' in navigator,
+                webAssembly: typeof WebAssembly === 'object',
+                localStorage: typeof Storage !== 'undefined',
+                indexedDB: !!window.indexedDB,
+                webWorkers: typeof Worker !== 'undefined',
+                fetch: typeof fetch === 'function',
+                promises: typeof Promise === 'function',
+                asyncAwait: (async () => {}).constructor === (async function(){}).constructor
+            };
+            
+            debugLog('🔧 Browser Capabilities', capabilities);
+            
+            // Memory info if available
+            if (performance.memory) {
+                debugLog('💾 Memory Info', {
+                    usedJSHeapSize: performance.memory.usedJSHeapSize,
+                    totalJSHeapSize: performance.memory.totalJSHeapSize,
+                    jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+                });
+            }
+            
+            // Connection info if available
+            if (navigator.connection) {
+                debugLog('🌐 Connection Info', {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                });
+            }
+            
+            logPerformance('console-initialized');
+            getServerInfo();
+            getStatus();
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDebugConsole);
+        } else {
+            initializeDebugConsole();
+        }
+    </script>
+</body>
+</html>
