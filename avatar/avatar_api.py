@@ -431,6 +431,7 @@ def generate_talking_face(image_path, audio_path, output_path, codec=None, quali
         mp_face_detection = mp.solutions.face_detection
         mp_drawing = mp.solutions.drawing_utils
 
+
         # Load source image or create default
         if os.path.exists(image_path):
             img = cv2.imread(image_path)
@@ -445,7 +446,7 @@ def generate_talking_face(image_path, audio_path, output_path, codec=None, quali
             if results.detections:
                 print(f"Found {len(results.detections)} faces")
                 # Create animated video with detected face
-                create_animated_face(img, results.detections[0], audio_path, output_path)
+                create_animated_face(img, results.detections[0], audio_path, output_path )
             else:
                 print("No face detected, using basic avatar")
                 # No face detected, use basic avatar
@@ -532,11 +533,14 @@ def create_default_face():
     return img
 
 
-def create_animated_face(img, detection, audio_path, output_path, codec='h264_high', quality='high'):
+def create_animated_face(img, detection, audio_path, output_path, codec='h264_high', quality='high', duration=None):
     """Create animated face video"""
     print("Creating animated face video...")
     fps = 30
-    duration = 5
+    if duration is None:
+        duration = get_audio_duration(audio_path)  # fallback
+    frames = int(fps * duration)
+
     frames = fps * duration
 
     height, width = img.shape[:2]
