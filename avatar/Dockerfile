@@ -12,11 +12,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Torch first (GPU build)
-RUN pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 \
-    --index-url https://download.pytorch.org/whl/cu121
+RUN pip install  --no-cache-dir torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 \
+    --index-url https://download.pytorch.org/whl/cu121 &&  pip install --no-cache-dir -r requirements.txt
 
-# Install your API’s Python dependencies
-RUN pip install -r requirements.txt
 
 # Copy application code (this is the only thing that should invalidate cache often)
 COPY avatar_api.py .
