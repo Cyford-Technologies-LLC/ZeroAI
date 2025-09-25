@@ -7,6 +7,10 @@ NUKE=false
 if [[ "$1" == "--nuke" ]]; then
     NUKE=true
     echo "🔥 Full nuke mode enabled. Pruning and rebuilding from scratch..."
+elif [[ "$1" == "--build" ]]; then
+    BUILD=true
+    echo "🔨 Normal build mode enabled. Reusing cache..."
+
 else
     echo "🔄 Simple update mode. Using cache for rebuild..."
 fi
@@ -24,9 +28,14 @@ if $NUKE; then
     docker image prune -af
     docker system prune -af --volumes
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build --no-cache avatar
-else
-    # Normal = reuse cache, much faster
+
+elif $BUILD; then
+          # Normal = reuse cache, much faster
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build avatar
+else
+    #  Simple restart
+    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart -d avatar
+
 fi
 
 # Start it back up
