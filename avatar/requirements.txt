@@ -7,3 +7,4 @@ numpy==1.24.3
 opencv-python-headless
 mediapipe
 scikit-image==0.20.0
+moviepy
