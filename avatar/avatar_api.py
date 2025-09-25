@@ -562,31 +562,29 @@ def create_default_face():
     return img
 
 
-def create_animated_face(img, detection, audio_path, output_path, codec='h264_high', quality='high', duration=None):
-    """Create animated face video"""
+def create_animated_face(img, bbox_tuple, audio_path, output_path,
+                         codec='h264_high', quality='high', duration=None):
+    """Create animated face video from an (x,y,w,h) bounding box tuple."""
     print("Creating animated face video...")
     fps = 30
     if duration is None:
-        duration = get_audio_duration(audio_path)  # fallback
-    frames = int(fps * duration)
-
-    frames = fps * duration
+        duration = get_audio_duration(audio_path)  # fallback to audio length
+    frames = int(fps * duration)  # ensure int
 
     height, width = img.shape[:2]
 
-    # Use mp4v codec for MP4 files
+    # Try several codecs
     codecs = ['mp4v', 'MJPG', 'XVID']
     out = None
     final_path = output_path
 
-    for codec in codecs:
+    for c in codecs:
         try:
-            fourcc = cv2.VideoWriter_fourcc(*codec)
-            test_path = output_path.replace('.mp4', f'_{codec}.mp4')
+            fourcc = cv2.VideoWriter_fourcc(*c)
+            test_path = output_path.replace('.mp4', f'_{c}.mp4')
             out = cv2.VideoWriter(test_path, fourcc, fps, (width, height))
-
             if out.isOpened():
-                print(f"Using codec: {codec}")
+                print(f"Using codec: {c}")
                 final_path = test_path
                 break
             else:
@@ -594,7 +592,7 @@ def create_animated_face(img, detection, audio_path, output_path, codec='h264_hi
                     out.release()
                 out = None
         except Exception as codec_e:
-            print(f"Codec {codec} failed: {codec_e}")
+            print(f"Codec {c} failed: {codec_e}")
             continue
 
     if out is None:
@@ -603,61 +601,41 @@ def create_animated_face(img, detection, audio_path, output_path, codec='h264_hi
         return
 
     try:
-        # Get face bounding box
-        bbox = detection.location_data.relative_bounding_box
-        x = int(bbox.xmin * width)
-        y = int(bbox.ymin * height)
-        w = int(bbox.width * width)
-        h = int(bbox.height * height)
-
+        # Unpack the tuple we passed in
+        x, y, w, h = bbox_tuple
         print(f"Face bbox: x={x}, y={y}, w={w}, h={h}")
 
         for i in range(frames):
             frame = img.copy()
 
-            # Realistic talking animation
+            # Mouth movement intensity
             mouth_intensity = abs(np.sin(i * 0.3)) * abs(np.sin(i * 0.1))
 
             # Get face region
             face_region = frame[y:y + h, x:x + w]
 
-            # Mouth animation - modify the actual mouth area
+            # Mouth animation
             mouth_y_rel = int(h * 0.7)
             mouth_x_rel = int(w * 0.5)
             mouth_w = int(w * 0.2)
             mouth_h = int(5 + mouth_intensity * 20)
 
-            # Draw animated mouth on face
             if mouth_y_rel < h and mouth_x_rel < w:
-                cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel), (mouth_w, mouth_h), 0, 0, 180, (120, 80, 80), -1)
-                # Add teeth when mouth is open
+                cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel),
+                            (mouth_w, mouth_h), 0, 0, 180, (120, 80, 80), -1)
                 if mouth_h > 10:
-                    cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel - 2), (mouth_w - 5, 3), 0, 0, 180,
-                                (240, 240, 240), -1)
+                    cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel - 2),
+                                (mouth_w - 5, 3), 0, 0, 180, (240, 240, 240), -1)
 
             # Eye blinking
-            if i % 120 < 8:  # Blink occasionally
+            if i % 120 < 8:
                 eye_y_rel = int(h * 0.35)
                 left_eye_x = int(w * 0.35)
                 right_eye_x = int(w * 0.65)
-                cv2.ellipse(face_region, (left_eye_x, eye_y_rel), (int(w * 0.08), 4), 0, 0, 180, (200, 180, 160), -1)
-                cv2.ellipse(face_region, (right_eye_x, eye_y_rel), (int(w * 0.08), 4), 0, 0, 180, (200, 180, 160), -1)
-
-            # Put modified face back
-            frame[y:y + h, x:x + w] = face_region
-
-            out.write(frame)
-
-        print(f"Video saved to: {final_path}")
-
-        # Copy to original path if different
-        if final_path != output_path:
-            import shutil
-            shutil.copy2(final_path, output_path)
-
-    finally:
-        if out:
-            out.release()
+                cv2.ellipse(face_region, (left_eye_x, eye_y_rel),
+                            (int(w * 0.08), 4), 0, 0, 180, (200, 180, 160), -1)
+                cv2.ellipse(face_region, (right_eye_x, eye_y_rel),
+                            (int(w * 0.08), 4), 0, 0,*
 
 
 def create_basic_avatar(audio_path, video_path, text, codec='h264_high', quality='high'):
