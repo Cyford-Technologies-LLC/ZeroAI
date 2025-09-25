@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os, subprocess, tempfile, requests, base64, traceback, unicodedata , shutil , glob , time
 from pydub import AudioSegment
-
+import mediapipe as mp
 from pathlib import Path
 import torch, numpy as np, cv2
 import traceback
@@ -13,6 +13,7 @@ from pydub import AudioSegment
 from moviepy.editor import concatenate_videoclips, VideoFileClip
 
 import logging, traceback
+
 
 
 app = Flask(__name__)
@@ -437,16 +438,13 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
 
 
 
+
+
 def generate_talking_face(image_path, audio_path, output_path, codec=None, quality=None):
-    """Generate realistic talking face using MediaPipe"""
+    """Generate realistic talking face using MediaPipe."""
     try:
         print("Starting face detection...")
-        # Use MediaPipe for face detection
-        import mediapipe as mp
-
         mp_face_detection = mp.solutions.face_detection
-        mp_drawing = mp.solutions.drawing_utils
-
 
         # Load source image or create default
         if os.path.exists(image_path):
@@ -456,22 +454,37 @@ def generate_talking_face(image_path, audio_path, output_path, codec=None, quali
             print("Creating default face image...")
             img = create_default_face()
 
-        with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
+        with mp_face_detection.FaceDetection(model_selection=0,
+                                             min_detection_confidence=0.5) as face_detection:
             results = face_detection.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
             if results.detections:
                 print(f"Found {len(results.detections)} faces")
-                # Create animated video with detected face
-                create_animated_face(img, results.detections[0], audio_path, output_path )
+                # convert the mediapipe detection into integer pixel bbox first
+                detection = results.detections[0]
+                h_img, w_img = img.shape[:2]
+                rbb = detection.location_data.relative_bounding_box
+                x = int(rbb.xmin * w_img)
+                y = int(rbb.ymin * h_img)
+                w = int(rbb.width * w_img)
+                h = int(rbb.height * h_img)
+                print(f"Face bbox: x={x}, y={y}, w={w}, h={h}")
+
+                # pass bbox ints into your animation function
+                create_animated_face(img, (x, y, w, h), audio_path, output_path)
+
             else:
                 print("No face detected, using basic avatar")
-                # No face detected, use basic avatar
                 create_basic_avatar(audio_path, output_path, "No face detected")
 
     except Exception as e:
         print(f"Face generation error: {str(e)}")
-        # Fallback to basic avatar
-        create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}")
+        create_basic_avatar(audio_path, output_path,
+                            f"Face animation failed: {str(e)}")
+
+
+
+
 def generate_elevenlabs_tts(text, voice_id="21m00Tcm4TlvDq8ikWAM"):  # Rachel voice
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
