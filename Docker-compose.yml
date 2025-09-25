@@ -118,11 +118,11 @@ services:
       - tts-service
     restart: unless-stopped
     deploy:
-      resources:
-        limits:
-          memory: 6G
-        reservations:
-          memory: 3G
+#      resources:
+#        limits:
+#          memory: 6G
+#        reservations:
+#          memory: 3G
 
   tts-service:
     build: ./tts
