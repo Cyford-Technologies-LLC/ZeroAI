@@ -108,8 +108,9 @@ services:
     ports:
       - "0.0.0.0:444:7860"
     volumes:
-      - ./avatar:/app/avatar
-      - avatar_models:/app/checkpoints
+      - ./avatar:/app/avatar        # Your app code (hot reload on change)
+      - ./SadTalker:/app/SadTalker  # Mount SadTalker repo instead of baking into image
+      - avatar_models:/app/checkpoints  # Persist model weights
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - TTS_API_URL=http://tts-service:5000/synthesize
@@ -117,12 +118,7 @@ services:
       - ollama
       - tts-service
     restart: unless-stopped
-    deploy:
-#      resources:
-#        limits:
-#          memory: 6G
-#        reservations:
-#          memory: 3G
+
 
   tts-service:
     build: ./tts
