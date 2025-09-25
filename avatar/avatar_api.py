@@ -244,6 +244,7 @@ def generate_avatar():
 
 
 
+
 def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                              timeout=1200, enhancer="gfpgan",
                              split_chunks=False, chunk_length=10,
