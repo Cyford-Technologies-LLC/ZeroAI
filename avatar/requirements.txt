@@ -10,3 +10,4 @@ opencv-python-headless
 mediapipe
 scikit-image==0.20.0
 moviepy
+pydub
