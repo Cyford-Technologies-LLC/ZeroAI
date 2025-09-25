@@ -562,37 +562,56 @@ def create_default_face():
     return img
 
 
-def create_animated_face(img, bbox_tuple, audio_path, output_path,
+def create_animated_face(img, detection, audio_path, output_path,
                          codec='h264_high', quality='high', duration=None):
-    """Create animated face video from an (x,y,w,h) bounding box tuple."""
+    """
+    Create animated face video.
+    - `detection` may be a mediapipe Detection object OR an (x,y,w,h) tuple/list of ints.
+    - `output_path` will be used as the written file (a codec-specific file with suffix will be produced).
+    """
+    import shutil
+
     print("Creating animated face video...")
     fps = 30
+    # fallback to audio length (guard against zero)
     if duration is None:
-        duration = get_audio_duration(audio_path)  # fallback to audio length
-    frames = int(fps * duration)  # ensure int
+        duration = get_audio_duration(audio_path)
+    duration = max(0.1, float(duration))
+    frames = int(round(fps * duration))
+    if frames <= 0:
+        frames = 1
 
     height, width = img.shape[:2]
 
-    # Try several codecs
-    codecs = ['mp4v', 'MJPG', 'XVID']
+    # Try several codecs; produce codec-specific temp filenames
+    codec_choices = ['mp4v', 'MJPG', 'XVID']
     out = None
-    final_path = output_path
+    final_path = None
 
-    for c in codecs:
+    base, ext = os.path.splitext(output_path)
+    if ext == "":
+        ext = ".mp4"
+        output_path = base + ext
+
+    for c in codec_choices:
+        test_path = f"{base}_{c}{ext}"
         try:
             fourcc = cv2.VideoWriter_fourcc(*c)
-            test_path = output_path.replace('.mp4', f'_{c}.mp4')
             out = cv2.VideoWriter(test_path, fourcc, fps, (width, height))
             if out.isOpened():
                 print(f"Using codec: {c}")
                 final_path = test_path
                 break
             else:
-                if out:
+                # release any opened writer
+                try:
                     out.release()
+                except:
+                    pass
                 out = None
         except Exception as codec_e:
             print(f"Codec {c} failed: {codec_e}")
+            out = None
             continue
 
     if out is None:
@@ -601,41 +620,115 @@ def create_animated_face(img, bbox_tuple, audio_path, output_path,
         return
 
     try:
-        # Unpack the tuple we passed in
-        x, y, w, h = bbox_tuple
+        # ----- parse detection -----
+        if isinstance(detection, (tuple, list)) and len(detection) == 4:
+            x, y, w, h = map(int, detection)
+        else:
+            # assume mediapipe Detection-like object
+            try:
+                bbox = detection.location_data.relative_bounding_box
+                x = int(bbox.xmin * width)
+                y = int(bbox.ymin * height)
+                w = int(bbox.width * width)
+                h = int(bbox.height * height)
+            except Exception as e:
+                print("Invalid detection object:", e)
+                create_basic_avatar(audio_path, output_path, "Invalid detection")
+                return
+
+        # Clip to image bounds and ensure non-negative ints
+        x = max(0, int(x))
+        y = max(0, int(y))
+        # Ensure width/height don't overflow image area
+        w = max(0, int(min(w, width - x)))
+        h = max(0, int(min(h, height - y)))
+
+        if w <= 0 or h <= 0:
+            print("Computed bbox has zero area, falling back")
+            create_basic_avatar(audio_path, output_path, "Empty bbox")
+            return
+
         print(f"Face bbox: x={x}, y={y}, w={w}, h={h}")
 
+        # ----- render frames -----
         for i in range(frames):
             frame = img.copy()
 
-            # Mouth movement intensity
+            # mouth intensity for animation (deterministic)
             mouth_intensity = abs(np.sin(i * 0.3)) * abs(np.sin(i * 0.1))
 
-            # Get face region
+            # region for face edits
             face_region = frame[y:y + h, x:x + w]
+            if face_region.size == 0:
+                print("face_region empty, falling back")
+                create_basic_avatar(audio_path, output_path, "Empty face region")
+                return
 
-            # Mouth animation
+            # mouth geometry
             mouth_y_rel = int(h * 0.7)
             mouth_x_rel = int(w * 0.5)
-            mouth_w = int(w * 0.2)
-            mouth_h = int(5 + mouth_intensity * 20)
+            mouth_w = max(1, int(w * 0.2))
+            mouth_h = max(1, int(5 + mouth_intensity * 20))
 
+            # Draw mouth (safe multiline calls)
             if mouth_y_rel < h and mouth_x_rel < w:
-                cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel),
-                            (mouth_w, mouth_h), 0, 0, 180, (120, 80, 80), -1)
+                cv2.ellipse(
+                    face_region,
+                    (mouth_x_rel, mouth_y_rel),
+                    (mouth_w, mouth_h),
+                    0, 0, 180,
+                    (120, 80, 80),
+                    -1
+                )
                 if mouth_h > 10:
-                    cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel - 2),
-                                (mouth_w - 5, 3), 0, 0, 180, (240, 240, 240), -1)
+                    cv2.ellipse(
+                        face_region,
+                        (mouth_x_rel, mouth_y_rel - 2),
+                        (max(1, mouth_w - 5), 3),
+                        0, 0, 180,
+                        (240, 240, 240),
+                        -1
+                    )
 
             # Eye blinking
-            if i % 120 < 8:
+            if i % 120 < 8:  # blink occasionally
                 eye_y_rel = int(h * 0.35)
                 left_eye_x = int(w * 0.35)
                 right_eye_x = int(w * 0.65)
-                cv2.ellipse(face_region, (left_eye_x, eye_y_rel),
-                            (int(w * 0.08), 4), 0, 0, 180, (200, 180, 160), -1)
-                cv2.ellipse(face_region, (right_eye_x, eye_y_rel),
-                            (int(w * 0.08), 4), 0, 0,*
+                cv2.ellipse(
+                    face_region,
+                    (left_eye_x, eye_y_rel),
+                    (max(1, int(w * 0.08)), 4),
+                    0, 0, 180,
+                    (200, 180, 160),
+                    -1
+                )
+                cv2.ellipse(
+                    face_region,
+                    (right_eye_x, eye_y_rel),
+                    (max(1, int(w * 0.08)), 4),
+                    0, 0, 180,
+                    (200, 180, 160),
+                    -1
+                )
+
+            # Put edited face region back to frame
+            frame[y:y + h, x:x + w] = face_region
+
+            out.write(frame)
+
+        print(f"Video saved to: {final_path}")
+
+        # Copy to the requested output_path if different
+        if final_path != output_path:
+            try:
+                shutil.copy2(final_path, output_path)
+            except Exception as e:
+                print("Failed copying final video:", e)
+
+    finally:
+        if out:
+            out.release()
 
 
 def create_basic_avatar(audio_path, video_path, text, codec='h264_high', quality='high'):
