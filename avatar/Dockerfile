@@ -20,6 +20,8 @@ RUN pip install  --no-cache-dir torch==2.1.0+cu121 torchvision==0.16.0+cu121 tor
 COPY avatar_api.py .
 COPY create_face.py .
 COPY faces /app/faces
+COPY install_sadtalker.sh .
+
 
 RUN bash avatar/install_sadtalker.sh
 RUN python create_face.py
