@@ -12,8 +12,17 @@ import wave
 from pydub import AudioSegment
 from moviepy.editor import concatenate_videoclips, VideoFileClip
 
+import logging, traceback
 
 
+app = Flask(__name__)
+CORS(app)
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logging.error("Unhandled Exception: %s\n%s", e, traceback.format_exc())
+    return {"error": str(e)}, 500
 
 def get_audio_duration(audio_path):
     with wave.open(audio_path, 'rb') as wf:
@@ -47,8 +56,6 @@ def concat_videos(video_list, output_path):
 
 
 
-app = Flask(__name__)
-CORS(app)
 
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
 TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
