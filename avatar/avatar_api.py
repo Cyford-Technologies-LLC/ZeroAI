@@ -664,7 +664,7 @@ def create_basic_avatar(audio_path, video_path, text, codec='h264_high', quality
     """Fallback basic avatar"""
     print("Creating basic avatar...")
     fps = 30
-    duration = 3
+    duration = get_audio_duration(audio_path)  # use actual audio length
     frames = fps * duration
 
     # Use mp4v codec for MP4 files
