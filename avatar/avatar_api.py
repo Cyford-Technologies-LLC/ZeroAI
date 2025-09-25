@@ -1176,4 +1176,5 @@ def calculate_timeout(audio_duration, target_fps=25, safety=1.5):
 
 
 if __name__ == '__main__':
+    app.debug = True
     app.run(host='0.0.0.0', port=7860)
