@@ -21,16 +21,17 @@ git pull
 
 # Stop and remove running container
 docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml stop avatar
-docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f -s avatar
 
 if $NUKE; then
     # Nuke = remove all images/volumes and rebuild without cache
+    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f -s avatar
     docker image prune -af
     docker system prune -af --volumes
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build --no-cache avatar
 
 elif $BUILD; then
           # Normal = reuse cache, much faster
+    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f -s avata
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build avatar
 else
     #  Simple restart
