@@ -16,7 +16,7 @@ pip install --no-cache-dir  torch==1.12.1+cu113 torchvision==0.13.1+cu113 torcha
     --extra-index-url https://download.pytorch.org/whl/cu113 || { echo "Failed to install PyTorch"; exit 1; }
 
 # Install SadTalker requirements
-pip install --no-cache-dir -r requirements.txt
+#pip install --no-cache-dir -r requirements.txt
 
 # Download GFPGAN weights for face enhancement
 echo "Downloading GFPGAN weights..."
