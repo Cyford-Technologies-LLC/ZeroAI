@@ -11,6 +11,10 @@ cd SadTalker
 # Install SadTalker requirements
 pip install --no-cache-dir -r requirements.txt
 
+
+# Ensure GPU-compatible dependencies
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
 # Download GFPGAN weights with improved error handling
 mkdir -p gfpgan/weights
 download_weight() {
