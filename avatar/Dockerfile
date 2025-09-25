@@ -34,16 +34,14 @@ COPY requirements.txt .
 # Install Torch first (GPU build)
 RUN pip install  --no-cache-dir -r requirements.txt
 
-# Install PyTorch with CUDA support
-RUN pip3 install torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cu121
 
-# Fix PyTorch library permissions
-RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -exec bash -c '\
-    echo "Fixing permissions for {}"; \
-    chmod 755 "{}"; \
-    paxctl -cm "{}"; \
-    ' \;
+#
+## Fix PyTorch library permissions
+#RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -exec bash -c '\
+#    echo "Fixing permissions for {}"; \
+#    chmod 755 "{}"; \
+#    paxctl -cm "{}"; \
+#    ' \;
 
 RUN python3 -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}'); print(f'CUDA Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"No CUDA Device\"}')"
 
@@ -56,10 +54,18 @@ COPY install_sadtalker.sh .
 
 RUN bash install_sadtalker.sh
 RUN python create_face.py
-# Fix PyTorch library permissions
-RUN if [ -f "/usr/local/lib/python3.10/site-packages/torch/lib/libtorch_cpu.so" ]; then \
-    chmod 755 /usr/local/lib/python3.10/site-packages/torch/lib/libtorch_cpu.so && \
-    paxctl -cm /usr/local/lib/python3.10/site-packages/torch/lib/libtorch_cpu.so; \
+
+
+
+# Fix PyTorch library permissions dynamically
+RUN python3 -c "import torch; import os; torch_path = os.path.dirname(torch.__file__); print(f'Torch path: {torch_path}')" && \
+    TORCH_PATH=$(python3 -c "import torch; import os; print(os.path.dirname(torch.__file__))" 2>/dev/null || echo "") && \
+    if [ -n "$TORCH_PATH" ]; then \
+        find "$TORCH_PATH" -name "*.so" -exec chmod 755 {} \; || true; \
+    else \
+        echo "Could not locate PyTorch installation, skipping permission fixes"; \
     fi
+
+
 EXPOSE 7860
 CMD ["python", "avatar_api.py"]

@@ -1,15 +1,14 @@
-# Recommended PyTorch installation for GPU
-torch==2.1.2+cu121
-torchvision==0.16.2+cu121
-torchaudio==2.1.2
---extra-index-url https://download.pytorch.org/whl/cu121
-
-# Other dependencies
-numpy
+flask==2.3.3
+flask-cors==4.0.0
+python-dotenv==1.0.0
+requests==2.31.0
+gunicorn
+#torch==2.1.0+cu121
+#torchvision==0.16.0+cu121
+#torchaudio==2.1.0+cu121
+numpy==1.24.3
 opencv-python-headless
-flask
-flask-cors
-requests
 mediapipe
-pydub
+scikit-image==0.20.0
 moviepy
+pydub
