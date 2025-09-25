@@ -16,7 +16,7 @@ RUN pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+c
     --index-url https://download.pytorch.org/whl/cu121
 
 # Install your API’s Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy application code (this is the only thing that should invalidate cache often)
 COPY avatar_api.py .
