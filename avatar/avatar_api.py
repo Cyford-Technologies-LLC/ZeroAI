@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import os, subprocess, tempfile, requests, base64, traceback, unicodedata , shutil , glob
+import os, subprocess, tempfile, requests, base64, traceback, unicodedata , shutil , glob , time
+
 
 from pathlib import Path
 import torch, numpy as np, cv2
@@ -259,7 +260,9 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
 
         # Increase provided timeout to at least ~3x audio length so SadTalker has enough time.
         # This gives a safety multiplier for processing overhead.
-        timeout = max(timeout, int(duration * 3))
+        # timeout = max(timeout, int(duration * 3))
+        timeout = calculate_timeout(duration, source_image="/app/faces/2.jpg", test_audio="/app/test_audio.wav")
+
         print(f"Base adjusted timeout (will be used as minimum per-chunk): {timeout}s")
 
         # Auto-enable chunking if audio > 80s and user didn't explicitly request chunking
@@ -302,7 +305,12 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
             except Exception:
                 chunk_duration = duration if idx == 0 else chunk_length
             # give chunk plenty of time: at least `timeout`, otherwise chunk_duration*3 + buffer
-            per_chunk_timeout = max(timeout, int(chunk_duration * 3) + 30)
+            # per_chunk_timeout = max(timeout, int(chunk_duration * 3) + 30)
+            per_chunk_timeout = calculate_timeout(
+                chunk_duration,
+                source_image=source_image,  # pass in your avatar image
+                test_audio="/app/test_audio.wav"
+            )
             print(f"Running SadTalker for chunk {idx+1}. chunk_duration={chunk_duration:.2f}s per_chunk_timeout={per_chunk_timeout}s")
             print("SadTalker command:", " ".join(cmd))
 
@@ -1114,6 +1122,57 @@ def health():
             '/reload'
         ]
     })
+
+
+BENCHMARK_FILE = "/tmp/sadtalker_fps.txt"
+
+def benchmark_sadtalker_fps(source_image, audio_path, fps=25):
+    """
+    Run a very short SadTalker test (e.g., 2s of audio) and measure how many frames/sec we get.
+    Saves the result so we only need to benchmark once.
+    """
+    if os.path.exists(BENCHMARK_FILE):
+        with open(BENCHMARK_FILE, "r") as f:
+            return float(f.read().strip())
+
+    print("Benchmarking SadTalker render speed...")
+
+    cmd = [
+        "python", "/app/SadTalker/inference.py",
+        "--driven_audio", audio_path,
+        "--source_image", source_image,
+        "--result_dir", "/tmp/sadtalker_bench",
+        "--still", "--preprocess", "crop", "--enhancer", "gfpgan"
+    ]
+
+    start = time.time()
+    subprocess.run(cmd, timeout=30)  # force stop after 30s just in case
+    elapsed = time.time() - start
+
+    # count frames written
+    frame_dir = "/tmp/sadtalker_bench/frames"
+    if not os.path.exists(frame_dir):
+        print("⚠️ Benchmark failed, defaulting to 5 fps")
+        fps_est = 5.0
+    else:
+        frame_count = len([f for f in os.listdir(frame_dir) if f.endswith(".png")])
+        fps_est = frame_count / elapsed if elapsed > 0 else 5.0
+
+    with open(BENCHMARK_FILE, "w") as f:
+        f.write(str(fps_est))
+
+    print(f"✅ Benchmark complete: {fps_est:.2f} fps")
+    return fps_est
+
+
+def calculate_timeout(audio_duration, target_fps=25, safety=1.5):
+    """
+    Use benchmarked fps to compute a safe timeout for SadTalker.
+    """
+    fps_est = benchmark_sadtalker_fps("/app/faces/2.jpg", "/app/test_audio.wav", target_fps)
+    render_time = (audio_duration * target_fps) / fps_est
+    timeout = int(render_time * safety)
+    return timeout
 
 
 if __name__ == '__main__':
