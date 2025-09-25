@@ -212,9 +212,9 @@ def generate_avatar():
         if mode == 'sadtalker':
             success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality, **sadtalker_options, source_image=source_image_input)
             if not success:
-                generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
+                generate_talking_face(data.get('image', '/app/default_face.jpg'), audio_path, video_path, codec, quality)
         else:
-            generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
+            generate_talking_face(data.get('image', '/app/default_face.jpg'), audio_path, video_path, codec, quality)
         final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
         return send_file(final_path, mimetype='video/mp4') if final_path else jsonify({'error':'Video creation failed'}), 500
     except Exception as e:
