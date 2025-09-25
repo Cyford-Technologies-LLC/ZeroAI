@@ -12,7 +12,7 @@ git clone https://github.com/OpenTalker/SadTalker.git
 cd SadTalker
 
 # Install PyTorch with CUDA support
-pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 \
+pip install --no-cache-dir  torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 \
     --extra-index-url https://download.pytorch.org/whl/cu113 || { echo "Failed to install PyTorch"; exit 1; }
 
 # Install SadTalker requirements
