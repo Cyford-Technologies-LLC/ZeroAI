@@ -21,6 +21,7 @@ COPY avatar_api.py .
 COPY create_face.py .
 COPY faces /app/faces
 
+RUN bash avatar/install_sadtalker.sh
 RUN python create_face.py
 
 EXPOSE 7860
