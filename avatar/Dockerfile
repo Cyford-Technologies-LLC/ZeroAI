@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Torch first (GPU build)
-RUN pip install  --no-cache-dir install --no-cache-dir -r requirements.txt
+RUN pip install  --no-cache-dir -r requirements.txt
 
 
 # Copy application code (this is the only thing that should invalidate cache often)
