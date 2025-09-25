@@ -279,6 +279,7 @@ function sendMessage() {
 //     container.scrollTop = container.scrollHeight;
 // }
 
+<<<<<<< Updated upstream
 // Enhanced message display with proper code handling
 
 
@@ -336,13 +337,59 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+=======
+
+// Enhanced message display with proper code handling
+function addMessageToChat(sender, message) {
+    const container = document.getElementById('chat-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ' + sender;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.textContent = message;
+    let processedHtml = contentDiv.innerHTML;
+
+    // Convert triple backticks to styled code blocks
+    processedHtml = processedHtml.replace(/```(\w+)?\n?([\s\S]*?)```/g, function(match, lang, code) {
+        const languageClass = lang ? `data-lang="${lang}"` : '';
+        // Ensure the code content is placed inside a <code> tag within <pre>
+        return `<pre class="code-block" ${languageClass}><code>${code.trim()}</code></pre>`;
+    });
+
+    // Convert single backticks to styled inline code
+    processedHtml = processedHtml.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+    // Revised regex for background command outputs.
+    // Use a non-greedy match to capture content after the icon.
+    processedHtml = processedHtml.replace(/\uD83D\uDCC1 Directory: (.*?)\n((?:.|\n)*?)(?=\n\n|🤖 Claude|$)/g, function(match, path, content) {
+    const escapedContent = content.replace(/\n/g, '<br>');
+    return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC1</span> Directory: ${path}</summary><pre>${escapedContent.trim()}</pre></details>`;
+    });
+
+    // Revised regex for file content display.
+    processedHtml = processedHtml.replace(/\uD83D\uDCC4 File: (.*?)\n<pre class="code-block"([\s\S]*?)<\/pre>/g, function(match, path, content) {
+    return `<details class="background-command"><summary><span class="icon">\uD83D\uDCC4</span> File: ${path}</summary><pre class="code-block"${content}</pre></details>`;
+    });
+
+
+    // Replace newlines with <br> for proper formatting outside of code blocks
+    processedHtml = processedHtml.replace(/\n/g, '<br>');
+
+    // Construct the final message HTML
+    messageDiv.innerHTML = `<strong>${sender === 'user' ? '👤 You:' : '🤖 Claude:'}</strong> ${processedHtml}`;
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+>>>>>>> Stashed changes
 }
 
 
 
+<<<<<<< Updated upstream
 
 
 
+=======
+>>>>>>> Stashed changes
 function insertCommand(command) {
     const input = document.getElementById('user-input');
     input.value += command;

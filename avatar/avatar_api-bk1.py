@@ -1,357 +1,26 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import os, subprocess, tempfile, requests, base64, traceback, unicodedata
-
+import os
+import subprocess
+import tempfile
+import requests
+import base64
 from pathlib import Path
-import torch, numpy as np, cv2
+import torch
+import numpy as np
+import cv2
 import traceback
 from datetime import datetime
 
-
-
-import wave
-from pydub import AudioSegment
-import subprocess
-
-def get_audio_duration(audio_path):
-    with wave.open(audio_path, 'rb') as wf:
-        frames = wf.getnframes()
-        rate = wf.getframerate()
-        duration = frames / float(rate)
-    return duration
-
-def split_audio(audio_path, chunk_length_s=10):
-    """Split audio into chunks of chunk_length_s seconds"""
-    audio = AudioSegment.from_file(audio_path)
-    chunk_length_ms = chunk_length_s * 1000
-    chunks = []
-    for i in range(0, len(audio), chunk_length_ms):
-        chunk = audio[i:i+chunk_length_ms]
-        out_path = f"{audio_path}_chunk{i//chunk_length_ms}.wav"
-        chunk.export(out_path, format="wav")
-        chunks.append(out_path)
-    return chunks
-
-def concat_videos(video_list, output_path):
-    """Concat video files using ffmpeg"""
-    list_file = "/tmp/concat_list.txt"
-    with open(list_file, "w") as f:
-        for v in video_list:
-            f.write(f"file '{v}'\n")
-    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", output_path]
-    subprocess.run(cmd, check=True)
-    return output_path
-
-
-
-
 app = Flask(__name__)
 CORS(app)
-
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'http://ollama:11434')
+
+# TTS Service Configuration
 TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
 
+# Device Detection
 device = "cuda" if torch.cuda.is_available() else "cpu"
-DEFAULT_CODEC = 'h264_fast'
-ref_image_path = '/app/faces/2.jpg'
-
-############################
-# TEXT CLEANING
-############################
-def clean_text(text: str) -> str:
-    """Normalize and sanitize input text before TTS"""
-    if not text:
-        return "Hello"
-    text = unicodedata.normalize("NFKC", text)  # normalize Unicode
-    text = text.strip()
-    text = " ".join(text.split())  # collapse multiple spaces/newlines
-    # Remove any control chars (except common punctuation)
-    text = "".join(ch for ch in text if ch.isprintable())
-    return text
-
-############################
-# IMAGE PROCESSING
-############################
-def load_and_preprocess_image(img_input, fallback=ref_image_path):
-    """Load image from path, base64, or URL, then preprocess for face detection"""
-    img = None
-    try:
-        if img_input and isinstance(img_input, str):
-            if img_input.startswith("http"):
-                resp = requests.get(img_input, timeout=10)
-                img_arr = np.frombuffer(resp.content, np.uint8)
-                img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-            elif os.path.exists(img_input):
-                img = cv2.imread(img_input)
-            else:
-                # Try base64
-                try:
-                    img_data = base64.b64decode(img_input)
-                    img_arr = np.frombuffer(img_data, np.uint8)
-                    img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-                except Exception:
-                    pass
-        # fallback
-        if img is None and fallback and os.path.exists(fallback):
-            img = cv2.imread(fallback)
-
-        if img is not None:
-            # Resize for consistency
-            img = cv2.resize(img, (512, 512))
-            # Optional: denoise / normalize
-            img = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 21)
-        return img
-    except Exception as e:
-        print(f"Image load error: {e}")
-        return cv2.imread(fallback) if os.path.exists(fallback) else None
-
-############################
-# TTS SERVICE
-############################
-def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_options=None):
-    try:
-        payload = {'text': text, 'engine': tts_engine}
-        if tts_options: payload.update(tts_options)
-
-        response = requests.post(TTS_API_URL, json=payload, timeout=60)
-        if response.status_code == 200:
-            with open(file_path, 'wb') as f:
-                f.write(response.content)
-            return True
-        print(f"TTS error {response.status_code}: {response.text[:200]}")
-        return False
-    except Exception as e:
-        print(f"TTS call failed: {e}")
-        return False
-
-def normalize_audio(audio_path):
-    fixed_path = audio_path.replace('.wav', '_fixed.wav')
-    cmd = ["ffmpeg","-y","-i",audio_path,"-ac","1","-ar","16000","-acodec","pcm_s16le",fixed_path]
-    subprocess.run(cmd, check=True)
-    return fixed_path
-
-############################
-# MAIN ROUTE
-############################
-@app.route('/generate', methods=['POST'])
-def generate_avatar():
-    mode = request.args.get('mode', 'simple')
-    codec = request.args.get('codec', DEFAULT_CODEC)
-    quality = request.args.get('quality', 'high')
-
-    try:
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-
-        # Prompt cleanup
-        prompt = clean_text(data.get('prompt', 'Hello'))
-
-        # Image handling
-        source_image_input = data.get('image', ref_image_path)
-
-        # Codec / TTS
-        codec_options = data.get('codec_options', {})
-        tts_engine = data.get('tts_engine', 'espeak')
-        tts_options = data.get('tts_options', {})
-
-        # SadTalker options (exposed to API)
-        sadtalker_options = {
-            "timeout": int(data.get("timeout", 120)),
-            "enhancer": data.get("enhancer", "gfpgan"),
-            "split_chunks": bool(data.get("split_chunks", False)),
-            "chunk_length": int(data.get("chunk_length", 10))
-        }
-
-        print(f"=== AVATAR GENERATION START ===")
-        print(f"Mode: {mode}, Codec: {codec}, Quality: {quality}")
-        print(f"Prompt: {prompt[:50]}...")
-        print(f"Image input: {str(source_image_input)[:80]}")
-        print(f"TTS Engine: {tts_engine}, Options: {tts_options}")
-        print(f"Codec options: {codec_options}")
-        print(f"SadTalker options: {sadtalker_options}")
-
-        # Load and preprocess image
-        img = load_and_preprocess_image(source_image_input)
-        if img is None:
-            return jsonify({'error': 'Image load failed'}), 500
-
-        # Temp files
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
-            audio_path = audio_file.name
-        video_path = '/app/static/avatar_video.avi'
-        os.makedirs('/app/static', exist_ok=True)
-
-        try:
-            # TTS generation
-            if not call_tts_service_with_options(prompt, audio_path, tts_engine, tts_options):
-                return jsonify({'error': 'TTS failed'}), 500
-            audio_path = normalize_audio(audio_path)
-
-            # Video generation
-            if mode == 'sadtalker':
-                print("=== ATTEMPTING SADTALKER MODE ===")
-                success = generate_sadtalker_video(
-                    audio_path,
-                    video_path,
-                    prompt,
-                    codec,
-                    quality,
-                    timeout=sadtalker_options["timeout"],
-                    enhancer=sadtalker_options["enhancer"],
-                    split_chunks=sadtalker_options["split_chunks"],
-                    chunk_length=sadtalker_options["chunk_length"],
-                    source_image=source_image_input
-                )
-
-                if not success:
-                    print("=== SADTALKER FAILED - FALLBACK TO SIMPLE FACE ===")
-                    generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
-            else:
-                print("=== USING SIMPLE/MEDIAPIPE MODE ===")
-                generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
-
-            # Codec conversion
-            final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
-            if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
-                return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
-            return send_file(video_path, mimetype='video/avi', as_attachment=False)
-
-        finally:
-            try:
-                if os.path.exists(audio_path):
-                    os.unlink(audio_path)
-            except:
-                pass
-
-    except Exception as e:
-        print(f"Error: {e}")
-        print(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
-                             timeout=120, enhancer="gfpgan",
-                             split_chunks=False, chunk_length=10, source_image="/app/faces/2.jpg"):
-    """
-    Generate SadTalker video with options
-    """
-    duration = get_audio_duration(audio_path)
-    print(f"Audio duration: {duration:.2f}s")
-
-    if split_chunks and duration > chunk_length:
-        print(f"Splitting audio into {chunk_length}s chunks...")
-        audio_chunks = split_audio(audio_path, chunk_length)
-        video_parts = []
-
-        for idx, chunk in enumerate(audio_chunks):
-            out_part = f"{video_path}_part{idx}.avi"
-            cmd = [
-                "nice", "-n", "10", "ionice", "-c", "3", "python", "/app/SadTalker/inference.py",
-                "--driven_audio", chunk,
-                "--source_image", source_image,  # replace with source_image arg if needed
-                "--result_dir", "/app/static/sadtalker_output",
-                "--still", "--preprocess", "crop"
-            ]
-            if enhancer and enhancer != "none":
-                cmd.extend(["--enhancer", enhancer])
-
-            print(f"Running SadTalker for chunk {idx}: {' '.join(cmd)}")
-            try:
-                subprocess.run(cmd, check=True, timeout=timeout)
-                video_parts.append(out_part)
-            except subprocess.TimeoutExpired:
-                print(f"SadTalker chunk {idx} timed out")
-                return False
-
-        # Concatenate all parts
-        concat_videos(video_parts, video_path)
-        return True
-
-    else:
-        # Single run
-        cmd = [
-            "nice", "-n", "10", "ionice", "-c", "3", "python", "/app/SadTalker/inference.py",
-            "--driven_audio", audio_path,
-            "--source_image", "/app/faces/2.jpg",
-            "--result_dir", "/app/static/sadtalker_output",
-            "--still", "--preprocess", "crop"
-        ]
-        if enhancer and enhancer != "none":
-            cmd.extend(["--enhancer", enhancer])
-
-        print(f"Running SadTalker: {' '.join(cmd)}")
-        try:
-            subprocess.run(cmd, check=True, timeout=timeout)
-            return True
-        except subprocess.TimeoutExpired:
-            print("SadTalker process timed out")
-            return False
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def generate_talking_face(image_path, audio_path, output_path, codec=None, quality=None):
     """Generate realistic talking face using MediaPipe"""
@@ -387,6 +56,8 @@ def generate_talking_face(image_path, audio_path, output_path, codec=None, quali
         print(f"Face generation error: {str(e)}")
         # Fallback to basic avatar
         create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}")
+
+
 def generate_elevenlabs_tts(text, voice_id="21m00Tcm4TlvDq8ikWAM"):  # Rachel voice
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
@@ -406,6 +77,280 @@ def generate_elevenlabs_tts(text, voice_id="21m00Tcm4TlvDq8ikWAM"):  # Rachel vo
     return response.content
 
 
+def call_tts_service(text, file_path, tts_engine='espeak', tts_options=None):
+    """Call external TTS service with engine selection and options"""
+    try:
+        payload = {
+            'text': text,
+            'engine': tts_engine
+        }
+
+        # Add TTS-specific options
+        if tts_options:
+            payload.update(tts_options)
+
+        print(f"TTS Request: {payload}")
+
+        response = requests.post(TTS_API_URL, json=payload, timeout=30)
+
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            print(f"TTS audio generated: {file_path} ({len(response.content)} bytes)")
+            return True
+        else:
+            print(f"TTS service error: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"TTS service call failed: {e}")
+        return False
+
+
+# Global default codec
+DEFAULT_CODEC = 'h264_fast'
+
+
+# @app.route('/generate', methods=['POST'])
+# def generate_avatar():
+#     mode = request.args.get('mode', 'simple')
+#     codec = request.args.get('codec', DEFAULT_CODEC)  # Use global default
+#     quality = request.args.get('quality', 'high')  # Add quality support
+#
+#     print(f"=== AVATAR GENERATION START ===")
+#     print(f"Mode: {mode}")
+#     print(f"Codec: {codec}")
+#     print(f"Quality: {quality}")
+#     print(f"Request args: {dict(request.args)}")
+#
+#     try:
+#         data = request.json
+#         if not data:
+#             print("ERROR: No JSON data provided")
+#             return jsonify({'error': 'No JSON data provided'}), 400
+#
+#         prompt = data.get('prompt', 'Hello')
+#         source_image = data.get('image', '/app/default_face.jpg')
+#         codec_options = data.get('codec_options', {})
+#
+#         print(f"Prompt: {prompt[:50]}...")
+#         print(f"Source image: {source_image}")
+#         print(f"Codec options: {codec_options}")
+#
+#         # Create temp files
+#         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+#             audio_path = audio_file.name
+#
+#         # Use static video file path
+#         video_path = '/app/static/avatar_video.avi'
+#         os.makedirs('/app/static', exist_ok=True)
+#
+#         try:
+#             # Generate high-quality TTS using external service
+#             print("Generating TTS...")
+#             if call_tts_service(prompt, audio_path):
+#                 print("TTS completed")
+#             else:
+#                 print("TTS generation failed")
+#                 return jsonify({'error': 'TTS generation failed'}), 500
+#
+#             # Generate based on mode
+#             if mode == 'sadtalker':
+#                 print("=== ATTEMPTING SADTALKER MODE ===")
+#                 success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
+#                 if not success:
+#                     print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
+#                     generate_talking_face(source_image, audio_path, video_path, codec, quality)
+#                 else:
+#                     print("=== SADTALKER SUCCESS ===")
+#             else:
+#                 print("=== USING SIMPLE/MEDIAPIPE MODE ===")
+#                 generate_talking_face(source_image, audio_path, video_path, codec, quality)
+#             print("Face generation completed")
+#
+#             # Check if video was created
+#             print(f"Checking video file: {video_path}")
+#             print(f"File exists: {os.path.exists(video_path)}")
+#             if os.path.exists(video_path):
+#                 print(f"File size: {os.path.getsize(video_path)} bytes")
+#
+#             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+#                 # Convert to final format using FFmpeg with codec support
+#                 final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
+#                 if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
+#                     print(f"Final video: {final_path} ({os.path.getsize(final_path)} bytes)")
+#                     return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
+#                 else:
+#                     print("Codec conversion failed, returning original AVI")
+#                     return send_file(video_path, mimetype='video/avi', as_attachment=False)
+#             else:
+#                 print("Video creation failed - file empty or missing")
+#                 return jsonify({'error': 'Video creation failed'}), 500
+#
+#         finally:
+#             # Cleanup temp files after response
+#             try:
+#                 if os.path.exists(audio_path):
+#                     os.unlink(audio_path)
+#             except:
+#                 pass
+#             # Don't delete video file here - Flask needs it for send_file
+#
+#     except Exception as e:
+#         print(f"Avatar generation error: {str(e)}")
+#         print(traceback.format_exc())
+#         return jsonify({'error': str(e)}), 500
+ref_image_path = '/app/faces/2.jpg'
+
+@app.route('/generate', methods=['POST'])
+def generate_avatar():
+    mode = request.args.get('mode', 'simple')
+    codec = request.args.get('codec', DEFAULT_CODEC)
+    quality = request.args.get('quality', 'high')
+
+    print(f"=== AVATAR GENERATION START ===")
+    print(f"Mode: {mode}")
+    print(f"Codec: {codec}")
+    print(f"Quality: {quality}")
+    print(f"Request args: {dict(request.args)}")
+
+    try:
+        data = request.json
+        if not data:
+            print("ERROR: No JSON data provided")
+            return jsonify({'error': 'No JSON data provided'}), 400
+
+        prompt = data.get('prompt', 'Hello')
+        source_image = data.get('image', f"{ref_image_path}")
+        codec_options = data.get('codec_options', {})
+
+        # NEW: TTS Engine Selection with Full Options Support
+        tts_engine = data.get('tts_engine', 'espeak')  # Default to free tier
+        tts_options = data.get('tts_options', {})
+
+        print(f"Prompt: {prompt[:50]}...")
+        print(f"Source image: {source_image}")
+        print(f"Codec options: {codec_options}")
+        print(f"TTS Engine: {tts_engine}")
+        print(f"TTS Options: {tts_options}")
+
+        # Create temp files
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+            audio_path = audio_file.name
+
+        # Use static video file path
+        video_path = '/app/static/avatar_video.avi'
+        os.makedirs('/app/static', exist_ok=True)
+
+        try:
+            # Generate TTS using external service with engine selection
+            print("Generating TTS...")
+            if call_tts_service_with_options(prompt, audio_path, tts_engine, tts_options):
+                print("TTS completed")
+                audio_path = normalize_audio(audio_path)  # ensure SadTalker gets clean audio
+            else:
+                print("TTS generation failed")
+                return jsonify({'error': 'TTS generation failed'}), 500
+
+            # Generate based on mode
+            if mode == 'sadtalker':
+                print("=== ATTEMPTING SADTALKER MODE ===")
+                success = generate_sadtalker_video(audio_path, video_path, prompt, codec, quality)
+                if not success:
+                    print("=== SADTALKER FAILED - FALLBACK TO MEDIAPIPE ===")
+                    source_image = data.get('image', '/app/default_face.jpg')
+                    generate_talking_face(source_image, audio_path, video_path, codec, quality)
+                else:
+                    print("=== SADTALKER SUCCESS ===")
+            else:
+                print("=== USING SIMPLE/MEDIAPIPE MODE ===")
+                source_image = data.get('image', '/app/default_face.jpg')
+                generate_talking_face(source_image, audio_path, video_path, codec, quality)
+            print("Face generation completed")
+
+            # Check if video was created
+            print(f"Checking video file: {video_path}")
+            print(f"File exists: {os.path.exists(video_path)}")
+            if os.path.exists(video_path):
+                print(f"File size: {os.path.getsize(video_path)} bytes")
+
+            if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+                # Convert to final format using FFmpeg with codec support
+                final_path = convert_video_with_codec(video_path, audio_path, codec, quality)
+                if final_path and os.path.exists(final_path) and os.path.getsize(final_path) > 0:
+                    print(f"Final video: {final_path} ({os.path.getsize(final_path)} bytes)")
+                    return send_file(final_path, mimetype=get_mimetype_for_codec(codec), as_attachment=False)
+                else:
+                    print("Codec conversion failed, returning original AVI")
+                    return send_file(video_path, mimetype='video/avi', as_attachment=False)
+            else:
+                print("Video creation failed - file empty or missing")
+                return jsonify({'error': 'Video creation failed'}), 500
+
+        finally:
+            # Cleanup temp files after response
+            try:
+                if os.path.exists(audio_path):
+                    os.unlink(audio_path)
+            except:
+                pass
+
+    except Exception as e:
+        print(f"Avatar generation error: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_options=None):
+    """Call external TTS service with full engine and options support"""
+    try:
+        # Build TTS request payload
+        payload = {
+            'text': text,
+            'engine': tts_engine
+        }
+
+        # Add engine-specific options
+        if tts_options:
+            payload.update(tts_options)
+
+        print(f"TTS Request: engine={tts_engine}, options={tts_options}")
+        print(f"Full payload: {payload}")
+
+        # Call TTS service
+        response = requests.post(TTS_API_URL, json=payload, timeout=60)
+
+        print(
+            f"TTS Response: status={response.status_code}, size={len(response.content) if response.content else 0} bytes")
+
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            print(f"TTS audio saved: {file_path} ({len(response.content)} bytes)")
+            return True
+        else:
+            print(f"TTS service error: {response.status_code}")
+            print(f"Error response: {response.text[:200]}...")
+            return False
+
+    except requests.exceptions.Timeout:
+        print("TTS service timeout - some engines take longer")
+        return False
+    except Exception as e:
+        print(f"TTS service call failed: {e}")
+        return False
+
+def normalize_audio(audio_path):
+    fixed_path = audio_path.replace('.wav', '_fixed.wav')
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", audio_path,
+        "-ac", "1",        # mono
+        "-ar", "16000",    # 16k sample rate
+        "-acodec", "pcm_s16le",  # raw PCM
+        fixed_path
+    ]
+    subprocess.run(cmd, check=True)
+    return fixed_path
 
 
 def create_default_face():
@@ -793,6 +738,140 @@ def get_mimetype_for_codec(codec):
     return mime_types.get(codec, 'video/mp4')
 
 
+def generate_sadtalker_video(audio_path, video_path, prompt, codec='h264_high', quality='high'):
+    """Generate SadTalker realistic avatar using subprocess"""
+    print(f"=== SADTALKER DETAILED DEBUG START ===")
+    print(f"Audio path: {audio_path}")
+    print(f"Video path: {video_path}")
+    print(f"Prompt: {prompt[:50]}...")
+
+    try:
+        # Check if SadTalker is available
+        sadtalker_path = '/app/SadTalker'
+        print(f"Checking SadTalker path: {sadtalker_path}")
+        print(f"SadTalker exists: {os.path.exists(sadtalker_path)}")
+
+        if os.path.exists(sadtalker_path):
+            print(f"SadTalker directory contents: {os.listdir(sadtalker_path)}")
+            inference_path = f'{sadtalker_path}/inference.py'
+            print(f"Inference script exists: {os.path.exists(inference_path)}")
+
+        if not os.path.exists(sadtalker_path):
+            print("FAILURE REASON: SadTalker directory not found")
+            return False
+
+        # Create reference image
+        # ref_image_path = os.path.join(os.path.dirname(video_path), 'ref_face.jpg')
+        # print(f"Creating reference image: {ref_image_path}")
+        # default_face = create_default_face()
+        # cv2.imwrite(ref_image_path, default_face)
+        # print(f"Reference image created: {os.path.exists(ref_image_path)}")
+        # Use real reference image
+
+        print(f"Using reference image: {ref_image_path}")
+        print(f"Reference image exists: {os.path.exists(ref_image_path)}")
+
+        # ref_image_path = get_reference_face()
+
+        # Run SadTalker via subprocess with universal CPU/GPU compatibility
+        env = os.environ.copy()
+        # Let SadTalker auto-detect device, but provide CPU fallback
+        if not torch.cuda.is_available():
+            env['CUDA_VISIBLE_DEVICES'] = ''
+
+        # Use a unique output directory to avoid conflicts
+        sadtalker_output_dir = os.path.join(os.path.dirname(video_path), 'sadtalker_output')
+        os.makedirs(sadtalker_output_dir, exist_ok=True)
+
+        cmd = [
+            'nice', '-n', '10', 'ionice', '-c', '3',
+            'python', f'{sadtalker_path}/inference.py',
+            '--driven_audio', audio_path,
+            '--source_image', ref_image_path,
+            '--result_dir', sadtalker_output_dir,
+            '--still',
+            '--preprocess', 'crop',
+            '--enhancer', 'gfpgan'
+        ]
+
+        print(f"SadTalker command: {' '.join(cmd)}")
+        print("Executing SadTalker...")
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
+
+        print(f"SadTalker return code: {result.returncode}")
+        print(f"SadTalker stdout: {result.stdout}")
+        print(f"SadTalker stderr: {result.stderr}")
+
+        if result.returncode == 0:
+            # Find generated video and move to expected location
+            result_dir = sadtalker_output_dir
+            print(f"Checking result directory: {result_dir}")
+            print(f"Directory contents: {os.listdir(result_dir)}")
+
+            # Also check for subdirectories
+            for item in os.listdir(result_dir):
+                item_path = os.path.join(result_dir, item)
+                if os.path.isdir(item_path):
+                    print(f"Subdirectory {item}: {os.listdir(item_path)}")
+
+            # Look for any MP4 files in result directory and subdirectories
+            found_video = None
+
+            # Check main directory first
+            # for file in os.listdir(result_dir):
+            #     if file.endswith('.mp4'):
+            #         found_video = os.path.join(result_dir, file)
+            #         print(f"Found SadTalker video in main dir: {found_video}")
+            #         break
+
+            mp4_files = [f for f in os.listdir(result_dir) if f.endswith('.mp4')]
+            if mp4_files:
+                # Sort by modification time - newest first
+                newest_file = max(mp4_files, key=lambda f: os.path.getmtime(os.path.join(result_dir, f)))
+                found_video = os.path.join(result_dir, newest_file)
+                print(f"Found newest SadTalker video: {found_video}")
+
+            # If not found, check all subdirectories
+            if not found_video:
+                for root, dirs, files in os.walk(result_dir):
+                    for file in files:
+                        if file.endswith('.mp4'):
+                            found_video = os.path.join(root, file)
+                            print(f"Found SadTalker video in subdir: {found_video}")
+                            break
+                    if found_video:
+                        break
+
+            # Copy found video to expected location
+            if found_video and os.path.exists(found_video):
+                import shutil
+                shutil.copy2(found_video, video_path)
+                print(f"SadTalker SUCCESS: {os.path.getsize(video_path)} bytes")
+                return True
+
+            print("FAILURE REASON: No MP4 result video found in any directory")
+            print(f"Main dir files: {os.listdir(result_dir)}")
+            # List all files in subdirectories
+            for root, dirs, files in os.walk(result_dir):
+                if root != result_dir:
+                    print(f"Subdir {root}: {files}")
+        else:
+            print(f"FAILURE REASON: SadTalker process failed with code {result.returncode}")
+            print(f"STDERR: {result.stderr}")
+
+        return False
+
+    except subprocess.TimeoutExpired:
+        print("FAILURE REASON: SadTalker process timed out after 120 seconds")
+        return False
+    except Exception as e:
+        print(f"FAILURE REASON: Exception occurred: {e}")
+        print(f"Exception type: {type(e).__name__}")
+        print(f"Exception traceback: {traceback.format_exc()}")
+        return False
+    finally:
+        print(f"=== SADTALKER DETAILED DEBUG END ===")
 
 
 def create_enhanced_realistic_face(audio_path, video_path, prompt, codec='h264_high', quality='high'):
@@ -956,7 +1035,7 @@ def debug_status():
         status = {
             'timestamp': str(datetime.now()),
             'device': device,
-            'tts_ready': os.getenv('TTS_API_URL') is not None,
+            'tts_ready': tts is not None,
             'sadtalker_installed': os.path.exists('/app/SadTalker'),
             'modes': ['simple', 'sadtalker'],
             'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
