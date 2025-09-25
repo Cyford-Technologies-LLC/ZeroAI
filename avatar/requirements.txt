@@ -1,10 +1,20 @@
+# Torch with CUDA 12.1 support
+torch==2.1.0+cu121
+torchvision==0.15.2+cu121
+torchaudio==2.1.0+cu121
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+# SadTalker + Flask stack
 flask==2.3.3
 flask-cors==4.0.0
 python-dotenv==1.0.0
 requests==2.31.0
-torch
 numpy==1.24.3
-opencv-python-headless
-mediapipe
+opencv-python-headless==4.8.1.78
+mediapipe==0.10.9
 scikit-image==0.20.0
-moviepy
+moviepy==1.0.3
+
+# GFPGAN / basicsr extras
+gfpgan==1.3.8
+basicsr==1.4.2
