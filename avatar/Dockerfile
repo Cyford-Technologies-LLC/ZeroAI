@@ -34,7 +34,7 @@ RUN sed -i 's/trans_params = np.array(\[w0, h0, s, t\[0\], t\[1\]\])/t = np.sque
 COPY requirements.txt .
 
 RUN pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 \
-    --index-url https://download.pytorch.org/whl/cu121 \
+    --index-url https://download.pytorch.org/whl/cu121
 
 # Install your API's specific Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
