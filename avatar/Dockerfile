@@ -43,6 +43,9 @@ RUN pip install  --no-cache-dir -r requirements.txt
 #    paxctl -cm "{}"; \
 #    ' \;
 
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
 RUN python3 -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}'); print(f'CUDA Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"No CUDA Device\"}')"
 
 # Copy application code (this is the only thing that should invalidate cache often)
@@ -68,4 +71,4 @@ RUN python3 -c "import torch; import os; torch_path = os.path.dirname(torch.__fi
 
 
 EXPOSE 7860
-CMD ["python", "avatar_api.py"]
+CMD ["python3", "avatar_api.py"]
