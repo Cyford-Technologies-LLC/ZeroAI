@@ -2,6 +2,22 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pax-utils \
+    elfutils \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
+# Fix PyTorch library permissions
+RUN if [ -f "/usr/local/lib/python3.10/site-packages/torch/lib/libtorch_cpu.so" ]; then \
+    chmod 755 /usr/local/lib/python3.10/site-packages/torch/lib/libtorch_cpu.so && \
+    paxctl -cm /usr/local/lib/python3.10/site-packages/torch/lib/libtorch_cpu.so; \
+    fi
+
+
 # Install base system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg libsm6 libxext6 libxrender-dev libglib2.0-0 libgomp1 \
