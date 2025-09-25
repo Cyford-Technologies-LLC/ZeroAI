@@ -53,7 +53,7 @@ COPY install_sadtalker.sh .
 
 
 RUN bash install_sadtalker.sh
-RUN python create_face.py
+RUN python3 create_face.py
 
 
 
