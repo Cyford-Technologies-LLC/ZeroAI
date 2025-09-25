@@ -206,10 +206,10 @@ def generate_avatar():
 
                 if not success:
                     print("=== SADTALKER FAILED - FALLBACK TO SIMPLE FACE ===")
-                    generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
+                    generate_talking_face(data.get('image', '/app/default_face.jpg'), audio_path, video_path, codec, quality)
             else:
                 print("=== USING SIMPLE/MEDIAPIPE MODE ===")
-                generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
+                generate_talking_face(data.get('image', '/app/default_face.jpg'), audio_path, video_path, codec, quality)
 
             # Codec conversion
             fallback_path = convert_video_with_codec(video_path, audio_path, codec, quality)
