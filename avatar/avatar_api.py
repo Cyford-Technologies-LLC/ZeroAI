@@ -1,17 +1,18 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import os, subprocess, tempfile, requests, base64, traceback, unicodedata
+import os, subprocess, tempfile, requests, base64, traceback, unicodedata , shutil , glob
 
 from pathlib import Path
 import torch, numpy as np, cv2
 import traceback
 from datetime import datetime
 
-
-
 import wave
 from pydub import AudioSegment
-import subprocess
+from moviepy.editor import concatenate_videoclips, VideoFileClip
+
+
+
 
 def get_audio_duration(audio_path):
     with wave.open(audio_path, 'rb') as wf:
@@ -233,8 +234,7 @@ def generate_avatar():
 
 
 
-import os, subprocess, tempfile, shutil
-from moviepy.editor import concatenate_videoclips, VideoFileClip
+
 
 def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                              timeout=120, enhancer="gfpgan",
@@ -249,7 +249,7 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
     try:
         if split_chunks:
             print("=== Splitting audio into chunks ===")
-            chunks = split_audio(audio_path, chunk_length)  # → implement your own splitter
+            chunks = split_audio(audio_path, chunk_length)  # you must implement this
         else:
             chunks = [audio_path]
 
@@ -272,41 +272,48 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
             try:
                 subprocess.run(cmd, timeout=timeout, check=True)
             except subprocess.TimeoutExpired:
-                print(f"Chunk {idx} timed out after {timeout}s")
+                print(f"Chunk {idx+1} timed out after {timeout}s")
                 return False
             except subprocess.CalledProcessError as e:
-                print(f"SadTalker failed on chunk {idx}: {e}")
+                print(f"SadTalker failed on chunk {idx+1}: {e}")
                 return False
 
-            # Collect AVI from chunk output
-            avi_files = [f for f in os.listdir(chunk_result_dir) if f.endswith(".avi")]
-            if not avi_files:
-                print(f"No AVI file found in {chunk_result_dir}")
+            # Look for both AVI and MP4 recursively
+            video_candidates = glob.glob(os.path.join(chunk_result_dir, "**", "*.avi"), recursive=True)
+            if not video_candidates:
+                video_candidates = glob.glob(os.path.join(chunk_result_dir, "**", "*.mp4"), recursive=True)
+
+            if not video_candidates:
+                print(f"No video file found in {chunk_result_dir}")
                 return False
 
-            avi_path = os.path.join(chunk_result_dir, avi_files[0])
-            video_parts.append(avi_path)
+            # Take the most recent file
+            best_file = max(video_candidates, key=os.path.getmtime)
+            print(f"Found output video: {best_file}")
+            video_parts.append(best_file)
 
-        # Merge all parts
+        # Merge or move the result
         if len(video_parts) > 1:
             print("=== Concatenating chunk videos ===")
             clips = [VideoFileClip(v) for v in video_parts]
             final_clip = concatenate_videoclips(clips)
             final_clip.write_videofile(video_path, codec="libx264", audio_codec="aac")
-            for c in clips: c.close()
+            for c in clips:
+                c.close()
         else:
             print("=== Single video part, moving to final ===")
-            shutil.move(video_parts[0], video_path)
+            shutil.copy(video_parts[0], video_path)
 
         return True
 
     finally:
         # Cleanup temp chunk dirs
         if split_chunks:
-            for idx in range(len(video_parts)):
+            for idx in range(len(chunks)):
                 chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
                 if os.path.exists(chunk_result_dir):
                     shutil.rmtree(chunk_result_dir, ignore_errors=True)
+
 
 
 
