@@ -31,7 +31,7 @@ if $NUKE; then
 
 elif $BUILD; then
           # Normal = reuse cache, much faster
-    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f -s avata
+    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f -s avatar
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build avatar
 else
     #  Simple restart
