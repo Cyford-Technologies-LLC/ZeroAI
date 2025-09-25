@@ -247,6 +247,23 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
     video_parts = []
 
     try:
+        # --- NEW: auto-scale timeout and chunking ---
+        duration = get_audio_duration(audio_path)
+        timeout = max(timeout, int(duration * 2))  # 2x audio length as safety margin
+
+        if duration > 80:
+            split_chunks = True
+            if duration <= 180:
+                chunk_length = 20
+            elif duration <= 300:
+                chunk_length = 30
+            else:
+                chunk_length = 60
+            print(f"Audio is {duration:.2f}s → splitting into {chunk_length}s chunks (timeout={timeout}s)")
+        else:
+            print(f"Audio is {duration:.2f}s → no splitting (timeout={timeout}s)")
+        # --------------------------------------------
+
         if split_chunks:
             print("=== Splitting audio into chunks ===")
             chunks = split_audio(audio_path, chunk_length)  # you must implement this
