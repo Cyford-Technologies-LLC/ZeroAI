@@ -240,38 +240,51 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                              timeout=120, enhancer="gfpgan",
                              split_chunks=False, chunk_length=10,
                              source_image="/app/faces/2.jpg"):
-
+    """
+    Run SadTalker on the provided audio. Splits audio into chunks only when:
+      - split_chunks == True, OR
+      - audio duration > 80s (auto-splitting).
+    Timeout is computed per-chunk from the chunk duration (so long audios get larger timeouts).
+    """
     result_dir = "/app/static/sadtalker_output"
     os.makedirs(result_dir, exist_ok=True)
 
     video_parts = []
+    chunks = [audio_path]  # default
 
     try:
-        # --- NEW: auto-scale timeout and chunking ---
-        duration = get_audio_duration(audio_path)
-        timeout = max(timeout, int(duration * 2))  # 2x audio length as safety margin
+        # Determine audio duration and whether to split
+        try:
+            total_duration = get_audio_duration(audio_path)
+        except Exception as e:
+            print(f"Warning: could not get audio duration: {e}")
+            total_duration = None
 
-        if duration > 80:
-            split_chunks = True
-            if duration <= 180:
-                chunk_length = 20
-            elif duration <= 300:
-                chunk_length = 30
-            else:
-                chunk_length = 60
-            print(f"Audio is {duration:.2f}s → splitting into {chunk_length}s chunks (timeout={timeout}s)")
-        else:
-            print(f"Audio is {duration:.2f}s → no splitting (timeout={timeout}s)")
-        # --------------------------------------------
-
-        if split_chunks:
+        # Auto-split if requested OR if audio longer than 80s
+        if split_chunks or (total_duration is not None and total_duration > 80):
             print("=== Splitting audio into chunks ===")
-            chunks = split_audio(audio_path, chunk_length)  # you must implement this
+            # Use provided chunk_length (seconds) to split; this will create files named ..._chunkN.wav
+            try:
+                chunks = split_audio(audio_path, chunk_length)
+            except Exception as e:
+                print(f"Audio split failed: {e}. Falling back to single chunk.")
+                chunks = [audio_path]
         else:
             chunks = [audio_path]
 
         for idx, chunk_path in enumerate(chunks):
             print(f"=== Processing chunk {idx+1}/{len(chunks)} ===")
+
+            # Calculate a reasonable timeout for this chunk:
+            # If we know durations, use chunk duration; else fall back to provided timeout.
+            per_chunk_timeout = timeout
+            try:
+                chunk_dur = get_audio_duration(chunk_path)
+                # Heuristic: allow ~6x processing time for SadTalker (empirical) + some headroom
+                # (you can tune multiplier)
+                per_chunk_timeout = max(30, int(chunk_dur * 6) + 30)
+            except Exception:
+                per_chunk_timeout = timeout
 
             # Unique output folder per chunk
             chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
@@ -287,24 +300,35 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
 
             print("Running SadTalker:", " ".join(cmd))
             try:
-                subprocess.run(cmd, timeout=timeout, check=True)
+                subprocess.run(cmd, timeout=per_chunk_timeout, check=True)
             except subprocess.TimeoutExpired:
-                print(f"Chunk {idx+1} timed out after {timeout}s")
+                print(f"Chunk {idx+1} timed out after {per_chunk_timeout}s")
                 return False
             except subprocess.CalledProcessError as e:
                 print(f"SadTalker failed on chunk {idx+1}: {e}")
                 return False
 
-            # Look for both AVI and MP4 recursively
+            # Look for any output video (.avi or .mp4) recursively under chunk_result_dir
             video_candidates = glob.glob(os.path.join(chunk_result_dir, "**", "*.avi"), recursive=True)
+            video_candidates += glob.glob(os.path.join(chunk_result_dir, "**", "*.mp4"), recursive=True)
+
             if not video_candidates:
-                video_candidates = glob.glob(os.path.join(chunk_result_dir, "**", "*.mp4"), recursive=True)
+                # Some SadTalker builds may write nested dirs; try one level deeper
+                try:
+                    nested = []
+                    for root, dirs, files in os.walk(chunk_result_dir):
+                        for f in files:
+                            if f.lower().endswith((".avi", ".mp4")):
+                                nested.append(os.path.join(root, f))
+                    video_candidates = nested
+                except Exception:
+                    pass
 
             if not video_candidates:
                 print(f"No video file found in {chunk_result_dir}")
                 return False
 
-            # Take the most recent file
+            # Choose the most recent file (in case multiple present)
             best_file = max(video_candidates, key=os.path.getmtime)
             print(f"Found output video: {best_file}")
             video_parts.append(best_file)
@@ -312,24 +336,70 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
         # Merge or move the result
         if len(video_parts) > 1:
             print("=== Concatenating chunk videos ===")
-            clips = [VideoFileClip(v) for v in video_parts]
-            final_clip = concatenate_videoclips(clips)
-            final_clip.write_videofile(video_path, codec="libx264", audio_codec="aac")
-            for c in clips:
-                c.close()
+            # Use moviepy to concatenate (audio/video synced)
+            try:
+                clips = [VideoFileClip(v) for v in video_parts]
+                final_clip = concatenate_videoclips(clips, method="compose")
+                # write_videofile will create the file and include audio
+                final_clip.write_videofile(video_path, codec="libx264", audio_codec="aac", threads=4, logger=None)
+                for c in clips:
+                    try:
+                        c.close()
+                    except Exception:
+                        pass
+                try:
+                    final_clip.close()
+                except Exception:
+                    pass
+            except Exception as e:
+                print(f"Concatenation failed: {e}. Attempting ffmpeg concat fallback.")
+                try:
+                    # Fallback: create concat list for ffmpeg
+                    concat_list = os.path.join(result_dir, "concat_list.txt")
+                    with open(concat_list, "w") as f:
+                        for v in video_parts:
+                            f.write(f"file '{v.replace(\"'\",\"'\\''\")}'\n")
+                    subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list, "-c", "copy", video_path], check=True)
+                except Exception as ee:
+                    print(f"FFmpeg concat fallback failed: {ee}")
+                    return False
         else:
             print("=== Single video part, moving to final ===")
-            shutil.copy(video_parts[0], video_path)
+            try:
+                # prefer move; if cross-device, fallback to copy
+                shutil.move(video_parts[0], video_path)
+            except Exception:
+                try:
+                    shutil.copy(video_parts[0], video_path)
+                except Exception as e:
+                    print(f"Failed to move/copy single chunk output: {e}")
+                    return False
 
         return True
 
     finally:
-        # Cleanup temp chunk dirs
-        if split_chunks:
-            for idx in range(len(chunks)):
-                chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
-                if os.path.exists(chunk_result_dir):
-                    shutil.rmtree(chunk_result_dir, ignore_errors=True)
+        # Cleanup temp chunk dirs only if we split audio (i.e., more than one chunk or split_chunks True)
+        try:
+            should_cleanup = split_chunks or (total_duration is not None and total_duration > 80)
+        except Exception:
+            should_cleanup = split_chunks
+
+        if should_cleanup:
+            try:
+                for idx in range(len(chunks)):
+                    chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
+                    if os.path.exists(chunk_result_dir):
+                        shutil.rmtree(chunk_result_dir, ignore_errors=True)
+                # remove any intermediate chunk audio files created by split_audio
+                for c in chunks:
+                    if c != audio_path and os.path.exists(c):
+                        try:
+                            os.remove(c)
+                        except Exception:
+                            pass
+            except Exception as e:
+                print(f"Cleanup warning: {e}")
+
 
 
 
