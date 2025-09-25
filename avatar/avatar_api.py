@@ -158,7 +158,7 @@ def generate_avatar():
 
         # SadTalker options (exposed to API)
         sadtalker_options = {
-            "timeout": int(data.get("timeout", 120)),
+            "timeout": int(data.get("timeout", 1200)),
             "enhancer": data.get("enhancer", "gfpgan"),
             "split_chunks": bool(data.get("split_chunks", False)),
             "chunk_length": int(data.get("chunk_length", 10))
@@ -237,7 +237,7 @@ def generate_avatar():
 
 
 def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
-                             timeout=120, enhancer="gfpgan",
+                             timeout=1200, enhancer="gfpgan",
                              split_chunks=False, chunk_length=10,
                              source_image="/app/faces/2.jpg"):
     """
