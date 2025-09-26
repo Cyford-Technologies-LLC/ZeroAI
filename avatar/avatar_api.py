@@ -20,6 +20,19 @@ app = Flask(__name__)
 CORS(app)
 
 
+
+
+DEFAULT_CODEC = "mp4"  # adjust as needed
+ref_image_path = "/app/faces/2.jpg"
+benchmark_file = "/app/static/benchmark_info.json"
+
+
+
+
+
+
+
+
 @app.errorhandler(Exception)
 def handle_exception(e):
     logging.error("Unhandled Exception: %s\n%s", e, traceback.format_exc())
@@ -145,29 +158,41 @@ def normalize_audio(audio_path):
 ############################
 @app.route('/generate', methods=['POST'])
 def generate_avatar():
+    """
+    Generate talking avatar video from prompt and image.
+    Uses cached benchmark info for timeout if available, or creates 30s TTS benchmark audio.
+    """
     mode = request.args.get('mode', 'simple')
     codec = request.args.get('codec', DEFAULT_CODEC)
     quality = request.args.get('quality', 'high')
 
+    # Ensure static folder exists
+    os.makedirs("/app/static", exist_ok=True)
+
+    # Load cached benchmark info if available
+    base_timeout = 1200
+    if os.path.exists(benchmark_file):
+        try:
+            with open(benchmark_file, "r") as f:
+                data = json.load(f)
+                base_timeout = data.get("base_timeout", base_timeout)
+            print(f"Using cached benchmark timeout: {base_timeout}s")
+        except Exception as e:
+            print(f"Failed to load benchmark info: {e}")
+
     try:
         data = request.json
         if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+            return jsonify({"error": "No JSON data provided"}), 400
 
-        # Prompt cleanup
-        prompt = clean_text(data.get('prompt', 'Hello'))
+        prompt = clean_text(data.get("prompt", "Hello, this is a benchmark test." * 5))  # lengthened text
+        source_image_input = data.get("image", ref_image_path)
+        codec_options = data.get("codec_options", {})
+        tts_engine = data.get("tts_engine", "espeak")
+        tts_options = data.get("tts_options", {})
 
-        # Image handling
-        source_image_input = data.get('image', ref_image_path)
-
-        # Codec / TTS
-        codec_options = data.get('codec_options', {})
-        tts_engine = data.get('tts_engine', 'espeak')
-        tts_options = data.get('tts_options', {})
-
-        # SadTalker options (exposed to API)
         sadtalker_options = {
-            "timeout": int(data.get("timeout", 1200)),
+            "timeout": int(data.get("timeout", base_timeout)),
             "enhancer": data.get("enhancer", "gfpgan"),
             "split_chunks": bool(data.get("split_chunks", False)),
             "chunk_length": int(data.get("chunk_length", 10))
@@ -181,63 +206,76 @@ def generate_avatar():
         print(f"Codec options: {codec_options}")
         print(f"SadTalker options: {sadtalker_options}")
 
-        # Load and preprocess image
+        # Load image
         img = load_and_preprocess_image(source_image_input)
         if img is None:
-            return jsonify({'error': 'Image load failed'}), 500
+            return jsonify({"error": "Image load failed"}), 500
 
-        # Temp files
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as audio_file:
+        # Temp audio file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
             audio_path = audio_file.name
-        video_path = '/app/static/avatar_video.avi'
-        os.makedirs('/app/static', exist_ok=True)
 
-        try:
-            # TTS generation
-            if not call_tts_service_with_options(prompt, audio_path, tts_engine, tts_options):
-                return jsonify({'error': 'TTS failed'}), 500
+        video_path = "/app/static/avatar_video.avi"
+
+        # Generate benchmark audio if benchmark file missing
+        if not os.path.exists(benchmark_file):
+            print("Benchmark info missing: generating 30-second TTS benchmark audio...")
+            benchmark_prompt = "This is a benchmark speech for avatar generation. " * 10
+            if not call_tts_service_with_options(benchmark_prompt, audio_path, tts_engine, tts_options):
+                return jsonify({"error": "Benchmark TTS failed"}), 500
             audio_path = normalize_audio(audio_path)
+            # Compute and save benchmark timeout
+            duration = get_audio_duration(audio_path)
+            base_timeout = max(1200, int(duration * 3))  # safety multiplier
+            with open(benchmark_file, "w") as f:
+                json.dump({"base_timeout": base_timeout}, f)
+            print(f"Benchmark created: duration={duration:.2f}s, timeout={base_timeout}s")
 
-            # Video generation
-            if mode == 'sadtalker':
-                print("=== ATTEMPTING SADTALKER MODE ===")
-                success = generate_sadtalker_video(
-                    audio_path,
-                    video_path,
-                    prompt,
-                    codec,
-                    quality,
-                    timeout=sadtalker_options["timeout"],
-                    enhancer=sadtalker_options["enhancer"],
-                    split_chunks=sadtalker_options["split_chunks"],
-                    chunk_length=sadtalker_options["chunk_length"],
-                    source_image=source_image_input
-                )
+        # Generate TTS for actual prompt
+        if not call_tts_service_with_options(prompt, audio_path, tts_engine, tts_options):
+            return jsonify({"error": "TTS failed"}), 500
+        audio_path = normalize_audio(audio_path)
 
-                if not success:
-                    print("=== SADTALKER FAILED - FALLBACK TO SIMPLE FACE ===")
-                    generate_talking_face(data.get('image', '/app/default_face.jpg'), audio_path, video_path, codec, quality)
-            else:
-                print("=== USING SIMPLE/MEDIAPIPE MODE ===")
-                generate_talking_face(data.get('image', '/app/default_face.jpg'), audio_path, video_path, codec, quality)
+        # Video generation
+        if mode == "sadtalker":
+            print("=== ATTEMPTING SADTALKER MODE ===")
+            success = generate_sadtalker_video(
+                audio_path,
+                video_path,
+                prompt,
+                codec,
+                quality,
+                timeout=sadtalker_options["timeout"],
+                enhancer=sadtalker_options["enhancer"],
+                split_chunks=sadtalker_options["split_chunks"],
+                chunk_length=sadtalker_options["chunk_length"],
+                source_image=source_image_input,
+                benchmark_file=benchmark_file
+            )
 
-            # Codec conversion
-            fallback_path = convert_video_with_codec(video_path, audio_path, codec, quality)
-            if fallback_path and os.path.exists(fallback_path):
-                return send_file(fallback_path, mimetype='video/mp4', as_attachment=False)
+            if not success:
+                print("=== SADTALKER FAILED - FALLBACK TO SIMPLE FACE ===")
+                generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
+        else:
+            print("=== USING SIMPLE/MEDIAPIPE MODE ===")
+            generate_talking_face(source_image_input, audio_path, video_path, codec, quality)
 
-            return jsonify({'error': 'Video creation failed'}), 500
-        finally:
-            try:
-                if os.path.exists(audio_path):
-                    os.unlink(audio_path)
-            except:
-                pass
+        # Codec conversion
+        fallback_path = convert_video_with_codec(video_path, audio_path, codec, quality)
+        if fallback_path and os.path.exists(fallback_path):
+            return send_file(fallback_path, mimetype="video/mp4", as_attachment=False)
 
-    except Exception as e:
-        print(f"Error: {e}")
-        print(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": "Video creation failed"}), 500
+
+    finally:
+        try:
+            if os.path.exists(audio_path):
+                os.unlink(audio_path)
+        except:
+            pass
+
+
+
 
 
 
@@ -249,54 +287,44 @@ def generate_avatar():
 def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                              timeout=1200, enhancer="gfpgan",
                              split_chunks=False, chunk_length=10,
-                             source_image="/app/faces/2.jpg"):
+                             source_image="/app/faces/2.jpg",
+                             benchmark_file="/app/static/benchmark_info.json"):
     """
-    Run SadTalker over the provided audio (optionally split into chunks for long audio),
-    scale timeouts based on audio duration, gather produced videos and concatenate
-    into video_path. Returns True on success, False on error.
+    Run SadTalker with optional chunking and cached benchmark timeout.
+    Returns True on success, False on error.
     """
+    import json
 
     result_dir = "/app/static/sadtalker_output"
     os.makedirs(result_dir, exist_ok=True)
 
+    # Load cached timeout
+    if os.path.exists(benchmark_file):
+        try:
+            with open(benchmark_file, "r") as f:
+                data = json.load(f)
+                timeout = data.get("base_timeout", timeout)
+            print(f"Using cached timeout: {timeout}s")
+        except Exception as e:
+            print(f"Failed to load benchmark info: {e}")
+
     video_parts = []
-    chunks = []  # ensure variable exists for finally/cleanup
+    chunks = []
 
     try:
-        # --- Auto adjust timeout & chunking ---
         duration = get_audio_duration(audio_path)
         print(f"Audio duration detected: {duration:.2f}s")
 
-        # Increase provided timeout to at least ~3x audio length so SadTalker has enough time.
-        # This gives a safety multiplier for processing overhead.
-        # timeout = max(timeout, int(duration * 3))
-        timeout = calculate_timeout(duration, source_image="/app/faces/2.jpg", test_audio="/app/test_audio.wav")
-
-        print(f"Base adjusted timeout (will be used as minimum per-chunk): {timeout}s")
-
-        # Auto-enable chunking if audio > 80s and user didn't explicitly request chunking
         if duration > 80 and not split_chunks:
-            print("Audio longer than 80s — enabling automatic chunking")
             split_chunks = True
 
-        # Validate chunk_length
         if chunk_length <= 0:
             chunk_length = 10
 
-        # Split if requested
-        if split_chunks:
-            print(f"=== Splitting audio into {chunk_length}s chunks ===")
-            chunks = split_audio(audio_path, chunk_length)
-            if not chunks:
-                print("Split produced no chunks, aborting.")
-                return False
-        else:
-            chunks = [audio_path]
+        chunks = split_audio(audio_path, chunk_length) if split_chunks else [audio_path]
 
-        # --- Process each chunk with SadTalker ---
         for idx, chunk_path in enumerate(chunks):
             print(f"=== Processing chunk {idx+1}/{len(chunks)} ===")
-
             chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
             os.makedirs(chunk_result_dir, exist_ok=True)
 
@@ -307,94 +335,49 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                 "--result_dir", chunk_result_dir,
                 "--still", "--preprocess", "crop", "--enhancer", enhancer
             ]
+            print(f"Running SadTalker chunk {idx+1} with timeout={timeout}s")
+            subprocess.run(cmd, timeout=timeout, check=True)
 
-            # Compute a per-chunk timeout based on the chunk audio length (safer than global-only)
-            try:
-                chunk_duration = get_audio_duration(chunk_path)
-            except Exception:
-                chunk_duration = duration if idx == 0 else chunk_length
-            # give chunk plenty of time: at least `timeout`, otherwise chunk_duration*3 + buffer
-            # per_chunk_timeout = max(timeout, int(chunk_duration * 3) + 30)
-            per_chunk_timeout = calculate_timeout(
-                chunk_duration,
-                source_image=source_image,  # pass in your avatar image
-                test_audio="/app/test_audio.wav"
-            )
-            print(f"Running SadTalker for chunk {idx+1}. chunk_duration={chunk_duration:.2f}s per_chunk_timeout={per_chunk_timeout}s")
-            print("SadTalker command:", " ".join(cmd))
-
-            try:
-                subprocess.run(cmd, timeout=per_chunk_timeout, check=True)
-            except subprocess.TimeoutExpired:
-                print(f"Chunk {idx+1} timed out after {per_chunk_timeout}s")
-                return False
-            except subprocess.CalledProcessError as e:
-                print(f"SadTalker failed on chunk {idx+1}: {e}")
-                return False
-
-            # Search recursively for video output (avi or mp4). SadTalker may put file in nested folder.
+            # Find produced video
             video_candidates = glob.glob(os.path.join(chunk_result_dir, "**", "*.avi"), recursive=True)
             video_candidates += glob.glob(os.path.join(chunk_result_dir, "**", "*.mp4"), recursive=True)
-
             if not video_candidates:
-                print(f"No video file found in {chunk_result_dir}")
+                print(f"No video found in {chunk_result_dir}")
                 return False
-
-            # Choose the newest produced file for this chunk
             best_file = max(video_candidates, key=os.path.getmtime)
-            print(f"Found output video for chunk {idx+1}: {best_file}")
             video_parts.append(best_file)
 
-        # --- Merge chunk videos (if multiple) or copy single ---
+        # Merge or copy
         if len(video_parts) > 1:
-            print("=== Concatenating chunk videos ===")
-            # Use ffmpeg filter_complex concat to avoid pitfalls with concat text quoting.
-            # This will re-encode but is robust across arbitrary filenames and formats.
             concat_cmd = ["ffmpeg", "-y"]
             for p in video_parts:
                 concat_cmd.extend(["-i", p])
-
-            # Build concat filter: [0:v:0][0:a:0][1:v:0][1:a:0]...concat=n=X:v=1:a=1[outv][outa]
             input_pairs = "".join(f"[{i}:v:0][{i}:a:0]" for i in range(len(video_parts)))
             filter_str = f"{input_pairs}concat=n={len(video_parts)}:v=1:a=1[outv][outa]"
-
             concat_cmd.extend([
                 "-filter_complex", filter_str,
                 "-map", "[outv]", "-map", "[outa]",
-                # encode quickly (ultrafast) to keep speed reasonable
                 "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
                 "-c:a", "aac", "-b:a", "64k",
                 video_path
             ])
-            print("Running ffmpeg concat (re-encode):", " ".join(concat_cmd))
             subprocess.run(concat_cmd, check=True)
         else:
-            # Single chunk: copy produced file to final path
-            print("=== Single video part, copying to final path ===")
             shutil.copy(video_parts[0], video_path)
 
-        print("SadTalker video generation completed successfully.")
         return True
 
     finally:
-        # Cleanup: remove chunk dirs and any chunk audio files produced by split_audio
+        # Cleanup
         if split_chunks:
-            # remove chunk result directories and chunk audio files
             for idx in range(len(chunks)):
                 chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
-                if os.path.exists(chunk_result_dir):
-                    try:
-                        shutil.rmtree(chunk_result_dir, ignore_errors=True)
-                    except Exception as e:
-                        print(f"Failed removing chunk_result_dir {chunk_result_dir}: {e}")
+                shutil.rmtree(chunk_result_dir, ignore_errors=True)
+                candidate = f"{audio_path}_chunk{idx}.wav"
+                if os.path.exists(candidate):
+                    os.remove(candidate)
 
-                # expected split_audio naming: original.wav_chunk{n}.wav
-                try:
-                    candidate = f"{audio_path}_chunk{idx}.wav"
-                    if os.path.exists(candidate):
-                        os.remove(candidate)
-                except Exception:
-                    pass
+
 
 
 

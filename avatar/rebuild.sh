@@ -25,8 +25,11 @@ docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml stop ava
 if $NUKE; then
     # Nuke = remove all images/volumes and rebuild without cache
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml rm -f -s avatar
+    docker builder prune -af
     docker image prune -af
     docker system prune -af --volumes
+
+    docker volume prune -f
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build --no-cache avatar
 
 elif $BUILD; then
