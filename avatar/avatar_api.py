@@ -109,7 +109,7 @@ def normalize_audio(audio_path):
 ############################
 def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                              timeout=1200, enhancer=None, split_chunks=False,
-                             chunk_length=10, fps=25, resolution="512x512",
+                             chunk_length=10, fps=25, resolution="512",
                              preprocess="crop", still=True, source_image="/app/faces/2.jpg",
                              benchmark_file="/app/static/benchmark_info.json"):
 
@@ -211,7 +211,7 @@ def generate_avatar():
         "split_chunks": bool(data.get("split_chunks", False)),
         "chunk_length": int(data.get("chunk_length", 10)),
         "fps": int(data.get("fps", 25)),
-        "resolution": data.get("resolution", "512x512"),
+        "resolution": data.get("resolution", "512"),
         "preprocess": data.get("preprocess", "crop"),
         "still": bool(data.get("still", True))
     }

@@ -4,6 +4,7 @@ set -e
 cd /opt/cyford/ZeroAI/
 
 NUKE=false
+BUILD=false
 if [[ "$1" == "--nuke" ]]; then
     NUKE=true
     echo "🔥 Full nuke mode enabled. Pruning and rebuilding from scratch..."
