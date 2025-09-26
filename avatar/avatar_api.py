@@ -211,7 +211,7 @@ def generate_avatar():
         "split_chunks": bool(data.get("split_chunks", False)),
         "chunk_length": int(data.get("chunk_length", 10)),
         "fps": int(data.get("fps", 15)),
-        "resolution": data.get("resolution", "128"),
+        "resolution": data.get("resolution", "256"),
         "preprocess": data.get("preprocess", "crop"),
         "still": bool(data.get("still", True))
     }
