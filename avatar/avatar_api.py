@@ -140,7 +140,7 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
             ]
             if still: cmd.append("--still")
             if enhancer: cmd.extend(["--enhancer", enhancer])
-            if fps: cmd.extend(["--fps", str(fps)])
+            # if fps: cmd.extend(["--fps", str(fps)])
             if resolution: cmd.extend(["--size", resolution])
             print(f"Running SadTalker chunk {idx+1}/{len(chunks)}")
             subprocess.run(cmd, timeout=timeout, check=True)
