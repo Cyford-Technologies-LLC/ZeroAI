@@ -1250,7 +1250,7 @@ def calculate_timeout(audio_duration,
     """
     # use the passed-in paths if provided, otherwise defaults
     img_path = source_image or "/app/faces/2.jpg"
-    audio_path = test_audio or "/app/test_audio.wav"
+    audio_path = test_audio or "/app/static/avatar_audio.wav"
 
     fps_est = benchmark_sadtalker_fps(img_path, audio_path, target_fps)
     render_time = (audio_duration * target_fps) / fps_est
