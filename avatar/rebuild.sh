@@ -40,7 +40,7 @@ elif $BUILD; then
 else
     #  Simple restart
     docker cp avatar/avatar_api.py zeroai_avatar:/app/avatar_api.py
-    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart -d avatar
+    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
 
 fi
 
