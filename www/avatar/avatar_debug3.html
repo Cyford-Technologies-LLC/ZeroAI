@@ -1831,30 +1831,158 @@
                     const isJpeg = frameHeader[0] === 0xFF && frameHeader[1] === 0xD8;
 
                     if (isJpeg && videoFrames.length > 10) {
-                        // JPEG frames from streaming - show as image
-                        const imageBlob = new Blob([lastFrame], { type: 'image/jpeg' });
-                        const imageUrl = URL.createObjectURL(imageBlob);
+                        // JPEG frames from streaming - create animated display
+                        debugLog('Processing JPEG frames for animation', {
+                            frameCount: videoFrames.length,
+                            totalChunks: chunks.length
+                        });
 
                         if (video) {
-                            // Create an image element to show the final frame
-                            const img = document.createElement('img');
-                            img.src = imageUrl;
-                            img.style.maxWidth = '100%';
-                            img.style.height = 'auto';
-                            img.style.border = '2px solid #555';
-                            img.style.borderRadius = '8px';
-                            img.alt = 'Avatar Animation Final Frame';
+                            // Hide the video element and create a canvas animation
+                            video.style.display = 'none';
 
-                            // Replace video with image for JPEG frames
-                            const parent = video.parentNode;
-                            if (parent) {
-                                parent.insertBefore(img, video);
-                                video.style.display = 'none';
+                            // Create canvas for JPEG frame animation
+                            let canvas = video.parentNode.querySelector('.jpeg-animation-canvas');
+                            if (!canvas) {
+                                canvas = document.createElement('canvas');
+                                canvas.className = 'jpeg-animation-canvas';
+                                canvas.style.maxWidth = '100%';
+                                canvas.style.height = 'auto';
+                                canvas.style.border = '2px solid #555';
+                                canvas.style.borderRadius = '8px';
+                                canvas.style.cursor = 'pointer';
+                                video.parentNode.insertBefore(canvas, video);
                             }
 
-                            debugLog('JPEG frames displayed as image', {
+                            // Set up canvas animation
+                            const ctx = canvas.getContext('2d');
+                            let currentFrameIndex = 0;
+                            let animationPlaying = false;
+                            let animationInterval;
+
+                            // Load first frame to set canvas size
+                            const firstImg = new Image();
+                            firstImg.onload = function() {
+                                canvas.width = firstImg.width;
+                                canvas.height = firstImg.height;
+                                ctx.drawImage(firstImg, 0, 0);
+
+                                // Add play button overlay
+                                drawPlayButton(ctx, canvas.width, canvas.height);
+
+                                debugLog('Canvas initialized', {
+                                    width: canvas.width,
+                                    height: canvas.height,
+                                    totalFrames: videoFrames.length
+                                });
+                            };
+
+                            // Function to draw play button
+                            function drawPlayButton(context, width, height) {
+                                const centerX = width / 2;
+                                const centerY = height / 2;
+                                const radius = Math.min(width, height) * 0.08;
+
+                                // Draw semi-transparent background
+                                context.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                                context.beginPath();
+                                context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                                context.fill();
+
+                                // Draw play triangle
+                                context.fillStyle = 'white';
+                                context.beginPath();
+                                context.moveTo(centerX - radius * 0.3, centerY - radius * 0.4);
+                                context.lineTo(centerX + radius * 0.4, centerY);
+                                context.lineTo(centerX - radius * 0.3, centerY + radius * 0.4);
+                                context.closePath();
+                                context.fill();
+                            }
+
+                            // Set up click handler for play/pause
+                            canvas.onclick = function(event) {
+                                debugLog('Canvas clicked', {
+                                    animationPlaying: animationPlaying,
+                                    frameCount: videoFrames.length
+                                });
+
+                                if (animationPlaying) {
+                                    // Pause animation
+                                    clearInterval(animationInterval);
+                                    animationPlaying = false;
+
+                                    // Show play button again
+                                    drawPlayButton(ctx, canvas.width, canvas.height);
+                                    debugLog('Animation paused');
+                                    showNotification('Animation paused', 'info');
+                                } else {
+                                    // Start animation
+                                    if (videoFrames.length === 0) {
+                                        showNotification('No frames to animate', 'error');
+                                        return;
+                                    }
+
+                                    animationPlaying = true;
+                                    currentFrameIndex = 0;
+                                    const fps = 15; // Animation FPS
+                                    const frameDuration = 1000 / fps;
+
+                                    debugLog('Starting animation', {
+                                        fps: fps,
+                                        totalFrames: videoFrames.length,
+                                        frameDuration: frameDuration
+                                    });
+
+                                    showNotification('Animation started - Click to pause', 'success');
+
+                                    animationInterval = setInterval(() => {
+                                        try {
+                                            if (currentFrameIndex >= videoFrames.length) {
+                                                currentFrameIndex = 0; // Loop back to start
+                                            }
+
+                                            const frameData = videoFrames[currentFrameIndex];
+                                            const frameBlob = new Blob([frameData], { type: 'image/jpeg' });
+                                            const frameUrl = URL.createObjectURL(frameBlob);
+
+                                            const frameImg = new Image();
+                                            frameImg.onload = function() {
+                                                if (animationPlaying) { // Check if still playing
+                                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                                    ctx.drawImage(frameImg, 0, 0);
+                                                }
+                                                URL.revokeObjectURL(frameUrl);
+                                            };
+                                            frameImg.onerror = function() {
+                                                debugLog('Frame load error', { frameIndex: currentFrameIndex });
+                                            };
+                                            frameImg.src = frameUrl;
+
+                                            currentFrameIndex++;
+                                        } catch (error) {
+                                            debugLog('Animation frame error', { error: error.message });
+                                        }
+                                    }, frameDuration);
+                                }
+                            };
+
+                            // Add hover effect
+                            canvas.onmouseover = function() {
+                                canvas.style.opacity = '0.9';
+                                canvas.style.cursor = 'pointer';
+                            };
+                            canvas.onmouseout = function() {
+                                canvas.style.opacity = '1.0';
+                            };
+
+                            // Create first frame blob URL
+                            const firstFrameBlob = new Blob([videoFrames[0]], { type: 'image/jpeg' });
+                            const firstFrameUrl = URL.createObjectURL(firstFrameBlob);
+                            firstImg.src = firstFrameUrl;
+
+                            debugLog('JPEG animation canvas created', {
                                 frameCount: videoFrames.length,
-                                lastFrameSize: lastFrame.length
+                                canvasSize: `${canvas.width}x${canvas.height}`
                             });
                         }
                     } else {
@@ -1865,6 +1993,13 @@
                         if (video) {
                             video.src = videoUrl;
                             video.style.display = 'block';
+
+                            // Remove any existing canvas
+                            const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
+                            if (existingCanvas) {
+                                existingCanvas.remove();
+                            }
+
                             debugLog('Video source set', {
                                 blobSize: videoBlob.size,
                                 frameCount: videoFrames.length
