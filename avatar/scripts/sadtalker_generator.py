@@ -20,7 +20,7 @@ import wave
 # Core functionality imports (your separated modules)
 from audio_processor import call_tts_service_with_options, normalize_audio, TTSProcessor
 from video_processor import convert_video_with_codec, get_mimetype_for_codec
-from sadtalker_generator import generate_sadtalker_video
+# from sadtalker_generator import generate_sadtalker_video
 from simple_face_generator import generate_talking_face
 from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
 
