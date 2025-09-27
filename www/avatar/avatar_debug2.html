@@ -1825,18 +1825,55 @@
                 if (videoFrames.length > 0) {
                     debugLog('Combining video frames', { frameCount: videoFrames.length });
 
-                    // Use the last/largest frame as the main video
-                    const finalFrame = videoFrames[videoFrames.length - 1];
-                    const videoBlob = new Blob([finalFrame], { type: 'video/mp4' });
-                    const videoUrl = URL.createObjectURL(videoBlob);
+                    // Check if we received JPEG frames (streaming) or video data (complete)
+                    const lastFrame = videoFrames[videoFrames.length - 1];
+                    const frameHeader = new Uint8Array(lastFrame.slice(0, 10));
+                    const isJpeg = frameHeader[0] === 0xFF && frameHeader[1] === 0xD8;
 
-                    if (video) {
-                        video.src = videoUrl;
-                        debugLog('Video source set', {
-                            blobSize: videoBlob.size,
-                            url: videoUrl.substring(0, 50) + '...'
-                        });
+                    if (isJpeg && videoFrames.length > 10) {
+                        // JPEG frames from streaming - show as image
+                        const imageBlob = new Blob([lastFrame], { type: 'image/jpeg' });
+                        const imageUrl = URL.createObjectURL(imageBlob);
+
+                        if (video) {
+                            // Create an image element to show the final frame
+                            const img = document.createElement('img');
+                            img.src = imageUrl;
+                            img.style.maxWidth = '100%';
+                            img.style.height = 'auto';
+                            img.style.border = '2px solid #555';
+                            img.style.borderRadius = '8px';
+                            img.alt = 'Avatar Animation Final Frame';
+
+                            // Replace video with image for JPEG frames
+                            const parent = video.parentNode;
+                            if (parent) {
+                                parent.insertBefore(img, video);
+                                video.style.display = 'none';
+                            }
+
+                            debugLog('JPEG frames displayed as image', {
+                                frameCount: videoFrames.length,
+                                lastFrameSize: lastFrame.length
+                            });
+                        }
+                    } else {
+                        // Regular video data - treat as MP4
+                        const videoBlob = new Blob([lastFrame], { type: 'video/mp4' });
+                        const videoUrl = URL.createObjectURL(videoBlob);
+
+                        if (video) {
+                            video.src = videoUrl;
+                            video.style.display = 'block';
+                            debugLog('Video source set', {
+                                blobSize: videoBlob.size,
+                                frameCount: videoFrames.length
+                            });
+                        }
                     }
+                } else {
+                    debugLog('No video frames to display');
+                    showNotification('No video frames received in stream', 'warning');
                 }
 
                 // Update video info for streaming
@@ -1907,6 +1944,16 @@
                         });
 
                         if (contentData.length > 1000) { // Only consider substantial video data
+                            videoFrames.push(contentData);
+                        }
+                    } else if (headers.includes('image/jpeg') || headers.includes('image/jpg')) {
+                        // Handle JPEG frame data - convert to video
+                        debugLog('JPEG frame received', {
+                            chunkId: currentChunk?.chunk_id || 'unknown',
+                            dataSize: contentData.length
+                        });
+
+                        if (contentData.length > 1000) { // Only consider substantial image data
                             videoFrames.push(contentData);
                         }
                     }

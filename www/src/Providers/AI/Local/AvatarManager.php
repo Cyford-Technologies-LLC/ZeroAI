@@ -527,9 +527,8 @@ class AvatarManager
 
             // Detect streaming mode
     $streamMode = $options['stream_mode'] ?? 'complete';
-    $isStreaming = ($streamMode !== 'complete') ||
-                   isset($options['low_latency']) && $options['low_latency'] ||
-                   isset($options['chunk_duration']) && $options['chunk_duration'] > 0;
+    $isStreaming = ($streamMode !== 'complete')
+
 
     if ($isStreaming) {
         // Use streaming endpoint
