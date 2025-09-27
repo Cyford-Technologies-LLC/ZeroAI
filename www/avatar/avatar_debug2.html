@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZeroAI Avatar Debug Console - Complete</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(90deg, #007cba, #4CAF50);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .section {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            font-size: 1.5em;
+        }
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .option-group {
+            background: linear-gradient(145deg, #333, #404040);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        .option-group h4 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 1.1em;
+            border-bottom: 1px solid #4CAF50;
+            padding-bottom: 5px;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(145deg, #007cba, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 124, 186, 0.3);
+        }
+        button:hover {
+            background: linear-gradient(145deg, #0056b3, #004085);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 124, 186, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.danger {
+            background: linear-gradient(145deg, #dc3545, #c82333);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        button.danger:hover {
+            background: linear-gradient(145deg, #c82333, #bd2130);
+        }
+        button.success {
+            background: linear-gradient(145deg, #28a745, #1e7e34);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        button.success:hover {
+            background: linear-gradient(145deg, #1e7e34, #155724);
+        }
+        button.generate {
+            background: linear-gradient(145deg, #28a745, #20c997);
+            font-size: 18px;
+            padding: 15px 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+        input, select, textarea {
+            background: linear-gradient(145deg, #333, #404040);
+            color: #fff;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+        input[type="file"] {
+            padding: 6px;
+            background: #444;
+        }
+        input[type="range"] {
+            width: 150px;
+            accent-color: #4CAF50;
+        }
+        input[type="number"] {
+            width: 80px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            accent-color: #4CAF50;
+        }
+        input[type="radio"] {
+            accent-color: #4CAF50;
+            margin-right: 5px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .log-container {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .status-item {
+            background: linear-gradient(145deg, #333, #404040);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #666;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        .status-ok {
+            border-left-color: #28a745;
+        }
+        .status-error {
+            border-left-color: #dc3545;
+        }
+        .status-warning {
+            border-left-color: #ffc107;
+        }
+        video {
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #555;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .debug-info {
+            background: linear-gradient(145deg, #1a1a2e, #2d2d4a);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border: 1px solid #444;
+        }
+        .loading {
+            display: none;
+            color: #ffc107;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+        }
+        .loading.show {
+            display: block;
+        }
+        .error {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dc3545;
+            margin: 15px 0;
+        }
+        .success {
+            color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #28a745;
+            margin: 15px 0;
+        }
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px solid #555;
+            margin: 10px 0;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .tabs {
+            display: flex;
+            background: #333;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            background: #444;
+            border-right: 1px solid #555;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .tab:hover {
+            background: #555;
+        }
+        .tab.active {
+            background: linear-gradient(145deg, #007cba, #0056b3);
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background: linear-gradient(145deg, #333, #404040);
+            padding: 25px;
+            border-radius: 0 0 8px 8px;
+            border: 1px solid #555;
+            border-top: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        label {
+            display: inline-block;
+            min-width: 130px;
+            color: #ccc;
+            font-weight: 500;
+        }
+        .range-display {
+            color: #4CAF50;
+            font-weight: bold;
+            margin-left: 12px;
+            min-width: 40px;
+            display: inline-block;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .image-upload-zone {
+            border: 2px dashed #555;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .image-upload-zone:hover {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+        .image-upload-zone.dragover {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        .peer-selector {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .peer-option {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .peer-option:hover {
+            background: #444;
+        }
+        .peer-option.selected {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            background: linear-gradient(145deg, #28a745, #20c997);
+        }
+        .notification.error {
+            background: linear-gradient(145deg, #dc3545, #c82333);
+        }
+        .notification.info {
+            background: linear-gradient(145deg, #007cba, #0056b3);
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .option-grid {
+                grid-template-columns: 1fr;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ZeroAI Avatar Debug Console</h1>
+            <p>Complete Avatar Generation System with Full Parameter Control</p>
+        </div>
+
+        <div class="section">
+            <h2>Avatar Generation Center</h2>
+
+            <!-- Mode Selection -->
+            <div class="control-group">
+                <label><strong>Generation Mode:</strong></label>
+                <input type="radio" id="mode-simple" name="mode" value="simple" checked>
+                <label for="mode-simple" style="min-width: auto; margin-right: 20px;">Simple Avatar</label>
+                <input type="radio" id="mode-sadtalker" name="mode" value="sadtalker">
+                <label for="mode-sadtalker" style="min-width: auto;">SadTalker (Realistic)</label>
+            </div>
+
+            <!-- Stream Mode -->
+            <div class="control-group">
+                <label for="streamMode"><strong>Stream Mode:</strong></label>
+                <select id="streamMode">
+                    <option value="complete">Complete (Full video)</option>
+                    <option value="chunked">Chunked Streaming</option>
+                    <option value="realtime">Realtime Streaming</option>
+                </select>
+            </div>
+
+            <!-- Prompt -->
+            <div style="margin: 20px 0;">
+                <label for="prompt"><strong>Prompt:</strong></label>
+                <textarea id="prompt" placeholder="Enter your prompt here...">Hello! This is a comprehensive test of the avatar system with all available options enabled.</textarea>
+            </div>
+
+            <!-- Tabbed Options -->
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('tts')">TTS Options</div>
+                <div class="tab" onclick="switchTab('image')">Image Options</div>
+                <div class="tab" onclick="switchTab('video')">Video Options</div>
+                <div class="tab" onclick="switchTab('sadtalker')">SadTalker Options</div>
+                <div class="tab" onclick="switchTab('advanced')">Advanced Options</div>
+                <div class="tab" onclick="switchTab('peer')">Peer Selection</div>
+            </div>
+
+            <!-- TTS Options Tab -->
+            <div id="tts-tab" class="tab-content active">
+                <div class="option-grid">
+                    <div class="option-group">
+                        <h4>TTS Engine & Voice</h4>
+                        <div class="control-group">
+                            <label for="ttsEngine">Engine:</label>
+                            <select id="ttsEngine" onchange="updateTTSOptions()">
+                                <option value="espeak">eSpeak (Free)</option>
+                                <option value="edge">Microsoft Edge TTS</option>
+                                <option value="elevenlabs">ElevenLabs (Premium)</option>
+                                <option value="openai">OpenAI TTS</option>
+                                <option value="coqui">Coqui TTS</option>
+                            </select>
+                        </div>
+                        <div class="control-group" id="voiceGroup">
+                            <label for="ttsVoice">Voice:</label>
+                            <select id="ttsVoice"></select>
+                        </div>
+                        <div class="control-group">
+                            <label for="ttsLanguage">Language:</label>
+                            <select id="ttsLanguage">
+                                <option value="en-US">English (US)</option>
+                                <option value="en-GB">English (UK)</option>
+                                <option value="es-ES">Spanish</option>
+                                <option value="fr-FR">French</option>
+                                <option value="de-DE">German</option>
+                                <option value="it-IT">Italian</option>
+                                <option value="pt-BR">Portuguese (Brazil)</option>
+                                <option value="ja-JP">Japanese</option>
+                                <option value="ko-KR">Korean</option>
+                                <option value="zh-CN">Chinese (Simplified)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Voice Parameters</h4>
+                        <div class="control-group">
+                            <label for="ttsSpeed">Speed:</label>
+                            <input type="range" id="ttsSpeed" min="50" max="400" value="160" oninput="updateRangeDisplay('speed', this.value)">
+                            <span id="speedDisplay" class="range-display">160</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="ttsPitch">Pitch:</label>
+                            <input type="range" id="ttsPitch" min="-50" max="50" value="0" oninput="updateRangeDisplay('pitch', this.value)">
+                            <span id="pitchDisplay" class="range-display">0</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="ttsEmotion">Emotion:</label>
+                            <select id="ttsEmotion">
+                                <option value="neutral">Neutral</option>
+                                <option value="happy">Happy</option>
+                                <option value="sad">Sad</option>
+                                <option value="angry">Angry</option>
+                                <option value="excited">Excited</option>
+                                <option value="calm">Calm</option>
+                                <option value="whisper">Whisper</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Audio Format</h4>
+                        <div class="control-group">
+                            <label for="sampleRate">Sample Rate:</label>
+                            <select id="sampleRate">
+                                <option value="16000">16kHz</option>
+                                <option value="22050" selected>22kHz</option>
+                                <option value="44100">44kHz</option>
+                                <option value="48000">48kHz</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="audioFormat">Format:</label>
+                            <select id="audioFormat">
+                                <option value="wav" selected>WAV</option>
+                                <option value="mp3">MP3</option>
+                                <option value="ogg">OGG</option>
+                                <option value="flac">FLAC</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Options Tab -->
+            <div id="image-tab" class="tab-content">
+                <div class="option-grid">
+                    <div class="option-group">
+                        <h4>Image Source</h4>
+                        <div class="control-group">
+                            <input type="radio" id="imageDefault" name="imageSource" value="default" checked onchange="toggleImageSource()">
+                            <label for="imageDefault" style="min-width: auto;">Use Default Face</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="radio" id="imageUpload" name="imageSource" value="upload" onchange="toggleImageSource()">
+                            <label for="imageUpload" style="min-width: auto;">Upload Image</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="radio" id="imageUrl" name="imageSource" value="url" onchange="toggleImageSource()">
+                            <label for="imageUrl" style="min-width: auto;">Image URL</label>
+                        </div>
+
+                        <div id="uploadSection" style="display: none; margin-top: 15px;">
+                            <div class="image-upload-zone" onclick="document.getElementById('imageFile').click();">
+                                <input type="file" id="imageFile" accept="image/*" onchange="handleImageUpload(event)" style="display: none;">
+                                <p>Click to upload or drag & drop image</p>
+                                <p style="font-size: 12px; color: #999;">Supports: JPEG, PNG, GIF, WebP (max 10MB)</p>
+                            </div>
+                        </div>
+
+                        <div id="urlSection" style="display: none; margin-top: 15px;">
+                            <input type="url" id="imageUrlInput" placeholder="https://example.com/image.jpg" style="width: 100%; margin-bottom: 10px;">
+                            <button onclick="previewImageUrl()" class="success">Preview URL</button>
+                        </div>
+
+                        <div id="imagePreview" style="margin-top: 15px;">
+                            <div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Image Processing</h4>
+                        <div class="control-group">
+                            <label for="preprocess">Preprocessing:</label>
+                            <select id="preprocess">
+                                <option value="crop">Crop</option>
+                                <option value="resize">Resize</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="resolution">Resolution:</label>
+                            <select id="resolution">
+                                <option value="256">256x256</option>
+                                <option value="512" selected>512x512</option>
+                                <option value="1024">1024x1024</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="still">
+                            <label for="still" style="min-width: auto;">Still Image (no motion source)</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="autoResize" checked>
+                            <label for="autoResize" style="min-width: auto;">Auto-resize large images</label>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Face Detection</h4>
+                        <div class="control-group">
+                            <input type="checkbox" id="faceDetection" checked>
+                            <label for="faceDetection" style="min-width: auto;">Enable face detection</label>
+                        </div>
+                        <div class="control-group">
+                            <label for="faceConfidence">Min confidence:</label>
+                            <input type="range" id="faceConfidence" min="0.1" max="1.0" step="0.1" value="0.5" oninput="updateRangeDisplay('confidence', this.value)">
+                            <span id="confidenceDisplay" class="range-display">0.5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Options Tab -->
+            <div id="video-tab" class="tab-content">
+                <div class="option-grid">
+                    <div class="option-group">
+                        <h4>Video Codec & Quality</h4>
+                        <div class="control-group">
+                            <label for="codec">Codec:</label>
+                            <select id="codec">
+                                <option value="h264_high">H264 High Quality</option>
+                                <option value="h264_medium">H264 Medium</option>
+                                <option value="h264_fast" selected>H264 Fast</option>
+                                <option value="h265_high">H265 High Quality</option>
+                                <option value="h265_medium">H265 Medium</option>
+                                <option value="webm_high">WebM High Quality</option>
+                                <option value="webm_fast">WebM Fast</option>
+                                <option value="av1_high">AV1 High Quality</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="quality">Quality:</label>
+                            <select id="quality">
+                                <option value="ultra">Ultra (Slow)</option>
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="fast">Fast</option>
+                                <option value="ultrafast">Ultra Fast</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="fps">Frame Rate:</label>
+                            <select id="fps">
+                                <option value="12">12 FPS</option>
+                                <option value="15">15 FPS</option>
+                                <option value="20">20 FPS</option>
+                                <option value="24">24 FPS</option>
+                                <option value="25" selected>25 FPS</option>
+                                <option value="30">30 FPS</option>
+                                <option value="60">60 FPS</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Streaming Options</h4>
+                        <div class="control-group">
+                            <label for="chunkDuration">Chunk Duration:</label>
+                            <input type="number" id="chunkDuration" min="1" max="10" value="3" step="0.5">
+                            <span>seconds</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="bufferSize">Buffer Size:</label>
+                            <input type="number" id="bufferSize" min="1" max="20" value="5">
+                            <span>frames</span>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="lowLatency">
+                            <label for="lowLatency" style="min-width: auto;">Low Latency Mode</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="adaptiveQuality" checked>
+                            <label for="adaptiveQuality" style="min-width: auto;">Adaptive Quality</label>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Advanced Video</h4>
+                        <div class="control-group">
+                            <label for="bitrate">Bitrate (kbps):</label>
+                            <input type="number" id="bitrate" min="500" max="10000" value="2000" step="100">
+                        </div>
+                        <div class="control-group">
+                            <label for="keyframeInterval">Keyframe Interval:</label>
+                            <input type="number" id="keyframeInterval" min="1" max="10" value="2">
+                            <span>seconds</span>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="hardwareAccel">
+                            <label for="hardwareAccel" style="min-width: auto;">Hardware Acceleration</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SadTalker Options Tab -->
+            <div id="sadtalker-tab" class="tab-content">
+                <div class="option-grid">
+                    <div class="option-group">
+                        <h4>Generation Settings</h4>
+                        <div class="control-group">
+                            <label for="timeout">Timeout:</label>
+                            <input type="number" id="timeout" min="60" max="3600" value="1200">
+                            <span>seconds</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="enhancer">Enhancer:</label>
+                            <select id="enhancer">
+                                <option value="">None</option>
+                                <option value="gfpgan">GFPGAN</option>
+                                <option value="restoreformer">RestoreFormer</option>
+                                <option value="codeformer">CodeFormer</option>
+                                <option value="real-esrgan">Real-ESRGAN</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="expressionScale">Expression Scale:</label>
+                            <input type="range" id="expressionScale" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateRangeDisplay('expression', this.value)">
+                            <span id="expressionDisplay" class="range-display">1.0</span>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Chunking Options</h4>
+                        <div class="control-group">
+                            <input type="checkbox" id="splitChunks">
+                            <label for="splitChunks" style="min-width: auto;">Split into Chunks</label>
+                        </div>
+                        <div class="control-group">
+                            <label for="chunkLength">Chunk Length:</label>
+                            <input type="number" id="chunkLength" min="5" max="30" value="10">
+                            <span>seconds</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="overlapDuration">Overlap Duration:</label>
+                            <input type="number" id="overlapDuration" min="0" max="5" value="1" step="0.5">
+                            <span>seconds</span>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Advanced SadTalker</h4>
+                        <div class="control-group">
+                            <input type="checkbox" id="use3dWarping" checked>
+                            <label for="use3dWarping" style="min-width: auto;">3D Face Warping</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="useEyeBlink" checked>
+                            <label for="useEyeBlink" style="min-width: auto;">Eye Blinking</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="useHeadPose" checked>
+                            <label for="useHeadPose" style="min-width: auto;">Head Pose Animation</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Options Tab -->
+            <div id="advanced-tab" class="tab-content">
+                <div class="option-grid">
+                    <div class="option-group">
+                        <h4>Performance</h4>
+                        <div class="control-group">
+                            <label for="maxDuration">Max Duration:</label>
+                            <input type="number" id="maxDuration" min="10" max="600" value="300">
+                            <span>seconds</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="maxConcurrent">Max Concurrent:</label>
+                            <input type="number" id="maxConcurrent" min="1" max="10" value="3">
+                        </div>
+                        <div class="control-group">
+                            <label for="memoryLimit">Memory Limit:</label>
+                            <input type="number" id="memoryLimit" min="1" max="16" value="8">
+                            <span>GB</span>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="enableWebsocket">
+                            <label for="enableWebsocket" style="min-width: auto;">Enable WebSocket</label>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Debug Options</h4>
+                        <div class="control-group">
+                            <input type="checkbox" id="debugMode" checked>
+                            <label for="debugMode" style="min-width: auto;">Debug Mode</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="verboseLogging">
+                            <label for="verboseLogging" style="min-width: auto;">Verbose Logging</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="saveIntermediates">
+                            <label for="saveIntermediates" style="min-width: auto;">Save Intermediate Files</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="profilePerformance">
+                            <label for="profilePerformance" style="min-width: auto;">Performance Profiling</label>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Experimental Features</h4>
+                        <div class="control-group">
+                            <input type="checkbox" id="betaFeatures">
+                            <label for="betaFeatures" style="min-width: auto;">Enable Beta Features</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="mlAcceleration">
+                            <label for="mlAcceleration" style="min-width: auto;">ML Acceleration</label>
+                        </div>
+                        <div class="control-group">
+                            <label for="workerThreads">Worker Threads:</label>
+                            <input type="number" id="workerThreads" min="1" max="16" value="4">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peer Selection Tab -->
+            <div id="peer-tab" class="tab-content">
+                <div class="option-grid">
+                    <div class="option-group">
+                        <h4>Current Server</h4>
+                        <div id="currentPeerDisplay" class="peer-selector">
+                            <div class="loading">Loading server information...</div>
+                        </div>
+                        <button onclick="refreshPeerInfo()" class="success">Refresh Server Info</button>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Available Servers</h4>
+                        <div id="availablePeers" class="peer-selector">
+                            <div class="loading">Loading available servers...</div>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="autoSelectBest" checked>
+                            <label for="autoSelectBest" style="min-width: auto;">Auto-select best server</label>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h4>Server Preferences</h4>
+                        <div class="control-group">
+                            <label for="preferredGpuMemory">Min GPU Memory:</label>
+                            <input type="number" id="preferredGpuMemory" min="0" max="24" value="4">
+                            <span>GB</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="preferredLatency">Max Latency:</label>
+                            <input type="number" id="preferredLatency" min="10" max="1000" value="100">
+                            <span>ms</span>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" id="fallbackToLocal" checked>
+                            <label for="fallbackToLocal" style="min-width: auto;">Fallback to local if peers fail</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="controls" style="margin-top: 30px; justify-content: center;">
+                <button onclick="generateAvatar()" class="generate">Generate Avatar</button>
+                <button onclick="testMP4()" class="success">Test MP4 Pipeline</button>
+                <button onclick="testConnection()" class="success">Test Connection</button>
+                <button onclick="getEngines()">Get TTS Engines</button>
+                <button onclick="getStatus()">Get Status</button>
+                <button onclick="getLogs()">Get Logs</button>
+                <button onclick="clearLogs()" class="danger">Clear Logs</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <p>Generating avatar... This may take a few minutes.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressText">Initializing...</div>
+            </div>
+
+            <div id="result" style="display: none;">
+                <h3>Generated Avatar:</h3>
+                <video id="avatarVideo" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <div class="debug-info" id="videoInfo"></div>
+                <div class="controls">
+                    <button onclick="downloadVideo()" class="success">Download Video</button>
+                    <button onclick="shareVideo()" class="success">Share Video</button>
+                </div>
+            </div>
+
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Server Connection -->
+        <div class="section">
+            <h2>Server Connection</h2>
+            <div class="controls">
+                <button onclick="getServerInfo()">Get Server Info</button>
+                <button onclick="pingAllServers()">Ping All Servers</button>
+                <button onclick="benchmarkServers()" class="success">Benchmark Servers</button>
+            </div>
+            <div class="status-grid" id="serverInfo">
+                <div class="status-item">Click "Get Server Info" to see which avatar server is being used...</div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="section">
+            <h2>System Status</h2>
+            <div class="controls">
+                <button onclick="refreshStatus()">Refresh Status</button>
+                <button onclick="getDetailedStatus()">Detailed Status</button>
+                <button onclick="exportStatus()" class="success">Export Status</button>
+            </div>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-item">Loading status...</div>
+            </div>
+        </div>
+
+        <!-- Debug Logs -->
+        <div class="section">
+            <h2>Debug Logs</h2>
+            <div class="controls">
+                <button onclick="refreshLogs()">Refresh Logs</button>
+                <button onclick="clearDebugLogs()" class="danger">Clear Debug Logs</button>
+                <button onclick="downloadLogs()">Download Logs</button>
+                <button onclick="copyLogsToClipboard()">Copy to Clipboard</button>
+                <button onclick="filterLogs()">Filter Logs</button>
+            </div>
+            <div class="controls">
+                <label for="logLevel">Log Level:</label>
+                <select id="logLevel" onchange="filterLogsByLevel()">
+                    <option value="all">All</option>
+                    <option value="error">Error</option>
+                    <option value="warning">Warning</option>
+                    <option value="info" selected>Info</option>
+                    <option value="debug">Debug</option>
+                </select>
+                <input type="text" id="logSearch" placeholder="Search logs..." oninput="searchLogs()" style="width: 200px;">
+            </div>
+            <div class="log-container" id="logContainer">
+                Click "Refresh Logs" to load debug information...
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let debugMode = true;
+        let currentMode = 'simple';
+        let currentImageData = null;
+        let selectedPeer = null;
+        let generationInProgress = false;
+
+        // TTS Engine configurations
+        const TTS_ENGINES = {
+            espeak: {
+                name: 'eSpeak (Free)',
+                voices: [
+                    { value: 'en', label: 'English (Default)' },
+                    { value: 'en+f3', label: 'English Female 3' },
+                    { value: 'en+f4', label: 'English Female 4' },
+                    { value: 'en+m3', label: 'English Male 3' },
+                    { value: 'en+m4', label: 'English Male 4' },
+                    { value: 'en+f5', label: 'English Female 5' },
+                    { value: 'en+m5', label: 'English Male 5' }
+                ],
+                speedRange: [80, 400],
+                pitchRange: [0, 99]
+            },
+            edge: {
+                name: 'Microsoft Edge TTS',
+                voices: [
+                    { value: 'en-US-AriaNeural', label: 'Aria (Female)' },
+                    { value: 'en-US-JennyNeural', label: 'Jenny (Female)' },
+                    { value: 'en-US-GuyNeural', label: 'Guy (Male)' },
+                    { value: 'en-US-DavisNeural', label: 'Davis (Male)' },
+                    { value: 'en-US-JaneNeural', label: 'Jane (Female)' },
+                    { value: 'en-US-JasonNeural', label: 'Jason (Male)' },
+                    { value: 'en-US-SaraNeural', label: 'Sara (Female)' },
+                    { value: 'en-US-TonyNeural', label: 'Tony (Male)' }
+                ],
+                speedRange: [50, 300],
+                pitchRange: [-50, 50]
+            },
+            elevenlabs: {
+                name: 'ElevenLabs (Premium)',
+                voices: [
+                    { value: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel (Female)' },
+                    { value: 'AZnzlk1XvdvUeBnXmlld', label: 'Domi (Female)' },
+                    { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella (Female)' },
+                    { value: 'ErXwobaYiN019PkySvjV', label: 'Antoni (Male)' },
+                    { value: 'MF3mGyEYCl7XYWbV9V6O', label: 'Elli (Female)' },
+                    { value: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh (Male)' },
+                    { value: 'VR6AewLTigWG4xSOukaG', label: 'Arnold (Male)' },
+                    { value: 'pNInz6obpgDQGcFmaJgB', label: 'Adam (Male)' }
+                ],
+                speedRange: [50, 200],
+                pitchRange: [-100, 100]
+            },
+            openai: {
+                name: 'OpenAI TTS',
+                voices: [
+                    { value: 'alloy', label: 'Alloy (Neutral)' },
+                    { value: 'echo', label: 'Echo (Male)' },
+                    { value: 'fable', label: 'Fable (British Male)' },
+                    { value: 'onyx', label: 'Onyx (Male)' },
+                    { value: 'nova', label: 'Nova (Female)' },
+                    { value: 'shimmer', label: 'Shimmer (Female)' }
+                ],
+                speedRange: [25, 400],
+                pitchRange: [0, 0]
+            },
+            coqui: {
+                name: 'Coqui TTS',
+                voices: [
+                    { value: 'female', label: 'Female (Default)' },
+                    { value: 'male', label: 'Male (Default)' },
+                    { value: 'female_emotional', label: 'Female (Emotional)' },
+                    { value: 'male_emotional', label: 'Male (Emotional)' }
+                ],
+                speedRange: [50, 200],
+                pitchRange: [-50, 50]
+            }
+        };
+
+        // Utility Functions
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toISOString();
+            console.log(`[${timestamp}] ${message}`, data || '');
+
+            if (debugMode) {
+                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data, null, 2) : ''}`;
+                appendToLog('logContainer', logEntry);
+            }
+        }
+
+        function appendToLog(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML += message + '\n';
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        function updateProgress(percent, text = '') {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            if (progressFill) progressFill.style.width = percent + '%';
+            if (progressText && text) progressText.textContent = text;
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            debugLog('Switched to tab', { tab: tabName });
+        }
+
+        // Range Display Updates
+        function updateRangeDisplay(type, value) {
+            document.getElementById(type + 'Display').textContent = value;
+        }
+
+        // TTS Engine Management
+        function updateTTSOptions() {
+            const engine = document.getElementById('ttsEngine').value;
+            const voiceSelect = document.getElementById('ttsVoice');
+            const speedRange = document.getElementById('ttsSpeed');
+            const pitchRange = document.getElementById('ttsPitch');
+
+            if (TTS_ENGINES[engine]) {
+                const config = TTS_ENGINES[engine];
+
+                voiceSelect.innerHTML = config.voices
+                    .map(v => `<option value="${v.value}">${v.label}</option>`)
+                    .join('');
+
+                speedRange.min = config.speedRange[0];
+                speedRange.max = config.speedRange[1];
+                speedRange.value = Math.floor((config.speedRange[0] + config.speedRange[1]) / 2);
+                updateRangeDisplay('speed', speedRange.value);
+
+                pitchRange.min = config.pitchRange[0];
+                pitchRange.max = config.pitchRange[1];
+                pitchRange.value = 0;
+                updateRangeDisplay('pitch', pitchRange.value);
+
+                debugLog('TTS engine updated', { engine, voiceCount: config.voices.length });
+            }
+        }
+
+        // Image Upload Management
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                currentImageData = null;
+                document.getElementById('imagePreview').innerHTML = '';
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showNotification('Unsupported file type. Please use JPEG, PNG, GIF, or WebP images.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showNotification(`File too large. Maximum size is ${Math.round(maxSize / 1024 / 1024)}MB. Your file is ${Math.round(file.size / 1024 / 1024)}MB.`, 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '<div class="loading">Processing image...</div>';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageData = e.target.result;
+
+                if (!imageData.startsWith('data:image/')) {
+                    showNotification('Invalid image file', 'error');
+                    event.target.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
+                const img = new Image();
+                img.onload = function() {
+                    const minWidth = 64, minHeight = 64;
+                    const maxWidth = 2048, maxHeight = 2048;
+
+                    if (img.width < minWidth || img.height < minHeight) {
+                        showNotification(`Image too small. Minimum size is ${minWidth}x${minHeight}px. Your image is ${img.width}x${img.height}px.`, 'error');
+                        event.target.value = '';
+                        preview.innerHTML = '';
+                        return;
+                    }
+
+                    if (img.width > maxWidth || img.height > maxHeight) {
+                        const autoResize = document.getElementById('autoResize').checked;
+                        if (!autoResize && !confirm(`Image is large (${img.width}x${img.height}px). Maximum recommended size is ${maxWidth}x${maxHeight}px. Continue anyway?`)) {
+                            event.target.value = '';
+                            preview.innerHTML = '';
+                            return;
+                        }
+                    }
+
+                    currentImageData = imageData;
+                    displayImagePreview(imageData, {
+                        width: img.width,
+                        height: img.height,
+                        size: file.size,
+                        type: file.type,
+                        name: file.name
+                    });
+
+                    showNotification('Image uploaded successfully', 'success');
+                    debugLog('Image uploaded successfully', {
+                        filename: file.name,
+                        size: file.size,
+                        type: file.type,
+                        dimensions: `${img.width}x${img.height}`
+                    });
+                };
+
+                img.onerror = function() {
+                    showNotification('Failed to load image. Please try a different file.', 'error');
+                    event.target.value = '';
+                    preview.innerHTML = '';
+                };
+
+                img.src = imageData;
+            };
+
+            reader.onerror = function() {
+                showNotification('Failed to read file. Please try again.', 'error');
+                event.target.value = '';
+                preview.innerHTML = '';
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function previewImageUrl() {
+            const urlInput = document.getElementById('imageUrlInput');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                showNotification('Please enter an image URL', 'error');
+                return;
+            }
+
+            try {
+                new URL(url);
+            } catch (e) {
+                showNotification('Invalid URL format', 'error');
+                return;
+            }
+
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            const hasImageExtension = imageExtensions.some(ext =>
+                url.toLowerCase().includes(ext)
+            );
+
+            if (!hasImageExtension && !url.includes('image') && !url.includes('photo')) {
+                if (!confirm('URL doesn\'t appear to be an image. Continue anyway?')) {
+                    return;
+                }
+            }
+
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '<div class="loading">Loading image from URL...</div>';
+
+            const img = new Image();
+            img.onload = function() {
+                currentImageData = url;
+                displayImagePreview(url, {
+                    width: img.width,
+                    height: img.height,
+                    type: 'url',
+                    url: url
+                });
+
+                showNotification('Image URL loaded successfully', 'success');
+                debugLog('Image URL loaded successfully', {
+                    url: url,
+                    dimensions: `${img.width}x${img.height}`
+                });
+            };
+
+            img.onerror = function() {
+                showNotification('Failed to load image from URL. Please check the URL and try again.', 'error');
+                preview.innerHTML = '';
+                currentImageData = null;
+            };
+
+            img.crossOrigin = 'anonymous';
+            img.src = url;
+        }
+
+        function displayImagePreview(src, metadata = {}) {
+            const preview = document.getElementById('imagePreview');
+
+            let metaInfo = '';
+            if (metadata.width && metadata.height) {
+                metaInfo += `<div><strong>Dimensions:</strong> ${metadata.width}x${metadata.height}px</div>`;
+            }
+            if (metadata.size) {
+                metaInfo += `<div><strong>Size:</strong> ${Math.round(metadata.size / 1024)}KB</div>`;
+            }
+            if (metadata.type && metadata.type !== 'url') {
+                metaInfo += `<div><strong>Type:</strong> ${metadata.type}</div>`;
+            }
+            if (metadata.name) {
+                metaInfo += `<div><strong>File:</strong> ${metadata.name}</div>`;
+            }
+            if (metadata.url) {
+                metaInfo += `<div><strong>URL:</strong> <a href="${metadata.url}" target="_blank" style="color: #4CAF50;">View Original</a></div>`;
+            }
+
+            preview.innerHTML = `
+                <img src="${src}" class="image-preview" alt="Preview">
+                <div style="font-size: 12px; color: #ccc; margin-top: 5px;">
+                    ${metaInfo}
+                    <button onclick="clearImagePreview()" style="margin-top: 5px; padding: 3px 8px; font-size: 11px;" class="danger">Clear Image</button>
+                </div>
+            `;
+        }
+
+        function clearImagePreview() {
+            currentImageData = null;
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('imageFile').value = '';
+            document.getElementById('imageUrlInput').value = '';
+
+            document.getElementById('imageDefault').checked = true;
+            toggleImageSource();
+
+            showNotification('Image selection cleared', 'info');
+            debugLog('Image selection cleared');
+        }
+
+        function toggleImageSource() {
+            const uploadSection = document.getElementById('uploadSection');
+            const urlSection = document.getElementById('urlSection');
+            const previewSection = document.getElementById('imagePreview');
+            const source = document.querySelector('input[name="imageSource"]:checked').value;
+
+            uploadSection.style.display = 'none';
+            urlSection.style.display = 'none';
+
+            if (source !== 'upload') {
+                document.getElementById('imageFile').value = '';
+            }
+            if (source !== 'url') {
+                document.getElementById('imageUrlInput').value = '';
+            }
+
+            switch (source) {
+                case 'upload':
+                    uploadSection.style.display = 'block';
+                    break;
+                case 'url':
+                    urlSection.style.display = 'block';
+                    break;
+                case 'default':
+                    currentImageData = null;
+                    previewSection.innerHTML = '<div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>';
+                    break;
+            }
+
+            if (source === 'default') {
+                previewSection.innerHTML = '<div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>';
+            } else if (currentImageData && source !== getCurrentImageSource()) {
+                clearImagePreview();
+            }
+        }
+
+        function getCurrentImageSource() {
+            if (!currentImageData) return 'default';
+            if (currentImageData.startsWith('data:image/')) return 'upload';
+            if (currentImageData.startsWith('http')) return 'url';
+            return 'file';
+        }
+
+        function validateImageForGeneration() {
+            const source = document.querySelector('input[name="imageSource"]:checked').value;
+
+            if (source === 'default') {
+                return { valid: true, data: null };
+            }
+
+            if (!currentImageData) {
+                return {
+                    valid: false,
+                    error: `No image selected for ${source} mode. Please select an image or switch to default mode.`
+                };
+            }
+
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            if (mode === 'sadtalker' && source === 'default') {
+                return {
+                    valid: false,
+                    error: 'SadTalker mode requires a custom image. Please upload an image or provide a URL.'
+                };
+            }
+
+            return { valid: true, data: currentImageData };
+        }
+
+                        // Mode change handler
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                currentMode = this.value;
+                debugLog('Mode changed', { mode: currentMode });
+
+                // Update UI based on mode
+                if (currentMode === 'sadtalker') {
+                    showNotification('SadTalker mode requires a custom image for best results', 'info');
+                }
+            });
+        });
+
+        // Peer Management
+        async function refreshPeerInfo() {
+            debugLog('Refreshing peer information');
+            try {
+                await getServerInfo();
+                await loadAvailablePeers();
+                showNotification('Peer information refreshed', 'success');
+            } catch (error) {
+                debugLog('Failed to refresh peer info', { error: error.message });
+                showNotification('Failed to refresh peer information', 'error');
+            }
+        }
+
+        async function loadAvailablePeers() {
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=server_info');
+                const result = await response.json();
+
+                if (result.available_peers) {
+                    displayAvailablePeers(result.available_peers);
+                }
+            } catch (error) {
+                debugLog('Failed to load available peers', { error: error.message });
+            }
+        }
+
+        function displayAvailablePeers(peers) {
+            const container = document.getElementById('availablePeers');
+
+            if (!peers || peers.length === 0) {
+                container.innerHTML = '<div class="peer-option">No peers available</div>';
+                return;
+            }
+
+            let html = '';
+            peers.forEach(peer => {
+                const isSelected = selectedPeer === peer.id;
+                const statusClass = peer.status === 'online' ? 'status-ok' : 'status-error';
+
+                html += `
+                    <div class="peer-option ${isSelected ? 'selected' : ''}" onclick="selectPeer('${peer.id}')">
+                        <div style="flex: 1;">
+                            <strong>${peer.name}</strong> (${peer.type})<br>
+                            <small>
+                                Status: <span class="${statusClass}">${peer.status}</span>
+                                ${peer.gpu_memory_gb ? ` | GPU: ${peer.gpu_memory_gb}GB` : ''}
+                                ${peer.memory_gb ? ` | RAM: ${peer.memory_gb}GB` : ''}
+                                ${peer.score ? ` | Score: ${peer.score}` : ''}
+                            </small>
+                        </div>
+                        <div>
+                            ${isSelected ? '✓' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function selectPeer(peerId) {
+            selectedPeer = peerId;
+            debugLog('Peer selected', { peerId });
+
+            // Update UI
+            document.querySelectorAll('.peer-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.target.closest('.peer-option').classList.add('selected');
+
+            showNotification(`Selected peer: ${peerId}`, 'success');
+        }
+
+        // Main Generation Function
+        async function generateAvatar() {
+            if (generationInProgress) {
+                showNotification('Generation already in progress', 'warning');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            const video = document.getElementById('avatarVideo');
+            const videoInfo = document.getElementById('videoInfo');
+
+            // Validate image selection
+            const imageValidation = validateImageForGeneration();
+            if (!imageValidation.valid) {
+                error.textContent = imageValidation.error;
+                error.style.display = 'block';
+                return;
+            }
+
+            // Collect ALL options from the form
+            const payload = {
+                // Core settings
+                prompt: document.getElementById('prompt').value,
+                mode: currentMode,
+                stream_mode: document.getElementById('streamMode').value,
+
+                // TTS options
+                tts_engine: document.getElementById('ttsEngine').value,
+                tts_voice: document.getElementById('ttsVoice').value,
+                tts_speed: parseInt(document.getElementById('ttsSpeed').value),
+                tts_pitch: parseInt(document.getElementById('ttsPitch').value),
+                tts_language: document.getElementById('ttsLanguage').value,
+                tts_emotion: document.getElementById('ttsEmotion').value,
+
+                // Audio format
+                sample_rate: parseInt(document.getElementById('sampleRate').value),
+                format: document.getElementById('audioFormat').value,
+
+                // Image options
+                image: imageValidation.data,
+                still: document.getElementById('still').checked,
+                preprocess: document.getElementById('preprocess').value,
+                resolution: document.getElementById('resolution').value,
+                face_detection: document.getElementById('faceDetection').checked,
+                face_confidence: parseFloat(document.getElementById('faceConfidence').value),
+                auto_resize: document.getElementById('autoResize').checked,
+
+                // Video options
+                codec: document.getElementById('codec').value,
+                quality: document.getElementById('quality').value,
+                fps: parseInt(document.getElementById('fps').value),
+                bitrate: parseInt(document.getElementById('bitrate').value),
+                keyframe_interval: parseInt(document.getElementById('keyframeInterval').value),
+                hardware_accel: document.getElementById('hardwareAccel').checked,
+
+                // Streaming options
+                chunk_duration: parseFloat(document.getElementById('chunkDuration').value),
+                buffer_size: parseInt(document.getElementById('bufferSize').value),
+                low_latency: document.getElementById('lowLatency').checked,
+                adaptive_quality: document.getElementById('adaptiveQuality').checked,
+
+                // SadTalker options
+                timeout: parseInt(document.getElementById('timeout').value),
+                enhancer: document.getElementById('enhancer').value || null,
+                split_chunks: document.getElementById('splitChunks').checked,
+                chunk_length: parseInt(document.getElementById('chunkLength').value),
+                overlap_duration: parseFloat(document.getElementById('overlapDuration').value),
+                expression_scale: parseFloat(document.getElementById('expressionScale').value),
+                use_3d_warping: document.getElementById('use3dWarping').checked,
+                use_eye_blink: document.getElementById('useEyeBlink').checked,
+                use_head_pose: document.getElementById('useHeadPose').checked,
+
+                // Advanced options
+                max_duration: parseInt(document.getElementById('maxDuration').value),
+                max_concurrent: parseInt(document.getElementById('maxConcurrent').value),
+                memory_limit: parseInt(document.getElementById('memoryLimit').value),
+                enable_websocket: document.getElementById('enableWebsocket').checked,
+                verbose_logging: document.getElementById('verboseLogging').checked,
+                save_intermediates: document.getElementById('saveIntermediates').checked,
+                profile_performance: document.getElementById('profilePerformance').checked,
+                beta_features: document.getElementById('betaFeatures').checked,
+                ml_acceleration: document.getElementById('mlAcceleration').checked,
+                worker_threads: parseInt(document.getElementById('workerThreads').value),
+
+                // Peer selection
+                peer: selectedPeer
+            };
+
+            debugLog('Starting avatar generation with complete options', payload);
+            generationInProgress = true;
+
+            loading.style.display = 'block';
+            loading.classList.add('show');
+            result.style.display = 'none';
+            error.style.display = 'none';
+
+            try {
+                updateProgress(10, 'Initializing generation...');
+                const startTime = Date.now();
+
+                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                updateProgress(50, 'Processing avatar...');
+                const duration = Date.now() - startTime;
+
+                debugLog('Avatar API response received', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    contentType: response.headers.get('content-type'),
+                    duration: duration + 'ms'
+                });
+
+                if (response.ok) {
+                    updateProgress(80, 'Finalizing video...');
+                    const contentType = response.headers.get('content-type');
+
+                    if (contentType && contentType.includes('video')) {
+                        const blob = await response.blob();
+                        const videoUrl = URL.createObjectURL(blob);
+
+                        video.src = videoUrl;
+                        result.style.display = 'block';
+
+                        videoInfo.innerHTML = `
+                            <strong>Generation Complete!</strong><br>
+                            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
+                            Engine: ${response.headers.get('x-avatar-engine') || payload.tts_engine}<br>
+                            Voice: ${response.headers.get('x-avatar-voice') || payload.tts_voice}<br>
+                            Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB<br>
+                            Type: ${contentType}<br>
+                            Generation Time: ${(duration / 1000).toFixed(1)}s<br>
+                            Parameters: ${Object.keys(payload).length} options used
+                        `;
+
+                        updateProgress(100, 'Complete!');
+
+                        video.onloadeddata = () => {
+                            debugLog('Video loaded successfully', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight
+                            });
+                            showNotification('Avatar generated successfully!', 'success');
+                        };
+
+                        video.onerror = (e) => {
+                            debugLog('Video error', { error: video.error });
+                            showNotification('Video playback error', 'error');
+                        };
+
+                    } else {
+                        const text = await response.text();
+                        debugLog('Non-video response received', { response: text });
+                        throw new Error('Expected video response, got: ' + contentType);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+            } catch (err) {
+                debugLog('Avatar generation error', { error: err.message });
+                error.textContent = 'Error: ' + err.message;
+                error.style.display = 'block';
+                showNotification('Generation failed: ' + err.message, 'error');
+                updateProgress(0, 'Failed');
+            } finally {
+                generationInProgress = false;
+                setTimeout(() => {
+                    loading.classList.remove('show');
+                    loading.style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        // Video Management
+        function downloadVideo() {
+            const video = document.getElementById('avatarVideo');
+            if (video.src) {
+                const a = document.createElement('a');
+                a.href = video.src;
+                a.download = `avatar_${new Date().getTime()}.mp4`;
+                a.click();
+                showNotification('Video download started', 'success');
+            }
+        }
+
+        function shareVideo() {
+            const video = document.getElementById('avatarVideo');
+            if (video.src && navigator.share) {
+                navigator.share({
+                    title: 'Generated Avatar Video',
+                    text: 'Check out this AI-generated avatar!',
+                    url: video.src
+                }).then(() => {
+                    showNotification('Video shared successfully', 'success');
+                }).catch(() => {
+                    showNotification('Sharing failed', 'error');
+                });
+            } else {
+                // Fallback: copy URL to clipboard
+                navigator.clipboard.writeText(video.src).then(() => {
+                    showNotification('Video URL copied to clipboard', 'success');
+                }).catch(() => {
+                    showNotification('Could not copy URL', 'error');
+                });
+            }
+        }
+
+        // API Functions
+        async function getEngines() {
+            debugLog('Getting TTS engines and voices');
+
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=engines');
+                const result = await response.json();
+
+                if (result.engines) {
+                    debugLog('TTS engines received', result.engines);
+                    displayEngineInfo(result.engines);
+                } else {
+                    debugLog('No engine data received');
+                }
+
+            } catch (error) {
+                debugLog('Engine retrieval error', { error: error.message });
+                showNotification('Failed to get TTS engines', 'error');
+            }
+        }
+
+        function displayEngineInfo(engines) {
+            let info = "Available TTS Engines:\n\n";
+            Object.entries(engines).forEach(([key, engine]) => {
+                info += `${engine.name}:\n`;
+                info += `  Voices: ${engine.voices.length}\n`;
+                info += `  Speed Range: ${engine.speed_range[0]}-${engine.speed_range[1]}\n`;
+                info += `  Pitch Range: ${engine.pitch_range[0]}-${engine.pitch_range[1]}\n\n`;
+            });
+
+            alert(info);
+        }
+
+        async function testMP4() {
+            debugLog('Testing MP4 pipeline');
+
+            const video = document.getElementById('avatarVideo');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+
+            try {
+                const response = await fetch('/test-mp4');
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const videoUrl = URL.createObjectURL(blob);
+
+                    video.src = videoUrl;
+                    result.style.display = 'block';
+                    error.style.display = 'none';
+
+                    debugLog('Test MP4 loaded successfully', {
+                        size: blob.size,
+                        type: blob.type
+                    });
+
+                    showNotification('Test MP4 loaded successfully', 'success');
+
+                } else {
+                    throw new Error(`Test MP4 failed: ${response.status}`);
+                }
+
+            } catch (err) {
+                debugLog('Test MP4 failed', { error: err.message });
+                error.textContent = 'Test MP4 Error: ' + err.message;
+                error.style.display = 'block';
+                showNotification('Test MP4 failed', 'error');
+            }
+        }
+
+        async function testConnection() {
+            debugLog('Testing avatar service connection');
+
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=test');
+                const result = await response.json();
+
+                debugLog('Connection test result', result);
+
+                if (result.status === 'success') {
+                    showNotification('Connection successful: ' + result.message, 'success');
+                } else {
+                    showNotification('Connection failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                debugLog('Connection test error', { error: error.message });
+                showNotification('Connection test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function pingAllServers() {
+            debugLog('Pinging all servers');
+            showNotification('Pinging servers...', 'info');
+
+            try {
+                // This would need to be implemented in the API
+                await refreshPeerInfo();
+                showNotification('Server ping completed', 'success');
+            } catch (error) {
+                showNotification('Server ping failed', 'error');
+            }
+        }
+
+        async function benchmarkServers() {
+            debugLog('Benchmarking servers');
+            showNotification('Benchmarking servers... This may take a while', 'info');
+
+            // This would need to be implemented as a special API endpoint
+            // that tests generation speed on each available server
+            setTimeout(() => {
+                showNotification('Benchmark feature coming soon', 'info');
+            }, 2000);
+        }
+
+        async function getServerInfo() {
+            debugLog('Getting server connection info');
+
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=server_info');
+                const result = await response.json();
+
+                debugLog('Server info received', result);
+                displayServerInfo(result);
+
+            } catch (error) {
+                debugLog('Server info retrieval error', { error: error.message });
+                showNotification('Failed to get server info', 'error');
+            }
+        }
+
+        function displayServerInfo(info) {
+            const container = document.getElementById('serverInfo');
+
+            if (!info || !info.current_peer) {
+                container.innerHTML = '<div class="status-item status-error">No server info available</div>';
+                return;
+            }
+
+            const peer = info.current_peer;
+            const available = info.available_peers || [];
+
+            let html = `
+                <div class="status-item status-${peer.type === 'local' ? 'warning' : 'ok'}">
+                    <strong>Current Avatar Server:</strong><br>
+                    ${peer.name}<br>
+                    Type: ${peer.type}<br>
+                    ${peer.ip ? `IP: ${peer.ip}<br>` : ''}
+                    ${peer.gpu_memory ? `GPU: ${peer.gpu_memory}GB<br>` : ''}
+                    ${peer.memory ? `RAM: ${peer.memory}GB` : ''}
+                </div>
+            `;
+
+            if (available.length > 0) {
+                html += `
+                    <div class="status-item status-ok">
+                        <strong>Available Servers:</strong><br>
+                        ${available.map(p => `${p.name} (${p.type})`).join('<br>')}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+            // Update current peer display
+            const currentDisplay = document.getElementById('currentPeerDisplay');
+            currentDisplay.innerHTML = `
+                <div class="peer-option selected">
+                    <div>
+                        <strong>${peer.name}</strong> (${peer.type})<br>
+                        <small>Currently active server</small>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function getStatus() {
+            debugLog('Getting system status');
+
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=status');
+                const result = await response.json();
+
+                debugLog('System status received', result);
+                displayStatus(result.data || result);
+
+            } catch (error) {
+                debugLog('Status retrieval error', { error: error.message });
+                showNotification('Failed to get system status', 'error');
+            }
+        }
+
+        async function getDetailedStatus() {
+            debugLog('Getting detailed system status');
+            showNotification('Getting detailed status...', 'info');
+
+            try {
+                await getStatus();
+                // Additional detailed status calls could be made here
+                showNotification('Detailed status retrieved', 'success');
+            } catch (error) {
+                showNotification('Failed to get detailed status', 'error');
+            }
+        }
+
+        async function exportStatus() {
+            debugLog('Exporting system status');
+
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=status');
+                const result = await response.json();
+
+                const statusData = JSON.stringify(result, null, 2);
+                const blob = new Blob([statusData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `avatar_status_${new Date().toISOString()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                showNotification('Status exported successfully', 'success');
+            } catch (error) {
+                showNotification('Failed to export status', 'error');
+            }
+        }
+
+        function displayStatus(status) {
+            const grid = document.getElementById('statusGrid');
+
+            if (!status) {
+                grid.innerHTML = '<div class="status-item status-error">No status data available</div>';
+                return;
+            }
+
+            const items = [
+                { label: 'Timestamp', value: status.timestamp, status: 'ok' },
+                { label: 'Device', value: status.device, status: 'ok' },
+                { label: 'TTS Ready', value: status.tts_ready ? 'Yes' : 'No', status: status.tts_ready ? 'ok' : 'error' },
+                { label: 'SadTalker Installed', value: status.sadtalker_installed ? 'Yes' : 'No', status: status.sadtalker_installed ? 'ok' : 'warning' },
+                { label: 'Streaming Available', value: status.streaming_available ? 'Yes' : 'No', status: status.streaming_available ? 'ok' : 'warning' },
+                { label: 'Default Codec', value: status.default_codec, status: 'ok' },
+                { label: 'GPU Available', value: status.gpu_available ? 'Yes' : 'No', status: status.gpu_available ? 'ok' : 'warning' },
+                { label: 'Memory Usage', value: status.memory_usage || 'Unknown', status: 'ok' }
+            ];
+
+            grid.innerHTML = items.map(item => `
+                <div class="status-item status-${item.status}">
+                    <strong>${item.label}:</strong><br>
+                    ${item.value}
+                </div>
+            `).join('');
+        }
+
+        async function getLogs() {
+            debugLog('Getting avatar service logs');
+
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=logs');
+                const result = await response.json();
+
+                debugLog('Logs received', { logCount: result.data?.logs?.length || 0 });
+
+                const container = document.getElementById('logContainer');
+                if (result.data && result.data.logs) {
+                    container.innerHTML = result.data.logs.join('\n');
+                } else {
+                    container.innerHTML = 'No logs available';
+                }
+
+                showNotification('Logs retrieved successfully', 'success');
+
+            } catch (error) {
+                debugLog('Log retrieval error', { error: error.message });
+                showNotification('Failed to retrieve logs', 'error');
+            }
+        }
+
+        // Log Management
+        function refreshStatus() {
+            getStatus();
+        }
+
+        function refreshLogs() {
+            getLogs();
+        }
+
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = 'Logs cleared';
+            debugLog('Debug logs cleared');
+            showNotification('Logs cleared', 'info');
+        }
+
+        function clearDebugLogs() {
+            document.getElementById('logContainer').innerHTML = 'Debug logs cleared';
+            console.clear();
+            debugLog('Debug console cleared');
+            showNotification('Debug logs cleared', 'info');
+        }
+
+        function downloadLogs() {
+            const logs = document.getElementById('logContainer').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `avatar_debug_logs_${new Date().toISOString()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            debugLog('Debug logs downloaded');
+            showNotification('Logs downloaded', 'success');
+        }
+
+        function copyLogsToClipboard() {
+            const logs = document.getElementById('logContainer').textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(logs).then(() => {
+                    debugLog('Debug logs copied to clipboard');
+                    showNotification('Logs copied to clipboard', 'success');
+                }).catch(err => {
+                    debugLog('Failed to copy logs to clipboard', { error: err.message });
+                    showNotification('Failed to copy logs', 'error');
+                });
+            }
+        }
+
+        function filterLogs() {
+            const searchTerm = prompt('Enter search term for logs:');
+            if (searchTerm) {
+                searchLogs(searchTerm);
+            }
+        }
+
+        function filterLogsByLevel() {
+            const level = document.getElementById('logLevel').value;
+            const container = document.getElementById('logContainer');
+            const allLogs = container.getAttribute('data-all-logs') || container.textContent;
+
+            if (level === 'all') {
+                container.innerHTML = allLogs;
+            } else {
+                const filteredLogs = allLogs.split('\n').filter(line =>
+                    line.toLowerCase().includes(level.toLowerCase())
+                ).join('\n');
+                container.innerHTML = filteredLogs || 'No logs found for this level';
+            }
+        }
+
+        function searchLogs(searchTerm = null) {
+            const term = searchTerm || document.getElementById('logSearch').value;
+            const container = document.getElementById('logContainer');
+            const allLogs = container.getAttribute('data-all-logs') || container.textContent;
+
+            if (!term) {
+                container.innerHTML = allLogs;
+                return;
+            }
+
+            const filteredLogs = allLogs.split('\n').filter(line =>
+                line.toLowerCase().includes(term.toLowerCase())
+            ).join('\n');
+
+            container.innerHTML = filteredLogs || 'No logs found for search term';
+        }
+
+        // Drag and Drop for Image Upload
+        function setupDragAndDrop() {
+            const uploadZone = document.querySelector('.image-upload-zone');
+
+            if (uploadZone) {
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.add('dragover');
+                });
+
+                uploadZone.addEventListener('dragleave', () => {
+                    uploadZone.classList.remove('dragover');
+                });
+
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.remove('dragover');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const fileInput = document.getElementById('imageFile');
+                        fileInput.files = files;
+                        handleImageUpload({ target: fileInput });
+                    }
+                });
+            }
+        }
+
+        // Initialize
+        function initializeDebugConsole() {
+            debugLog('Complete Avatar Debug Console initializing');
+
+            // Set default TTS engine
+            updateTTSOptions();
+
+            // Initialize range displays
+            updateRangeDisplay('speed', document.getElementById('ttsSpeed').value);
+            updateRangeDisplay('pitch', document.getElementById('ttsPitch').value);
+            updateRangeDisplay('confidence', document.getElementById('faceConfidence').value);
+            updateRangeDisplay('expression', document.getElementById('expressionScale').value);
+
+            // Setup drag and drop
+            setupDragAndDrop();
+
+            // Load initial data
+            getServerInfo();
+            getStatus();
+            loadAvailablePeers();
+
+            debugLog('Initialization complete - ALL options loaded');
+            showNotification('Avatar Debug Console initialized', 'success');
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDebugConsole);
+        } else {
+            initializeDebugConsole();
+        }
+    </script>
+</body>
+</html>
