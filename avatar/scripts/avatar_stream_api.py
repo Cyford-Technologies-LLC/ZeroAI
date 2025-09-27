@@ -81,48 +81,7 @@ class StreamingAvatarGenerator:
 
         logger.info("StreamingAvatarGenerator cleanup completed")
 
-    def _call_tts_service(self, text: str, tts_engine: str = 'espeak',
-                          tts_options: Dict = None) -> Optional[bytes]:
-        """Call TTS service and return audio bytes"""
-        try:
-            payload = {'text': text, 'engine': tts_engine}
-            if tts_options:
-                payload.update(tts_options)
 
-            response = requests.post(self.tts_api_url, json=payload, timeout=30)
-            if response.status_code == 200:
-                return response.content
-            else:
-                logger.error(f"TTS error {response.status_code}: {response.text[:200]}")
-                return None
-        except Exception as e:
-            logger.error(f"TTS call failed: {e}")
-            return None
-
-    def _process_audio_chunk(self, audio_bytes: bytes) -> Tuple[float, str]:
-        """Process audio bytes and return duration and temp file path"""
-        try:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-                f.write(audio_bytes)
-                temp_path = f.name
-
-            # Normalize audio
-            cmd = ["ffmpeg", "-y", "-i", temp_path, "-ac", "1", "-ar", "16000",
-                   "-acodec", "pcm_s16le", f"{temp_path}_fixed.wav"]
-            subprocess.run(cmd, check=True, capture_output=True)
-
-            # Get duration
-            with wave.open(f"{temp_path}_fixed.wav", 'rb') as wf:
-                frames = wf.getnframes()
-                rate = wf.getframerate()
-                duration = frames / float(rate)
-
-            os.unlink(temp_path)  # Remove original
-            return duration, f"{temp_path}_fixed.wav"
-
-        except Exception as e:
-            logger.error(f"Audio processing failed: {e}")
-            return 0.0, None
 
     def _generate_face_frames(self, source_image: np.ndarray, duration: float,
                               frame_rate: int = 30) -> Generator[bytes, None, None]:
