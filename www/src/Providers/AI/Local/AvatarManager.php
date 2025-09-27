@@ -64,7 +64,7 @@ class AvatarManager
             }
 
             if ($bestPeer && !isset($bestPeer['is_local'])) {
-                $avatarUrl = "http://{$bestPeer['ip']}:7860"; // Avatar service on port 7860
+                $avatarUrl = "http://{$bestPeer['ip']}:444"; // Avatar service on port 7860
                 $this->logger->info('Selected best peer for avatar generation', [
                     'peer' => $bestPeer['name'],
                     'ip' => $bestPeer['ip'],
@@ -601,35 +601,35 @@ class AvatarManager
     // ... (keep all the existing utility methods: setPeer, getCurrentPeer, getAvailablePeers,
     //      getStatus, getLogs, testConnection, getPhpErrors, clearPhpErrors)
 
-    public function setPeer($peerIp = null)
-    {
-        if ($peerIp === null) {
-            $this->avatarServiceUrl = $this->selectBestPeer();
-        } else if ($peerIp === 'local') {
-            $this->avatarServiceUrl = $this->localAvatarUrl;
-        } else {
-            $this->avatarServiceUrl = "http://{$peerIp}:7860"; // Updated port
-        }
-
-        $this->logger->info('Avatar service URL updated', [
-            'new_url' => $this->avatarServiceUrl,
-            'peer_ip' => $peerIp
-        ]);
-
-        return $this->avatarServiceUrl;
+public function setPeer($peerIp = null)
+{
+    if ($peerIp === null) {
+        $this->avatarServiceUrl = $this->selectBestPeer();
+    } else if ($peerIp === 'local') {
+        $this->avatarServiceUrl = $this->localAvatarUrl; // Keeps 7860
+    } else {
+        $this->avatarServiceUrl = "http://{$peerIp}:444"; // Back to your original 444
     }
+
+    $this->logger->info('Avatar service URL updated', [
+        'new_url' => $this->avatarServiceUrl,
+        'peer_ip' => $peerIp
+    ]);
+
+    return $this->avatarServiceUrl;
+}
 
     public function getCurrentPeer()
     {
-        if ($this->avatarServiceUrl === $this->localAvatarUrl) {
-            return [
-                'type' => 'local',
-                'url' => $this->avatarServiceUrl,
-                'name' => 'Local Avatar Service'
-            ];
-        }
+    if ($this->avatarServiceUrl === $this->localAvatarUrl) {
+        return [
+            'type' => 'local',
+            'url' => $this->avatarServiceUrl,
+            'name' => 'Local Avatar Service'
+        ];
+    }
 
-        if (preg_match('/http:\/\/([^:]+):7860/', $this->avatarServiceUrl, $matches)) {
+        if (preg_match('/http:\/\/([^:]+):444/', $this->avatarServiceUrl, $matches)) {
             $peerIp = $matches[1];
             $peers = $this->peerManager->getPeers();
 
