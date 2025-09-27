@@ -1825,18 +1825,77 @@
                 if (videoFrames.length > 0) {
                     debugLog('Combining video frames', { frameCount: videoFrames.length });
 
-                    // Use the last/largest frame as the main video
-                    const finalFrame = videoFrames[videoFrames.length - 1];
-                    const videoBlob = new Blob([finalFrame], { type: 'video/mp4' });
-                    const videoUrl = URL.createObjectURL(videoBlob);
+                    // If we have JPEG frames, create a simple slideshow video
+                    if (chunks.length > 0 && videoFrames.length > 10) {
+                        // Create an animated GIF or use the last frame as a static image
+                        const lastFrame = videoFrames[videoFrames.length - 1];
 
-                    if (video) {
-                        video.src = videoUrl;
-                        debugLog('Video source set', {
-                            blobSize: videoBlob.size,
-                            url: videoUrl.substring(0, 50) + '...'
-                        });
+                        // Try to detect if it's actually video data or JPEG
+                        const frameHeader = new Uint8Array(lastFrame.slice(0, 10));
+                        const isJpeg = frameHeader[0] === 0xFF && frameHeader[1] === 0xD8;
+
+                        if (isJpeg) {
+                            // It's JPEG frames - create a blob with the last frame
+                            const imageBlob = new Blob([lastFrame], { type: 'image/jpeg' });
+                            const imageUrl = URL.createObjectURL(imageBlob);
+
+                            // Create a video element that shows the image
+                            if (video) {
+                                // For JPEG frames, we'll set it as a poster and create a simple video
+                                video.poster = imageUrl;
+
+                                // Create a minimal MP4 video from the JPEG frames
+                                // For now, just show the last frame as an image
+                                const img = document.createElement('img');
+                                img.src = imageUrl;
+                                img.style.maxWidth = '100%';
+                                img.style.height = 'auto';
+                                img.alt = 'Avatar Animation Frame';
+
+                                // Replace video with image temporarily
+                                const parent = video.parentNode;
+                                if (parent) {
+                                    parent.insertBefore(img, video);
+                                    video.style.display = 'none';
+                                }
+
+                                debugLog('JPEG frames displayed as image', {
+                                    frameCount: videoFrames.length,
+                                    lastFrameSize: lastFrame.length,
+                                    imageUrl: imageUrl.substring(0, 50) + '...'
+                                });
+                            }
+                        } else {
+                            // It's actual video data
+                            const videoBlob = new Blob([lastFrame], { type: 'video/mp4' });
+                            const videoUrl = URL.createObjectURL(videoBlob);
+
+                            if (video) {
+                                video.src = videoUrl;
+                                video.style.display = 'block';
+                                debugLog('Video source set', {
+                                    blobSize: videoBlob.size,
+                                    url: videoUrl.substring(0, 50) + '...'
+                                });
+                            }
+                        }
+                    } else {
+                        // Use the last/largest frame as the main video
+                        const finalFrame = videoFrames[videoFrames.length - 1];
+                        const videoBlob = new Blob([finalFrame], { type: 'video/mp4' });
+                        const videoUrl = URL.createObjectURL(videoBlob);
+
+                        if (video) {
+                            video.src = videoUrl;
+                            debugLog('Video source set', {
+                                blobSize: videoBlob.size,
+                                url: videoUrl.substring(0, 50) + '...'
+                            });
+                        }
                     }
+                } else {
+                    debugLog('No video frames to display');
+                    showNotification('No video frames received in stream', 'warning');
                 }
 
                 // Update video info for streaming
@@ -1907,6 +1966,16 @@
                         });
 
                         if (contentData.length > 1000) { // Only consider substantial video data
+                            videoFrames.push(contentData);
+                        }
+                    } else if (headers.includes('image/jpeg') || headers.includes('image/jpg')) {
+                        // Handle JPEG frame data - convert to video
+                        debugLog('JPEG frame received', {
+                            chunkId: currentChunk?.chunk_id || 'unknown',
+                            dataSize: contentData.length
+                        });
+
+                        if (contentData.length > 1000) { // Only consider substantial image data
                             videoFrames.push(contentData);
                         }
                     }
