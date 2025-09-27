@@ -523,7 +523,31 @@ class AvatarManager
         $codec = $options['codec'] ?? 'h264_fast';
         $quality = $options['quality'] ?? 'high';
 
+
+
+            // Detect streaming mode
+    $streamMode = $options['stream_mode'] ?? 'complete';
+    $isStreaming = ($streamMode !== 'complete') ||
+                   isset($options['low_latency']) && $options['low_latency'] ||
+                   isset($options['chunk_duration']) && $options['chunk_duration'] > 0;
+
+    if ($isStreaming) {
+        // Use streaming endpoint
+        $url = $this->avatarServiceUrl . '/stream';
+        $this->logger->info('Using streaming endpoint', [
+            'stream_mode' => $streamMode,
+            'url' => $url
+        ]);
+    } else {
+        // Use regular generation endpoint
+        $codec = $options['codec'] ?? 'h264_fast';
+        $quality = $options['quality'] ?? 'high';
         $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
+        $this->logger->info('Using generation endpoint', [
+            'mode' => $mode,
+            'url' => $url
+        ]);
+    }
 
         // Build comprehensive payload with ALL parameters
         $payload = [
