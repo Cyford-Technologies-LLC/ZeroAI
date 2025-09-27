@@ -28,7 +28,7 @@ class AvatarManager
             ini_set('error_log', '/tmp/avatar_php_errors.log');
         }
         
-        $this->logger->info('AvatarManager initialized', [
+        $this->logger->info('AvatarManager initialized with streaming support', [
             'service_url' => $this->avatarServiceUrl,
             'debug_mode' => $this->debugMode,
             'local_url' => $this->localAvatarUrl
@@ -44,27 +44,27 @@ class AvatarManager
             $peers = $this->peerManager->getPeers();
             $bestPeer = null;
             $bestScore = -1;
-            
+
             foreach ($peers as $peer) {
                 if ($peer['status'] !== 'online') {
                     continue;
                 }
-                
+
                 // Calculate peer score based on GPU and memory
                 $score = 0;
                 if ($peer['gpu_available']) {
                     $score += $peer['gpu_memory_gb'] * 10; // GPU memory is most important
                 }
                 $score += $peer['memory_gb']; // Add system memory
-                
+
                 if ($score > $bestScore) {
                     $bestScore = $score;
                     $bestPeer = $peer;
                 }
             }
-            
+
             if ($bestPeer && !isset($bestPeer['is_local'])) {
-                $avatarUrl = "http://{$bestPeer['ip']}:444"; // Avatar service on port 444
+                $avatarUrl = "http://{$bestPeer['ip']}:7860"; // Avatar service on port 7860
                 $this->logger->info('Selected best peer for avatar generation', [
                     'peer' => $bestPeer['name'],
                     'ip' => $bestPeer['ip'],
@@ -75,42 +75,214 @@ class AvatarManager
                 ]);
                 return $avatarUrl;
             }
-            
+
         } catch (\Exception $e) {
             $this->logger->warning('Failed to select best peer, using local', [
                 'error' => $e->getMessage()
             ]);
         }
-        
+
         $this->logger->info('Using local avatar service as fallback');
         return $this->localAvatarUrl;
     }
 
     /**
-     * Generate avatar with comprehensive TTS options
+     * Main generation method - automatically detects streaming vs regular generation
      */
-    public function generateWithTTS($prompt, $mode = 'simple', $ttsEngine = 'espeak', $ttsOptions = [], $options = [])
+    public function generateAvatar($prompt, $options = [])
     {
-        if (!is_array($ttsOptions)) {
-            $ttsOptions = [];
+        // Detect if this should be a streaming request
+        $isStreaming = $this->isStreamingRequest($options);
+
+        if ($isStreaming) {
+            return $this->handleStreamingGeneration($prompt, $options);
+        } else {
+            // Traditional complete generation
+            $mode = $options['mode'] ?? 'simple';
+            return $mode === 'sadtalker'
+                ? $this->generateSadTalker($prompt, $options)
+                : $this->generateSimple($prompt, $options);
+        }
+    }
+
+    /**
+     * Detect if request should use streaming
+     */
+    private function isStreamingRequest($options)
+    {
+        // Check for streaming indicators
+        $streamMode = $options['stream_mode'] ?? 'complete';
+
+        // If explicitly set to streaming modes
+        if (in_array($streamMode, ['chunked', 'realtime', 'websocket'])) {
+            return true;
         }
 
-        // Merge TTS options into main options
-        $options['tts_engine'] = $ttsEngine ?: 'espeak';
+        // Check for streaming-specific parameters
+        $streamingParams = [
+            'chunk_duration', 'buffer_size', 'low_latency',
+            'enable_websocket', 'adaptive_quality'
+        ];
 
-        // Map frontend TTS options to the expected format
-        if (isset($ttsOptions['voice'])) {
-            $options['tts_voice'] = $ttsOptions['voice'];
+        foreach ($streamingParams as $param) {
+            if (isset($options[$param]) && $options[$param] !== false) {
+                return true;
+            }
         }
-        if (isset($ttsOptions['speed'])) {
-            $options['tts_speed'] = $ttsOptions['speed'];
+
+        return false;
+    }
+
+    /**
+     * Handle streaming generation requests
+     */
+    private function handleStreamingGeneration($prompt, $options)
+    {
+        $this->logger->info('=== STREAMING AVATAR REQUEST ===', [
+            'prompt' => substr($prompt, 0, 100),
+            'stream_mode' => $options['stream_mode'] ?? 'auto-detected',
+            'options_count' => count($options)
+        ]);
+
+        try {
+            // Check if streaming is available
+            $streamingStatus = $this->checkStreamingAvailability();
+            if (!$streamingStatus['available']) {
+                $this->logger->warning('Streaming not available, falling back to complete generation');
+                return $this->generateComplete($prompt, $options);
+            }
+
+            // Determine streaming mode
+            $streamMode = $options['stream_mode'] ?? $this->determineOptimalStreamingMode($options);
+
+            switch ($streamMode) {
+                case 'realtime':
+                    return $this->generateRealtimeStream($prompt, $options);
+
+                case 'chunked':
+                    return $this->generateChunkedStream($prompt, $options);
+
+                case 'websocket':
+                    return $this->initiateWebSocketStream($prompt, $options);
+
+                default:
+                    $this->logger->info('Unknown streaming mode, using chunked as default');
+                    return $this->generateChunkedStream($prompt, $options);
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->error('Streaming generation failed, falling back to complete', [
+                'error' => $e->getMessage()
+            ]);
+            return $this->generateComplete($prompt, $options);
         }
-        if (isset($ttsOptions['pitch'])) {
-            $options['tts_pitch'] = $ttsOptions['pitch'];
+    }
+
+    /**
+     * Check if streaming is available on the target service
+     */
+    private function checkStreamingAvailability()
+    {
+        try {
+            $ch = curl_init($this->avatarServiceUrl . '/debug/streaming');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200) {
+                $status = json_decode($result, true);
+                return [
+                    'available' => $status['streaming_available'] ?? false,
+                    'modes' => $status['supported_modes'] ?? [],
+                    'websocket' => $status['websocket_enabled'] ?? false
+                ];
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Could not check streaming availability', [
+                'error' => $e->getMessage()
+            ]);
         }
-        if (isset($ttsOptions['language'])) {
-            $options['tts_language'] = $ttsOptions['language'];
+
+        return ['available' => false, 'modes' => [], 'websocket' => false];
+    }
+
+    /**
+     * Determine optimal streaming mode based on options
+     */
+    private function determineOptimalStreamingMode($options)
+    {
+        // If low latency is required, use realtime
+        if (isset($options['low_latency']) && $options['low_latency']) {
+            return 'realtime';
         }
+
+        // If WebSocket is enabled, prefer WebSocket
+        if (isset($options['enable_websocket']) && $options['enable_websocket']) {
+            return 'websocket';
+        }
+
+        // For longer content or when chunking is explicitly enabled
+        if (isset($options['split_chunks']) && $options['split_chunks']) {
+            return 'chunked';
+        }
+
+        // Default to chunked streaming
+        return 'chunked';
+    }
+
+    /**
+     * Generate realtime stream
+     */
+    private function generateRealtimeStream($prompt, $options)
+    {
+        $this->logger->info('Generating realtime stream');
+
+        $endpoint = '/stream';
+        $payload = $this->buildStreamingPayload($prompt, $options, 'realtime');
+
+        return $this->callStreamingService($endpoint, $payload, 'realtime');
+    }
+
+    /**
+     * Generate chunked stream
+     */
+    private function generateChunkedStream($prompt, $options)
+    {
+        $this->logger->info('Generating chunked stream');
+
+        $endpoint = '/stream';
+        $payload = $this->buildStreamingPayload($prompt, $options, 'chunked');
+
+        return $this->callStreamingService($endpoint, $payload, 'chunked');
+    }
+
+    /**
+     * Initiate WebSocket stream
+     */
+    private function initiateWebSocketStream($prompt, $options)
+    {
+        $this->logger->info('Initiating WebSocket stream');
+
+        // For WebSocket, we return connection info instead of actual stream
+        return [
+            'type' => 'websocket_info',
+            'websocket_url' => str_replace('http://', 'ws://', $this->avatarServiceUrl) . '/stream/ws',
+            'payload' => $this->buildStreamingPayload($prompt, $options, 'websocket'),
+            'instructions' => 'Connect to WebSocket URL and send payload to start streaming'
+        ];
+    }
+
+    /**
+     * Generate complete video (fallback)
+     */
+    private function generateComplete($prompt, $options)
+    {
+        $this->logger->info('Falling back to complete generation');
+        $mode = $options['mode'] ?? 'simple';
 
         return $mode === 'sadtalker'
             ? $this->generateSadTalker($prompt, $options)
@@ -118,140 +290,133 @@ class AvatarManager
     }
 
     /**
-     * Set specific peer for avatar generation
+     * Build streaming payload with all necessary parameters
      */
-    public function setPeer($peerIp = null)
+    private function buildStreamingPayload($prompt, $options, $streamingMode)
     {
-        if ($peerIp === null) {
-            $this->avatarServiceUrl = $this->selectBestPeer();
-        } else if ($peerIp === 'local') {
-            $this->avatarServiceUrl = $this->localAvatarUrl;
-        } else {
-            $this->avatarServiceUrl = "http://{$peerIp}:444";
-        }
+        $payload = [
+            'prompt' => $prompt,
+            'streaming_mode' => $streamingMode
+        ];
 
-        $this->logger->info('Avatar service URL updated', [
-            'new_url' => $this->avatarServiceUrl,
-            'peer_ip' => $peerIp
-        ]);
+        // Core parameters
+        $coreParams = [
+            'tts_engine', 'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
+            'image', 'codec', 'quality', 'fps'
+        ];
 
-        return $this->avatarServiceUrl;
-    }
-
-    /**
-     * Get current peer information
-     */
-    public function getCurrentPeer()
-    {
-        if ($this->avatarServiceUrl === $this->localAvatarUrl) {
-            return [
-                'type' => 'local',
-                'url' => $this->avatarServiceUrl,
-                'name' => 'Local Avatar Service'
-            ];
-        }
-
-        // Extract IP from URL
-        if (preg_match('/http:\/\/([^:]+):444/', $this->avatarServiceUrl, $matches)) {
-            $peerIp = $matches[1];
-            $peers = $this->peerManager->getPeers();
-
-            foreach ($peers as $peer) {
-                if ($peer['ip'] === $peerIp) {
-                    return [
-                        'type' => 'peer',
-                        'url' => $this->avatarServiceUrl,
-                        'name' => $peer['name'],
-                        'ip' => $peer['ip'],
-                        'gpu_memory' => $peer['gpu_memory_gb'],
-                        'memory' => $peer['memory_gb']
-                    ];
-                }
+        foreach ($coreParams as $param) {
+            if (isset($options[$param])) {
+                $payload[$param] = $options[$param];
             }
         }
 
+        // Streaming-specific parameters
+        $streamingParams = [
+            'chunk_duration' => 3.0,
+            'frame_rate' => 20,
+            'buffer_size' => 5,
+            'low_latency' => false,
+            'adaptive_quality' => true
+        ];
+
+        foreach ($streamingParams as $param => $default) {
+            $payload[$param] = $options[$param] ?? $default;
+        }
+
+        // Mode-specific optimizations
+        switch ($streamingMode) {
+            case 'realtime':
+                $payload['frame_rate'] = min($payload['frame_rate'], 15); // Lower FPS for realtime
+                $payload['buffer_size'] = min($payload['buffer_size'], 3); // Smaller buffer
+                $payload['low_latency'] = true;
+                break;
+
+            case 'chunked':
+                $payload['chunk_duration'] = $payload['chunk_duration'] ?? 5.0; // Longer chunks
+                break;
+
+            case 'websocket':
+                $payload['frame_rate'] = min($payload['frame_rate'], 20);
+                $payload['enable_websocket'] = true;
+                break;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Call streaming service endpoint
+     */
+    private function callStreamingService($endpoint, $payload, $mode)
+    {
+        $url = $this->avatarServiceUrl . $endpoint;
+        $data = json_encode($payload, JSON_UNESCAPED_SLASHES);
+
+        $this->logger->debug('Calling streaming service', [
+            'url' => $url,
+            'mode' => $mode,
+            'payload_size' => strlen($data),
+            'parameters' => count($payload)
+        ]);
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($data)
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 0); // No timeout for streaming
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+
+        // Handle streaming response differently
+        if ($mode === 'realtime' || $mode === 'chunked') {
+            // For streaming, we might want to handle chunks
+            curl_setopt($ch, CURLOPT_WRITEFUNCTION, [$this, 'handleStreamChunk']);
+        }
+
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \Exception('Streaming service error: ' . $error);
+        }
+
+        if ($httpCode !== 200) {
+            $errorData = json_decode($result, true);
+            $errorMessage = $errorData['error'] ?? 'HTTP error: ' . $httpCode;
+            throw new \Exception($errorMessage);
+        }
+
         return [
-            'type' => 'unknown',
-            'url' => $this->avatarServiceUrl
+            'type' => 'stream',
+            'mode' => $mode,
+            'data' => $result,
+            'content_type' => $contentType,
+            'size' => strlen($result)
         ];
     }
 
     /**
-     * Get available peers for avatar generation
+     * Handle streaming chunks (placeholder for future enhancement)
      */
-    public function getAvailablePeers()
+    private function handleStreamChunk($ch, $chunk)
     {
-        try {
-            $peers = $this->peerManager->getPeers();
-            $availablePeers = [];
-
-            // Add local option
-            $availablePeers[] = [
-                'id' => 'local',
-                'name' => 'Local Avatar Service',
-                'type' => 'local',
-                'status' => 'online',
-                'gpu_available' => false,
-                'gpu_memory_gb' => 0,
-                'memory_gb' => 0,
-                'score' => 0
-            ];
-
-            // Add peer options
-            foreach ($peers as $peer) {
-                if ($peer['status'] === 'online' && !isset($peer['is_local'])) {
-                    $score = 0;
-                    if ($peer['gpu_available']) {
-                        $score += $peer['gpu_memory_gb'] * 10;
-                    }
-                    $score += $peer['memory_gb'];
-
-                    $availablePeers[] = [
-                        'id' => $peer['ip'],
-                        'name' => $peer['name'],
-                        'type' => 'peer',
-                        'ip' => $peer['ip'],
-                        'status' => $peer['status'],
-                        'gpu_available' => $peer['gpu_available'],
-                        'gpu_memory_gb' => $peer['gpu_memory_gb'],
-                        'memory_gb' => $peer['memory_gb'],
-                        'score' => $score
-                    ];
-                }
-            }
-
-            // Sort by score (highest first)
-            usort($availablePeers, function($a, $b) {
-                return $b['score'] - $a['score'];
-            });
-
-            return $availablePeers;
-
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to get available peers', [
-                'error' => $e->getMessage()
-            ]);
-
-            // Return local only as fallback
-            return [[
-                'id' => 'local',
-                'name' => 'Local Avatar Service',
-                'type' => 'local',
-                'status' => 'online',
-                'gpu_available' => false,
-                'gpu_memory_gb' => 0,
-                'memory_gb' => 0,
-                'score' => 0
-            ]];
-        }
+        // For now, just accumulate chunks
+        // In the future, this could handle real-time processing
+        return strlen($chunk);
     }
 
     /**
-     * Generate simple OpenCV avatar
+     * Original generate methods (unchanged)
      */
     public function generateSimple($prompt, $options = [])
     {
-        // Set peer if specified in options
         if (isset($options['peer'])) {
             $this->setPeer($options['peer']);
         }
@@ -281,7 +446,6 @@ class AvatarManager
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // Try fallback to local if we were using a peer
             if ($currentPeer['type'] === 'peer') {
                 $this->logger->info('Attempting fallback to local avatar service');
                 $this->setPeer('local');
@@ -301,12 +465,8 @@ class AvatarManager
         }
     }
 
-    /**
-     * Generate SadTalker realistic avatar
-     */
     public function generateSadTalker($prompt, $options = [])
     {
-        // Set peer if specified in options
         if (isset($options['peer'])) {
             $this->setPeer($options['peer']);
         }
@@ -336,7 +496,6 @@ class AvatarManager
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // Try fallback to local if we were using a peer
             if ($currentPeer['type'] === 'peer') {
                 $this->logger->info('Attempting fallback to local avatar service');
                 $this->setPeer('local');
@@ -357,7 +516,7 @@ class AvatarManager
     }
 
     /**
-     * Call avatar service with comprehensive parameter mapping
+     * Enhanced callAvatarService with complete parameter support
      */
     private function callAvatarService($prompt, $mode, $options = [])
     {
@@ -366,76 +525,40 @@ class AvatarManager
 
         $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
 
-        // Build comprehensive payload with proper parameter mapping
+        // Build comprehensive payload with ALL parameters
         $payload = [
             'prompt' => $prompt,
             'tts_engine' => $options['tts_engine'] ?? 'espeak'
         ];
 
-        // Map frontend TTS parameters to Python format
-        if (isset($options['tts_voice'])) {
-            $payload['tts_voice'] = $options['tts_voice']; // en-US-JennyNeural
-        }
-        if (isset($options['tts_speed'])) {
-            $payload['tts_speed'] = intval($options['tts_speed']); // 160
-        }
-        if (isset($options['tts_pitch'])) {
-            $payload['tts_pitch'] = intval($options['tts_pitch']); // 0, 50, etc
-        }
-        if (isset($options['tts_language'])) {
-            $payload['tts_language'] = $options['tts_language']; // en-US
-        }
-        if (isset($options['tts_emotion'])) {
-            $payload['tts_emotion'] = $options['tts_emotion']; // neutral, happy, etc
-        }
+        // Add all the parameter mappings from the previous enhanced version
+        $allParams = [
+            'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
+            'sample_rate', 'audio_format', 'image', 'still', 'preprocess', 'resolution',
+            'face_detection', 'face_confidence', 'auto_resize', 'fps', 'bitrate',
+            'keyframe_interval', 'hardware_accel', 'stream_mode', 'chunk_duration',
+            'buffer_size', 'low_latency', 'adaptive_quality', 'timeout', 'enhancer',
+            'split_chunks', 'chunk_length', 'overlap_duration', 'expression_scale',
+            'use_3d_warping', 'use_eye_blink', 'use_head_pose', 'max_duration',
+            'max_concurrent', 'memory_limit', 'enable_websocket', 'verbose_logging',
+            'save_intermediates', 'profile_performance', 'beta_features',
+            'ml_acceleration', 'worker_threads'
+        ];
 
-        // Image options
-        if (isset($options['image'])) {
-            $payload['image'] = $options['image']; // URL, path, or base64
-        }
-
-        // SadTalker specific options
-        if (isset($options['timeout'])) {
-            $payload['timeout'] = intval($options['timeout']);
-        }
-        if (isset($options['enhancer'])) {
-            $payload['enhancer'] = $options['enhancer']; // gfpgan, restoreformer
-        }
-        if (isset($options['split_chunks'])) {
-            $payload['split_chunks'] = (bool)$options['split_chunks'];
-        }
-        if (isset($options['chunk_length'])) {
-            $payload['chunk_length'] = intval($options['chunk_length']);
-        }
-        if (isset($options['fps'])) {
-            $payload['fps'] = intval($options['fps']);
-        }
-
-        // Advanced options
-        if (isset($options['still'])) {
-            $payload['still'] = (bool)$options['still'];
-        }
-        if (isset($options['preprocess'])) {
-            $payload['preprocess'] = $options['preprocess']; // crop, none, resize
-        }
-        if (isset($options['resolution'])) {
-            $payload['resolution'] = $options['resolution']; // 256, 512, etc
+        foreach ($allParams as $param) {
+            if (isset($options[$param])) {
+                $payload[$param] = $options[$param];
+            }
         }
 
         $data = json_encode($payload, JSON_UNESCAPED_SLASHES);
 
-        $this->logger->debug('Calling avatar service with comprehensive options', [
+        $this->logger->debug('Calling avatar service with complete parameters', [
             'url' => $url,
-            'payload_keys' => array_keys($payload),
-            'tts_engine' => $payload['tts_engine'],
-            'tts_voice' => $payload['tts_voice'] ?? 'not_set',
-            'tts_speed' => $payload['tts_speed'] ?? 'not_set',
-            'data_length' => strlen($data),
-            'mode' => $mode
+            'parameter_count' => count($payload),
+            'mode' => $mode,
+            'data_length' => strlen($data)
         ]);
-
-        // Log full payload for debugging
-        error_log("AVATAR MANAGER: Full payload being sent to Python: " . $data);
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, 1);
@@ -454,23 +577,13 @@ class AvatarManager
         $error = curl_error($ch);
         curl_close($ch);
 
-        $this->logger->debug('Avatar service response', [
-            'http_code' => $httpCode,
-            'content_type' => $contentType,
-            'response_size' => strlen($result),
-            'curl_error' => $error
-        ]);
-
         if ($error) {
             throw new \Exception('Curl error: ' . $error);
         }
 
         if ($httpCode !== 200) {
-            // Try to parse error response
             $errorData = json_decode($result, true);
             $errorMessage = $errorData['error'] ?? 'HTTP error: ' . $httpCode;
-
-            error_log("AVATAR MANAGER: HTTP $httpCode error response: " . $result);
             throw new \Exception($errorMessage);
         }
 
@@ -485,9 +598,124 @@ class AvatarManager
         ];
     }
 
-    /**
-     * Get avatar service status
-     */
+    // ... (keep all the existing utility methods: setPeer, getCurrentPeer, getAvailablePeers,
+    //      getStatus, getLogs, testConnection, getPhpErrors, clearPhpErrors)
+
+    public function setPeer($peerIp = null)
+    {
+        if ($peerIp === null) {
+            $this->avatarServiceUrl = $this->selectBestPeer();
+        } else if ($peerIp === 'local') {
+            $this->avatarServiceUrl = $this->localAvatarUrl;
+        } else {
+            $this->avatarServiceUrl = "http://{$peerIp}:7860"; // Updated port
+        }
+
+        $this->logger->info('Avatar service URL updated', [
+            'new_url' => $this->avatarServiceUrl,
+            'peer_ip' => $peerIp
+        ]);
+
+        return $this->avatarServiceUrl;
+    }
+
+    public function getCurrentPeer()
+    {
+        if ($this->avatarServiceUrl === $this->localAvatarUrl) {
+            return [
+                'type' => 'local',
+                'url' => $this->avatarServiceUrl,
+                'name' => 'Local Avatar Service'
+            ];
+        }
+
+        if (preg_match('/http:\/\/([^:]+):7860/', $this->avatarServiceUrl, $matches)) {
+            $peerIp = $matches[1];
+            $peers = $this->peerManager->getPeers();
+
+            foreach ($peers as $peer) {
+                if ($peer['ip'] === $peerIp) {
+                    return [
+                        'type' => 'peer',
+                        'url' => $this->avatarServiceUrl,
+                        'name' => $peer['name'],
+                        'ip' => $peer['ip'],
+                        'gpu_memory' => $peer['gpu_memory_gb'],
+                        'memory' => $peer['memory_gb']
+                    ];
+                }
+            }
+        }
+
+        return [
+            'type' => 'unknown',
+            'url' => $this->avatarServiceUrl
+        ];
+    }
+
+    public function getAvailablePeers()
+    {
+        try {
+            $peers = $this->peerManager->getPeers();
+            $availablePeers = [];
+
+            $availablePeers[] = [
+                'id' => 'local',
+                'name' => 'Local Avatar Service',
+                'type' => 'local',
+                'status' => 'online',
+                'gpu_available' => false,
+                'gpu_memory_gb' => 0,
+                'memory_gb' => 0,
+                'score' => 0
+            ];
+
+            foreach ($peers as $peer) {
+                if ($peer['status'] === 'online' && !isset($peer['is_local'])) {
+                    $score = 0;
+                    if ($peer['gpu_available']) {
+                        $score += $peer['gpu_memory_gb'] * 10;
+                    }
+                    $score += $peer['memory_gb'];
+
+                    $availablePeers[] = [
+                        'id' => $peer['ip'],
+                        'name' => $peer['name'],
+                        'type' => 'peer',
+                        'ip' => $peer['ip'],
+                        'status' => $peer['status'],
+                        'gpu_available' => $peer['gpu_available'],
+                        'gpu_memory_gb' => $peer['gpu_memory_gb'],
+                        'memory_gb' => $peer['memory_gb'],
+                        'score' => $score
+                    ];
+                }
+            }
+
+            usort($availablePeers, function($a, $b) {
+                return $b['score'] - $a['score'];
+            });
+
+            return $availablePeers;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get available peers', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [[
+                'id' => 'local',
+                'name' => 'Local Avatar Service',
+                'type' => 'local',
+                'status' => 'online',
+                'gpu_available' => false,
+                'gpu_memory_gb' => 0,
+                'memory_gb' => 0,
+                'score' => 0
+            ]];
+        }
+    }
+
     public function getStatus()
     {
         $this->logger->info('Getting avatar service status');
@@ -532,9 +760,6 @@ class AvatarManager
         }
     }
 
-    /**
-     * Get avatar service logs
-     */
     public function getLogs()
     {
         $this->logger->info('Getting avatar service logs');
@@ -581,9 +806,6 @@ class AvatarManager
         }
     }
 
-    /**
-     * Test connection to avatar service
-     */
     public function testConnection()
     {
         $this->logger->info('Testing avatar service connection');
@@ -629,16 +851,13 @@ class AvatarManager
         }
     }
 
-    /**
-     * Get PHP error logs
-     */
     public function getPhpErrors()
     {
         try {
             $errorLog = '/tmp/avatar_php_errors.log';
             if (file_exists($errorLog)) {
                 $errors = file($errorLog, FILE_IGNORE_NEW_LINES);
-                return array_slice($errors, -50); // Last 50 errors
+                return array_slice($errors, -50);
             }
             return [];
         } catch (\Exception $e) {
@@ -646,9 +865,6 @@ class AvatarManager
         }
     }
 
-    /**
-     * Clear PHP error logs
-     */
     public function clearPhpErrors()
     {
         try {
@@ -660,6 +876,70 @@ class AvatarManager
             return false;
         } catch (\Exception $e) {
             return false;
+        }
+    }
+
+    /**
+     * Backward compatibility method - routes to new generateAvatar method
+     */
+    public function generateWithTTS($prompt, $mode = 'simple', $ttsEngine = 'espeak', $ttsOptions = [], $options = [])
+    {
+        if (!is_array($ttsOptions)) {
+            $ttsOptions = [];
+        }
+
+        // Merge TTS options into main options for new method
+        $options['mode'] = $mode;
+        $options['tts_engine'] = $ttsEngine ?: 'espeak';
+
+        // Map old TTS options format
+        if (isset($ttsOptions['voice'])) {
+            $options['tts_voice'] = $ttsOptions['voice'];
+        }
+        if (isset($ttsOptions['speed'])) {
+            $options['tts_speed'] = $ttsOptions['speed'];
+        }
+        if (isset($ttsOptions['pitch'])) {
+            $options['tts_pitch'] = $ttsOptions['pitch'];
+        }
+        if (isset($ttsOptions['language'])) {
+            $options['tts_language'] = $ttsOptions['language'];
+        }
+
+        return $this->generateAvatar($prompt, $options);
+    }
+
+    /**
+     * Get streaming capabilities and status
+     */
+    public function getStreamingInfo()
+    {
+        try {
+            $streamingStatus = $this->checkStreamingAvailability();
+
+            return [
+                'streaming_available' => $streamingStatus['available'],
+                'supported_modes' => $streamingStatus['modes'],
+                'websocket_enabled' => $streamingStatus['websocket'],
+                'endpoints' => [
+                    'realtime' => $this->avatarServiceUrl . '/stream (realtime mode)',
+                    'chunked' => $this->avatarServiceUrl . '/stream (chunked mode)',
+                    'websocket' => str_replace('http://', 'ws://', $this->avatarServiceUrl) . '/stream/ws'
+                ],
+                'detection_params' => [
+                    'stream_mode' => 'chunked|realtime|websocket',
+                    'chunk_duration' => 'float (seconds)',
+                    'buffer_size' => 'int (frames)',
+                    'low_latency' => 'boolean',
+                    'enable_websocket' => 'boolean',
+                    'adaptive_quality' => 'boolean'
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'streaming_available' => false,
+                'error' => $e->getMessage()
+            ];
         }
     }
 }
