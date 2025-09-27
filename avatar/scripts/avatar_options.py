@@ -276,3 +276,65 @@ def get_streaming_preset(preset_name: str) -> dict:
     """
     Get a streaming preset configuration
     """
+    if preset_name in STREAMING_PRESETS:
+        return STREAMING_PRESETS[preset_name].copy()
+
+    return STREAMING_PRESETS["balanced"].copy()  # Default
+
+
+def apply_streaming_preset(options: dict, preset_name: str) -> dict:
+    """
+    Apply a streaming preset to existing options
+    """
+    preset = get_streaming_preset(preset_name)
+    updated_options = options.copy()
+    updated_options.update(preset)
+    return updated_options
+
+
+def optimize_for_mobile(options: dict) -> dict:
+    """
+    Optimize streaming options for mobile clients
+    """
+    mobile_optimized = options.copy()
+
+    # Lower settings for mobile
+    mobile_optimized.update({
+        "codec": "h264_fast",
+        "quality": "fast",
+        "frame_rate": 20,
+        "chunk_duration": 2.5,
+        "buffer_size": 3,
+        "low_latency": True
+    })
+
+    return mobile_optimized
+
+
+def get_endpoint_info(endpoint: str) -> dict:
+    """
+    Get information about an endpoint's options
+    """
+    if endpoint not in ALLOWED_OPTIONS:
+        return {"error": f"Unknown endpoint: {endpoint}"}
+
+    options = ALLOWED_OPTIONS[endpoint]
+    info = {
+        "endpoint": endpoint,
+        "total_options": len(options),
+        "options": {}
+    }
+
+    for key, default in options.items():
+        option_info = {
+            "default": default,
+            "type": type(default).__name__
+        }
+
+        # Add validation info if available
+        if key in VALIDATION_RULES:
+            option_info["allowed_values"] = VALIDATION_RULES[key]
+
+        info["options"][key] = option_info
+
+    return info
