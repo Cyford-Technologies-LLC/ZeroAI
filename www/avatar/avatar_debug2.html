@@ -1034,18 +1034,22 @@
 
         function appendToLog(containerId, message) {
             const container = document.getElementById(containerId);
-            container.innerHTML += message + '\n';
-            container.scrollTop = container.scrollHeight;
+            if (container) {
+                container.innerHTML += message + '\n';
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
         function showNotification(message, type = 'info', duration = 3000) {
             const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type} show`;
+            if (notification) {
+                notification.textContent = message;
+                notification.className = `notification ${type} show`;
 
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, duration);
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, duration);
+            }
         }
 
         function updateProgress(percent, text = '') {
@@ -1058,6 +1062,7 @@
 
         // Tab Management
         function switchTab(tabName) {
+            // Remove active class from all tabs and content
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -1065,15 +1070,27 @@
                 tab.classList.remove('active');
             });
 
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
+            // Add active class to selected tab and content
+            const tabContent = document.getElementById(tabName + '-tab');
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
+
+            // Find and activate the clicked tab
+            const clickedTab = event.target;
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
 
             debugLog('Switched to tab', { tab: tabName });
         }
 
         // Range Display Updates
         function updateRangeDisplay(type, value) {
-            document.getElementById(type + 'Display').textContent = value;
+            const display = document.getElementById(type + 'Display');
+            if (display) {
+                display.textContent = value;
+            }
         }
 
         // TTS Engine Management
@@ -1083,7 +1100,7 @@
             const speedRange = document.getElementById('ttsSpeed');
             const pitchRange = document.getElementById('ttsPitch');
 
-            if (TTS_ENGINES[engine]) {
+            if (TTS_ENGINES[engine] && voiceSelect && speedRange && pitchRange) {
                 const config = TTS_ENGINES[engine];
 
                 voiceSelect.innerHTML = config.voices
@@ -1109,7 +1126,8 @@
             const file = event.target.files[0];
             if (!file) {
                 currentImageData = null;
-                document.getElementById('imagePreview').innerHTML = '';
+                const preview = document.getElementById('imagePreview');
+                if (preview) preview.innerHTML = '';
                 return;
             }
 
@@ -1128,7 +1146,9 @@
             }
 
             const preview = document.getElementById('imagePreview');
-            preview.innerHTML = '<div class="loading">Processing image...</div>';
+            if (preview) {
+                preview.innerHTML = '<div class="loading">Processing image...</div>';
+            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -1137,7 +1157,7 @@
                 if (!imageData.startsWith('data:image/')) {
                     showNotification('Invalid image file', 'error');
                     event.target.value = '';
-                    preview.innerHTML = '';
+                    if (preview) preview.innerHTML = '';
                     return;
                 }
 
@@ -1149,15 +1169,15 @@
                     if (img.width < minWidth || img.height < minHeight) {
                         showNotification(`Image too small. Minimum size is ${minWidth}x${minHeight}px. Your image is ${img.width}x${img.height}px.`, 'error');
                         event.target.value = '';
-                        preview.innerHTML = '';
+                        if (preview) preview.innerHTML = '';
                         return;
                     }
 
                     if (img.width > maxWidth || img.height > maxHeight) {
-                        const autoResize = document.getElementById('autoResize').checked;
-                        if (!autoResize && !confirm(`Image is large (${img.width}x${img.height}px). Maximum recommended size is ${maxWidth}x${maxHeight}px. Continue anyway?`)) {
+                        const autoResize = document.getElementById('autoResize');
+                        if (!autoResize || (!autoResize.checked && !confirm(`Image is large (${img.width}x${img.height}px). Maximum recommended size is ${maxWidth}x${maxHeight}px. Continue anyway?`))) {
                             event.target.value = '';
-                            preview.innerHTML = '';
+                            if (preview) preview.innerHTML = '';
                             return;
                         }
                     }
@@ -1183,7 +1203,7 @@
                 img.onerror = function() {
                     showNotification('Failed to load image. Please try a different file.', 'error');
                     event.target.value = '';
-                    preview.innerHTML = '';
+                    if (preview) preview.innerHTML = '';
                 };
 
                 img.src = imageData;
@@ -1192,7 +1212,8 @@
             reader.onerror = function() {
                 showNotification('Failed to read file. Please try again.', 'error');
                 event.target.value = '';
-                preview.innerHTML = '';
+                const preview = document.getElementById('imagePreview');
+                if (preview) preview.innerHTML = '';
             };
 
             reader.readAsDataURL(file);
@@ -1200,7 +1221,7 @@
 
         function previewImageUrl() {
             const urlInput = document.getElementById('imageUrlInput');
-            const url = urlInput.value.trim();
+            const url = urlInput ? urlInput.value.trim() : '';
 
             if (!url) {
                 showNotification('Please enter an image URL', 'error');
@@ -1226,7 +1247,9 @@
             }
 
             const preview = document.getElementById('imagePreview');
-            preview.innerHTML = '<div class="loading">Loading image from URL...</div>';
+            if (preview) {
+                preview.innerHTML = '<div class="loading">Loading image from URL...</div>';
+            }
 
             const img = new Image();
             img.onload = function() {
@@ -1247,7 +1270,7 @@
 
             img.onerror = function() {
                 showNotification('Failed to load image from URL. Please check the URL and try again.', 'error');
-                preview.innerHTML = '';
+                if (preview) preview.innerHTML = '';
                 currentImageData = null;
             };
 
@@ -1257,6 +1280,7 @@
 
         function displayImagePreview(src, metadata = {}) {
             const preview = document.getElementById('imagePreview');
+            if (!preview) return;
 
             let metaInfo = '';
             if (metadata.width && metadata.height) {
@@ -1286,11 +1310,16 @@
 
         function clearImagePreview() {
             currentImageData = null;
-            document.getElementById('imagePreview').innerHTML = '';
-            document.getElementById('imageFile').value = '';
-            document.getElementById('imageUrlInput').value = '';
+            const preview = document.getElementById('imagePreview');
+            const imageFile = document.getElementById('imageFile');
+            const imageUrlInput = document.getElementById('imageUrlInput');
+            const imageDefault = document.getElementById('imageDefault');
 
-            document.getElementById('imageDefault').checked = true;
+            if (preview) preview.innerHTML = '';
+            if (imageFile) imageFile.value = '';
+            if (imageUrlInput) imageUrlInput.value = '';
+            if (imageDefault) imageDefault.checked = true;
+
             toggleImageSource();
 
             showNotification('Image selection cleared', 'info');
@@ -1301,33 +1330,48 @@
             const uploadSection = document.getElementById('uploadSection');
             const urlSection = document.getElementById('urlSection');
             const previewSection = document.getElementById('imagePreview');
-            const source = document.querySelector('input[name="imageSource"]:checked').value;
+            const sourceRadios = document.querySelectorAll('input[name="imageSource"]');
 
-            uploadSection.style.display = 'none';
-            urlSection.style.display = 'none';
-
-            if (source !== 'upload') {
-                document.getElementById('imageFile').value = '';
+            let source = 'default';
+            for (let radio of sourceRadios) {
+                if (radio.checked) {
+                    source = radio.value;
+                    break;
+                }
             }
-            if (source !== 'url') {
-                document.getElementById('imageUrlInput').value = '';
+
+            if (uploadSection) uploadSection.style.display = 'none';
+            if (urlSection) urlSection.style.display = 'none';
+
+            const imageFile = document.getElementById('imageFile');
+            const imageUrlInput = document.getElementById('imageUrlInput');
+
+            if (source !== 'upload' && imageFile) {
+                imageFile.value = '';
+            }
+            if (source !== 'url' && imageUrlInput) {
+                imageUrlInput.value = '';
             }
 
             switch (source) {
                 case 'upload':
-                    uploadSection.style.display = 'block';
+                    if (uploadSection) uploadSection.style.display = 'block';
                     break;
                 case 'url':
-                    urlSection.style.display = 'block';
+                    if (urlSection) urlSection.style.display = 'block';
                     break;
                 case 'default':
                     currentImageData = null;
-                    previewSection.innerHTML = '<div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>';
+                    if (previewSection) {
+                        previewSection.innerHTML = '<div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>';
+                    }
                     break;
             }
 
             if (source === 'default') {
-                previewSection.innerHTML = '<div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>';
+                if (previewSection) {
+                    previewSection.innerHTML = '<div style="color: #4CAF50; font-size: 12px;">Using default avatar face</div>';
+                }
             } else if (currentImageData && source !== getCurrentImageSource()) {
                 clearImagePreview();
             }
@@ -1341,7 +1385,14 @@
         }
 
         function validateImageForGeneration() {
-            const source = document.querySelector('input[name="imageSource"]:checked').value;
+            const sourceRadios = document.querySelectorAll('input[name="imageSource"]');
+            let source = 'default';
+            for (let radio of sourceRadios) {
+                if (radio.checked) {
+                    source = radio.value;
+                    break;
+                }
+            }
 
             if (source === 'default') {
                 return { valid: true, data: null };
@@ -1354,7 +1405,15 @@
                 };
             }
 
-            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const modeRadios = document.querySelectorAll('input[name="mode"]');
+            let mode = 'simple';
+            for (let radio of modeRadios) {
+                if (radio.checked) {
+                    mode = radio.value;
+                    break;
+                }
+            }
+
             if (mode === 'sadtalker' && source === 'default') {
                 return {
                     valid: false,
@@ -1365,16 +1424,19 @@
             return { valid: true, data: currentImageData };
         }
 
-                        // Mode change handler
-        document.querySelectorAll('input[name="mode"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                currentMode = this.value;
-                debugLog('Mode changed', { mode: currentMode });
+        // Mode change handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const modeRadios = document.querySelectorAll('input[name="mode"]');
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    currentMode = this.value;
+                    debugLog('Mode changed', { mode: currentMode });
 
-                // Update UI based on mode
-                if (currentMode === 'sadtalker') {
-                    showNotification('SadTalker mode requires a custom image for best results', 'info');
-                }
+                    // Update UI based on mode
+                    if (currentMode === 'sadtalker') {
+                        showNotification('SadTalker mode requires a custom image for best results', 'info');
+                    }
+                });
             });
         });
 
@@ -1406,6 +1468,7 @@
 
         function displayAvailablePeers(peers) {
             const container = document.getElementById('availablePeers');
+            if (!container) return;
 
             if (!peers || peers.length === 0) {
                 container.innerHTML = '<div class="peer-option">No peers available</div>';
@@ -1443,10 +1506,16 @@
             debugLog('Peer selected', { peerId });
 
             // Update UI
-            document.querySelectorAll('.peer-option').forEach(option => {
+            const peerOptions = document.querySelectorAll('.peer-option');
+            peerOptions.forEach(option => {
                 option.classList.remove('selected');
             });
-            event.target.closest('.peer-option').classList.add('selected');
+
+            // Find the clicked element and mark it as selected
+            const clickedOption = event.target.closest('.peer-option');
+            if (clickedOption) {
+                clickedOption.classList.add('selected');
+            }
 
             showNotification(`Selected peer: ${peerId}`, 'success');
         }
@@ -1467,75 +1536,93 @@
             // Validate image selection
             const imageValidation = validateImageForGeneration();
             if (!imageValidation.valid) {
-                error.textContent = imageValidation.error;
-                error.style.display = 'block';
+                if (error) {
+                    error.textContent = imageValidation.error;
+                    error.style.display = 'block';
+                }
                 return;
             }
+
+            // Get form values safely
+            const getElementValue = (id, defaultValue = '') => {
+                const element = document.getElementById(id);
+                return element ? element.value : defaultValue;
+            };
+
+            const getElementChecked = (id, defaultValue = false) => {
+                const element = document.getElementById(id);
+                return element ? element.checked : defaultValue;
+            };
+
+            const getRadioValue = (name, defaultValue = '') => {
+                const radio = document.querySelector(`input[name="${name}"]:checked`);
+                return radio ? radio.value : defaultValue;
+            };
 
             // Collect ALL options from the form
             const payload = {
                 // Core settings
-                prompt: document.getElementById('prompt').value,
-                mode: currentMode,
-                stream_mode: document.getElementById('streamMode').value,
+                prompt: getElementValue('prompt'),
+                mode: getRadioValue('mode', 'simple'),
+                stream_mode: getElementValue('streamMode'),
 
                 // TTS options
-                tts_engine: document.getElementById('ttsEngine').value,
-                tts_voice: document.getElementById('ttsVoice').value,
-                tts_speed: parseInt(document.getElementById('ttsSpeed').value),
-                tts_pitch: parseInt(document.getElementById('ttsPitch').value),
-                tts_language: document.getElementById('ttsLanguage').value,
-                tts_emotion: document.getElementById('ttsEmotion').value,
+                tts_engine: getElementValue('ttsEngine'),
+                tts_voice: getElementValue('ttsVoice'),
+                tts_speed: parseInt(getElementValue('ttsSpeed', '160')),
+                tts_pitch: parseInt(getElementValue('ttsPitch', '0')),
+                tts_language: getElementValue('ttsLanguage'),
+                tts_emotion: getElementValue('ttsEmotion'),
 
                 // Audio format
-                sample_rate: parseInt(document.getElementById('sampleRate').value),
-                format: document.getElementById('audioFormat').value,
+                sample_rate: parseInt(getElementValue('sampleRate', '22050')),
+                format: getElementValue('audioFormat'),
 
                 // Image options
                 image: imageValidation.data,
-                still: document.getElementById('still').checked,
-                preprocess: document.getElementById('preprocess').value,
-                resolution: document.getElementById('resolution').value,
-                face_detection: document.getElementById('faceDetection').checked,
-                face_confidence: parseFloat(document.getElementById('faceConfidence').value),
-                auto_resize: document.getElementById('autoResize').checked,
+                still: getElementChecked('still'),
+                preprocess: getElementValue('preprocess'),
+                resolution: getElementValue('resolution'),
+                face_detection: getElementChecked('faceDetection'),
+                face_confidence: parseFloat(getElementValue('faceConfidence', '0.5')),
+                auto_resize: getElementChecked('autoResize'),
 
                 // Video options
-                codec: document.getElementById('codec').value,
-                quality: document.getElementById('quality').value,
-                fps: parseInt(document.getElementById('fps').value),
-                bitrate: parseInt(document.getElementById('bitrate').value),
-                keyframe_interval: parseInt(document.getElementById('keyframeInterval').value),
-                hardware_accel: document.getElementById('hardwareAccel').checked,
+                codec: getElementValue('codec'),
+                quality: getElementValue('quality'),
+                fps: parseInt(getElementValue('fps', '25')),
+                bitrate: parseInt(getElementValue('bitrate', '2000')),
+                keyframe_interval: parseInt(getElementValue('keyframeInterval', '2')),
+                hardware_accel: getElementChecked('hardwareAccel'),
 
                 // Streaming options
-                chunk_duration: parseFloat(document.getElementById('chunkDuration').value),
-                buffer_size: parseInt(document.getElementById('bufferSize').value),
-                low_latency: document.getElementById('lowLatency').checked,
-                adaptive_quality: document.getElementById('adaptiveQuality').checked,
+                chunk_duration: parseFloat(getElementValue('chunkDuration', '3')),
+                buffer_size: parseInt(getElementValue('bufferSize', '5')),
+                low_latency: getElementChecked('lowLatency'),
+                adaptive_quality: getElementChecked('adaptiveQuality'),
 
                 // SadTalker options
-                timeout: parseInt(document.getElementById('timeout').value),
-                enhancer: document.getElementById('enhancer').value || null,
-                split_chunks: document.getElementById('splitChunks').checked,
-                chunk_length: parseInt(document.getElementById('chunkLength').value),
-                overlap_duration: parseFloat(document.getElementById('overlapDuration').value),
-                expression_scale: parseFloat(document.getElementById('expressionScale').value),
-                use_3d_warping: document.getElementById('use3dWarping').checked,
-                use_eye_blink: document.getElementById('useEyeBlink').checked,
-                use_head_pose: document.getElementById('useHeadPose').checked,
+                timeout: parseInt(getElementValue('timeout', '1200')),
+                enhancer: getElementValue('enhancer') || null,
+                split_chunks: getElementChecked('splitChunks'),
+                chunk_length: parseInt(getElementValue('chunkLength', '10')),
+                overlap_duration: parseFloat(getElementValue('overlapDuration', '1')),
+                expression_scale: parseFloat(getElementValue('expressionScale', '1.0')),
+                use_3d_warping: getElementChecked('use3dWarping'),
+                use_eye_blink: getElementChecked('useEyeBlink'),
+                use_head_pose: getElementChecked('useHeadPose'),
 
                 // Advanced options
-                max_duration: parseInt(document.getElementById('maxDuration').value),
-                max_concurrent: parseInt(document.getElementById('maxConcurrent').value),
-                memory_limit: parseInt(document.getElementById('memoryLimit').value),
-                enable_websocket: document.getElementById('enableWebsocket').checked,
-                verbose_logging: document.getElementById('verboseLogging').checked,
-                save_intermediates: document.getElementById('saveIntermediates').checked,
-                profile_performance: document.getElementById('profilePerformance').checked,
-                beta_features: document.getElementById('betaFeatures').checked,
-                ml_acceleration: document.getElementById('mlAcceleration').checked,
-                worker_threads: parseInt(document.getElementById('workerThreads').value),
+                max_duration: parseInt(getElementValue('maxDuration', '300')),
+                max_concurrent: parseInt(getElementValue('maxConcurrent', '3')),
+                memory_limit: parseInt(getElementValue('memoryLimit', '8')),
+                enable_websocket: getElementChecked('enableWebsocket'),
+                verbose_logging: getElementChecked('verboseLogging'),
+                save_intermediates: getElementChecked('saveIntermediates'),
+                profile_performance: getElementChecked('profilePerformance'),
+                beta_features: getElementChecked('betaFeatures'),
+                ml_acceleration: getElementChecked('mlAcceleration'),
+                worker_threads: parseInt(getElementValue('workerThreads', '4')),
 
                 // Peer selection
                 peer: selectedPeer
@@ -1544,16 +1631,18 @@
             debugLog('Starting avatar generation with complete options', payload);
             generationInProgress = true;
 
-            loading.style.display = 'block';
-            loading.classList.add('show');
-            result.style.display = 'none';
-            error.style.display = 'none';
+            if (loading) {
+                loading.style.display = 'block';
+                loading.classList.add('show');
+            }
+            if (result) result.style.display = 'none';
+            if (error) error.style.display = 'none';
 
             try {
                 updateProgress(10, 'Initializing generation...');
                 const startTime = Date.now();
 
-                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
+                const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${payload.mode}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1570,218 +1659,254 @@
                     duration: duration + 'ms'
                 });
 
-if (response.ok) {
-    const contentType = response.headers.get('content-type');
-    updateProgress(80, 'Processing response...');
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    updateProgress(80, 'Processing response...');
 
-    // Handle streaming responses
-    if (contentType && contentType.includes('multipart/x-mixed-replace')) {
-        debugLog('Streaming response detected', { contentType });
-        updateProgress(90, 'Processing stream...');
+                    // Handle streaming responses
+                    if (contentType && contentType.includes('multipart/x-mixed-replace')) {
+                        debugLog('Streaming response detected', { contentType });
+                        updateProgress(90, 'Processing stream...');
 
-        try {
-            await handleStreamingResponse(response, video, videoInfo, payload, duration);
-            result.style.display = 'block';
-            updateProgress(100, 'Streaming complete!');
-            showNotification('Avatar streaming completed successfully!', 'success');
-        } catch (streamError) {
-            debugLog('Streaming processing failed', { error: streamError.message });
-            throw new Error('Streaming processing failed: ' + streamError.message);
-        }
-
-    // Handle regular video responses
-    } else if (contentType && contentType.includes('video')) {
-        debugLog('Regular video response detected', { contentType });
-        updateProgress(90, 'Finalizing video...');
-
-        const blob = await response.blob();
-        const videoUrl = URL.createObjectURL(blob);
-
-        video.src = videoUrl;
-        result.style.display = 'block';
-
-        videoInfo.innerHTML = `
-            <strong>Generation Complete!</strong><br>
-            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
-            Engine: ${response.headers.get('x-avatar-engine') || payload.tts_engine}<br>
-            Voice: ${response.headers.get('x-avatar-voice') || payload.tts_voice}<br>
-            Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB<br>
-            Type: ${contentType}<br>
-            Generation Time: ${(duration / 1000).toFixed(1)}s<br>
-            Parameters: ${Object.keys(payload).length} options used
-        `;
-
-        updateProgress(100, 'Complete!');
-
-        video.onloadeddata = () => {
-            debugLog('Video loaded successfully', {
-                duration: video.duration,
-                videoWidth: video.videoWidth,
-                videoHeight: video.videoHeight
-            });
-            showNotification('Avatar generated successfully!', 'success');
-        };
-
-        video.onerror = (e) => {
-            debugLog('Video error', { error: video.error });
-            showNotification('Video playback error', 'error');
-        };
-
-    // Handle JSON responses (like WebSocket info)
-    } else if (contentType && contentType.includes('json')) {
-        debugLog('JSON response detected', { contentType });
-        const jsonData = await response.json();
-
-        if (jsonData.type === 'websocket_info') {
-            debugLog('WebSocket info received', jsonData);
-            showNotification('WebSocket streaming info received - check console', 'info');
-            error.innerHTML = `<strong>WebSocket Streaming:</strong><br>
-                Connect to: ${jsonData.websocket_url}<br>
-                <small>WebSocket streaming requires additional frontend implementation</small>`;
-            error.style.display = 'block';
-        } else {
-            debugLog('Unknown JSON response', jsonData);
-            throw new Error('Unexpected JSON response: ' + JSON.stringify(jsonData));
-        }
-
-    // Handle unexpected responses
-    } else {
-        const text = await response.text();
-        debugLog('Unexpected response received', {
-            contentType,
-            response: text.substring(0, 500)
-        });
-        throw new Error('Unexpected response type: ' + contentType);
-    }
-
-} else {
-    const errorText = await response.text();
-    debugLog('Avatar generation failed', { status: response.status, error: errorText });
-    throw new Error(`HTTP ${response.status}: ${errorText}`);
-}
-
-// Streaming response handler function
-async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let chunks = [];
-    let currentChunk = null;
-
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            // Process complete frames
-            const frames = buffer.split('--frame\r\n');
-            buffer = frames.pop(); // Keep incomplete frame in buffer
-
-            for (const frame of frames) {
-                if (!frame.trim()) continue;
-
-                try {
-                    // Parse frame headers and content
-                    const parts = frame.split('\r\n\r\n');
-                    if (parts.length < 2) continue;
-
-                    const headers = parts[0];
-                    const content = parts.slice(1).join('\r\n\r\n');
-
-                    if (headers.includes('application/json')) {
-                        // Parse chunk metadata
-                        const chunkData = JSON.parse(content);
-                        currentChunk = chunkData;
-                        chunks.push(chunkData);
-
-                        debugLog('Chunk metadata received', chunkData);
-                        updateProgress(
-                            70 + (chunkData.chunk_id / (chunkData.total_chunks || 1)) * 20,
-                            `Processing chunk ${chunkData.chunk_id + 1}/${chunkData.total_chunks || 1}: "${chunkData.sentence}"`
-                        );
-
-                    } else if (headers.includes('image/jpeg') && currentChunk) {
-                        // Handle chunk image/video data
-                        debugLog('Chunk video data received', {
-                            chunkId: currentChunk.chunk_id,
-                            dataSize: content.length
-                        });
-
-                        // For now, convert last chunk to video URL
-                        // In a full implementation, you'd combine all chunks
-                        if (currentChunk.chunk_id === (currentChunk.total_chunks - 1)) {
-                            // Create blob from the streaming data
-                            const uint8Array = new Uint8Array(content.length);
-                            for (let i = 0; i < content.length; i++) {
-                                uint8Array[i] = content.charCodeAt(i);
-                            }
-                            const blob = new Blob([uint8Array], { type: 'video/mp4' });
-                            const videoUrl = URL.createObjectURL(blob);
-                            video.src = videoUrl;
+                        try {
+                            await handleStreamingResponse(response, video, videoInfo, payload, duration);
+                            if (result) result.style.display = 'block';
+                            updateProgress(100, 'Streaming complete!');
+                            showNotification('Avatar streaming completed successfully!', 'success');
+                        } catch (streamError) {
+                            debugLog('Streaming processing failed', { error: streamError.message });
+                            throw new Error('Streaming processing failed: ' + streamError.message);
                         }
+
+                    // Handle regular video responses
+                    } else if (contentType && contentType.includes('video')) {
+                        debugLog('Regular video response detected', { contentType });
+                        updateProgress(90, 'Finalizing video...');
+
+                        const blob = await response.blob();
+                        const videoUrl = URL.createObjectURL(blob);
+
+                        if (video) video.src = videoUrl;
+                        if (result) result.style.display = 'block';
+
+                        if (videoInfo) {
+                            videoInfo.innerHTML = `
+                                <strong>Generation Complete!</strong><br>
+                                Mode: ${response.headers.get('x-avatar-mode') || payload.mode}<br>
+                                Engine: ${response.headers.get('x-avatar-engine') || payload.tts_engine}<br>
+                                Voice: ${response.headers.get('x-avatar-voice') || payload.tts_voice}<br>
+                                Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB<br>
+                                Type: ${contentType}<br>
+                                Generation Time: ${(duration / 1000).toFixed(1)}s<br>
+                                Parameters: ${Object.keys(payload).length} options used
+                            `;
+                        }
+
+                        updateProgress(100, 'Complete!');
+
+                        if (video) {
+                            video.onloadeddata = () => {
+                                debugLog('Video loaded successfully', {
+                                    duration: video.duration,
+                                    videoWidth: video.videoWidth,
+                                    videoHeight: video.videoHeight
+                                });
+                                showNotification('Avatar generated successfully!', 'success');
+                            };
+
+                            video.onerror = (e) => {
+                                debugLog('Video error', { error: video.error });
+                                showNotification('Video playback error', 'error');
+                            };
+                        }
+
+                    // Handle JSON responses (like WebSocket info)
+                    } else if (contentType && contentType.includes('json')) {
+                        debugLog('JSON response detected', { contentType });
+                        const jsonData = await response.json();
+
+                        if (jsonData.type === 'websocket_info') {
+                            debugLog('WebSocket info received', jsonData);
+                            showNotification('WebSocket streaming info received - check console', 'info');
+                            if (error) {
+                                error.innerHTML = `<strong>WebSocket Streaming:</strong><br>
+                                    Connect to: ${jsonData.websocket_url}<br>
+                                    <small>WebSocket streaming requires additional frontend implementation</small>`;
+                                error.style.display = 'block';
+                            }
+                        } else {
+                            debugLog('Unknown JSON response', jsonData);
+                            throw new Error('Unexpected JSON response: ' + JSON.stringify(jsonData));
+                        }
+
+                    // Handle unexpected responses
+                    } else {
+                        const text = await response.text();
+                        debugLog('Unexpected response received', {
+                            contentType,
+                            response: text.substring(0, 500)
+                        });
+                        throw new Error('Unexpected response type: ' + contentType);
                     }
-                } catch (parseError) {
-                    debugLog('Frame parsing error', { error: parseError.message });
+
+                } else {
+                    const errorText = await response.text();
+                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+            } catch (err) {
+                debugLog('Avatar generation error', { error: err.message });
+                if (error) {
+                    error.textContent = 'Generation Error: ' + err.message;
+                    error.style.display = 'block';
+                }
+                showNotification('Avatar generation failed: ' + err.message, 'error');
+            } finally {
+                generationInProgress = false;
+                if (loading) {
+                    loading.style.display = 'none';
+                    loading.classList.remove('show');
                 }
             }
         }
 
-        // Update video info for streaming
-        videoInfo.innerHTML = `
-            <strong>Streaming Complete!</strong><br>
-            Mode: Streaming (${payload.stream_mode})<br>
-            Engine: ${payload.tts_engine}<br>
-            Voice: ${payload.tts_voice}<br>
-            Chunks: ${chunks.length}<br>
-            Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
-            Stream Time: ${(duration / 1000).toFixed(1)}s<br>
-            Parameters: ${Object.keys(payload).length} options used
-        `;
+        // Streaming response handler function
+        async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let chunks = [];
+            let currentChunk = null;
 
-        debugLog('Streaming completed', {
-            totalChunks: chunks.length,
-            streamDuration: duration
-        });
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-    } catch (streamError) {
-        debugLog('Streaming error', { error: streamError.message });
-        throw streamError;
-    }
-}
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete frames
+                    const frames = buffer.split('--frame\r\n');
+                    buffer = frames.pop(); // Keep incomplete frame in buffer
+
+                    for (const frame of frames) {
+                        if (!frame.trim()) continue;
+
+                        try {
+                            // Parse frame headers and content
+                            const parts = frame.split('\r\n\r\n');
+                            if (parts.length < 2) continue;
+
+                            const headers = parts[0];
+                            const content = parts.slice(1).join('\r\n\r\n');
+
+                            if (headers.includes('application/json')) {
+                                // Parse chunk metadata
+                                const chunkData = JSON.parse(content);
+                                currentChunk = chunkData;
+                                chunks.push(chunkData);
+
+                                debugLog('Chunk metadata received', chunkData);
+                                updateProgress(
+                                    70 + (chunkData.chunk_id / (chunkData.total_chunks || 1)) * 20,
+                                    `Processing chunk ${chunkData.chunk_id + 1}/${chunkData.total_chunks || 1}: "${chunkData.sentence}"`
+                                );
+
+                            } else if (headers.includes('image/jpeg') && currentChunk) {
+                                // Handle chunk image/video data
+                                debugLog('Chunk video data received', {
+                                    chunkId: currentChunk.chunk_id,
+                                    dataSize: content.length
+                                });
+
+                                // For now, convert last chunk to video URL
+                                // In a full implementation, you'd combine all chunks
+                                if (currentChunk.chunk_id === (currentChunk.total_chunks - 1)) {
+                                    // Create blob from the streaming data
+                                    const uint8Array = new Uint8Array(content.length);
+                                    for (let i = 0; i < content.length; i++) {
+                                        uint8Array[i] = content.charCodeAt(i);
+                                    }
+                                    const blob = new Blob([uint8Array], { type: 'video/mp4' });
+                                    const videoUrl = URL.createObjectURL(blob);
+                                    if (video) video.src = videoUrl;
+                                }
+                            }
+                        } catch (parseError) {
+                            debugLog('Frame parsing error', { error: parseError.message });
+                        }
+                    }
+                }
+
+                // Update video info for streaming
+                if (videoInfo) {
+                    videoInfo.innerHTML = `
+                        <strong>Streaming Complete!</strong><br>
+                        Mode: Streaming (${payload.stream_mode})<br>
+                        Engine: ${payload.tts_engine}<br>
+                        Voice: ${payload.tts_voice}<br>
+                        Chunks: ${chunks.length}<br>
+                        Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
+                        Stream Time: ${(duration / 1000).toFixed(1)}s<br>
+                        Parameters: ${Object.keys(payload).length} options used
+                    `;
+                }
+
+                debugLog('Streaming completed', {
+                    totalChunks: chunks.length,
+                    streamDuration: duration
+                });
+
+            } catch (streamError) {
+                debugLog('Streaming error', { error: streamError.message });
+                throw streamError;
+            }
+        }
 
         // Video Management
         function downloadVideo() {
             const video = document.getElementById('avatarVideo');
-            if (video.src) {
+            if (video && video.src) {
                 const a = document.createElement('a');
                 a.href = video.src;
                 a.download = `avatar_${new Date().getTime()}.mp4`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
                 showNotification('Video download started', 'success');
+            } else {
+                showNotification('No video available to download', 'error');
             }
         }
 
         function shareVideo() {
             const video = document.getElementById('avatarVideo');
-            if (video.src && navigator.share) {
-                navigator.share({
-                    title: 'Generated Avatar Video',
-                    text: 'Check out this AI-generated avatar!',
-                    url: video.src
-                }).then(() => {
-                    showNotification('Video shared successfully', 'success');
-                }).catch(() => {
-                    showNotification('Sharing failed', 'error');
-                });
+            if (video && video.src) {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Generated Avatar Video',
+                        text: 'Check out this AI-generated avatar!',
+                        url: video.src
+                    }).then(() => {
+                        showNotification('Video shared successfully', 'success');
+                    }).catch(() => {
+                        showNotification('Sharing failed', 'error');
+                    });
+                } else {
+                    // Fallback: copy URL to clipboard
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(video.src).then(() => {
+                            showNotification('Video URL copied to clipboard', 'success');
+                        }).catch(() => {
+                            showNotification('Could not copy URL', 'error');
+                        });
+                    } else {
+                        showNotification('Sharing not supported', 'error');
+                    }
+                }
             } else {
-                // Fallback: copy URL to clipboard
-                navigator.clipboard.writeText(video.src).then(() => {
-                    showNotification('Video URL copied to clipboard', 'success');
-                }).catch(() => {
-                    showNotification('Could not copy URL', 'error');
-                });
+                showNotification('No video available to share', 'error');
             }
         }
 
@@ -1798,11 +1923,12 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                     displayEngineInfo(result.engines);
                 } else {
                     debugLog('No engine data received');
+                    showNotification('No engine data received', 'warning');
                 }
 
             } catch (error) {
                 debugLog('Engine retrieval error', { error: error.message });
-                showNotification('Failed to get TTS engines', 'error');
+                showNotification('Failed to get TTS engines: ' + error.message, 'error');
             }
         }
 
@@ -1810,9 +1936,9 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
             let info = "Available TTS Engines:\n\n";
             Object.entries(engines).forEach(([key, engine]) => {
                 info += `${engine.name}:\n`;
-                info += `  Voices: ${engine.voices.length}\n`;
-                info += `  Speed Range: ${engine.speed_range[0]}-${engine.speed_range[1]}\n`;
-                info += `  Pitch Range: ${engine.pitch_range[0]}-${engine.pitch_range[1]}\n\n`;
+                info += `  Voices: ${engine.voices ? engine.voices.length : 'Unknown'}\n`;
+                info += `  Speed Range: ${engine.speed_range ? engine.speed_range[0] + '-' + engine.speed_range[1] : 'Unknown'}\n`;
+                info += `  Pitch Range: ${engine.pitch_range ? engine.pitch_range[0] + '-' + engine.pitch_range[1] : 'Unknown'}\n\n`;
             });
 
             alert(info);
@@ -1832,9 +1958,9 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                     const blob = await response.blob();
                     const videoUrl = URL.createObjectURL(blob);
 
-                    video.src = videoUrl;
-                    result.style.display = 'block';
-                    error.style.display = 'none';
+                    if (video) video.src = videoUrl;
+                    if (result) result.style.display = 'block';
+                    if (error) error.style.display = 'none';
 
                     debugLog('Test MP4 loaded successfully', {
                         size: blob.size,
@@ -1849,8 +1975,10 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 
             } catch (err) {
                 debugLog('Test MP4 failed', { error: err.message });
-                error.textContent = 'Test MP4 Error: ' + err.message;
-                error.style.display = 'block';
+                if (error) {
+                    error.textContent = 'Test MP4 Error: ' + err.message;
+                    error.style.display = 'block';
+                }
                 showNotification('Test MP4 failed', 'error');
             }
         }
@@ -1917,6 +2045,7 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 
         function displayServerInfo(info) {
             const container = document.getElementById('serverInfo');
+            if (!container) return;
 
             if (!info || !info.current_peer) {
                 container.innerHTML = '<div class="status-item status-error">No server info available</div>';
@@ -1950,14 +2079,16 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 
             // Update current peer display
             const currentDisplay = document.getElementById('currentPeerDisplay');
-            currentDisplay.innerHTML = `
-                <div class="peer-option selected">
-                    <div>
-                        <strong>${peer.name}</strong> (${peer.type})<br>
-                        <small>Currently active server</small>
+            if (currentDisplay) {
+                currentDisplay.innerHTML = `
+                    <div class="peer-option selected">
+                        <div>
+                            <strong>${peer.name}</strong> (${peer.type})<br>
+                            <small>Currently active server</small>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }
 
         async function getStatus() {
@@ -2002,7 +2133,9 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `avatar_status_${new Date().toISOString()}.json`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
                 showNotification('Status exported successfully', 'success');
@@ -2013,6 +2146,7 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 
         function displayStatus(status) {
             const grid = document.getElementById('statusGrid');
+            if (!grid) return;
 
             if (!status) {
                 grid.innerHTML = '<div class="status-item status-error">No status data available</div>';
@@ -2020,12 +2154,12 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
             }
 
             const items = [
-                { label: 'Timestamp', value: status.timestamp, status: 'ok' },
-                { label: 'Device', value: status.device, status: 'ok' },
+                { label: 'Timestamp', value: status.timestamp || 'Unknown', status: 'ok' },
+                { label: 'Device', value: status.device || 'Unknown', status: 'ok' },
                 { label: 'TTS Ready', value: status.tts_ready ? 'Yes' : 'No', status: status.tts_ready ? 'ok' : 'error' },
                 { label: 'SadTalker Installed', value: status.sadtalker_installed ? 'Yes' : 'No', status: status.sadtalker_installed ? 'ok' : 'warning' },
                 { label: 'Streaming Available', value: status.streaming_available ? 'Yes' : 'No', status: status.streaming_available ? 'ok' : 'warning' },
-                { label: 'Default Codec', value: status.default_codec, status: 'ok' },
+                { label: 'Default Codec', value: status.default_codec || 'Unknown', status: 'ok' },
                 { label: 'GPU Available', value: status.gpu_available ? 'Yes' : 'No', status: status.gpu_available ? 'ok' : 'warning' },
                 { label: 'Memory Usage', value: status.memory_usage || 'Unknown', status: 'ok' }
             ];
@@ -2048,10 +2182,14 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                 debugLog('Logs received', { logCount: result.data?.logs?.length || 0 });
 
                 const container = document.getElementById('logContainer');
-                if (result.data && result.data.logs) {
-                    container.innerHTML = result.data.logs.join('\n');
-                } else {
-                    container.innerHTML = 'No logs available';
+                if (container) {
+                    if (result.data && result.data.logs) {
+                        const logText = Array.isArray(result.data.logs) ? result.data.logs.join('\n') : result.data.logs;
+                        container.innerHTML = logText;
+                        container.setAttribute('data-all-logs', logText);
+                    } else {
+                        container.innerHTML = 'No logs available';
+                    }
                 }
 
                 showNotification('Logs retrieved successfully', 'success');
@@ -2072,34 +2210,46 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
         }
 
         function clearLogs() {
-            document.getElementById('logContainer').innerHTML = 'Logs cleared';
+            const container = document.getElementById('logContainer');
+            if (container) {
+                container.innerHTML = 'Logs cleared';
+            }
             debugLog('Debug logs cleared');
             showNotification('Logs cleared', 'info');
         }
 
         function clearDebugLogs() {
-            document.getElementById('logContainer').innerHTML = 'Debug logs cleared';
+            const container = document.getElementById('logContainer');
+            if (container) {
+                container.innerHTML = 'Debug logs cleared';
+            }
             console.clear();
             debugLog('Debug console cleared');
             showNotification('Debug logs cleared', 'info');
         }
 
         function downloadLogs() {
-            const logs = document.getElementById('logContainer').textContent;
-            const blob = new Blob([logs], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `avatar_debug_logs_${new Date().toISOString()}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-            debugLog('Debug logs downloaded');
-            showNotification('Logs downloaded', 'success');
+            const container = document.getElementById('logContainer');
+            if (container) {
+                const logs = container.textContent;
+                const blob = new Blob([logs], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `avatar_debug_logs_${new Date().toISOString()}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                debugLog('Debug logs downloaded');
+                showNotification('Logs downloaded', 'success');
+            }
         }
 
         function copyLogsToClipboard() {
-            const logs = document.getElementById('logContainer').textContent;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
+            const container = document.getElementById('logContainer');
+            if (container && navigator.clipboard) {
+                const logs = container.textContent;
                 navigator.clipboard.writeText(logs).then(() => {
                     debugLog('Debug logs copied to clipboard');
                     showNotification('Logs copied to clipboard', 'success');
@@ -2107,6 +2257,8 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                     debugLog('Failed to copy logs to clipboard', { error: err.message });
                     showNotification('Failed to copy logs', 'error');
                 });
+            } else {
+                showNotification('Clipboard not available', 'error');
             }
         }
 
@@ -2118,8 +2270,12 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
         }
 
         function filterLogsByLevel() {
-            const level = document.getElementById('logLevel').value;
+            const levelSelect = document.getElementById('logLevel');
+            const level = levelSelect ? levelSelect.value : 'all';
             const container = document.getElementById('logContainer');
+
+            if (!container) return;
+
             const allLogs = container.getAttribute('data-all-logs') || container.textContent;
 
             if (level === 'all') {
@@ -2133,8 +2289,12 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
         }
 
         function searchLogs(searchTerm = null) {
-            const term = searchTerm || document.getElementById('logSearch').value;
+            const searchInput = document.getElementById('logSearch');
+            const term = searchTerm || (searchInput ? searchInput.value : '');
             const container = document.getElementById('logContainer');
+
+            if (!container) return;
+
             const allLogs = container.getAttribute('data-all-logs') || container.textContent;
 
             if (!term) {
@@ -2170,8 +2330,10 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
                         const fileInput = document.getElementById('imageFile');
-                        fileInput.files = files;
-                        handleImageUpload({ target: fileInput });
+                        if (fileInput) {
+                            fileInput.files = files;
+                            handleImageUpload({ target: fileInput });
+                        }
                     }
                 });
             }
@@ -2185,10 +2347,10 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
             updateTTSOptions();
 
             // Initialize range displays
-            updateRangeDisplay('speed', document.getElementById('ttsSpeed').value);
-            updateRangeDisplay('pitch', document.getElementById('ttsPitch').value);
-            updateRangeDisplay('confidence', document.getElementById('faceConfidence').value);
-            updateRangeDisplay('expression', document.getElementById('expressionScale').value);
+            updateRangeDisplay('speed', document.getElementById('ttsSpeed')?.value || '160');
+            updateRangeDisplay('pitch', document.getElementById('ttsPitch')?.value || '0');
+            updateRangeDisplay('confidence', document.getElementById('faceConfidence')?.value || '0.5');
+            updateRangeDisplay('expression', document.getElementById('expressionScale')?.value || '1.0');
 
             // Setup drag and drop
             setupDragAndDrop();
