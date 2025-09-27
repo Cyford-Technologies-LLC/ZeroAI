@@ -233,7 +233,7 @@ class StreamingAvatarGenerator(TTSProcessor):
             self.is_streaming = True
 
             # Split prompt into sentences for chunking
-            sentences = self._split_into_word_chunks(prompt)
+            sentences = self._split_into_sentences(prompt)
 
             for i, sentence in enumerate(sentences):
                 if not self.is_streaming:
@@ -290,30 +290,37 @@ class StreamingAvatarGenerator(TTSProcessor):
                             logger.warning(f"SadTalker failed: {e}, falling back to simple")
                             frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
                     elif mode == 'auto':
-                        # Try SadTalker first, fallback to simple
-                        try:
-                            if os.path.exists('/app/SadTalker'):
+                        # For streaming AI secretary, prioritize speed - use simple unless specifically requested
+                        # Only use SadTalker for longer sentences where quality matters more
+                        if len(sentence) > 100 and os.path.exists('/app/SadTalker'):
+                            try:
                                 frame_generator = self._generate_sadtalker_frames_for_streaming(
                                     source_image, audio_path, duration, frame_rate, sadtalker_options
                                 )
-                            else:
+                            except Exception as e:
+                                logger.warning(f"SadTalker failed: {e}, falling back to simple")
                                 frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-                        except Exception as e:
-                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                        else:
+                            # Use fast simple mode for short sentences and real-time interaction
                             frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
                     else:  # mode == 'simple' or anything else
                         frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
 
-                    # Stream frames
+                    # FIXED: Stream frames immediately as each one is ready, don't wait for all
+                    frame_count = 0
                     for frame_bytes in frame_generator:
                         if not self.is_streaming:
                             break
 
+                        # Stream frame immediately
                         yield (b'--frame\r\n'
                                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
-                        # Control frame rate
-                        time.sleep(1.0 / frame_rate)
+                        frame_count += 1
+                        # Control frame rate - but don't block too long
+                        time.sleep(max(0.001, 1.0 / frame_rate))  # Minimum 1ms, max frame rate delay
+
+                    logger.info(f"Streamed {frame_count} frames for chunk {i + 1}")
 
                 finally:
                     # Cleanup audio file
@@ -422,7 +429,7 @@ class StreamingAvatarGenerator(TTSProcessor):
     def _generate_audio_realtime(self, prompt: str, tts_engine: str, tts_options: Dict):
         """Generate audio in real-time and put in queue"""
         try:
-            sentences = self._split_into_word_chunks(prompt)
+            sentences = self._split_into_sentences(prompt)
 
             for sentence in sentences:
                 if not self.is_streaming:
@@ -441,10 +448,8 @@ class StreamingAvatarGenerator(TTSProcessor):
 
     def _generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, buffer_size: int,
                                   mode: str = 'auto', sadtalker_options: Dict = None):
-        """Generate frames in real-time and put in queue with SadTalker support"""
+        """Generate frames in real-time and put in queue with SadTalker support - FIXED VERSION"""
         try:
-            total_duration = 0
-
             while self.is_streaming:
                 try:
                     # Get audio chunk
@@ -453,9 +458,8 @@ class StreamingAvatarGenerator(TTSProcessor):
                         break
 
                     duration, audio_path = audio_item
-                    total_duration += duration
 
-                    # Generate frames for this audio chunk based on mode
+                    # Generate frames for this audio chunk based on mode and IMMEDIATELY stream them
                     if mode == 'sadtalker':
                         try:
                             frame_generator = self._generate_sadtalker_frames_for_streaming(
@@ -479,6 +483,8 @@ class StreamingAvatarGenerator(TTSProcessor):
                     else:  # mode == 'simple' or anything else
                         frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
 
+                    # CRITICAL FIX: Stream frames immediately as they're generated
+                    frame_count = 0
                     for frame_bytes in frame_generator:
                         if not self.is_streaming:
                             break
@@ -486,9 +492,12 @@ class StreamingAvatarGenerator(TTSProcessor):
                         # Add to queue with backpressure control
                         try:
                             self.frame_queue.put(frame_bytes, timeout=0.1)
+                            frame_count += 1
                         except queue.Full:
                             # Drop frame if queue is full (prevents memory issues)
                             logger.debug("Frame queue full, dropping frame")
+
+                    logger.info(f"Streamed {frame_count} frames for {duration:.2f}s audio chunk")
 
                     # Cleanup audio file
                     if audio_path and os.path.exists(audio_path):
@@ -525,14 +534,6 @@ class StreamingAvatarGenerator(TTSProcessor):
                 processed.append(sentence)
 
         return processed or [text]  # Fallback to original text
-
-    def _split_into_word_chunks(self, text: str, words_per_chunk: int = 2) -> list:
-        words = text.split()
-        chunks = []
-        for i in range(0, len(words), words_per_chunk):
-            chunk = ' '.join(words[i:i + words_per_chunk])
-            chunks.append(chunk)
-        return chunks
 
 
 # WebSocket Support
