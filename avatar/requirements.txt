@@ -4,6 +4,19 @@ torchvision==0.16.2+cu121
 torchaudio==2.1.2
 --extra-index-url https://download.pytorch.org/whl/cu121
 
+# Audio processing (missing - causes your error)
+librosa
+numba
+soundfile
+
+# SadTalker specific dependencies (missing)
+face-alignment
+yacs
+scipy
+scikit-image
+dlib
+resampy
+
 # Other dependencies
 numpy
 opencv-python-headless
@@ -23,6 +36,3 @@ pydub
 moviepy==1.0.3
 imageio==2.31.1
 imageio-ffmpeg==0.4.8
-
-
-
