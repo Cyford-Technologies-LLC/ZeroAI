@@ -17,10 +17,19 @@ from flask import request, jsonify
 from flask_socketio import SocketIO, emit
 import wave
 
-import logging
+# Core functionality imports (your separated modules)
+from audio_processor import call_tts_service_with_options, normalize_audio , TTSProcessor
+from video_processor import convert_video_with_codec, get_mimetype_for_codec
+from sadtalker_generator import generate_sadtalker_video
+from simple_face_generator import generate_talking_face
+from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
 
+
+
+import logging
 logger = logging.getLogger(__name__)
 
+tts_processor = TTSProcessor()
 
 class StreamingAvatarGenerator:
     """
@@ -160,12 +169,13 @@ class StreamingAvatarGenerator:
                 logger.info(f"Processing chunk {i + 1}/{len(sentences)}: {sentence[:30]}...")
 
                 # Generate TTS for this chunk
-                audio_bytes = self._call_tts_service(sentence, tts_engine, tts_options)
+
+                audio_bytes = tts_processor._call_tts_service(sentence, tts_engine, tts_options)
                 if not audio_bytes:
                     continue
 
                 # Process audio
-                duration, audio_path = self._process_audio_chunk(audio_bytes)
+                duration, audio_path = tts_processor._process_audio_chunk(audio_bytes)
                 if not audio_path:
                     continue
 
@@ -296,9 +306,9 @@ class StreamingAvatarGenerator:
                 if not self.is_streaming:
                     break
 
-                audio_bytes = self._call_tts_service(sentence, tts_engine, tts_options)
+                audio_bytes =  tts_processor._call_tts_service(sentence, tts_engine, tts_options)
                 if audio_bytes:
-                    duration, audio_path = self._process_audio_chunk(audio_bytes)
+                    duration, audio_path = tts_processor._process_audio_chunk(audio_bytes)
                     if audio_path:
                         self.audio_queue.put((duration, audio_path))
 

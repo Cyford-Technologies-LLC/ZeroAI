@@ -105,7 +105,8 @@ class TTSProcessor:
     """TTS Processor class for the class methods"""
 
     def __init__(self, tts_api_url=None):
-        self.tts_api_url = tts_api_url or TTS_API_URL
+        super().__init__(tts_api_url)  # Call TTSProcessor.__init__
+        # Add any StreamingAvatarGenerator-specific initialization here
 
     def _call_tts_service(self, text: str, tts_engine: str = 'espeak',
                           tts_options: Dict = None) -> Optional[bytes]:
