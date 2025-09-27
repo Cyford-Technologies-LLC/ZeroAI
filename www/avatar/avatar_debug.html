@@ -1,26 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ZeroAI Avatar Debug Console - Complete</title>
+    <title>ZeroAI Avatar Debug Console</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
         .section { background: #2a2a2a; padding: 20px; margin: 20px 0; border-radius: 8px; }
-        .option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin: 15px 0; }
-        .option-group { background: #333; padding: 15px; border-radius: 6px; }
-        .option-group h4 { margin: 0 0 10px 0; color: #4CAF50; }
-        .controls { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; align-items: center; }
-        .control-group { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+        .controls { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
         button { padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background: #005a87; }
         button.danger { background: #dc3545; }
         button.success { background: #28a745; }
-        input, select, textarea { background: #333; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px; }
-        input[type="file"] { padding: 3px; }
-        input[type="range"] { width: 150px; }
-        input[type="number"] { width: 80px; }
-        input[type="checkbox"] { width: auto; margin-right: 5px; }
-        textarea { width: 100%; height: 100px; resize: vertical; }
+        textarea { width: 100%; height: 100px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; }
         .log-container { background: #000; color: #0f0; font-family: monospace; padding: 15px; height: 300px; overflow-y: auto; border: 1px solid #333; }
         .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
         .status-item { background: #333; padding: 15px; border-radius: 4px; }
@@ -29,338 +20,65 @@
         .status-warning { border-left: 4px solid #ffc107; }
         video { width: 100%; max-width: 500px; border: 2px solid #555; }
         .debug-info { background: #1a1a2e; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .mode-selector { margin: 10px 0; }
+        .mode-selector input[type="radio"] { margin: 0 5px 0 15px; }
         .loading { display: none; color: #ffc107; }
         .error { color: #dc3545; }
         .success { color: #28a745; }
-        .image-preview { max-width: 200px; max-height: 200px; border: 2px solid #555; margin: 10px 0; }
-        .tabs { display: flex; background: #333; border-radius: 6px 6px 0 0; overflow: hidden; }
-        .tab { padding: 12px 20px; cursor: pointer; background: #444; border-right: 1px solid #555; }
-        .tab.active { background: #007cba; }
-        .tab-content { display: none; background: #333; padding: 20px; border-radius: 0 0 6px 6px; }
-        .tab-content.active { display: block; }
-        label { display: inline-block; min-width: 120px; color: #ccc; }
-        .range-display { color: #4CAF50; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 ZeroAI Avatar Debug Console - Complete Edition</h1>
-
+        <h1>🤖 ZeroAI Avatar Debug Console</h1>
+        
         <div class="section">
-            <h2>Avatar Generation with All Options</h2>
-
-            <!-- Mode Selection -->
-            <div class="control-group">
-                <label><strong>Generation Mode:</strong></label>
+            <h2>Avatar Generation</h2>
+            
+            <div class="mode-selector">
+                <strong>Mode:</strong>
                 <input type="radio" id="mode-simple" name="mode" value="simple" checked>
                 <label for="mode-simple">Simple Avatar</label>
                 <input type="radio" id="mode-sadtalker" name="mode" value="sadtalker">
                 <label for="mode-sadtalker">SadTalker (Realistic)</label>
             </div>
+            <div class="section">
+                <h3>🎙️ TTS Engine Configuration</h3>
+                <div class="controls">
+                    <label for="ttsEngine"><strong>Engine:</strong></label>
+                    <select id="ttsEngine" onchange="updateTTSOptions()">
+                        <option value="espeak">Espeak (Free)</option>
+                        <option value="edge">Edge TTS (Good quality)</option>
+                        <option value="coqui">Coqui (High quality)</option>
+                        <option value="openai">OpenAI TTS</option>
+                        <option value="elevenlabs">ElevenLabs</option>
+                    </select>
 
-            <!-- Stream Mode -->
-            <div class="control-group">
-                <label for="streamMode"><strong>Stream Mode:</strong></label>
-                <select id="streamMode">
-                    <option value="complete">Complete (Full video)</option>
-                    <option value="chunked">Chunked Streaming</option>
-                    <option value="realtime">Realtime Streaming</option>
-                </select>
-            </div>
-
-            <!-- Prompt -->
-            <div style="margin: 15px 0;">
-                <label for="prompt"><strong>Prompt:</strong></label>
-                <textarea id="prompt" placeholder="Enter your prompt here...">Hello! This is a comprehensive test of the avatar system with all available options enabled.</textarea>
-            </div>
-
-            <!-- Tabbed Options -->
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('tts')">🎙️ TTS Options</div>
-                <div class="tab" onclick="switchTab('image')">🖼️ Image Options</div>
-                <div class="tab" onclick="switchTab('video')">🎬 Video Options</div>
-                <div class="tab" onclick="switchTab('sadtalker')">🎭 SadTalker Options</div>
-                <div class="tab" onclick="switchTab('advanced')">⚙️ Advanced Options</div>
-            </div>
-
-            <!-- TTS Options Tab -->
-            <div id="tts-tab" class="tab-content active">
-                <div class="option-grid">
-                    <div class="option-group">
-                        <h4>TTS Engine & Voice</h4>
-                        <div class="control-group">
-                            <label for="ttsEngine">Engine:</label>
-                            <select id="ttsEngine" onchange="updateTTSOptions()">
-                                <option value="espeak">eSpeak (Free)</option>
-                                <option value="edge">Microsoft Edge TTS</option>
-                                <option value="elevenlabs">ElevenLabs (Premium)</option>
-                                <option value="openai">OpenAI TTS</option>
-                                <option value="coqui">Coqui TTS</option>
-                            </select>
-                        </div>
-                        <div class="control-group" id="voiceGroup">
-                            <label for="ttsVoice">Voice:</label>
-                            <select id="ttsVoice"></select>
-                        </div>
-                        <div class="control-group">
-                            <label for="ttsLanguage">Language:</label>
-                            <select id="ttsLanguage">
-                                <option value="en-US">English (US)</option>
-                                <option value="en-GB">English (UK)</option>
-                                <option value="es-ES">Spanish</option>
-                                <option value="fr-FR">French</option>
-                                <option value="de-DE">German</option>
-                            </select>
-                        </div>
+                    <div id="voiceGroup" style="display: none;">
+                        <label for="ttsVoice"><strong>Voice:</strong></label>
+                        <select id="ttsVoice"></select>
                     </div>
 
-                    <div class="option-group">
-                        <h4>Voice Parameters</h4>
-                        <div class="control-group">
-                            <label for="ttsSpeed">Speed:</label>
-                            <input type="range" id="ttsSpeed" min="50" max="400" value="160" oninput="updateRangeDisplay('speed', this.value)">
-                            <span id="speedDisplay" class="range-display">160</span>
-                        </div>
-                        <div class="control-group">
-                            <label for="ttsPitch">Pitch:</label>
-                            <input type="range" id="ttsPitch" min="-50" max="50" value="0" oninput="updateRangeDisplay('pitch', this.value)">
-                            <span id="pitchDisplay" class="range-display">0</span>
-                        </div>
-                        <div class="control-group">
-                            <label for="ttsEmotion">Emotion:</label>
-                            <select id="ttsEmotion">
-                                <option value="neutral">Neutral</option>
-                                <option value="happy">Happy</option>
-                                <option value="sad">Sad</option>
-                                <option value="angry">Angry</option>
-                                <option value="excited">Excited</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="option-group">
-                        <h4>Audio Format</h4>
-                        <div class="control-group">
-                            <label for="sampleRate">Sample Rate:</label>
-                            <select id="sampleRate">
-                                <option value="16000">16kHz</option>
-                                <option value="22050">22kHz</option>
-                                <option value="44100">44kHz</option>
-                                <option value="48000">48kHz</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label for="audioFormat">Format:</label>
-                            <select id="audioFormat">
-                                <option value="wav">WAV</option>
-                                <option value="mp3">MP3</option>
-                                <option value="ogg">OGG</option>
-                            </select>
-                        </div>
-                    </div>
+                    <label for="ttsSpeed"><strong>Speed:</strong></label>
+                    <input type="number" id="ttsSpeed" value="160" min="50" max="500" step="10">
                 </div>
             </div>
-
-            <!-- Image Options Tab -->
-            <div id="image-tab" class="tab-content">
-                <div class="option-grid">
-                    <div class="option-group">
-                        <h4>Image Source</h4>
-                        <div class="control-group">
-                            <input type="radio" id="imageDefault" name="imageSource" value="default" checked onchange="toggleImageSource()">
-                            <label for="imageDefault">Use Default Face</label>
-                        </div>
-                        <div class="control-group">
-                            <input type="radio" id="imageUpload" name="imageSource" value="upload" onchange="toggleImageSource()">
-                            <label for="imageUpload">Upload Image</label>
-                        </div>
-                        <div class="control-group">
-                            <input type="radio" id="imageUrl" name="imageSource" value="url" onchange="toggleImageSource()">
-                            <label for="imageUrl">Image URL</label>
-                        </div>
-
-                        <div id="uploadSection" style="display: none; margin-top: 10px;">
-                            <input type="file" id="imageFile" accept="image/*" onchange="handleImageUpload(event)">
-                            <div id="imagePreview"></div>
-                        </div>
-
-                        <div id="urlSection" style="display: none; margin-top: 10px;">
-                            <input type="url" id="imageUrlInput" placeholder="https://example.com/image.jpg" style="width: 100%;">
-                            <button onclick="previewImageUrl()" style="margin-top: 5px;">Preview</button>
-                        </div>
-                    </div>
-
-                    <div class="option-group">
-                        <h4>Image Processing</h4>
-                        <div class="control-group">
-                            <label for="preprocess">Preprocessing:</label>
-                            <select id="preprocess">
-                                <option value="crop">Crop</option>
-                                <option value="resize">Resize</option>
-                                <option value="none">None</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label for="resolution">Resolution:</label>
-                            <select id="resolution">
-                                <option value="256">256x256</option>
-                                <option value="512">512x512</option>
-                                <option value="1024">1024x1024</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <input type="checkbox" id="still">
-                            <label for="still">Still Image (no motion source)</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Video Options Tab -->
-            <div id="video-tab" class="tab-content">
-                <div class="option-grid">
-                    <div class="option-group">
-                        <h4>Video Codec & Quality</h4>
-                        <div class="control-group">
-                            <label for="codec">Codec:</label>
-                            <select id="codec">
-                                <option value="h264_high">H264 High Quality</option>
-                                <option value="h264_medium">H264 Medium</option>
-                                <option value="h264_fast" selected>H264 Fast</option>
-                                <option value="h265_high">H265 High Quality</option>
-                                <option value="webm_high">WebM High Quality</option>
-                                <option value="webm_fast">WebM Fast</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label for="quality">Quality:</label>
-                            <select id="quality">
-                                <option value="high">High</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="fast">Fast</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label for="fps">Frame Rate:</label>
-                            <select id="fps">
-                                <option value="15">15 FPS</option>
-                                <option value="20">20 FPS</option>
-                                <option value="24">24 FPS</option>
-                                <option value="25" selected>25 FPS</option>
-                                <option value="30">30 FPS</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="option-group">
-                        <h4>Streaming Options</h4>
-                        <div class="control-group">
-                            <label for="chunkDuration">Chunk Duration:</label>
-                            <input type="number" id="chunkDuration" min="1" max="10" value="3" step="0.5">
-                            <span>seconds</span>
-                        </div>
-                        <div class="control-group">
-                            <label for="bufferSize">Buffer Size:</label>
-                            <input type="number" id="bufferSize" min="1" max="20" value="5">
-                            <span>frames</span>
-                        </div>
-                        <div class="control-group">
-                            <input type="checkbox" id="lowLatency">
-                            <label for="lowLatency">Low Latency Mode</label>
-                        </div>
-                        <div class="control-group">
-                            <input type="checkbox" id="adaptiveQuality" checked>
-                            <label for="adaptiveQuality">Adaptive Quality</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SadTalker Options Tab -->
-            <div id="sadtalker-tab" class="tab-content">
-                <div class="option-grid">
-                    <div class="option-group">
-                        <h4>Generation Settings</h4>
-                        <div class="control-group">
-                            <label for="timeout">Timeout:</label>
-                            <input type="number" id="timeout" min="60" max="3600" value="1200">
-                            <span>seconds</span>
-                        </div>
-                        <div class="control-group">
-                            <label for="enhancer">Enhancer:</label>
-                            <select id="enhancer">
-                                <option value="">None</option>
-                                <option value="gfpgan">GFPGAN</option>
-                                <option value="restoreformer">RestoreFormer</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="option-group">
-                        <h4>Chunking Options</h4>
-                        <div class="control-group">
-                            <input type="checkbox" id="splitChunks">
-                            <label for="splitChunks">Split into Chunks</label>
-                        </div>
-                        <div class="control-group">
-                            <label for="chunkLength">Chunk Length:</label>
-                            <input type="number" id="chunkLength" min="5" max="30" value="10">
-                            <span>seconds</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Advanced Options Tab -->
-            <div id="advanced-tab" class="tab-content">
-                <div class="option-grid">
-                    <div class="option-group">
-                        <h4>Performance</h4>
-                        <div class="control-group">
-                            <label for="maxDuration">Max Duration:</label>
-                            <input type="number" id="maxDuration" min="10" max="600" value="300">
-                            <span>seconds</span>
-                        </div>
-                        <div class="control-group">
-                            <label for="maxConcurrent">Max Concurrent:</label>
-                            <input type="number" id="maxConcurrent" min="1" max="10" value="3">
-                        </div>
-                        <div class="control-group">
-                            <input type="checkbox" id="enableWebsocket">
-                            <label for="enableWebsocket">Enable WebSocket</label>
-                        </div>
-                    </div>
-
-                    <div class="option-group">
-                        <h4>Debug Options</h4>
-                        <div class="control-group">
-                            <input type="checkbox" id="debugMode" checked>
-                            <label for="debugMode">Debug Mode</label>
-                        </div>
-                        <div class="control-group">
-                            <input type="checkbox" id="verboseLogging">
-                            <label for="verboseLogging">Verbose Logging</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="controls" style="margin-top: 20px;">
-                <button onclick="generateAvatar()" style="background: #28a745; font-size: 16px; padding: 12px 24px;">🚀 Generate Avatar</button>
+            
+            <textarea id="prompt" placeholder="Enter your prompt here...">Hello! This is a test of the avatar system with full debugging enabled.</textarea>
+            
+            <div class="controls">
+                <button onclick="generateAvatar()">Generate Avatar</button>
                 <button onclick="testMP4()" class="success">Test MP4 Pipeline</button>
                 <button onclick="testConnection()" class="success">Test Connection</button>
-                <button onclick="getEngines()">Get TTS Engines</button>
                 <button onclick="getStatus()">Get Status</button>
                 <button onclick="getLogs()">Get Logs</button>
                 <button onclick="clearLogs()" class="danger">Clear Logs</button>
             </div>
-
+            
             <div class="loading" id="loading">
                 <p>🔄 Generating avatar... This may take a few minutes.</p>
                 <div id="progress"></div>
             </div>
-
+            
             <div id="result" style="display: none;">
                 <h3>Generated Avatar:</h3>
                 <video id="avatarVideo" controls>
@@ -368,11 +86,10 @@
                 </video>
                 <div class="debug-info" id="videoInfo"></div>
             </div>
-
+            
             <div id="error" class="error" style="display: none;"></div>
         </div>
-
-        <!-- Status and Logs sections remain the same -->
+        
         <div class="section">
             <h2>Server Connection</h2>
             <div class="controls">
@@ -382,7 +99,7 @@
                 <div class="status-item">Click "Get Server Info" to see which avatar server is being used...</div>
             </div>
         </div>
-
+        
         <div class="section">
             <h2>System Status</h2>
             <div class="controls">
@@ -392,7 +109,7 @@
                 <div class="status-item">Loading status...</div>
             </div>
         </div>
-
+        
         <div class="section">
             <h2>Debug Logs</h2>
             <div class="controls">
@@ -405,249 +122,110 @@
                 Click "Refresh Logs" to load debug information...
             </div>
         </div>
+        
+        <div class="section">
+            <h2>PHP Error Logs</h2>
+            <div class="controls">
+                <button onclick="getPhpErrors()">Get PHP Errors</button>
+                <button onclick="clearPhpErrors()" class="danger">Clear PHP Errors</button>
+            </div>
+            <div class="log-container" id="phpErrorContainer">
+                Click "Get PHP Errors" to load PHP error logs...
+            </div>
+        </div>
     </div>
 
     <script>
         let debugMode = true;
         let currentMode = 'simple';
-        let currentImageData = null;
 
-        // TTS Engine configurations
-        const TTS_ENGINES = {
-            espeak: {
-                name: 'eSpeak (Free)',
-                voices: [
-                    { value: 'en', label: 'English (Default)' },
-                    { value: 'en+f3', label: 'English Female 3' },
-                    { value: 'en+f4', label: 'English Female 4' },
-                    { value: 'en+m3', label: 'English Male 3' },
-                    { value: 'en+m4', label: 'English Male 4' }
-                ],
-                speedRange: [80, 400],
-                pitchRange: [0, 99]
-            },
-            edge: {
-                name: 'Microsoft Edge TTS',
-                voices: [
-                    { value: 'en-US-AriaNeural', label: 'Aria (Female)' },
-                    { value: 'en-US-JennyNeural', label: 'Jenny (Female)' },
-                    { value: 'en-US-GuyNeural', label: 'Guy (Male)' },
-                    { value: 'en-US-DavisNeural', label: 'Davis (Male)' },
-                    { value: 'en-US-JaneNeural', label: 'Jane (Female)' },
-                    { value: 'en-US-JasonNeural', label: 'Jason (Male)' }
-                ],
-                speedRange: [50, 300],
-                pitchRange: [-50, 50]
-            },
-            elevenlabs: {
-                name: 'ElevenLabs (Premium)',
-                voices: [
-                    { value: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel (Female)' },
-                    { value: 'AZnzlk1XvdvUeBnXmlld', label: 'Domi (Female)' },
-                    { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella (Female)' },
-                    { value: 'ErXwobaYiN019PkySvjV', label: 'Antoni (Male)' },
-                    { value: 'MF3mGyEYCl7XYWbV9V6O', label: 'Elli (Female)' },
-                    { value: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh (Male)' }
-                ],
-                speedRange: [50, 200],
-                pitchRange: [-100, 100]
-            },
-            openai: {
-                name: 'OpenAI TTS',
-                voices: [
-                    { value: 'alloy', label: 'Alloy (Neutral)' },
-                    { value: 'echo', label: 'Echo (Male)' },
-                    { value: 'fable', label: 'Fable (British Male)' },
-                    { value: 'onyx', label: 'Onyx (Male)' },
-                    { value: 'nova', label: 'Nova (Female)' },
-                    { value: 'shimmer', label: 'Shimmer (Female)' }
-                ],
-                speedRange: [25, 400],
-                pitchRange: [0, 0]
-            },
-            coqui: {
-                name: 'Coqui TTS',
-                voices: [
-                    { value: 'female', label: 'Female (Default)' },
-                    { value: 'male', label: 'Male (Default)' }
-                ],
-                speedRange: [50, 200],
-                pitchRange: [-50, 50]
-            }
-        };
-
-        // Debug logging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes instead of 1 minute
+        
+        // Enhanced console logging wrapper with stack traces
         function debugLog(message, data = null) {
             const timestamp = new Date().toISOString();
-            console.log(`[${timestamp}] ${message}`, data || '');
-
+            const stack = new Error().stack;
+            const caller = stack.split('\n')[2]?.trim() || 'unknown';
+            
+            // Console logging with styling
+            console.group(`🔍 [${timestamp}] ${message}`);
+            if (data) {
+                console.log('📊 Data:', data);
+            }
+            console.log('📍 Called from:', caller);
+            console.groupEnd();
+            
             if (debugMode) {
-                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data, null, 2) : ''}`;
+                const logEntry = `${timestamp}: ${message}${data ? ' - ' + JSON.stringify(data, null, 2) : ''}\n📍 ${caller}`;
                 appendToLog('logContainer', logEntry);
             }
         }
-
+        
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            debugLog('🚨 Global JavaScript Error', {
+                message: e.message,
+                filename: e.filename,
+                lineno: e.lineno,
+                colno: e.colno,
+                error: e.error?.toString(),
+                stack: e.error?.stack
+            });
+        });
+        
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (e) => {
+            debugLog('🚨 Unhandled Promise Rejection', {
+                reason: e.reason,
+                promise: e.promise,
+                stack: e.reason?.stack
+            });
+        });
+        
+        // Performance monitoring
+        function logPerformance(label) {
+            if (performance.mark) {
+                performance.mark(label);
+                debugLog('⚡ Performance Mark', { label, timestamp: performance.now() });
+            }
+        }
+        
         function appendToLog(containerId, message) {
             const container = document.getElementById(containerId);
             container.innerHTML += message + '\n';
             container.scrollTop = container.scrollHeight;
         }
-
-        // Tab switching
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // Range display updates
-        function updateRangeDisplay(type, value) {
-            document.getElementById(type + 'Display').textContent = value;
-        }
-
-        // TTS Engine updates
-        function updateTTSOptions() {
-            const engine = document.getElementById('ttsEngine').value;
-            const voiceSelect = document.getElementById('ttsVoice');
-            const speedRange = document.getElementById('ttsSpeed');
-            const pitchRange = document.getElementById('ttsPitch');
-
-            if (TTS_ENGINES[engine]) {
-                const config = TTS_ENGINES[engine];
-
-                // Update voice options
-                voiceSelect.innerHTML = config.voices
-                    .map(v => `<option value="${v.value}">${v.label}</option>`)
-                    .join('');
-
-                // Update speed range
-                speedRange.min = config.speedRange[0];
-                speedRange.max = config.speedRange[1];
-                speedRange.value = Math.floor((config.speedRange[0] + config.speedRange[1]) / 2);
-                updateRangeDisplay('speed', speedRange.value);
-
-                // Update pitch range
-                pitchRange.min = config.pitchRange[0];
-                pitchRange.max = config.pitchRange[1];
-                pitchRange.value = 0;
-                updateRangeDisplay('pitch', pitchRange.value);
-            }
-        }
-
-        // Image handling
-        function toggleImageSource() {
-            const uploadSection = document.getElementById('uploadSection');
-            const urlSection = document.getElementById('urlSection');
-            const source = document.querySelector('input[name="imageSource"]:checked').value;
-
-            uploadSection.style.display = source === 'upload' ? 'block' : 'none';
-            urlSection.style.display = source === 'url' ? 'block' : 'none';
-
-            if (source === 'default') {
-                currentImageData = null;
-            }
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentImageData = e.target.result;
-                    displayImagePreview(currentImageData);
-                    debugLog('Image uploaded', { size: file.size, type: file.type });
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function previewImageUrl() {
-            const url = document.getElementById('imageUrlInput').value;
-            if (url) {
-                currentImageData = url;
-                displayImagePreview(url);
-                debugLog('Image URL set', { url });
-            }
-        }
-
-        function displayImagePreview(src) {
-            const preview = document.getElementById('imagePreview');
-            preview.innerHTML = `<img src="${src}" class="image-preview" alt="Preview">`;
-        }
-
-        // Mode change handler
+        
+        // Update mode when radio buttons change
         document.querySelectorAll('input[name="mode"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 currentMode = this.value;
                 debugLog('Mode changed', { mode: currentMode });
             });
         });
-
-        // Main generation function
+        
         async function generateAvatar() {
+            const prompt = document.getElementById('prompt').value;
+            const engine = document.getElementById('ttsEngine').value;
+            const speed = parseInt(document.getElementById('ttsSpeed').value, 10);
+            const voice = document.getElementById('ttsVoice')?.value || null;
+
             const loading = document.getElementById('loading');
             const result = document.getElementById('result');
             const error = document.getElementById('error');
             const video = document.getElementById('avatarVideo');
             const videoInfo = document.getElementById('videoInfo');
 
-            // Collect ALL options from the form
-            const payload = {
-                // Core settings
-                prompt: document.getElementById('prompt').value,
+            debugLog('🚀 Starting avatar generation', {
                 mode: currentMode,
-                stream_mode: document.getElementById('streamMode').value,
-
-                // TTS options
-                tts_engine: document.getElementById('ttsEngine').value,
-                tts_voice: document.getElementById('ttsVoice').value,
-                tts_speed: parseInt(document.getElementById('ttsSpeed').value),
-                tts_pitch: parseInt(document.getElementById('ttsPitch').value),
-                tts_language: document.getElementById('ttsLanguage').value,
-                tts_emotion: document.getElementById('ttsEmotion').value,
-
-                // Audio format
-                sample_rate: parseInt(document.getElementById('sampleRate').value),
-                format: document.getElementById('audioFormat').value,
-
-                // Image options
-                image: currentImageData,
-                still: document.getElementById('still').checked,
-                preprocess: document.getElementById('preprocess').value,
-                resolution: document.getElementById('resolution').value,
-
-                // Video options
-                codec: document.getElementById('codec').value,
-                quality: document.getElementById('quality').value,
-                fps: parseInt(document.getElementById('fps').value),
-
-                // Streaming options
-                chunk_duration: parseFloat(document.getElementById('chunkDuration').value),
-                buffer_size: parseInt(document.getElementById('bufferSize').value),
-                low_latency: document.getElementById('lowLatency').checked,
-                adaptive_quality: document.getElementById('adaptiveQuality').checked,
-
-                // SadTalker options
-                timeout: parseInt(document.getElementById('timeout').value),
-                enhancer: document.getElementById('enhancer').value || null,
-                split_chunks: document.getElementById('splitChunks').checked,
-                chunk_length: parseInt(document.getElementById('chunkLength').value),
-
-                // Advanced options
-                max_duration: parseInt(document.getElementById('maxDuration').value),
-                max_concurrent: parseInt(document.getElementById('maxConcurrent').value),
-                enable_websocket: document.getElementById('enableWebsocket').checked
-            };
-
-            debugLog('Starting avatar generation with ALL options', payload);
+                prompt: prompt.substring(0, 50),
+                tts_engine: engine,
+                tts_speed: speed,
+                tts_voice: voice,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent.substring(0, 100)
+            });
 
             loading.style.display = 'block';
             result.style.display = 'none';
@@ -655,22 +233,37 @@
 
             try {
                 const startTime = Date.now();
+                const body = {
+                    prompt: prompt,
+                    tts_engine: engine,
+                    tts_options: { speed }
+                };
+
+                if (voice) {
+                    body.tts_options.voice = voice;
+                }
 
                 const response = await fetch(`/web/api/avatar_dual.php?action=generate&mode=${currentMode}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(body)
                 });
 
                 const duration = Date.now() - startTime;
 
-                debugLog('Avatar API response received', {
+                debugLog('📡 Avatar API response received', {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,
+                    redirected: response.redirected,
+                    type: response.type,
+                    url: response.url,
                     contentType: response.headers.get('content-type'),
+                    contentLength: response.headers.get('content-length'),
+                    avatarMode: response.headers.get('x-avatar-mode'),
+                    avatarSize: response.headers.get('x-avatar-size'),
                     duration: duration + 'ms',
-                    headers: Object.fromEntries(response.headers.entries())
+                    allHeaders: Object.fromEntries(response.headers.entries())
                 });
 
                 if (response.ok) {
@@ -684,37 +277,184 @@
                         result.style.display = 'block';
 
                         videoInfo.innerHTML = `
-                            <strong>Generation Complete!</strong><br>
+                            <strong>Video Info:</strong><br>
                             Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
-                            Engine: ${response.headers.get('x-avatar-engine') || 'unknown'}<br>
-                            Voice: ${response.headers.get('x-avatar-voice') || 'unknown'}<br>
                             Size: ${blob.size} bytes<br>
                             Type: ${contentType}<br>
                             Generation Time: ${duration}ms<br>
-                            Options Used: ${Object.keys(payload).length} parameters
+                            URL: ${videoUrl}
                         `;
 
-                        // Video event handlers
-                        video.onloadeddata = () => {
-                            debugLog('Video loaded successfully', {
+                        // Comprehensive video debugging
+                        video.onloadstart = () => {
+                            debugLog('🎬 Video load started', {
+                                src: video.src,
+                                currentSrc: video.currentSrc,
+                                networkState: video.networkState,
+                                readyState: video.readyState
+                            });
+                        };
+
+                        video.onloadedmetadata = () => {
+                            debugLog('📊 Video metadata loaded', {
                                 duration: video.duration,
                                 videoWidth: video.videoWidth,
-                                videoHeight: video.videoHeight
+                                videoHeight: video.videoHeight,
+                                readyState: video.readyState,
+                                networkState: video.networkState
+                            });
+                        };
+
+                        video.onloadeddata = () => {
+                            debugLog('✅ Video data loaded successfully', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight,
+                                currentSrc: video.currentSrc,
+                                networkState: video.networkState,
+                                readyState: video.readyState,
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                seekable: video.seekable.length > 0 ? video.seekable.end(0) : 0
+                            });
+                        };
+
+                        video.oncanplay = () => {
+                            debugLog('▶️ Video can play', {
+                                paused: video.paused,
+                                ended: video.ended,
+                                currentTime: video.currentTime,
+                                duration: video.duration,
+                                readyState: video.readyState
+                            });
+                        };
+
+                        video.oncanplaythrough = () => {
+                            debugLog('🎯 Video can play through', {
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                duration: video.duration
                             });
                         };
 
                         video.onerror = (e) => {
-                            debugLog('Video error', {
+                            debugLog('❌ Video error event', {
+                                event: e,
                                 error: video.error,
                                 code: video.error?.code,
-                                message: video.error?.message
+                                message: video.error?.message,
+                                networkState: video.networkState,
+                                readyState: video.readyState,
+                                src: video.src,
+                                currentSrc: video.currentSrc
+                            });
+
+                            // Detailed error analysis
+                            if (video.error) {
+                                const errorCodes = {
+                                    1: 'MEDIA_ERR_ABORTED - The user aborted the video',
+                                    2: 'MEDIA_ERR_NETWORK - A network error occurred',
+                                    3: 'MEDIA_ERR_DECODE - Error occurred when decoding',
+                                    4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format not supported'
+                                };
+                                debugLog('📋 Error meaning', errorCodes[video.error.code] || 'Unknown error');
+                            }
+
+                            // Browser capability check
+                            debugLog('🔍 Browser video support', {
+                                canPlayType_mp4: video.canPlayType('video/mp4'),
+                                canPlayType_h264: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+                                canPlayType_webm: video.canPlayType('video/webm'),
+                                canPlayType_avi: video.canPlayType('video/avi')
                             });
                         };
 
-                        debugLog('Avatar generation successful', {
+                        video.onstalled = () => debugLog('⏸️ Video stalled');
+                        video.onsuspend = () => debugLog('⏯️ Video suspended');
+                        video.onwaiting = () => debugLog('⏳ Video waiting');
+                        video.onprogress = () => {
+                            debugLog('📈 Video loading progress', {
+                                buffered: video.buffered.length > 0 ? video.buffered.end(0) : 0,
+                                duration: video.duration || 'unknown'
+                            });
+                        };
+                        video.onplay = () => debugLog('▶️ Video play started');
+                        video.onpause = () => debugLog('⏸️ Video paused');
+                        video.onended = () => debugLog('🏁 Video ended');
+                        video.ontimeupdate = () => {
+                            if (Math.floor(video.currentTime) % 1 === 0) { // Log every second
+                                debugLog('⏰ Video time update', {
+                                    currentTime: video.currentTime,
+                                    duration: video.duration
+                                });
+                            }
+                        };
+
+                        // Force load and try to play
+                        video.load();
+                        debugLog('🔄 Video load() called');
+
+                        // Try to play after a short delay
+                        setTimeout(() => {
+                            video.play().then(() => {
+                                debugLog('✅ Video play() succeeded');
+                            }).catch(e => {
+                                debugLog('🚫 Video play() failed', { error: e.message, name: e.name });
+                            });
+                        }, 100);
+
+                        debugLog('🎉 Avatar generation successful', {
                             blobSize: blob.size,
                             blobType: blob.type,
-                            parametersUsed: Object.keys(payload).length
+                            videoUrl: videoUrl,
+                            urlLength: videoUrl.length
+                        });
+
+                        // Additional blob analysis
+                        debugLog('📦 Blob analysis', {
+                            constructor: blob.constructor.name,
+                            stream: typeof blob.stream === 'function',
+                            arrayBuffer: typeof blob.arrayBuffer === 'function',
+                            text: typeof blob.text === 'function'
+                        });
+
+                        // Hex dump first 100 bytes to check file structure
+                        blob.arrayBuffer().then(buffer => {
+                            const bytes = new Uint8Array(buffer);
+                            const hexDump = Array.from(bytes.slice(0, 100))
+                                .map(b => b.toString(16).padStart(2, '0'))
+                                .join(' ');
+                            const asciiDump = Array.from(bytes.slice(0, 100))
+                                .map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')
+                                .join('');
+
+                            debugLog('🔍 File hex dump (first 100 bytes)', {
+                                hex: hexDump,
+                                ascii: asciiDump,
+                                fileSignature: hexDump.substring(0, 23), // First 8 bytes
+                                isMP4: hexDump.includes('66 74 79 70'), // 'ftyp' box
+                                isAVI: hexDump.startsWith('52 49 46 46'), // 'RIFF'
+                                isWebM: hexDump.startsWith('1a 45 df a3') // WebM signature
+                            });
+                        }).catch(e => {
+                            debugLog('❌ Failed to read file bytes', { error: e.message });
+                        });
+
+                        // Browser environment check
+                        debugLog('🌐 Browser environment', {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            cookieEnabled: navigator.cookieEnabled,
+                            onLine: navigator.onLine,
+                            language: navigator.language,
+                            hardwareConcurrency: navigator.hardwareConcurrency,
+                            deviceMemory: navigator.deviceMemory || 'unknown'
+                        });
+
+                        // URL object analysis
+                        debugLog('🔗 URL object analysis', {
+                            protocol: new URL(videoUrl).protocol,
+                            host: new URL(videoUrl).host,
+                            pathname: new URL(videoUrl).pathname,
+                            search: new URL(videoUrl).search
                         });
 
                     } else {
@@ -737,119 +477,96 @@
             }
         }
 
-        // Get TTS Engines
-        async function getEngines() {
-            debugLog('Getting TTS engines and voices');
-
-            try {
-                const response = await fetch('/web/api/avatar_dual.php?action=engines');
-                const result = await response.json();
-
-                if (result.engines) {
-                    debugLog('TTS engines received', result.engines);
-                    displayEngineInfo(result.engines);
-                } else {
-                    debugLog('No engine data received');
-                }
-
-            } catch (error) {
-                debugLog('Engine retrieval error', { error: error.message });
-            }
-        }
-
-        function displayEngineInfo(engines) {
-            let info = "Available TTS Engines:\n\n";
-            Object.entries(engines).forEach(([key, engine]) => {
-                info += `${engine.name}:\n`;
-                info += `  Voices: ${engine.voices.length}\n`;
-                info += `  Speed Range: ${engine.speed_range[0]}-${engine.speed_range[1]}\n`;
-                info += `  Pitch Range: ${engine.pitch_range[0]}-${engine.pitch_range[1]}\n\n`;
-            });
-
-            alert(info);
-        }
-
-        // Test functions
         async function testMP4() {
-            debugLog('Testing MP4 pipeline');
-
+            debugLog('Testing MP4 pipeline with minimal file');
+            
             const video = document.getElementById('avatarVideo');
             const result = document.getElementById('result');
             const error = document.getElementById('error');
-
+            
             try {
                 const response = await fetch('/test-mp4');
-
+                
                 if (response.ok) {
                     const blob = await response.blob();
                     const videoUrl = URL.createObjectURL(blob);
-
+                    
                     video.src = videoUrl;
                     result.style.display = 'block';
                     error.style.display = 'none';
-
-                    debugLog('Test MP4 loaded successfully', {
+                    
+                    debugLog('✅ Test MP4 loaded successfully', {
                         size: blob.size,
                         type: blob.type
                     });
-
+                    
+                    // Test hex dump on this file too
+                    blob.arrayBuffer().then(buffer => {
+                        const bytes = new Uint8Array(buffer);
+                        const hexDump = Array.from(bytes.slice(0, 50))
+                            .map(b => b.toString(16).padStart(2, '0'))
+                            .join(' ');
+                        debugLog('🧪 Test MP4 hex dump', { hex: hexDump });
+                    });
+                    
                 } else {
                     throw new Error(`Test MP4 failed: ${response.status}`);
                 }
-
+                
             } catch (err) {
-                debugLog('Test MP4 failed', { error: err.message });
+                debugLog('❌ Test MP4 failed', { error: err.message });
                 error.textContent = 'Test MP4 Error: ' + err.message;
                 error.style.display = 'block';
             }
         }
-
+        
         async function testConnection() {
             debugLog('Testing avatar service connection');
-
+            
             try {
                 const response = await fetch('/web/api/avatar_dual.php?action=test');
                 const result = await response.json();
-
+                
                 debugLog('Connection test result', result);
-
+                
                 if (result.status === 'success') {
-                    alert('Connection successful: ' + result.message);
+                    alert('✅ Connection successful: ' + result.message);
                 } else {
-                    alert('Connection failed: ' + result.message);
+                    alert('❌ Connection failed: ' + result.message);
                 }
             } catch (error) {
                 debugLog('Connection test error', { error: error.message });
-                alert('Connection test failed: ' + error.message);
+                alert('❌ Connection test failed: ' + error.message);
             }
         }
-
+        
         async function getServerInfo() {
             debugLog('Getting server connection info');
-
+            
             try {
                 const response = await fetch('/web/api/avatar_dual.php?action=server_info');
                 const result = await response.json();
-
+                
                 debugLog('Server info received', result);
                 displayServerInfo(result);
-
+                
             } catch (error) {
                 debugLog('Server info retrieval error', { error: error.message });
+                console.error('Server info error:', error);
             }
         }
-
+        
         function displayServerInfo(info) {
             const container = document.getElementById('serverInfo');
-
+            
             if (!info || !info.current_peer) {
                 container.innerHTML = '<div class="status-item status-error">No server info available</div>';
                 return;
             }
-
+            
             const peer = info.current_peer;
             const available = info.available_peers || [];
-
+            
             let html = `
                 <div class="status-item status-${peer.type === 'local' ? 'warning' : 'ok'}">
                     <strong>Current Avatar Server:</strong><br>
@@ -860,7 +577,7 @@
                     ${peer.memory ? `RAM: ${peer.memory}GB` : ''}
                 </div>
             `;
-
+            
             if (available.length > 0) {
                 html += `
                     <div class="status-item status-ok">
@@ -869,42 +586,43 @@
                     </div>
                 `;
             }
-
+            
             container.innerHTML = html;
         }
-
+        
         async function getStatus() {
             debugLog('Getting system status');
-
+            
             try {
                 const response = await fetch('/web/api/avatar_dual.php?action=status');
                 const result = await response.json();
-
+                
                 debugLog('System status received', result);
                 displayStatus(result.data || result);
-
+                
             } catch (error) {
                 debugLog('Status retrieval error', { error: error.message });
+                console.error('Status error:', error);
             }
         }
-
+        
         function displayStatus(status) {
             const grid = document.getElementById('statusGrid');
-
+            
             if (!status) {
                 grid.innerHTML = '<div class="status-item status-error">No status data available</div>';
                 return;
             }
-
+            
             const items = [
                 { label: 'Timestamp', value: status.timestamp, status: 'ok' },
                 { label: 'Device', value: status.device, status: 'ok' },
                 { label: 'TTS Ready', value: status.tts_ready ? 'Yes' : 'No', status: status.tts_ready ? 'ok' : 'error' },
                 { label: 'SadTalker Installed', value: status.sadtalker_installed ? 'Yes' : 'No', status: status.sadtalker_installed ? 'ok' : 'warning' },
-                { label: 'Streaming Available', value: status.streaming_available ? 'Yes' : 'No', status: status.streaming_available ? 'ok' : 'warning' },
-                { label: 'Default Codec', value: status.default_codec, status: 'ok' }
+                { label: 'SadTalker Checkpoints', value: status.sadtalker_checkpoints ? 'Yes' : 'No', status: status.sadtalker_checkpoints ? 'ok' : 'warning' },
+                { label: 'Reference Image', value: status.reference_image ? 'Yes' : 'No', status: status.reference_image ? 'ok' : 'warning' }
             ];
-
+            
             grid.innerHTML = items.map(item => `
                 <div class="status-item status-${item.status}">
                     <strong>${item.label}:</strong><br>
@@ -912,47 +630,92 @@
                 </div>
             `).join('');
         }
-
+        
         async function getLogs() {
             debugLog('Getting avatar service logs');
-
+            
             try {
                 const response = await fetch('/web/api/avatar_dual.php?action=logs');
                 const result = await response.json();
-
+                
                 debugLog('Logs received', { logCount: result.data?.logs?.length || 0 });
-
+                
                 const container = document.getElementById('logContainer');
                 if (result.data && result.data.logs) {
                     container.innerHTML = result.data.logs.join('\n');
                 } else {
                     container.innerHTML = 'No logs available';
                 }
-
+                
             } catch (error) {
                 debugLog('Log retrieval error', { error: error.message });
+                console.error('Logs error:', error);
             }
         }
-
+        
+        async function getPhpErrors() {
+            debugLog('Getting PHP error logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=php_errors');
+                const result = await response.json();
+                
+                debugLog('PHP errors received', { errorCount: result.errors?.length || 0 });
+                
+                const container = document.getElementById('phpErrorContainer');
+                if (result.errors && result.errors.length > 0) {
+                    container.innerHTML = result.errors.join('\n');
+                } else {
+                    container.innerHTML = 'No PHP errors found';
+                }
+                
+            } catch (error) {
+                debugLog('PHP error retrieval error', { error: error.message });
+                console.error('PHP errors error:', error);
+            }
+        }
+        
+        async function clearPhpErrors() {
+            debugLog('Clearing PHP error logs');
+            
+            try {
+                const response = await fetch('/web/api/avatar_dual.php?action=clear_errors');
+                const result = await response.json();
+                
+                debugLog('PHP errors cleared', result);
+                
+                if (result.cleared) {
+                    document.getElementById('phpErrorContainer').innerHTML = 'PHP error logs cleared';
+                    alert('✅ PHP error logs cleared');
+                } else {
+                    alert('❌ Failed to clear PHP error logs');
+                }
+                
+            } catch (error) {
+                debugLog('PHP error clearing error', { error: error.message });
+                console.error('Clear PHP errors error:', error);
+            }
+        }
+        
         function refreshStatus() {
             getStatus();
         }
-
+        
         function refreshLogs() {
             getLogs();
         }
-
+        
         function clearLogs() {
             document.getElementById('logContainer').innerHTML = 'Logs cleared';
             debugLog('Debug logs cleared');
         }
-
+        
         function clearDebugLogs() {
             document.getElementById('logContainer').innerHTML = 'Debug logs cleared';
             console.clear();
             debugLog('Debug console cleared');
         }
-
+        
         function downloadLogs() {
             const logs = document.getElementById('logContainer').textContent;
             const blob = new Blob([logs], { type: 'text/plain' });
@@ -964,38 +727,112 @@
             URL.revokeObjectURL(url);
             debugLog('Debug logs downloaded');
         }
-
+        
         function copyLogsToClipboard() {
             const logs = document.getElementById('logContainer').textContent;
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(logs).then(() => {
                     debugLog('Debug logs copied to clipboard');
-                    alert('Logs copied to clipboard!');
+                    alert('✅ Logs copied to clipboard!');
                 }).catch(err => {
                     debugLog('Failed to copy logs to clipboard', { error: err.message });
-                    alert('Failed to copy logs: ' + err.message);
+                    alert('❌ Failed to copy logs: ' + err.message);
                 });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = logs;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    debugLog('Debug logs copied to clipboard (fallback)');
+                    alert('✅ Logs copied to clipboard!');
+                } catch (err) {
+                    debugLog('Failed to copy logs to clipboard (fallback)', { error: err.message });
+                    alert('❌ Failed to copy logs: ' + err.message);
+                }
+                document.body.removeChild(textArea);
             }
         }
-
-        // Initialize
+        
+        // Enhanced initialization with environment detection
         function initializeDebugConsole() {
-            debugLog('Complete Avatar Debug Console initializing');
-
-            // Set default TTS engine
-            updateTTSOptions();
-
-            // Initialize range displays
-            updateRangeDisplay('speed', document.getElementById('ttsSpeed').value);
-            updateRangeDisplay('pitch', document.getElementById('ttsPitch').value);
-
-            // Load initial data
+            debugLog('🎮 Avatar Debug Console initializing');
+            
+            // Browser capability detection
+            const capabilities = {
+                webGL: !!window.WebGLRenderingContext,
+                webGL2: !!window.WebGL2RenderingContext,
+                webRTC: !!window.RTCPeerConnection,
+                mediaDevices: !!navigator.mediaDevices,
+                serviceWorker: 'serviceWorker' in navigator,
+                webAssembly: typeof WebAssembly === 'object',
+                localStorage: typeof Storage !== 'undefined',
+                indexedDB: !!window.indexedDB,
+                webWorkers: typeof Worker !== 'undefined',
+                fetch: typeof fetch === 'function',
+                promises: typeof Promise === 'function',
+                asyncAwait: (async () => {}).constructor === (async function(){}).constructor
+            };
+            
+            debugLog('🔧 Browser Capabilities', capabilities);
+            
+            // Memory info if available
+            if (performance.memory) {
+                debugLog('💾 Memory Info', {
+                    usedJSHeapSize: performance.memory.usedJSHeapSize,
+                    totalJSHeapSize: performance.memory.totalJSHeapSize,
+                    jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+                });
+            }
+            
+            // Connection info if available
+            if (navigator.connection) {
+                debugLog('🌐 Connection Info', {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                });
+            }
+            
+            logPerformance('console-initialized');
             getServerInfo();
             getStatus();
-
-            debugLog('Initialization complete - ALL options loaded');
         }
+        const voices = {
+            edge: [
+                { value: 'en-US-AriaNeural', label: 'Aria (Female)' },
+                { value: 'en-US-JennyNeural', label: 'Jenny (Female)' },
+                { value: 'en-US-GuyNeural', label: 'Guy (Male)' }
+            ],
+            openai: [
+                { value: 'alloy', label: 'Alloy' },
+                { value: 'echo', label: 'Echo' },
+                { value: 'nova', label: 'Nova' }
+            ],
+            elevenlabs: [
+                { value: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel' },
+                { value: 'AZnzlk1XvdvUeBnXmlld', label: 'Domi' }
+            ]
+        };
 
+        function updateTTSOptions() {
+            const engine = document.getElementById('ttsEngine').value;
+            const voiceGroup = document.getElementById('voiceGroup');
+            const voiceSelect = document.getElementById('ttsVoice');
+
+            if (voices[engine]) {
+                voiceGroup.style.display = 'block';
+                voiceSelect.innerHTML = voices[engine]
+                    .map(v => `<option value="${v.value}">${v.label}</option>`)
+                    .join('');
+            } else {
+                voiceGroup.style.display = 'none';
+                voiceSelect.innerHTML = '';
+            }
+        }
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeDebugConsole);
