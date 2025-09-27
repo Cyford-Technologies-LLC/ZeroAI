@@ -39,7 +39,7 @@ elif $BUILD; then
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build avatar
 else
     #  Simple restart
-    docker cp avatar/avatar_api.py zeroai_avatar:/app/avatar_api.py
+    docker cp avatar/scripts/*  zeroai_avatar:/app/
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
 
 fi
