@@ -233,7 +233,7 @@ class StreamingAvatarGenerator(TTSProcessor):
             self.is_streaming = True
 
             # Split prompt into sentences for chunking
-            sentences = self._split_into_sentences(prompt)
+            sentences = self._split_into_word_chunks(prompt)
 
             for i, sentence in enumerate(sentences):
                 if not self.is_streaming:
@@ -422,7 +422,7 @@ class StreamingAvatarGenerator(TTSProcessor):
     def _generate_audio_realtime(self, prompt: str, tts_engine: str, tts_options: Dict):
         """Generate audio in real-time and put in queue"""
         try:
-            sentences = self._split_into_sentences(prompt)
+            sentences = self._split_into_word_chunks(prompt)
 
             for sentence in sentences:
                 if not self.is_streaming:
@@ -525,6 +525,14 @@ class StreamingAvatarGenerator(TTSProcessor):
                 processed.append(sentence)
 
         return processed or [text]  # Fallback to original text
+
+    def _split_into_word_chunks(self, text: str, words_per_chunk: int = 2) -> list:
+        words = text.split()
+        chunks = []
+        for i in range(0, len(words), words_per_chunk):
+            chunk = ' '.join(words[i:i + words_per_chunk])
+            chunks.append(chunk)
+        return chunks
 
 
 # WebSocket Support
