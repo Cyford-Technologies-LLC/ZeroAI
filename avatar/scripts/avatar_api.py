@@ -15,21 +15,38 @@ import logging
 # Import streaming components
 try:
     from avatar_stream_api import StreamingAvatarGenerator, init_websocket
-
     STREAMING_AVAILABLE = True
 except ImportError:
     print("Warning: Streaming components not available")
     STREAMING_AVAILABLE = False
 
 # Import options handling
-from avatar_options import (
-    sanitize_options,
-    validate_streaming_request,
-    get_streaming_preset,
-    STREAMING_PRESETS,
-    VALIDATION_RULES,
-    get_endpoint_info
-)
+try:
+    from avatar_options import (
+        sanitize_options,
+        validate_streaming_request,
+        get_streaming_preset,
+        STREAMING_PRESETS,
+        VALIDATION_RULES,
+        get_endpoint_info
+    )
+except ImportError as e:
+    # Fallback for missing functions
+    from avatar_options import sanitize_options
+
+    def validate_streaming_request(data):
+        return True, ""
+
+    def get_streaming_preset(name):
+        return {}
+
+    STREAMING_PRESETS = {}
+    VALIDATION_RULES = {}
+
+    def get_endpoint_info(endpoint):
+        return {"endpoint": endpoint, "options": {}}
+
+    print(f"Warning: Some streaming functions not available: {e}")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,13 +77,11 @@ benchmark_file = "/app/static/benchmark_info.json"
 os.makedirs("/app/static", exist_ok=True)
 os.makedirs("/app/faces", exist_ok=True)
 
-
 # Global error handler
 @app.errorhandler(Exception)
 def handle_exception(e):
     logger.error("Unhandled Exception: %s\n%s", e, traceback.format_exc())
     return {"error": str(e), "type": type(e).__name__}, 500
-
 
 # ============================================================================
 # UTILITY FUNCTIONS
@@ -82,7 +97,6 @@ def clean_text(text: str) -> str:
     text = "".join(ch for ch in text if ch.isprintable())
     return text
 
-
 def get_audio_duration(audio_path):
     """Get audio duration in seconds"""
     try:
@@ -94,7 +108,6 @@ def get_audio_duration(audio_path):
     except Exception as e:
         logger.error(f"Failed to get audio duration: {e}")
         return 0.0
-
 
 def load_and_preprocess_image(img_input, fallback=ref_image_path):
     """Load image from path, base64, or URL, then preprocess for face detection"""
@@ -132,7 +145,6 @@ def load_and_preprocess_image(img_input, fallback=ref_image_path):
         logger.error(f"Image load error: {e}")
         return cv2.imread(fallback) if os.path.exists(fallback) else None
 
-
 def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_options=None):
     """Call TTS service with options"""
     try:
@@ -151,7 +163,6 @@ def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_opti
         logger.error(f"TTS call failed: {e}")
         return False
 
-
 def normalize_audio(audio_path):
     """Normalize audio format"""
     fixed_path = audio_path.replace('.wav', '_fixed.wav')
@@ -163,7 +174,6 @@ def normalize_audio(audio_path):
     except subprocess.CalledProcessError as e:
         logger.error(f"Audio normalization failed: {e}")
         return audio_path
-
 
 # ============================================================================
 # STREAMING ENDPOINTS
@@ -249,7 +259,6 @@ def stream_avatar():
         logger.error("Streaming error: %s\n%s", e, traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/stream/ws')
 def stream_avatar_websocket():
     """WebSocket endpoint for real-time bidirectional avatar streaming"""
@@ -262,7 +271,6 @@ def stream_avatar_websocket():
     except Exception as e:
         logger.error("WebSocket streaming error: %s", e)
         return jsonify({"error": str(e)}), 500
-
 
 # ============================================================================
 # MAIN GENERATION ENDPOINT
@@ -373,7 +381,6 @@ def generate_avatar():
         logger.error("Generation error: %s\n%s", e, traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
-
 # ============================================================================
 # VIDEO GENERATION FUNCTIONS
 # ============================================================================
@@ -403,7 +410,7 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
             video_parts = []
 
             for idx, chunk_path in enumerate(chunks):
-                logger.info(f"Processing chunk {idx + 1}/{len(chunks)}")
+                logger.info(f"Processing chunk {idx+1}/{len(chunks)}")
                 chunk_result_dir = os.path.join(result_dir, f"chunk_{idx}")
                 os.makedirs(chunk_result_dir, exist_ok=True)
 
@@ -473,7 +480,6 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
         logger.error(f"SadTalker generation failed: {e}")
         return False
 
-
 def split_audio(audio_path, chunk_length_s=10):
     """Split audio into chunks"""
     try:
@@ -482,8 +488,8 @@ def split_audio(audio_path, chunk_length_s=10):
         chunks = []
 
         for i in range(0, len(audio), chunk_length_ms):
-            chunk = audio[i:i + chunk_length_ms]
-            out_path = f"{audio_path}_chunk{i // chunk_length_ms}.wav"
+            chunk = audio[i:i+chunk_length_ms]
+            out_path = f"{audio_path}_chunk{i//chunk_length_ms}.wav"
             chunk.export(out_path, format="wav")
             chunks.append(out_path)
 
@@ -491,7 +497,6 @@ def split_audio(audio_path, chunk_length_s=10):
     except Exception as e:
         logger.error(f"Audio splitting failed: {e}")
         return [audio_path]
-
 
 def concat_videos(video_list, output_path):
     """Concatenate video files using ffmpeg"""
@@ -507,7 +512,6 @@ def concat_videos(video_list, output_path):
     except Exception as e:
         logger.error(f"Video concatenation failed: {e}")
         return None
-
 
 def generate_talking_face(image_path, audio_path, output_path, codec=None, quality=None):
     """Generate realistic talking face using MediaPipe"""
@@ -545,7 +549,6 @@ def generate_talking_face(image_path, audio_path, output_path, codec=None, quali
     except Exception as e:
         logger.error(f"Face generation error: {e}")
         create_basic_avatar(audio_path, output_path, f"Face animation failed: {str(e)}")
-
 
 def create_default_face():
     """Create a realistic default face image"""
@@ -590,7 +593,6 @@ def create_default_face():
     cv2.ellipse(img, (256, 320), (35, 12), 0, 0, 180, (150, 100, 100), -1)
 
     return img
-
 
 def create_animated_face(img, detection, audio_path, output_path):
     """Create animated face video"""
@@ -693,7 +695,6 @@ def create_animated_face(img, detection, audio_path, output_path):
         if out:
             out.release()
 
-
 def create_basic_avatar(audio_path, video_path, text):
     """Fallback basic avatar"""
     logger.info("Creating basic avatar...")
@@ -730,10 +731,10 @@ def create_basic_avatar(audio_path, video_path, text):
 
             # Draw basic animated face
             cv2.circle(frame, (320, 240), 100, (220, 200, 180), -1)  # Face
-            cv2.circle(frame, (295, 215), 12, (80, 60, 40), -1)  # Left eye
-            cv2.circle(frame, (345, 215), 12, (80, 60, 40), -1)  # Right eye
-            cv2.circle(frame, (297, 213), 4, (255, 255, 255), -1)  # Left highlight
-            cv2.circle(frame, (347, 213), 4, (255, 255, 255), -1)  # Right highlight
+            cv2.circle(frame, (295, 215), 12, (80, 60, 40), -1)      # Left eye
+            cv2.circle(frame, (345, 215), 12, (80, 60, 40), -1)      # Right eye
+            cv2.circle(frame, (297, 213), 4, (255, 255, 255), -1)    # Left highlight
+            cv2.circle(frame, (347, 213), 4, (255, 255, 255), -1)    # Right highlight
 
             # Nose
             cv2.ellipse(frame, (320, 245), (8, 12), 0, 0, 180, (200, 180, 160), -1)
@@ -753,7 +754,6 @@ def create_basic_avatar(audio_path, video_path, text):
     finally:
         if out:
             out.release()
-
 
 def convert_video_with_codec(video_path, audio_path, codec, quality):
     """Convert video using specified codec"""
@@ -838,7 +838,6 @@ def convert_video_with_codec(video_path, audio_path, codec, quality):
         logger.error(f"Video conversion error: {e}")
         return None
 
-
 def get_mimetype_for_codec(codec):
     """Get MIME type for codec"""
     mime_types = {
@@ -846,7 +845,6 @@ def get_mimetype_for_codec(codec):
         'h265_high': 'video/mp4', 'webm_high': 'video/webm', 'webm_fast': 'video/webm'
     }
     return mime_types.get(codec, 'video/mp4')
-
 
 # ============================================================================
 # DEBUG AND UTILITY ENDPOINTS
@@ -867,7 +865,6 @@ def debug_streaming():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-
 @app.route('/stream/presets')
 def get_streaming_presets_endpoint():
     """Get available streaming presets"""
@@ -881,7 +878,6 @@ def get_streaming_presets_endpoint():
         })
     except Exception as e:
         return jsonify({'error': str(e)})
-
 
 @app.route('/stream/presets/<preset_name>')
 def apply_preset_endpoint(preset_name):
@@ -898,7 +894,6 @@ def apply_preset_endpoint(preset_name):
         })
     except Exception as e:
         return jsonify({'error': str(e)})
-
 
 @app.route('/test/stream/chunked')
 def test_chunked_stream():
@@ -931,7 +926,6 @@ def test_chunked_stream():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/test/stream/realtime')
 def test_realtime_stream():
@@ -966,7 +960,6 @@ def test_realtime_stream():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/debug/status')
 def debug_status():
     """Debug status endpoint"""
@@ -989,7 +982,6 @@ def debug_status():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-
 @app.route('/debug/logs')
 def debug_logs():
     """Debug logs endpoint"""
@@ -1004,7 +996,6 @@ def debug_logs():
         return jsonify({'logs': logs, 'timestamp': str(datetime.now())})
     except Exception as e:
         return jsonify({'error': str(e)})
-
 
 @app.route('/health')
 def health():
@@ -1034,7 +1025,6 @@ def health():
         ]
     })
 
-
 @app.route('/test-mp4')
 def test_mp4():
     """Generate a minimal test MP4 to verify pipeline"""
@@ -1058,14 +1048,12 @@ def test_mp4():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/reload')
 def reload_config():
     """Force reload configuration"""
     global DEFAULT_CODEC
     DEFAULT_CODEC = 'h264_fast'
     return jsonify({'status': 'reloaded', 'default_codec': DEFAULT_CODEC})
-
 
 # ============================================================================
 # UTILITY FUNCTIONS
@@ -1079,21 +1067,19 @@ def check_ffmpeg_available():
     except:
         return False
 
-
 def get_disk_usage():
     """Get disk usage information"""
     try:
         import shutil
         total, used, free = shutil.disk_usage('/app')
         return {
-            'total_gb': round(total / (1024 ** 3), 2),
-            'used_gb': round(used / (1024 ** 3), 2),
-            'free_gb': round(free / (1024 ** 3), 2),
+            'total_gb': round(total / (1024**3), 2),
+            'used_gb': round(used / (1024**3), 2),
+            'free_gb': round(free / (1024**3), 2),
             'usage_percent': round((used / total) * 100, 1)
         }
     except:
         return 'Unknown'
-
 
 def get_memory_info():
     """Get memory usage information"""
@@ -1101,13 +1087,12 @@ def get_memory_info():
         import psutil
         memory = psutil.virtual_memory()
         return {
-            'total_gb': round(memory.total / (1024 ** 3), 2),
-            'available_gb': round(memory.available / (1024 ** 3), 2),
+            'total_gb': round(memory.total / (1024**3), 2),
+            'available_gb': round(memory.available / (1024**3), 2),
             'usage_percent': memory.percent
         }
     except:
         return 'Unknown'
-
 
 # ============================================================================
 # APPLICATION STARTUP
