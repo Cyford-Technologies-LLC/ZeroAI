@@ -4,7 +4,9 @@ FROM nvidia/cuda:12.1.0-base-ubuntu22.04
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    NUMBA_CACHE_DIR='/tmp/numba_cache'
+    NUMBA_CACHE_DIR='/tmp/numba_cache' \
+    MPLCONFIGDIR=/tmp/matplotlib
+
 
 WORKDIR /app
 
@@ -43,8 +45,11 @@ RUN mkdir -p /app/faces \
     /app/scripts \
     /app/logs \
     /tmp/streaming_cache \
+    /home/avataruser/.config \
     && groupadd -r avataruser \
     && useradd -r -g avataruser avataruser
+
+
 
 # Copy only requirements first (change occasionally - cache friendly)
 COPY requirements.txt .
@@ -92,7 +97,7 @@ RUN if [ -f "/app/create_face.py" ]; then \
 COPY faces/ /app/faces/
 
 # Set ownership for static content
-RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/streaming_cache
+RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/streaming_cache /home/avataruser
 
 # Copy application code (changes most frequently - put LAST)
 COPY scripts/*.py /app/
