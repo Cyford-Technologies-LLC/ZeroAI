@@ -1,0 +1,59 @@
+1️⃣ Mode / Generation Options
+Option	Values / Type	Notes
+mode	simple / sadtalker	Determines generation method. simple → MediaPipe talking face, sadtalker → SadTalker pipeline.
+stream_mode	complete / chunked / realtime	How the video is returned/streamed.
+codec	h264_high / h264_medium / h264_fast / h265_high / webm_high / webm_fast	Used for output video codec.
+quality	high / medium / fast	Used for video conversion and optional codec presets.
+
+
+2️⃣ Text / TTS Options
+Option	Type	Default	Notes
+prompt	string	"Hello"	Text to speak in the avatar.
+tts_engine	string	"espeak"	Which TTS backend to use.
+voice	string	"en_female"	Voice selection for TTS.
+language	string	"en-US"	Language for TTS.
+rate	float	1.0	Speed of speech.
+pitch	float	0	Pitch adjustment.
+emotion	string	"neutral"	TTS emotion (if supported).
+sample_rate	int	16000	Output sample rate for TTS.
+format	string	"wav"	Output audio format.
+
+
+3️⃣ Source Image / Face Options
+Option	Type	Default	Notes
+image	string / URL / base64 / path	/app/faces/2.jpg	Can be a URL, local path, or base64-encoded image.
+still	bool	True	Whether SadTalker should treat image as still (no motion source).
+preprocess	string	"crop"	Preprocessing mode for SadTalker input.
+resolution	string	"256"	Image resolution for SadTalker.
+
+
+4️⃣ SadTalker / Video Generation Options
+Option	Type	Default	Notes
+timeout	int	1200	Maximum generation time in seconds.
+enhancer	string	None	Optional image/video enhancer (e.g., gfpgan).
+split_chunks	bool	False	Whether to split audio into chunks for generation.
+chunk_length	int	10	Seconds per chunk if splitting audio.
+fps	int	15	Target frames per second.
+
+
+5️⃣ Misc / Internal / Debug Options
+Option	Type	Notes
+benchmark_file	string	Path to benchmark JSON for timeouts / fps.
+audio_path	string	Temp file path for TTS output.
+video_path	string	Output path for generated video.
+/debug/status	endpoint	Returns current system status, available modes, codecs, TTS, disk, memory.
+/debug/logs	endpoint	Returns last logs for debugging.
+/reload	endpoint	Reload configuration (e.g., default codec).
+/health	endpoint	Health check for device + TTS + modes.
+
+✅ Notes / Observations
+
+Your “bring your own image” is already supported via image in JSON.
+
+The TTS options are explicit and separate from the mode options.
+
+Streaming modes (complete, chunked, realtime) are independent of TTS or image inputs.
+
+Some options (timeout, fps, split_chunks) are SadTalker-specific and may be ignored in simple mode.
+
+Debug endpoints expose system state but don’t accept most options—they’re read-only.

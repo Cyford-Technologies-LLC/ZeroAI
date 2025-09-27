@@ -1,5 +1,9 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+from flask import Flask
+from flask_sockets import Sockets
+from streaming_api import streaming_bp, attach_ws
+
 import os, subprocess, tempfile, requests, base64, traceback, unicodedata , shutil , glob , time
 from pydub import AudioSegment
 import mediapipe as mp
@@ -12,12 +16,21 @@ import wave
 from pydub import AudioSegment
 from moviepy.editor import concatenate_videoclips, VideoFileClip
 
+
 import logging, traceback
 
 
 
 app = Flask(__name__)
 CORS(app)
+sockets = Sockets(app)
+
+# register REST endpoints
+app.register_blueprint(streaming_bp)
+
+# register WS endpoint
+attach_ws(sockets)
+
 
 
 
@@ -1263,5 +1276,9 @@ def calculate_timeout(audio_duration,
 
 
 if __name__ == '__main__':
+    from gevent import pywsgi
+    from geventwebsocket.handler import WebSocketHandler
     app.debug = True
-    app.run(host='0.0.0.0', port=7860)
+    server = pywsgi.WSGIServer(("", 7860), app, handler_class=WebSocketHandler)
+    server.serve_forever()
+    # app.run(host='0.0.0.0', port=7860)

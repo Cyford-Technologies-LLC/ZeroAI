@@ -15,4 +15,66 @@ curl -X POST http://localhost:444/generate?mode=sadtalker -H "Content-Type: appl
 
 
 
-zeroai_avatar
+
+
+// Option 1: Standard
+fetch("/generate", {method:"POST", body: JSON.stringify({mode:"sadtalker"})})
+  .then(r => r.json())
+  .then(d => { video.src = d.video_url; video.play(); });
+
+// Option 2: Chunked (polling)
+async function pollChunks() {
+    const resp = await fetch("/generate", {method:"POST", body: JSON.stringify({mode:"sadtalker", stream_mode:"chunked"})});
+    const data = await resp.json();
+    for (const chunk of data.chunks) {
+        // append each chunk to <video> or <canvas>
+    }
+}
+
+// Option 3: Real-time WebSocket
+const ws = new WebSocket("ws://localhost:7860/stream");
+ws.onmessage = (event) => {
+    const blob = new Blob([event.data], {type:"image/jpeg"});
+    const img = new Image();
+    img.src = URL.createObjectURL(blob);
+    img.onload = () => { canvasCtx.drawImage(img,0,0); }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1️⃣ Typical TTS capabilities you can expose through tts_options
+Key in tts_options	Meaning	Typical Values
+voice / speaker	Which voice or speaker to use.	"en_male", "en_female", "speaker_1", "speaker_2"
+language	Output language or accent.	"en-US", "en-GB", "fr-FR", "es-ES"
+rate / speed	Speaking rate multiplier.	0.5 (half speed) to 2.0 (double speed)
+pitch	Pitch shift in semitones.	-5 (lower) to +5 (higher)
+emotion / style	Expressive styles.	"neutral", "cheerful", "angry", "sad", "whisper"
+volume	Output gain control.	-10 to +10 dB or percent
+sample_rate	Audio sample rate.	16000, 22050, 48000
+format	Audio output format.	"wav", "mp3", "ogg", "pcm"
+text_type	How text is interpreted.	"plain", "ssml" (if the engine supports SSML tags)
+split_sentences	Automatically chunk long text.	true/false
+
+(exact keys depend on your underlying TTS engine, but almost all support some subset of these)

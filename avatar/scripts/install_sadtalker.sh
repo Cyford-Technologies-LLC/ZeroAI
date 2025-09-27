@@ -39,5 +39,6 @@ download_weight "${GFPGAN_URL}/v1.3.0/GFPGANv1.4.pth" "gfpgan/weights/GFPGANv1.4
 # Create checkpoints symlinks
 mkdir -p /app/checkpoints
 ln -sf /app/SadTalker/checkpoints/* /app/checkpoints/ 2>/dev/null || true
+cd /app/checkpoints/
 
 echo "✅ SadTalker installation complete"

@@ -32,7 +32,7 @@ RUN python -m venv /app/venv && \
 COPY . .
 
 # Install SadTalker
-COPY avatar/install_sadtalker.sh .
+COPY avatar/scripts/install_sadtalker.sh .
 RUN chmod +x install_sadtalker.sh && ./install_sadtalker.sh
 
 # Fix ownership and git wrapper after copying code

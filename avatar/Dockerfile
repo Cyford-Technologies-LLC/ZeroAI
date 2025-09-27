@@ -9,6 +9,7 @@ WORKDIR /app
 
 
 # Install system dependencies
+# Install system dependencies including streaming requirements
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.10 \
     python3-pip \
@@ -17,26 +18,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cuda-toolkit-12-1 \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    libgstreamer1.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
     ffmpeg \
     git \
     wget \
     pax-utils \
+    curl \
+    htop \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first (cache friendly)
 COPY requirements.txt .
 
 # Install Torch first (GPU build)
-RUN pip install  --no-cache-dir -r requirements.txt
-
-
-#
-## Fix PyTorch library permissions
-#RUN find /usr/local/lib/python3.10/site-packages/torch -name "libtorch_cpu.so" -exec bash -c '\
-#    echo "Fixing permissions for {}"; \
-#    chmod 755 "{}"; \
-#    paxctl -cm "{}"; \
-#    ' \;
+# Install Python packages
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
@@ -44,14 +46,25 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN python3 -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}'); print(f'CUDA Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"No CUDA Device\"}')"
 
 # Copy application code (this is the only thing that should invalidate cache often)
-COPY avatar_api.py .
-COPY create_face.py .
 COPY faces /app/faces
-COPY install_sadtalker.sh .
+COPY scripts/*  /app/
 
 
-RUN bash install_sadtalker.sh
-RUN python3 create_face.py
+# Install SadTalker
+RUN if [ -f "/app/install_sadtalker.sh" ]; then \
+        chmod +x /app/install_sadtalker.sh && \
+        bash /app/install_sadtalker.sh; \
+    else \
+        echo "SadTalker installation script not found, skipping..."; \
+    fi
+
+
+# Create default face if script exists
+RUN if [ -f "/app/create_face.py" ]; then \
+        python3 create_face.py; \
+    else \
+        echo "create_face.py not found, skipping..."; \
+    fi
 
 
 
@@ -64,6 +77,23 @@ RUN python3 -c "import torch; import os; torch_path = os.path.dirname(torch.__fi
         echo "Could not locate PyTorch installation, skipping permission fixes"; \
     fi
 
+
+
+# Create non-root user for security
+RUN groupadd -r avataruser && useradd -r -g avataruser avataruser && \
+    chown -R avataruser:avataruser /app /tmp/streaming_cache
+USER avataruser
+
+
+
+# Set permissions for application files
+RUN chmod +x /app/*.py && \
+    chmod 755 /app/static && \
+    chmod 755 /app/faces && \
+    chmod 755 /tmp/streaming_cache
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:7860/health || exit 1
 
 EXPOSE 7860
 CMD ["python3", "avatar_api.py"]

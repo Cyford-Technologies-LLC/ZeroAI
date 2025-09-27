@@ -7,11 +7,22 @@ torchaudio==2.1.2
 # Other dependencies
 numpy
 opencv-python-headless
+
 flask
 flask-cors
+flask-socketio>=5.3.0
+
 requests
+python-socketio>=5.8.0
+websockets>=11.0
+gevent>=22.10.0
+gevent-websocket>=0.10.1
+
 mediapipe
 pydub
 moviepy==1.0.3
 imageio==2.31.1
 imageio-ffmpeg==0.4.8
+
+
+
