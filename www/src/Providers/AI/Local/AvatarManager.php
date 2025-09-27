@@ -527,7 +527,7 @@ class AvatarManager
 
             // Detect streaming mode
     $streamMode = $options['stream_mode'] ?? 'complete';
-    $isStreaming = ($streamMode !== 'complete')
+    $isStreaming = ($streamMode !== 'complete');
 
 
     if ($isStreaming) {
