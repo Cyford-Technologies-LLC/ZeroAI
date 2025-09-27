@@ -15,6 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-dev \
     build-essential \
+    cmake \
+    libopenblas-dev \
+    liblapack-dev \
+    libx11-dev \
+    libgtk-3-dev \
     cuda-toolkit-12-1 \
     libgl1-mesa-glx \
     libglib2.0-0 \
