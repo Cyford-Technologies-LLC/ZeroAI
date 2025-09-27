@@ -1,6 +1,6 @@
 FROM nvidia/cuda:12.1.0-base-ubuntu22.04
 
-# Set environment variables
+# Set environment variables (rarely change - cache friendly)
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
@@ -8,8 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-
-# Install system dependencies
+# Install system dependencies (rarely change - cache friendly)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.10 \
     python3-pip \
@@ -35,75 +34,76 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pax-utils \
     curl \
     htop \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3 /usr/bin/python
 
-    # Create necessary directories
+# Create directories and user early (rarely change - cache friendly)
 RUN mkdir -p /app/faces \
     /app/static \
     /app/scripts \
     /app/logs \
-    /tmp/streaming_cache
+    /tmp/streaming_cache \
+    && groupadd -r avataruser \
+    && useradd -r -g avataruser avataruser
 
-
-# Copy only requirements first (cache friendly)
+# Copy only requirements first (change occasionally - cache friendly)
 COPY requirements.txt .
 
-# Install Torch first (GPU build)
-# Install Python packages
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install Python packages (change occasionally - cache friendly)
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
+# Test CUDA installation (rarely change - cache friendly)
 RUN python3 -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}'); print(f'CUDA Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"No CUDA Device\"}')"
 
-# Copy application code (this is the only thing that should invalidate cache often)
-COPY faces /app/faces
-COPY scripts/*  /app/
-
-
-# Install SadTalker
-RUN if [ -f "/app/install_sadtalker.sh" ]; then \
-        chmod +x /app/install_sadtalker.sh && \
-        bash /app/install_sadtalker.sh; \
-    else \
-        echo "SadTalker installation script not found, skipping..."; \
-    fi
-
-
-# Create default face if script exists
-RUN if [ -f "/app/create_face.py" ]; then \
-        python3 create_face.py; \
-    else \
-        echo "create_face.py not found, skipping..."; \
-    fi
-
-
-
-# Fix PyTorch library permissions dynamically
-RUN python3 -c "import torch; import os; torch_path = os.path.dirname(torch.__file__); print(f'Torch path: {torch_path}')" && \
-    TORCH_PATH=$(python3 -c "import torch; import os; print(os.path.dirname(torch.__file__))" 2>/dev/null || echo "") && \
-    if [ -n "$TORCH_PATH" ]; then \
+# Fix PyTorch permissions early (rarely change - cache friendly)
+RUN TORCH_PATH=$(python3 -c "import torch; import os; print(os.path.dirname(torch.__file__))" 2>/dev/null || echo "") \
+    && if [ -n "$TORCH_PATH" ]; then \
         find "$TORCH_PATH" -name "*.so" -exec chmod 755 {} \; || true; \
     else \
         echo "Could not locate PyTorch installation, skipping permission fixes"; \
     fi
 
+# Copy SadTalker installation script (changes occasionally - semi cache friendly)
+COPY scripts/install_sadtalker.sh /app/install_sadtalker.sh
 
-# Create non-root user for security
-RUN groupadd -r avataruser && useradd -r -g avataruser avataruser && \
-    chown -R avataruser:avataruser /app /tmp/streaming_cache
+# Install SadTalker (large operation - cache this!)
+RUN if [ -f "/app/install_sadtalker.sh" ]; then \
+        chmod +x /app/install_sadtalker.sh \
+        && bash /app/install_sadtalker.sh \
+        && rm -rf /tmp/* \
+        && rm /app/install_sadtalker.sh; \
+    else \
+        echo "SadTalker installation script not found, skipping..."; \
+    fi
 
+# Copy face creation script (changes occasionally)
+COPY scripts/create_face.py /app/create_face.py
 
+# Create default face (semi-stable operation)
+RUN if [ -f "/app/create_face.py" ]; then \
+        python3 create_face.py \
+        && rm /app/create_face.py; \
+    else \
+        echo "create_face.py not found, skipping..."; \
+    fi
 
+# Copy static assets (change less frequently than code)
+COPY faces/ /app/faces/
+
+# Set ownership for static content
+RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/streaming_cache
+
+# Copy application code (changes most frequently - put LAST)
+COPY scripts/*.py /app/
+
+# Final ownership and permissions (small operation)
+RUN chown -R avataruser:avataruser /app/*.py \
+    && chmod +x /app/*.py \
+    && chmod -R 755 /app/
+
+# Switch to non-root user
 USER avataruser
-
-# Set permissions for application files
-RUN chmod +x /app/*.py && \
-    chmod -R 755 /app/
-
-
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

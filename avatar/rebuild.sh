@@ -40,14 +40,19 @@ elif $BUILD; then
 else
     #  Simple restart
     for file in avatar/scripts/*; do
-    docker cp "$file" zeroai_avatar:/app/
-done
+      docker cp "$file" zeroai_avatar:/app/
+    done
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
 
 fi
 
 # Start it back up
 docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml up -d avatar
+
+#  Clean / UP
+
+docker image prune -f
+docker builder prune -f
 
 echo "✅ Avatar container rebuilt and started."
 echo "Tip: run './rebuild.sh --nuke' if you need a full clean rebuild."
