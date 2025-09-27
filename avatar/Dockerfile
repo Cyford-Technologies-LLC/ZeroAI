@@ -80,7 +80,7 @@ RUN python3 -c "import torch; import os; torch_path = os.path.dirname(torch.__fi
 
 # Create non-root user for security
 RUN groupadd -r avataruser && useradd -r -g avataruser avataruser && \
-    mkdir -p /tmp/streaming_cache
+    mkdir -p /tmp/streaming_cache \
     chown -R avataruser:avataruser /app /tmp/streaming_cache \
 
 USER avataruser
