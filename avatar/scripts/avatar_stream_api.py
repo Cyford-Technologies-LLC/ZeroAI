@@ -104,18 +104,18 @@ class StreamingAvatarGenerator(TTSProcessor):
                 temp_video_path = temp_video.name
 
             try:
-                # Generate SadTalker video using your existing function
+                # Generate SadTalker video using your existing function - exact same call as in full video
                 success = generate_sadtalker_video(
-                    audio_path=audio_path,
-                    output_path=temp_video_path,
-                    prompt="",  # Not needed for streaming
-                    codec='h264_fast',  # Fast encoding for streaming
-                    quality='medium',
-                    source_image=source_image,
+                    audio_path,
+                    temp_video_path,
+                    "",  # prompt
+                    'h264_fast',  # codec
+                    'medium',  # quality
                     timeout=sadtalker_options.get('timeout', 300),
                     enhancer=sadtalker_options.get('enhancer', None),
                     split_chunks=sadtalker_options.get('split_chunks', True),
-                    chunk_length=duration
+                    chunk_length=sadtalker_options.get('chunk_length', duration),
+                    source_image=source_image
                 )
 
                 if not success:
