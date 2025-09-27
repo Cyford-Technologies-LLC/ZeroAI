@@ -18,18 +18,18 @@ from flask_socketio import SocketIO, emit
 import wave
 
 # Core functionality imports (your separated modules)
-from audio_processor import call_tts_service_with_options, normalize_audio , TTSProcessor
+from audio_processor import call_tts_service_with_options, normalize_audio, TTSProcessor
 from video_processor import convert_video_with_codec, get_mimetype_for_codec
 from sadtalker_generator import generate_sadtalker_video
 from simple_face_generator import generate_talking_face
 from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
 
-
-
 import logging
+
 logger = logging.getLogger(__name__)
 
 tts_processor = TTSProcessor()
+
 
 class StreamingAvatarGenerator(TTSProcessor):
     """
@@ -41,6 +41,7 @@ class StreamingAvatarGenerator(TTSProcessor):
     - WebSocket support for bidirectional communication
     - Dynamic prompt updates
     - Efficient resource management
+    - SadTalker integration with fallback to simple face animation
     """
 
     def __init__(self, tts_api_url: str, ref_image_path: str, device: str = "cpu"):
@@ -90,7 +91,60 @@ class StreamingAvatarGenerator(TTSProcessor):
 
         logger.info("StreamingAvatarGenerator cleanup completed")
 
+    def _generate_sadtalker_frames_for_streaming(self, source_image: np.ndarray, audio_path: str,
+                                                 duration: float, frame_rate: int = 30,
+                                                 sadtalker_options: Dict = None) -> Generator[bytes, None, None]:
+        """Generate SadTalker frames optimized for streaming"""
+        try:
+            if sadtalker_options is None:
+                sadtalker_options = {}
 
+            # Create temporary video with SadTalker
+            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
+                temp_video_path = temp_video.name
+
+            try:
+                # Generate SadTalker video using your existing function
+                success = generate_sadtalker_video(
+                    audio_path=audio_path,
+                    output_path=temp_video_path,
+                    prompt="",  # Not needed for streaming
+                    codec='h264_fast',  # Fast encoding for streaming
+                    quality='medium',
+                    source_image=source_image,
+                    timeout=sadtalker_options.get('timeout', 300),
+                    enhancer=sadtalker_options.get('enhancer', None),
+                    split_chunks=sadtalker_options.get('split_chunks', True),
+                    chunk_length=duration
+                )
+
+                if not success:
+                    raise ValueError("SadTalker generation failed")
+
+                # Extract frames from generated video and stream them
+                cap = cv2.VideoCapture(temp_video_path)
+
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+
+                    # Encode frame for streaming
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    yield buffer.tobytes()
+
+                cap.release()
+
+            finally:
+                # Cleanup temp video
+                if os.path.exists(temp_video_path):
+                    os.unlink(temp_video_path)
+
+        except Exception as e:
+            logger.error(f"SadTalker streaming error: {e}")
+            # Fallback to simple face animation
+            logger.info("Falling back to simple face animation")
+            yield from self._generate_face_frames(source_image, duration, frame_rate)
 
     def _generate_face_frames(self, source_image: np.ndarray, duration: float,
                               frame_rate: int = 30) -> Generator[bytes, None, None]:
@@ -149,12 +203,23 @@ class StreamingAvatarGenerator(TTSProcessor):
     def generate_chunked_stream(self, prompt: str, source_image: np.ndarray,
                                 chunk_duration: float = 3.0, tts_engine: str = 'espeak',
                                 tts_options: Dict = None, codec: str = 'h264_fast',
-                                quality: str = 'medium', frame_rate: int = 30) -> Generator[bytes, None, None]:
+                                quality: str = 'medium', frame_rate: int = 30,
+                                mode: str = 'auto', timeout: int = 300, enhancer: str = None,
+                                split_chunks: bool = True, chunk_length: float = 10.0) -> Generator[bytes, None, None]:
         """
         Generate video stream in pre-processed chunks.
         Each chunk is fully rendered before streaming begins.
+        Now supports SadTalker with all your existing options.
         """
-        logger.info(f"Starting chunked stream - Duration: {chunk_duration}s, FPS: {frame_rate}")
+        logger.info(f"Starting chunked stream - Duration: {chunk_duration}s, FPS: {frame_rate}, Mode: {mode}")
+
+        # Prepare SadTalker options from your existing parameters
+        sadtalker_options = {
+            'timeout': timeout,
+            'enhancer': enhancer,
+            'split_chunks': split_chunks,
+            'chunk_length': chunk_length
+        }
 
         try:
             self.is_streaming = True
@@ -169,7 +234,6 @@ class StreamingAvatarGenerator(TTSProcessor):
                 logger.info(f"Processing chunk {i + 1}/{len(sentences)}: {sentence[:30]}...")
 
                 # Generate TTS for this chunk
-
                 audio_bytes = tts_processor._call_tts_service(sentence, tts_engine, tts_options)
                 if not audio_bytes:
                     continue
@@ -180,18 +244,40 @@ class StreamingAvatarGenerator(TTSProcessor):
                     continue
 
                 try:
-                    # Generate video frames for this chunk
-                    frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-
                     # Stream chunk header
                     chunk_info = {
                         'chunk_id': i,
                         'duration': duration,
                         'sentence': sentence,
-                        'total_chunks': len(sentences)
+                        'total_chunks': len(sentences),
+                        'mode': mode
                     }
 
                     yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(chunk_info)}\r\n".encode()
+
+                    # Generate video frames based on mode
+                    if mode == 'sadtalker':
+                        try:
+                            frame_generator = self._generate_sadtalker_frames_for_streaming(
+                                source_image, audio_path, duration, frame_rate, sadtalker_options
+                            )
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    elif mode == 'auto':
+                        # Try SadTalker first, fallback to simple
+                        try:
+                            if os.path.exists('/app/SadTalker'):
+                                frame_generator = self._generate_sadtalker_frames_for_streaming(
+                                    source_image, audio_path, duration, frame_rate, sadtalker_options
+                                )
+                            else:
+                                frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    else:  # mode == 'simple' or anything else
+                        frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
 
                     # Stream frames
                     for frame_bytes in frame_generator:
@@ -210,12 +296,12 @@ class StreamingAvatarGenerator(TTSProcessor):
                         os.unlink(audio_path)
 
             # Stream completion marker
-            completion_info = {'status': 'completed', 'total_chunks': len(sentences)}
+            completion_info = {'status': 'completed', 'total_chunks': len(sentences), 'mode': mode}
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(completion_info)}\r\n".encode()
 
         except Exception as e:
             logger.error(f"Chunked streaming error: {e}")
-            error_info = {'status': 'error', 'message': str(e)}
+            error_info = {'status': 'error', 'message': str(e), 'mode': mode}
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(error_info)}\r\n".encode()
 
         finally:
@@ -225,12 +311,23 @@ class StreamingAvatarGenerator(TTSProcessor):
     def generate_realtime_stream(self, prompt: str, source_image: np.ndarray,
                                  tts_engine: str = 'espeak', tts_options: Dict = None,
                                  codec: str = 'h264_fast', quality: str = 'medium',
-                                 frame_rate: int = 30, buffer_size: int = 5) -> Generator[bytes, None, None]:
+                                 frame_rate: int = 30, buffer_size: int = 5,
+                                 mode: str = 'auto', timeout: int = 300, enhancer: str = None,
+                                 split_chunks: bool = True, chunk_length: float = 10.0) -> Generator[bytes, None, None]:
         """
         Generate video stream in real-time.
         Frames are generated and sent as fast as possible.
+        Now supports SadTalker with all your existing options.
         """
-        logger.info(f"Starting realtime stream - FPS: {frame_rate}, Buffer: {buffer_size}")
+        logger.info(f"Starting realtime stream - FPS: {frame_rate}, Buffer: {buffer_size}, Mode: {mode}")
+
+        # Prepare SadTalker options from your existing parameters
+        sadtalker_options = {
+            'timeout': timeout,
+            'enhancer': enhancer,
+            'split_chunks': split_chunks,
+            'chunk_length': chunk_length
+        }
 
         try:
             self.is_streaming = True
@@ -239,12 +336,12 @@ class StreamingAvatarGenerator(TTSProcessor):
             audio_future = self.executor.submit(self._generate_audio_realtime,
                                                 prompt, tts_engine, tts_options)
 
-            # Start frame generation
+            # Start frame generation with enhanced mode support
             frame_future = self.executor.submit(self._generate_frames_realtime,
-                                                source_image, frame_rate, buffer_size)
+                                                source_image, frame_rate, buffer_size, mode, sadtalker_options)
 
             # Stream initialization
-            init_info = {'status': 'streaming', 'mode': 'realtime', 'fps': frame_rate}
+            init_info = {'status': 'streaming', 'mode': f'realtime/{mode}', 'fps': frame_rate}
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(init_info)}\r\n".encode()
 
             frame_count = 0
@@ -273,7 +370,7 @@ class StreamingAvatarGenerator(TTSProcessor):
 
                 except queue.Empty:
                     # No frames available, send keepalive
-                    keepalive = {'status': 'buffering', 'frame_count': frame_count}
+                    keepalive = {'status': 'buffering', 'frame_count': frame_count, 'mode': mode}
                     yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(keepalive)}\r\n".encode()
                     continue
 
@@ -285,12 +382,12 @@ class StreamingAvatarGenerator(TTSProcessor):
                 logger.warning(f"Background task completion warning: {e}")
 
             # Stream completion
-            completion_info = {'status': 'completed', 'total_frames': frame_count}
+            completion_info = {'status': 'completed', 'total_frames': frame_count, 'mode': mode}
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(completion_info)}\r\n".encode()
 
         except Exception as e:
             logger.error(f"Realtime streaming error: {e}")
-            error_info = {'status': 'error', 'message': str(e)}
+            error_info = {'status': 'error', 'message': str(e), 'mode': mode}
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(error_info)}\r\n".encode()
 
         finally:
@@ -306,7 +403,7 @@ class StreamingAvatarGenerator(TTSProcessor):
                 if not self.is_streaming:
                     break
 
-                audio_bytes =  tts_processor._call_tts_service(sentence, tts_engine, tts_options)
+                audio_bytes = tts_processor._call_tts_service(sentence, tts_engine, tts_options)
                 if audio_bytes:
                     duration, audio_path = tts_processor._process_audio_chunk(audio_bytes)
                     if audio_path:
@@ -317,8 +414,9 @@ class StreamingAvatarGenerator(TTSProcessor):
         finally:
             self.audio_queue.put(None)  # Sentinel
 
-    def _generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, buffer_size: int):
-        """Generate frames in real-time and put in queue"""
+    def _generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, buffer_size: int,
+                                  mode: str = 'auto', sadtalker_options: Dict = None):
+        """Generate frames in real-time and put in queue with SadTalker support"""
         try:
             total_duration = 0
 
@@ -332,8 +430,29 @@ class StreamingAvatarGenerator(TTSProcessor):
                     duration, audio_path = audio_item
                     total_duration += duration
 
-                    # Generate frames for this audio chunk
-                    frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    # Generate frames for this audio chunk based on mode
+                    if mode == 'sadtalker':
+                        try:
+                            frame_generator = self._generate_sadtalker_frames_for_streaming(
+                                source_image, audio_path, duration, frame_rate, sadtalker_options
+                            )
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    elif mode == 'auto':
+                        # Try SadTalker first, fallback to simple
+                        try:
+                            if os.path.exists('/app/SadTalker'):
+                                frame_generator = self._generate_sadtalker_frames_for_streaming(
+                                    source_image, audio_path, duration, frame_rate, sadtalker_options
+                                )
+                            else:
+                                frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    else:  # mode == 'simple' or anything else
+                        frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
 
                     for frame_bytes in frame_generator:
                         if not self.is_streaming:
@@ -409,7 +528,8 @@ def init_websocket(app):
 
             # Extract parameters
             prompt = data.get('prompt', 'Hello world')
-            mode = data.get('mode', 'realtime')
+            streaming_mode = data.get('mode', 'realtime')  # streaming mode
+            generation_mode = data.get('generation_mode', 'auto')  # generation mode
             image_data = data.get('image')  # base64 or URL
 
             # Initialize generator
@@ -419,7 +539,6 @@ def init_websocket(app):
             )
 
             # Process image
-            from avatar.scripts.avatar_api import load_and_preprocess_image
             img = load_and_preprocess_image(image_data)
             if img is None:
                 emit('error', {'message': 'Failed to load image'})
@@ -428,10 +547,14 @@ def init_websocket(app):
             # Start streaming in background thread
             def stream_worker():
                 try:
-                    if mode == 'chunked':
-                        stream_gen = generator.generate_chunked_stream(prompt, img)
+                    if streaming_mode == 'chunked':
+                        stream_gen = generator.generate_chunked_stream(
+                            prompt, img, mode=generation_mode, **data
+                        )
                     else:
-                        stream_gen = generator.generate_realtime_stream(prompt, img)
+                        stream_gen = generator.generate_realtime_stream(
+                            prompt, img, mode=generation_mode, **data
+                        )
 
                     for chunk in stream_gen:
                         if chunk:
@@ -463,7 +586,11 @@ def init_websocket(app):
             thread.daemon = True
             thread.start()
 
-            emit('stream_started', {'mode': mode, 'prompt': prompt[:50]})
+            emit('stream_started', {
+                'streaming_mode': streaming_mode,
+                'generation_mode': generation_mode,
+                'prompt': prompt[:50]
+            })
 
         except Exception as e:
             logger.error(f"WebSocket start stream error: {e}")

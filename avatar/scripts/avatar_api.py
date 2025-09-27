@@ -100,8 +100,11 @@ def handle_exception(e):
 # ============================================================================
 
 @app.route('/stream', methods=['POST'])
+# Simple modification to your existing /stream endpoint in avatar_endpoints.py
+
+@app.route('/stream', methods=['POST'])
 def stream_avatar():
-    """Stream talking avatar video in real-time"""
+    """Stream talking avatar video in real-time - now with SadTalker support"""
     if not STREAMING_AVAILABLE:
         return jsonify({"error": "Streaming not available"}), 503
 
@@ -128,15 +131,18 @@ def stream_avatar():
         frame_rate = options["frame_rate"]
         buffer_size = options["buffer_size"]
 
+        # ADD THIS LINE - get mode from options or default to auto
+        mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
+
         logger.info(f"=== AVATAR STREAMING START ===")
-        logger.info(f"Mode: {streaming_mode}, Prompt: {prompt[:50]}...")
+        logger.info(f"Mode: {streaming_mode}/{mode}, Prompt: {prompt[:50]}...")
         logger.info(f"Chunk duration: {chunk_duration}s, Frame rate: {frame_rate} fps")
 
         # Initialize streaming generator
         streaming_generator = StreamingAvatarGenerator(
             tts_api_url=TTS_API_URL,
             ref_image_path=ref_image_path,
-            device="cuda"  # You'll need to import this from utils or config
+            device="cuda"
         )
 
         # Validate and preprocess image
@@ -144,7 +150,7 @@ def stream_avatar():
         if img is None:
             return jsonify({"error": "Image load failed"}), 500
 
-        # Generate stream based on mode
+        # Generate stream based on mode - ADD mode parameter to your existing calls
         if streaming_mode == "chunked":
             stream_generator = streaming_generator.generate_chunked_stream(
                 prompt=prompt,
@@ -154,7 +160,8 @@ def stream_avatar():
                 tts_options=tts_options,
                 codec=codec,
                 quality=quality,
-                frame_rate=frame_rate
+                frame_rate=frame_rate,
+                mode=mode  # ADD THIS
             )
         elif streaming_mode == "realtime":
             stream_generator = streaming_generator.generate_realtime_stream(
@@ -165,7 +172,8 @@ def stream_avatar():
                 codec=codec,
                 quality=quality,
                 frame_rate=frame_rate,
-                buffer_size=buffer_size
+                buffer_size=buffer_size,
+                mode=mode  # ADD THIS
             )
         else:
             return jsonify({"error": f"Invalid streaming mode: {streaming_mode}"}), 400
