@@ -150,6 +150,14 @@ def stream_avatar():
         if img is None:
             return jsonify({"error": "Image load failed"}), 500
 
+        # Extract SadTalker options
+        sadtalker_options = {
+            "timeout": options.get("timeout", 1200),
+            "enhancer": options.get("enhancer", None),
+            "split_chunks": options.get("split_chunks", False),
+            "chunk_length": options.get("chunk_length", 10)
+        }
+
         # Generate stream based on mode - ADD mode parameter to your existing calls
         if streaming_mode == "chunked":
             stream_generator = streaming_generator.generate_chunked_stream(
@@ -161,7 +169,8 @@ def stream_avatar():
                 codec=codec,
                 quality=quality,
                 frame_rate=frame_rate,
-                mode=mode  # ADD THIS
+                mode=mode,  # ADD THIS
+                **sadtalker_options,
             )
         elif streaming_mode == "realtime":
             stream_generator = streaming_generator.generate_realtime_stream(
@@ -173,7 +182,8 @@ def stream_avatar():
                 quality=quality,
                 frame_rate=frame_rate,
                 buffer_size=buffer_size,
-                mode=mode  # ADD THIS
+                mode=mode,  # ADD THIS
+                **sadtalker_options,
             )
         else:
             return jsonify({"error": f"Invalid streaming mode: {streaming_mode}"}), 400

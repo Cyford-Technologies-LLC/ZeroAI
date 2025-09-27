@@ -193,6 +193,9 @@ def sanitize_options(endpoint: str, data: dict) -> dict:
     # Post-processing for streaming endpoints
     if endpoint == "stream_avatar":
         clean = _post_process_streaming_options(clean)
+        if "fps" in data:
+            clean["frame_rate"] = int(data["fps"])
+
 
     return clean
 

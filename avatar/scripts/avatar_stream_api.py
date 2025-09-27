@@ -113,15 +113,18 @@ class StreamingAvatarGenerator(TTSProcessor):
                 success = generate_sadtalker_video(
                     audio_path,
                     temp_video_path,
-                    "",  # prompt
-                    'h264_fast',  # codec
-                    'medium',  # quality
+                    "",
+                    'h264_fast',
+                    'medium',
                     timeout=sadtalker_options.get('timeout', 300),
                     enhancer=sadtalker_options.get('enhancer', None),
                     split_chunks=sadtalker_options.get('split_chunks', True),
                     chunk_length=int(sadtalker_options.get('chunk_length', duration)),
-                    # Convert to int to fix the error
-                    source_image=temp_image_path  # Use the temp image file path, not numpy array
+                    source_image=temp_image_path,
+                    # ADD THESE:
+                    still=options.get('still', True),
+                    preprocess=options.get('preprocess', 'crop'),
+                    resolution=options.get('resolution', '256')
                 )
 
                 if not success:
