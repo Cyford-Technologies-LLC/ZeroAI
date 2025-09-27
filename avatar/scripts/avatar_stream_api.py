@@ -119,7 +119,8 @@ class StreamingAvatarGenerator(TTSProcessor):
                     timeout=sadtalker_options.get('timeout', 300),
                     enhancer=sadtalker_options.get('enhancer', None),
                     split_chunks=sadtalker_options.get('split_chunks', True),
-                    chunk_length=sadtalker_options.get('chunk_length', duration),
+                    chunk_length=int(sadtalker_options.get('chunk_length', duration)),
+                    # Convert to int to fix the error
                     source_image=temp_image_path  # Use the temp image file path, not numpy array
                 )
 
@@ -251,16 +252,33 @@ class StreamingAvatarGenerator(TTSProcessor):
                     continue
 
                 try:
-                    # Stream chunk header
+                    # Stream chunk header with audio data
                     chunk_info = {
                         'chunk_id': i,
                         'duration': duration,
                         'sentence': sentence,
                         'total_chunks': len(sentences),
-                        'mode': mode
+                        'mode': mode,
+                        'audio_path': audio_path  # Include audio path for client to fetch separately
                     }
 
                     yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(chunk_info)}\r\n".encode()
+
+                    # Also stream the audio data as base64
+                    try:
+                        with open(audio_path, 'rb') as audio_file:
+                            audio_data = audio_file.read()
+                            import base64
+                            audio_b64 = base64.b64encode(audio_data).decode()
+                            audio_info = {
+                                'type': 'audio',
+                                'chunk_id': i,
+                                'data': audio_b64,
+                                'format': 'wav'
+                            }
+                            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(audio_info)}\r\n".encode()
+                    except Exception as audio_err:
+                        logger.warning(f"Failed to stream audio for chunk {i}: {audio_err}")
 
                     # Generate video frames based on mode
                     if mode == 'sadtalker':
