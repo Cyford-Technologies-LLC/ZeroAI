@@ -9,7 +9,6 @@ WORKDIR /app
 
 
 # Install system dependencies
-# Install system dependencies including streaming requirements
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.10 \
     python3-pip \
@@ -31,6 +30,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     htop \
     && rm -rf /var/lib/apt/lists/*
+
+    # Create necessary directories
+RUN mkdir -p /app/faces \
+    /app/static \
+    /app/scripts \
+    /app/logs \
+    /tmp/streaming_cache
+
 
 # Copy only requirements first (cache friendly)
 COPY requirements.txt .
@@ -80,7 +87,6 @@ RUN python3 -c "import torch; import os; torch_path = os.path.dirname(torch.__fi
 
 # Create non-root user for security
 RUN groupadd -r avataruser && useradd -r -g avataruser avataruser && \
-    mkdir -p /tmp/streaming_cache && \
     chown -R avataruser:avataruser /app /tmp/streaming_cache
 
 
