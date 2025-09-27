@@ -126,6 +126,7 @@ def sanitize_options(endpoint: str, data: dict) -> dict:
     - Uses defaults if missing
     - Converts type where necessary
     - Applies validation rules
+    - Handles both old PHP format and new format
     """
     if endpoint not in ALLOWED_OPTIONS:
         raise ValueError(f"Unknown endpoint: {endpoint}")
@@ -152,6 +153,20 @@ def sanitize_options(endpoint: str, data: dict) -> dict:
                 value = default  # Fall back to default if invalid
 
         clean[key] = value
+
+    # Handle PHP format mapping for generate_avatar endpoint
+    if endpoint == "generate_avatar":
+        # Map PHP-style TTS parameters to the expected format
+        if "tts_voice" in data:
+            clean["voice"] = data["tts_voice"]
+        if "tts_speed" in data:
+            clean["rate"] = float(data["tts_speed"]) / 100.0  # Convert speed to rate
+        if "tts_pitch" in data:
+            clean["pitch"] = data["tts_pitch"]
+
+        # Also preserve the original tts_engine from the request
+        if "tts_engine" in data:
+            clean["tts_engine"] = data["tts_engine"]  # Don't override with default
 
     # Post-processing for streaming endpoints
     if endpoint == "stream_avatar":

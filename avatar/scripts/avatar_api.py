@@ -299,39 +299,32 @@ def generate_avatar():
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
 
-        # Sanitize options
+        # Now sanitize_options handles your PHP format properly
         options = sanitize_options("generate_avatar", data)
 
         # Extract parameters
         prompt = clean_text(options["prompt"])
         source_image_input = options["image"]
-        tts_engine = options["tts_engine"]
+        tts_engine = options["tts_engine"]  # Will preserve "edge" from your PHP
+
         # Handle both old and new TTS option formats
-        if "tts_options" in options:
-            tts_options = options["tts_options"]
-        else:
-            # Legacy support - convert individual options to dict
-            tts_options = {}
-            for key in ["voice", "rate", "pitch", "language"]:
-                if key in options:
-                    tts_options[key] = options[key]
+        tts_options = {}
+        for key in ["voice", "rate", "pitch", "language"]:
+            if key in options:
+                tts_options[key] = options[key]
 
-        codec = options["codec"]
-        quality = options["quality"]
-        mode = options["mode"]
+        # Get mode from URL args or data
+        mode = request.args.get('mode', options.get('mode', 'simple'))
+        codec = request.args.get('codec', options.get('codec', DEFAULT_CODEC))
+        quality = request.args.get('quality', options.get('quality', 'high'))
 
-        # Extract SadTalker options if present
-        sadtalker_options = {}
-        if "sadtalker_options" in options:
-            sadtalker_options = options["sadtalker_options"]
-        else:
-            # Legacy support
-            sadtalker_options = {
-                "timeout": options.get("timeout", 1200),
-                "enhancer": options.get("enhancer", None),
-                "split_chunks": options.get("split_chunks", False),
-                "chunk_length": options.get("chunk_length", 10)
-            }
+        # Extract SadTalker options
+        sadtalker_options = {
+            "timeout": options.get("timeout", 1200),
+            "enhancer": options.get("enhancer", None),
+            "split_chunks": options.get("split_chunks", False),
+            "chunk_length": options.get("chunk_length", 10)
+        }
 
         logger.info(f"=== AVATAR GENERATION START ===")
         logger.info(f"Mode: {mode}, Codec: {codec}, Quality: {quality}")
