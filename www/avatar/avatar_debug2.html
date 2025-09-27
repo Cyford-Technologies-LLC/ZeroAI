@@ -1570,69 +1570,186 @@
                     duration: duration + 'ms'
                 });
 
-                if (response.ok) {
-                    updateProgress(80, 'Finalizing video...');
-                    const contentType = response.headers.get('content-type');
+if (response.ok) {
+    const contentType = response.headers.get('content-type');
+    updateProgress(80, 'Processing response...');
 
-                    if (contentType && contentType.includes('video')) {
-                        const blob = await response.blob();
-                        const videoUrl = URL.createObjectURL(blob);
+    // Handle streaming responses
+    if (contentType && contentType.includes('multipart/x-mixed-replace')) {
+        debugLog('Streaming response detected', { contentType });
+        updateProgress(90, 'Processing stream...');
 
-                        video.src = videoUrl;
-                        result.style.display = 'block';
+        try {
+            await handleStreamingResponse(response, video, videoInfo, payload, duration);
+            result.style.display = 'block';
+            updateProgress(100, 'Streaming complete!');
+            showNotification('Avatar streaming completed successfully!', 'success');
+        } catch (streamError) {
+            debugLog('Streaming processing failed', { error: streamError.message });
+            throw new Error('Streaming processing failed: ' + streamError.message);
+        }
 
-                        videoInfo.innerHTML = `
-                            <strong>Generation Complete!</strong><br>
-                            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
-                            Engine: ${response.headers.get('x-avatar-engine') || payload.tts_engine}<br>
-                            Voice: ${response.headers.get('x-avatar-voice') || payload.tts_voice}<br>
-                            Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB<br>
-                            Type: ${contentType}<br>
-                            Generation Time: ${(duration / 1000).toFixed(1)}s<br>
-                            Parameters: ${Object.keys(payload).length} options used
-                        `;
+    // Handle regular video responses
+    } else if (contentType && contentType.includes('video')) {
+        debugLog('Regular video response detected', { contentType });
+        updateProgress(90, 'Finalizing video...');
 
-                        updateProgress(100, 'Complete!');
+        const blob = await response.blob();
+        const videoUrl = URL.createObjectURL(blob);
 
-                        video.onloadeddata = () => {
-                            debugLog('Video loaded successfully', {
-                                duration: video.duration,
-                                videoWidth: video.videoWidth,
-                                videoHeight: video.videoHeight
-                            });
-                            showNotification('Avatar generated successfully!', 'success');
-                        };
+        video.src = videoUrl;
+        result.style.display = 'block';
 
-                        video.onerror = (e) => {
-                            debugLog('Video error', { error: video.error });
-                            showNotification('Video playback error', 'error');
-                        };
+        videoInfo.innerHTML = `
+            <strong>Generation Complete!</strong><br>
+            Mode: ${response.headers.get('x-avatar-mode') || currentMode}<br>
+            Engine: ${response.headers.get('x-avatar-engine') || payload.tts_engine}<br>
+            Voice: ${response.headers.get('x-avatar-voice') || payload.tts_voice}<br>
+            Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB<br>
+            Type: ${contentType}<br>
+            Generation Time: ${(duration / 1000).toFixed(1)}s<br>
+            Parameters: ${Object.keys(payload).length} options used
+        `;
 
-                    } else {
-                        const text = await response.text();
-                        debugLog('Non-video response received', { response: text });
-                        throw new Error('Expected video response, got: ' + contentType);
+        updateProgress(100, 'Complete!');
+
+        video.onloadeddata = () => {
+            debugLog('Video loaded successfully', {
+                duration: video.duration,
+                videoWidth: video.videoWidth,
+                videoHeight: video.videoHeight
+            });
+            showNotification('Avatar generated successfully!', 'success');
+        };
+
+        video.onerror = (e) => {
+            debugLog('Video error', { error: video.error });
+            showNotification('Video playback error', 'error');
+        };
+
+    // Handle JSON responses (like WebSocket info)
+    } else if (contentType && contentType.includes('json')) {
+        debugLog('JSON response detected', { contentType });
+        const jsonData = await response.json();
+
+        if (jsonData.type === 'websocket_info') {
+            debugLog('WebSocket info received', jsonData);
+            showNotification('WebSocket streaming info received - check console', 'info');
+            error.innerHTML = `<strong>WebSocket Streaming:</strong><br>
+                Connect to: ${jsonData.websocket_url}<br>
+                <small>WebSocket streaming requires additional frontend implementation</small>`;
+            error.style.display = 'block';
+        } else {
+            debugLog('Unknown JSON response', jsonData);
+            throw new Error('Unexpected JSON response: ' + JSON.stringify(jsonData));
+        }
+
+    // Handle unexpected responses
+    } else {
+        const text = await response.text();
+        debugLog('Unexpected response received', {
+            contentType,
+            response: text.substring(0, 500)
+        });
+        throw new Error('Unexpected response type: ' + contentType);
+    }
+
+} else {
+    const errorText = await response.text();
+    debugLog('Avatar generation failed', { status: response.status, error: errorText });
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+}
+
+// Streaming response handler function
+async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let chunks = [];
+    let currentChunk = null;
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete frames
+            const frames = buffer.split('--frame\r\n');
+            buffer = frames.pop(); // Keep incomplete frame in buffer
+
+            for (const frame of frames) {
+                if (!frame.trim()) continue;
+
+                try {
+                    // Parse frame headers and content
+                    const parts = frame.split('\r\n\r\n');
+                    if (parts.length < 2) continue;
+
+                    const headers = parts[0];
+                    const content = parts.slice(1).join('\r\n\r\n');
+
+                    if (headers.includes('application/json')) {
+                        // Parse chunk metadata
+                        const chunkData = JSON.parse(content);
+                        currentChunk = chunkData;
+                        chunks.push(chunkData);
+
+                        debugLog('Chunk metadata received', chunkData);
+                        updateProgress(
+                            70 + (chunkData.chunk_id / (chunkData.total_chunks || 1)) * 20,
+                            `Processing chunk ${chunkData.chunk_id + 1}/${chunkData.total_chunks || 1}: "${chunkData.sentence}"`
+                        );
+
+                    } else if (headers.includes('image/jpeg') && currentChunk) {
+                        // Handle chunk image/video data
+                        debugLog('Chunk video data received', {
+                            chunkId: currentChunk.chunk_id,
+                            dataSize: content.length
+                        });
+
+                        // For now, convert last chunk to video URL
+                        // In a full implementation, you'd combine all chunks
+                        if (currentChunk.chunk_id === (currentChunk.total_chunks - 1)) {
+                            // Create blob from the streaming data
+                            const uint8Array = new Uint8Array(content.length);
+                            for (let i = 0; i < content.length; i++) {
+                                uint8Array[i] = content.charCodeAt(i);
+                            }
+                            const blob = new Blob([uint8Array], { type: 'video/mp4' });
+                            const videoUrl = URL.createObjectURL(blob);
+                            video.src = videoUrl;
+                        }
                     }
-                } else {
-                    const errorText = await response.text();
-                    debugLog('Avatar generation failed', { status: response.status, error: errorText });
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                } catch (parseError) {
+                    debugLog('Frame parsing error', { error: parseError.message });
                 }
-
-            } catch (err) {
-                debugLog('Avatar generation error', { error: err.message });
-                error.textContent = 'Error: ' + err.message;
-                error.style.display = 'block';
-                showNotification('Generation failed: ' + err.message, 'error');
-                updateProgress(0, 'Failed');
-            } finally {
-                generationInProgress = false;
-                setTimeout(() => {
-                    loading.classList.remove('show');
-                    loading.style.display = 'none';
-                }, 1000);
             }
         }
+
+        // Update video info for streaming
+        videoInfo.innerHTML = `
+            <strong>Streaming Complete!</strong><br>
+            Mode: Streaming (${payload.stream_mode})<br>
+            Engine: ${payload.tts_engine}<br>
+            Voice: ${payload.tts_voice}<br>
+            Chunks: ${chunks.length}<br>
+            Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
+            Stream Time: ${(duration / 1000).toFixed(1)}s<br>
+            Parameters: ${Object.keys(payload).length} options used
+        `;
+
+        debugLog('Streaming completed', {
+            totalChunks: chunks.length,
+            streamDuration: duration
+        });
+
+    } catch (streamError) {
+        debugLog('Streaming error', { error: streamError.message });
+        throw streamError;
+    }
+}
 
         // Video Management
         function downloadVideo() {
