@@ -83,13 +83,16 @@ RUN groupadd -r avataruser && useradd -r -g avataruser avataruser && \
     mkdir -p /tmp/streaming_cache && \
     chown -R avataruser:avataruser /app /tmp/streaming_cache
 
+
+
 USER avataruser
-
-
 
 # Set permissions for application files
 RUN chmod +x /app/*.py && \
     chmod -R 755 /app/
+
+
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:7860/health || exit 1
