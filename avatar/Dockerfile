@@ -3,7 +3,7 @@ FROM nvidia/cuda:12.1.0-base-ubuntu22.04
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
     NUMBA_CACHE_DIR=/tmp/numba_cache
 
 WORKDIR /app
