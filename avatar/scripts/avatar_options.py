@@ -62,6 +62,16 @@ ALLOWED_OPTIONS = {
         "adaptive_quality": True,  # Adjust quality based on performance
         "enable_websocket": False,  # Enable WebSocket mode
         "max_concurrent": 3,  # Max concurrent streams per client
+
+        # SadTalker-specific video options
+        "timeout": 1200,
+        "enhancer": None,
+        "split_chunks": False,
+        "chunk_length": 10,
+        "fps": 15,
+
+
+
     },
 
     # Debug endpoints
