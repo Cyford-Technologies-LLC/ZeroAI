@@ -1,411 +1,371 @@
 <?php
-// Enhanced API section for avatar_dual.php - ADD this to the 'generate' case
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', '/tmp/avatar_api_errors.log');
+ob_clean();
+ob_start();
+ini_set('max_execution_time', 300);
+set_time_limit(300);
 
-// Image processing - ENHANCED: Complete image upload handling
-if (isset($input['image']) && !empty($input['image'])) {
-    $imageData = $input['image'];
+require_once '../../src/autoload.php';
 
-    // Handle different image input types
-    if (filter_var($imageData, FILTER_VALIDATE_URL)) {
-        // It's a URL - validate and potentially download
-        error_log("Processing image URL: " . $imageData);
-        $options['image'] = $imageData;
-        $options['image_type'] = 'url';
+use ZeroAI\Providers\AI\Local\AvatarManager;
 
-    } elseif (strpos($imageData, 'data:image/') === 0) {
-        // It's base64 data URI from file upload
-        error_log("Processing base64 image upload");
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
-        // Extract MIME type and validate
-        preg_match('/data:image\/([a-zA-Z0-9]+);base64,(.+)/', $imageData, $matches);
-        if (count($matches) !== 3) {
-            throw new Exception('Invalid base64 image format');
-        }
-
-        $imageType = $matches[1];
-        $base64Data = $matches[2];
-
-        // Validate image type
-        $allowedTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
-        if (!in_array(strtolower($imageType), $allowedTypes)) {
-            throw new Exception('Unsupported image type: ' . $imageType);
-        }
-
-        // Decode and validate
-        $decodedImage = base64_decode($base64Data);
-        if ($decodedImage === false) {
-            throw new Exception('Failed to decode base64 image');
-        }
-
-        // Check file size (limit to 10MB)
-        if (strlen($decodedImage) > 10 * 1024 * 1024) {
-            throw new Exception('Image file too large (max 10MB)');
-        }
-
-        // Save to temporary file for processing
-        $tempDir = sys_get_temp_dir();
-        $tempFile = $tempDir . '/avatar_upload_' . uniqid() . '.' . $imageType;
-
-        if (file_put_contents($tempFile, $decodedImage) === false) {
-            throw new Exception('Failed to save uploaded image');
-        }
-
-        // Validate it's actually an image
-        $imageInfo = getimagesize($tempFile);
-        if ($imageInfo === false) {
-            unlink($tempFile);
-            throw new Exception('Invalid image file');
-        }
-
-        error_log("Image validated: {$imageInfo[0]}x{$imageInfo[1]}, type: {$imageInfo['mime']}");
-
-        $options['image'] = $tempFile;
-        $options['image_type'] = 'file';
-        $options['temp_file'] = $tempFile; // Track for cleanup
-        $options['image_info'] = [
-            'width' => $imageInfo[0],
-            'height' => $imageInfo[1],
-            'mime' => $imageInfo['mime'],
-            'size' => strlen($decodedImage)
-        ];
-
-    } elseif (file_exists($imageData)) {
-        // It's a file path
-        error_log("Processing image file path: " . $imageData);
-        $options['image'] = $imageData;
-        $options['image_type'] = 'file';
-
-    } else {
-        throw new Exception('Invalid image data provided');
-    }
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
 }
 
-// After generation, cleanup temp files
-if (isset($options['temp_file']) && file_exists($options['temp_file'])) {
-    unlink($options['temp_file']);
-    error_log("Cleaned up temporary image file: " . $options['temp_file']);
-}
+try {
+    error_log('=== AVATAR DUAL API REQUEST ===');
+    error_log('Method: ' . $_SERVER['REQUEST_METHOD']);
+    error_log('Query: ' . $_SERVER['QUERY_STRING']);
+    error_log('Headers: ' . json_encode(getallheaders()));
 
-// ============================================================================
-// Enhanced AvatarManager methods - ADD these to your AvatarManager class
-// ============================================================================
+    $avatarManager = new AvatarManager(true); // Debug mode ON
 
-/**
- * Process and validate image for avatar generation
- */
-private function processImage($imageData, $options = [])
-{
-    if (empty($imageData)) {
-        return null;
-    }
+    $action = $_GET['action'] ?? 'generate';
+    $mode = $_GET['mode'] ?? 'simple';
 
-    $this->logger->info('Processing image for avatar generation', [
-        'image_type' => $options['image_type'] ?? 'unknown',
-        'has_image_info' => isset($options['image_info'])
-    ]);
+    error_log("Action: $action, Mode: $mode");
 
-    // Handle different image types
-    switch ($options['image_type'] ?? 'unknown') {
-        case 'url':
-            return $this->processImageUrl($imageData, $options);
-
-        case 'file':
-            return $this->processImageFile($imageData, $options);
-
-        default:
-            throw new \Exception('Unknown image type for processing');
-    }
-}
-
-/**
- * Process image URL
- */
-private function processImageUrl($url, $options = [])
-{
-    $this->logger->info('Processing image URL', ['url' => $url]);
-
-    // Validate URL format
-    if (!filter_var($url, FILTER_VALIDATE_URL)) {
-        throw new \Exception('Invalid image URL format');
-    }
-
-    // Check if URL is accessible (optional - might want to skip for performance)
-    if (isset($options['validate_url']) && $options['validate_url']) {
-        $headers = @get_headers($url);
-        if (!$headers || strpos($headers[0], '200') === false) {
-            throw new \Exception('Image URL is not accessible');
-        }
-
-        // Check content type
-        foreach ($headers as $header) {
-            if (stripos($header, 'content-type:') === 0) {
-                if (stripos($header, 'image/') === false) {
-                    throw new \Exception('URL does not point to an image');
-                }
-                break;
+    switch ($action) {
+        case 'generate':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('POST method required for generation');
             }
-        }
-    }
 
-    return $url;
-}
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) {
+                throw new Exception('Invalid JSON input');
+            }
 
-/**
- * Process image file
- */
-private function processImageFile($filePath, $options = [])
-{
-    $this->logger->info('Processing image file', [
-        'file' => $filePath,
-        'exists' => file_exists($filePath)
-    ]);
+            $prompt = $input['prompt'] ?? '';
+            if (empty($prompt)) {
+                throw new Exception('Prompt is required');
+            }
 
-    if (!file_exists($filePath)) {
-        throw new \Exception('Image file does not exist: ' . $filePath);
-    }
+            error_log('Raw input received: ' . json_encode($input, JSON_PRETTY_PRINT));
 
-    // Get image information
-    $imageInfo = getimagesize($filePath);
-    if ($imageInfo === false) {
-        throw new \Exception('Invalid image file');
-    }
+            // Build comprehensive options array from frontend data
+            $options = [];
 
-    // Check image dimensions
-    $maxWidth = $options['max_width'] ?? 2048;
-    $maxHeight = $options['max_height'] ?? 2048;
-    $minWidth = $options['min_width'] ?? 64;
-    $minHeight = $options['min_height'] ?? 64;
+            // Core TTS options
+            if (isset($input['tts_engine'])) {
+                $options['tts_engine'] = $input['tts_engine'];
+            }
+            if (isset($input['tts_voice'])) {
+                $options['tts_voice'] = $input['tts_voice'];
+            }
+            if (isset($input['tts_speed'])) {
+                $options['tts_speed'] = intval($input['tts_speed']);
+            }
+            if (isset($input['tts_pitch'])) {
+                $options['tts_pitch'] = intval($input['tts_pitch']);
+            }
+            if (isset($input['tts_language'])) {
+                $options['tts_language'] = $input['tts_language'];
+            }
+            if (isset($input['tts_emotion'])) {
+                $options['tts_emotion'] = $input['tts_emotion'];
+            }
 
-    if ($imageInfo[0] > $maxWidth || $imageInfo[1] > $maxHeight) {
-        $this->logger->warning('Image too large', [
-            'width' => $imageInfo[0],
-            'height' => $imageInfo[1],
-            'max_width' => $maxWidth,
-            'max_height' => $maxHeight
-        ]);
+            // Audio format options
+            if (isset($input['sample_rate'])) {
+                $options['sample_rate'] = intval($input['sample_rate']);
+            }
+            if (isset($input['format'])) {
+                $options['audio_format'] = $input['format'];
+            }
 
-        // Optionally resize (requires GD extension)
-        if (isset($options['auto_resize']) && $options['auto_resize'] && extension_loaded('gd')) {
-            return $this->resizeImage($filePath, $maxWidth, $maxHeight, $options);
-        } else {
-            throw new \Exception("Image too large: {$imageInfo[0]}x{$imageInfo[1]} (max: {$maxWidth}x{$maxHeight})");
-        }
-    }
+            // Image options - Handle all image-related parameters
+            if (isset($input['image']) && !empty($input['image'])) {
+                $options['image'] = $input['image'];
+                error_log('Image data received: ' . substr($input['image'], 0, 100) . '...');
+            }
+            if (isset($input['still'])) {
+                $options['still'] = (bool)$input['still'];
+            }
+            if (isset($input['preprocess'])) {
+                $options['preprocess'] = $input['preprocess'];
+            }
+            if (isset($input['resolution'])) {
+                $options['resolution'] = $input['resolution'];
+            }
+            if (isset($input['face_detection'])) {
+                $options['face_detection'] = (bool)$input['face_detection'];
+            }
+            if (isset($input['face_confidence'])) {
+                $options['face_confidence'] = floatval($input['face_confidence']);
+            }
+            if (isset($input['auto_resize'])) {
+                $options['auto_resize'] = (bool)$input['auto_resize'];
+            }
 
-    if ($imageInfo[0] < $minWidth || $imageInfo[1] < $minHeight) {
-        throw new \Exception("Image too small: {$imageInfo[0]}x{$imageInfo[1]} (min: {$minWidth}x{$minHeight})");
-    }
+            // Video codec and quality - Extract from URL params AND body
+            $options['codec'] = $_GET['codec'] ?? $input['codec'] ?? 'h264_fast';
+            $options['quality'] = $_GET['quality'] ?? $input['quality'] ?? 'medium';
 
-    // Check file size
-    $fileSize = filesize($filePath);
-    $maxSize = $options['max_file_size'] ?? (10 * 1024 * 1024); // 10MB default
+            if (isset($input['fps'])) {
+                $options['fps'] = intval($input['fps']);
+            }
+            if (isset($input['bitrate'])) {
+                $options['bitrate'] = intval($input['bitrate']);
+            }
+            if (isset($input['keyframe_interval'])) {
+                $options['keyframe_interval'] = intval($input['keyframe_interval']);
+            }
+            if (isset($input['hardware_accel'])) {
+                $options['hardware_accel'] = (bool)$input['hardware_accel'];
+            }
 
-    if ($fileSize > $maxSize) {
-        throw new \Exception('Image file too large: ' . round($fileSize / 1024 / 1024, 2) . 'MB (max: ' . round($maxSize / 1024 / 1024, 2) . 'MB)');
-    }
+            // Streaming options
+            if (isset($input['stream_mode'])) {
+                $options['stream_mode'] = $input['stream_mode'];
+            }
+            if (isset($input['chunk_duration'])) {
+                $options['chunk_duration'] = floatval($input['chunk_duration']);
+            }
+            if (isset($input['buffer_size'])) {
+                $options['buffer_size'] = intval($input['buffer_size']);
+            }
+            if (isset($input['low_latency'])) {
+                $options['low_latency'] = (bool)$input['low_latency'];
+            }
+            if (isset($input['adaptive_quality'])) {
+                $options['adaptive_quality'] = (bool)$input['adaptive_quality'];
+            }
 
-    $this->logger->info('Image file validated', [
-        'width' => $imageInfo[0],
-        'height' => $imageInfo[1],
-        'mime' => $imageInfo['mime'],
-        'size_mb' => round($fileSize / 1024 / 1024, 2)
-    ]);
+            // SadTalker specific options
+            if (isset($input['timeout'])) {
+                $options['timeout'] = intval($input['timeout']);
+            }
+            if (isset($input['enhancer']) && !empty($input['enhancer'])) {
+                $options['enhancer'] = $input['enhancer'];
+            }
+            if (isset($input['split_chunks'])) {
+                $options['split_chunks'] = (bool)$input['split_chunks'];
+            }
+            if (isset($input['chunk_length'])) {
+                $options['chunk_length'] = intval($input['chunk_length']);
+            }
+            if (isset($input['overlap_duration'])) {
+                $options['overlap_duration'] = floatval($input['overlap_duration']);
+            }
+            if (isset($input['expression_scale'])) {
+                $options['expression_scale'] = floatval($input['expression_scale']);
+            }
+            if (isset($input['use_3d_warping'])) {
+                $options['use_3d_warping'] = (bool)$input['use_3d_warping'];
+            }
+            if (isset($input['use_eye_blink'])) {
+                $options['use_eye_blink'] = (bool)$input['use_eye_blink'];
+            }
+            if (isset($input['use_head_pose'])) {
+                $options['use_head_pose'] = (bool)$input['use_head_pose'];
+            }
 
-    return $filePath;
-}
+            // Advanced options
+            if (isset($input['max_duration'])) {
+                $options['max_duration'] = intval($input['max_duration']);
+            }
+            if (isset($input['max_concurrent'])) {
+                $options['max_concurrent'] = intval($input['max_concurrent']);
+            }
+            if (isset($input['memory_limit'])) {
+                $options['memory_limit'] = intval($input['memory_limit']);
+            }
+            if (isset($input['enable_websocket'])) {
+                $options['enable_websocket'] = (bool)$input['enable_websocket'];
+            }
+            if (isset($input['verbose_logging'])) {
+                $options['verbose_logging'] = (bool)$input['verbose_logging'];
+            }
+            if (isset($input['save_intermediates'])) {
+                $options['save_intermediates'] = (bool)$input['save_intermediates'];
+            }
+            if (isset($input['profile_performance'])) {
+                $options['profile_performance'] = (bool)$input['profile_performance'];
+            }
+            if (isset($input['beta_features'])) {
+                $options['beta_features'] = (bool)$input['beta_features'];
+            }
+            if (isset($input['ml_acceleration'])) {
+                $options['ml_acceleration'] = (bool)$input['ml_acceleration'];
+            }
+            if (isset($input['worker_threads'])) {
+                $options['worker_threads'] = intval($input['worker_threads']);
+            }
 
-/**
- * Resize image if needed (requires GD extension)
- */
-private function resizeImage($filePath, $maxWidth, $maxHeight, $options = [])
-{
-    if (!extension_loaded('gd')) {
-        throw new \Exception('GD extension required for image resizing');
-    }
+            // Peer selection
+            if (isset($input['peer'])) {
+                $options['peer'] = $input['peer'];
+            }
 
-    $imageInfo = getimagesize($filePath);
-    $sourceWidth = $imageInfo[0];
-    $sourceHeight = $imageInfo[1];
+            error_log("Generating avatar - Mode: $mode, Prompt: " . substr($prompt, 0, 50));
+            error_log("Complete options extracted (" . count($options) . " parameters): " . json_encode($options, JSON_PRETTY_PRINT));
 
-    // Calculate new dimensions maintaining aspect ratio
-    $ratio = min($maxWidth / $sourceWidth, $maxHeight / $sourceHeight);
-    $newWidth = round($sourceWidth * $ratio);
-    $newHeight = round($sourceHeight * $ratio);
+            // Generate avatar using the appropriate method
+            if ($mode === 'sadtalker') {
+                $result = $avatarManager->generateSadTalker($prompt, $options);
+            } else {
+                $result = $avatarManager->generateSimple($prompt, $options);
+            }
 
-    $this->logger->info('Resizing image', [
-        'original' => "{$sourceWidth}x{$sourceHeight}",
-        'new' => "{$newWidth}x{$newHeight}",
-        'ratio' => $ratio
-    ]);
+            ob_end_clean();
 
-    // Create image resource based on type
-    switch ($imageInfo['mime']) {
-        case 'image/jpeg':
-            $source = imagecreatefromjpeg($filePath);
+            // Return video data with comprehensive headers
+            header('Content-Type: ' . $result['content_type']);
+            header('Content-Length: ' . $result['size']);
+            header('X-Avatar-Mode: ' . $mode);
+            header('X-Avatar-Size: ' . $result['size']);
+            header('X-Avatar-Engine: ' . ($options['tts_engine'] ?? 'unknown'));
+            header('X-Avatar-Voice: ' . ($options['tts_voice'] ?? 'unknown'));
+            header('X-Avatar-Options-Count: ' . count($options));
+            header('X-Avatar-Parameters: ' . implode(',', array_keys($options)));
+
+            echo $result['data'];
+            exit;
+
+        case 'engines':
+            // Return available TTS engines and voices
+            error_log('Getting TTS engines information');
+            $engines = [
+                'espeak' => [
+                    'name' => 'eSpeak (Free)',
+                    'voices' => [
+                        ['value' => 'en', 'label' => 'English (Default)'],
+                        ['value' => 'en+f3', 'label' => 'English Female 3'],
+                        ['value' => 'en+f4', 'label' => 'English Female 4'],
+                        ['value' => 'en+m3', 'label' => 'English Male 3'],
+                        ['value' => 'en+m4', 'label' => 'English Male 4'],
+                        ['value' => 'en+f5', 'label' => 'English Female 5'],
+                        ['value' => 'en+m5', 'label' => 'English Male 5']
+                    ],
+                    'speed_range' => [80, 400],
+                    'pitch_range' => [0, 99]
+                ],
+                'edge' => [
+                    'name' => 'Microsoft Edge TTS',
+                    'voices' => [
+                        ['value' => 'en-US-AriaNeural', 'label' => 'Aria (Female)'],
+                        ['value' => 'en-US-JennyNeural', 'label' => 'Jenny (Female)'],
+                        ['value' => 'en-US-GuyNeural', 'label' => 'Guy (Male)'],
+                        ['value' => 'en-US-DavisNeural', 'label' => 'Davis (Male)'],
+                        ['value' => 'en-US-JaneNeural', 'label' => 'Jane (Female)'],
+                        ['value' => 'en-US-JasonNeural', 'label' => 'Jason (Male)'],
+                        ['value' => 'en-US-SaraNeural', 'label' => 'Sara (Female)'],
+                        ['value' => 'en-US-TonyNeural', 'label' => 'Tony (Male)']
+                    ],
+                    'speed_range' => [50, 300],
+                    'pitch_range' => [-50, 50]
+                ],
+                'elevenlabs' => [
+                    'name' => 'ElevenLabs (Premium)',
+                    'voices' => [
+                        ['value' => '21m00Tcm4TlvDq8ikWAM', 'label' => 'Rachel (Female)'],
+                        ['value' => 'AZnzlk1XvdvUeBnXmlld', 'label' => 'Domi (Female)'],
+                        ['value' => 'EXAVITQu4vr4xnSDxMaL', 'label' => 'Bella (Female)'],
+                        ['value' => 'ErXwobaYiN019PkySvjV', 'label' => 'Antoni (Male)'],
+                        ['value' => 'MF3mGyEYCl7XYWbV9V6O', 'label' => 'Elli (Female)'],
+                        ['value' => 'TxGEqnHWrfWFTfGW9XjX', 'label' => 'Josh (Male)']
+                    ],
+                    'speed_range' => [50, 200],
+                    'pitch_range' => [-100, 100]
+                ],
+                'openai' => [
+                    'name' => 'OpenAI TTS',
+                    'voices' => [
+                        ['value' => 'alloy', 'label' => 'Alloy (Neutral)'],
+                        ['value' => 'echo', 'label' => 'Echo (Male)'],
+                        ['value' => 'fable', 'label' => 'Fable (British Male)'],
+                        ['value' => 'onyx', 'label' => 'Onyx (Male)'],
+                        ['value' => 'nova', 'label' => 'Nova (Female)'],
+                        ['value' => 'shimmer', 'label' => 'Shimmer (Female)']
+                    ],
+                    'speed_range' => [25, 400],
+                    'pitch_range' => [0, 0]
+                ],
+                'coqui' => [
+                    'name' => 'Coqui TTS',
+                    'voices' => [
+                        ['value' => 'female', 'label' => 'Female (Default)'],
+                        ['value' => 'male', 'label' => 'Male (Default)'],
+                        ['value' => 'female_emotional', 'label' => 'Female (Emotional)'],
+                        ['value' => 'male_emotional', 'label' => 'Male (Emotional)']
+                    ],
+                    'speed_range' => [50, 200],
+                    'pitch_range' => [-50, 50]
+                ]
+            ];
+            echo json_encode(['engines' => $engines]);
             break;
-        case 'image/png':
-            $source = imagecreatefrompng($filePath);
+
+        case 'status':
+            error_log('Getting avatar service status');
+            $result = $avatarManager->getStatus();
+            echo json_encode($result);
             break;
-        case 'image/gif':
-            $source = imagecreatefromgif($filePath);
+
+        case 'logs':
+            error_log('Getting avatar service logs');
+            $result = $avatarManager->getLogs();
+            echo json_encode($result);
             break;
-        case 'image/webp':
-            $source = imagecreatefromwebp($filePath);
+
+        case 'test':
+            error_log('Testing avatar service connection');
+            $result = $avatarManager->testConnection();
+            echo json_encode($result);
             break;
+
+        case 'php_errors':
+            error_log('Getting PHP errors');
+            $errors = $avatarManager->getPhpErrors();
+            echo json_encode(['errors' => $errors]);
+            break;
+
+        case 'clear_errors':
+            error_log('Clearing PHP errors');
+            $cleared = $avatarManager->clearPhpErrors();
+            echo json_encode(['cleared' => $cleared]);
+            break;
+
+        case 'server_info':
+            error_log('Getting server connection info');
+            $currentPeer = $avatarManager->getCurrentPeer();
+            $availablePeers = $avatarManager->getAvailablePeers();
+            echo json_encode([
+                'current_peer' => $currentPeer,
+                'available_peers' => $availablePeers
+            ]);
+            break;
+
         default:
-            throw new \Exception('Unsupported image type for resizing: ' . $imageInfo['mime']);
+            throw new Exception('Unknown action: ' . $action);
     }
 
-    if (!$source) {
-        throw new \Exception('Failed to create image resource for resizing');
-    }
+} catch (Exception $e) {
+    error_log('Avatar API Error: ' . $e->getMessage());
+    error_log('Stack trace: ' . $e->getTraceAsString());
 
-    // Create new image
-    $destination = imagecreatetruecolor($newWidth, $newHeight);
-
-    // Preserve transparency for PNG and GIF
-    if ($imageInfo['mime'] === 'image/png' || $imageInfo['mime'] === 'image/gif') {
-        imagealphablending($destination, false);
-        imagesavealpha($destination, true);
-        $transparent = imagecolorallocatealpha($destination, 255, 255, 255, 127);
-        imagefill($destination, 0, 0, $transparent);
-    }
-
-    // Resize
-    imagecopyresampled($destination, $source, 0, 0, 0, 0, $newWidth, $newHeight, $sourceWidth, $sourceHeight);
-
-    // Save resized image
-    $resizedPath = $filePath . '_resized';
-    $quality = $options['resize_quality'] ?? 85;
-
-    switch ($imageInfo['mime']) {
-        case 'image/jpeg':
-            imagejpeg($destination, $resizedPath, $quality);
-            break;
-        case 'image/png':
-            imagepng($destination, $resizedPath, 9);
-            break;
-        case 'image/gif':
-            imagegif($destination, $resizedPath);
-            break;
-        case 'image/webp':
-            imagewebp($destination, $resizedPath, $quality);
-            break;
-    }
-
-    // Clean up
-    imagedestroy($source);
-    imagedestroy($destination);
-
-    if (!file_exists($resizedPath)) {
-        throw new \Exception('Failed to save resized image');
-    }
-
-    return $resizedPath;
-}
-
-/**
- * Enhanced callAvatarService with better image handling
- */
-private function callAvatarService($prompt, $mode, $options = [])
-{
-    // Process image if provided
-    if (isset($options['image'])) {
-        try {
-            $processedImage = $this->processImage($options['image'], $options);
-            $options['image'] = $processedImage;
-
-            $this->logger->info('Image processed successfully for avatar service', [
-                'processed_image' => $processedImage,
-                'original' => substr($options['image'] ?? '', 0, 100)
-            ]);
-
-        } catch (\Exception $e) {
-            $this->logger->error('Image processing failed', [
-                'error' => $e->getMessage(),
-                'image_data' => substr($options['image'] ?? '', 0, 100)
-            ]);
-            throw new \Exception('Image processing failed: ' . $e->getMessage());
-        }
-    }
-
-    // Continue with existing callAvatarService implementation...
-    $codec = $options['codec'] ?? 'h264_fast';
-    $quality = $options['quality'] ?? 'high';
-
-    $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
-
-    // Build comprehensive payload with image support
-    $payload = [
-        'prompt' => $prompt,
-        'tts_engine' => $options['tts_engine'] ?? 'espeak'
-    ];
-
-    // Add image to payload if processed
-    if (isset($options['image'])) {
-        $payload['image'] = $options['image'];
-
-        // Add image metadata if available
-        if (isset($options['image_info'])) {
-            $payload['image_info'] = $options['image_info'];
-        }
-        if (isset($options['image_type'])) {
-            $payload['image_type'] = $options['image_type'];
-        }
-    }
-
-    // Add all other TTS and generation options...
-    foreach ($options as $key => $value) {
-        if (!in_array($key, ['image', 'image_info', 'image_type', 'temp_file'])) {
-            $payload[$key] = $value;
-        }
-    }
-
-    $data = json_encode($payload, JSON_UNESCAPED_SLASHES);
-
-    $this->logger->debug('Calling avatar service with image support', [
-        'url' => $url,
-        'payload_keys' => array_keys($payload),
-        'has_image' => isset($payload['image']),
-        'image_type' => $options['image_type'] ?? 'none',
-        'data_length' => strlen($data)
+    http_response_code(500);
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'request_info' => [
+            'method' => $_SERVER['REQUEST_METHOD'],
+            'query' => $_SERVER['QUERY_STRING'],
+            'action' => $action ?? 'unknown',
+            'mode' => $mode ?? 'unknown',
+            'input_keys' => isset($input) ? array_keys($input) : [],
+            'options_count' => isset($options) ? count($options) : 0
+        ]
     ]);
-
-    // Rest of the curl implementation remains the same...
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Content-Length: ' . strlen($data)
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 300);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-
-    $result = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    $error = curl_error($ch);
-    curl_close($ch);
-
-    if ($error) {
-        throw new \Exception('Curl error: ' . $error);
-    }
-
-    if ($httpCode !== 200) {
-        $errorData = json_decode($result, true);
-        $errorMessage = $errorData['error'] ?? 'HTTP error: ' . $httpCode;
-        throw new \Exception($errorMessage);
-    }
-
-    if (!$result) {
-        throw new \Exception('Empty response from avatar service');
-    }
-
-    return [
-        'data' => $result,
-        'content_type' => $contentType,
-        'size' => strlen($result)
-    ];
 }
+?>
