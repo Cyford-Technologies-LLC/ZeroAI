@@ -553,6 +553,9 @@ class AvatarManager
             'prompt' => $prompt,
             'tts_engine' => $options['tts_engine'] ?? 'espeak'
         ];
+        if ($isStreaming) {
+              $payload['streaming_mode'] = $streamMode; // Map stream_mode to streaming_mode
+        }
 
         // Add all the parameter mappings from the previous enhanced version
         $allParams = [
