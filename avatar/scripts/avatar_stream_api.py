@@ -99,6 +99,11 @@ class StreamingAvatarGenerator(TTSProcessor):
             if sadtalker_options is None:
                 sadtalker_options = {}
 
+            # Save the numpy array as a temporary image file for SadTalker
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_image:
+                temp_image_path = temp_image.name
+                cv2.imwrite(temp_image_path, source_image)
+
             # Create temporary video with SadTalker
             with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
                 temp_video_path = temp_video.name
@@ -115,7 +120,7 @@ class StreamingAvatarGenerator(TTSProcessor):
                     enhancer=sadtalker_options.get('enhancer', None),
                     split_chunks=sadtalker_options.get('split_chunks', True),
                     chunk_length=sadtalker_options.get('chunk_length', duration),
-                    source_image=source_image
+                    source_image=temp_image_path  # Use the temp image file path, not numpy array
                 )
 
                 if not success:
@@ -136,9 +141,11 @@ class StreamingAvatarGenerator(TTSProcessor):
                 cap.release()
 
             finally:
-                # Cleanup temp video
+                # Cleanup temp files
                 if os.path.exists(temp_video_path):
                     os.unlink(temp_video_path)
+                if os.path.exists(temp_image_path):
+                    os.unlink(temp_image_path)
 
         except Exception as e:
             logger.error(f"SadTalker streaming error: {e}")
