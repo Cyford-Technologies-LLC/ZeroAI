@@ -89,9 +89,7 @@ USER avataruser
 
 # Set permissions for application files
 RUN chmod +x /app/*.py && \
-    chmod 755 /app/static && \
-    chmod 755 /app/faces && \
-    chmod 755 /tmp/streaming_cache
+    chmod -R 755 /app/
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:7860/health || exit 1
