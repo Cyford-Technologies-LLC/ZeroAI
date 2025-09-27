@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 tts_processor = TTSProcessor()
 
-class StreamingAvatarGenerator:
+class StreamingAvatarGenerator(TTSProcessor):
     """
     Handles real-time and chunked avatar video streaming.
 
