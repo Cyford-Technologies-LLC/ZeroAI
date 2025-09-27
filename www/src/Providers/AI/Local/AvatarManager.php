@@ -64,7 +64,7 @@ class AvatarManager
             }
 
             if ($bestPeer && !isset($bestPeer['is_local'])) {
-                $avatarUrl = "http://{$bestPeer['ip']}:7860"; // Avatar service on port 7860
+                $avatarUrl = "http://{$bestPeer['ip']}:444"; // Avatar service on port 7860
                 $this->logger->info('Selected best peer for avatar generation', [
                     'peer' => $bestPeer['name'],
                     'ip' => $bestPeer['ip'],
