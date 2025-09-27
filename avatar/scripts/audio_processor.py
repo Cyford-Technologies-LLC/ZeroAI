@@ -27,8 +27,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Configuration - update with your TTS API URL
-TTS_API_URL = "http://localhost:5000/tts"  # Update this with your actual TTS API URL
 
+TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
 
 
 
