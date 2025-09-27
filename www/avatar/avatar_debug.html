@@ -394,12 +394,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 ZeroAI Avatar Debug Console</h1>
+            <h1>ZeroAI Avatar Debug Console</h1>
             <p>Complete Avatar Generation System with Full Parameter Control</p>
         </div>
 
         <div class="section">
-            <h2>🎬 Avatar Generation Center</h2>
+            <h2>Avatar Generation Center</h2>
 
             <!-- Mode Selection -->
             <div class="control-group">
@@ -428,12 +428,12 @@
 
             <!-- Tabbed Options -->
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('tts')">🎙️ TTS Options</div>
-                <div class="tab" onclick="switchTab('image')">🖼️ Image Options</div>
-                <div class="tab" onclick="switchTab('video')">🎬 Video Options</div>
-                <div class="tab" onclick="switchTab('sadtalker')">🎭 SadTalker Options</div>
-                <div class="tab" onclick="switchTab('advanced')">⚙️ Advanced Options</div>
-                <div class="tab" onclick="switchTab('peer')">🌐 Peer Selection</div>
+                <div class="tab active" onclick="switchTab('tts')">TTS Options</div>
+                <div class="tab" onclick="switchTab('image')">Image Options</div>
+                <div class="tab" onclick="switchTab('video')">Video Options</div>
+                <div class="tab" onclick="switchTab('sadtalker')">SadTalker Options</div>
+                <div class="tab" onclick="switchTab('advanced')">Advanced Options</div>
+                <div class="tab" onclick="switchTab('peer')">Peer Selection</div>
             </div>
 
             <!-- TTS Options Tab -->
@@ -543,14 +543,14 @@
                         <div id="uploadSection" style="display: none; margin-top: 15px;">
                             <div class="image-upload-zone" onclick="document.getElementById('imageFile').click();">
                                 <input type="file" id="imageFile" accept="image/*" onchange="handleImageUpload(event)" style="display: none;">
-                                <p>📁 Click to upload or drag & drop image</p>
+                                <p>Click to upload or drag & drop image</p>
                                 <p style="font-size: 12px; color: #999;">Supports: JPEG, PNG, GIF, WebP (max 10MB)</p>
                             </div>
                         </div>
 
                         <div id="urlSection" style="display: none; margin-top: 15px;">
                             <input type="url" id="imageUrlInput" placeholder="https://example.com/image.jpg" style="width: 100%; margin-bottom: 10px;">
-                            <button onclick="previewImageUrl()" class="success">🔍 Preview URL</button>
+                            <button onclick="previewImageUrl()" class="success">Preview URL</button>
                         </div>
 
                         <div id="imagePreview" style="margin-top: 15px;">
@@ -854,17 +854,17 @@
 
             <!-- Action Buttons -->
             <div class="controls" style="margin-top: 30px; justify-content: center;">
-                <button onclick="generateAvatar()" class="generate">🚀 Generate Avatar</button>
-                <button onclick="testMP4()" class="success">🎬 Test MP4 Pipeline</button>
-                <button onclick="testConnection()" class="success">🔌 Test Connection</button>
-                <button onclick="getEngines()">🎙️ Get TTS Engines</button>
-                <button onclick="getStatus()">📊 Get Status</button>
-                <button onclick="getLogs()">📜 Get Logs</button>
-                <button onclick="clearLogs()" class="danger">🗑️ Clear Logs</button>
+                <button onclick="generateAvatar()" class="generate">Generate Avatar</button>
+                <button onclick="testMP4()" class="success">Test MP4 Pipeline</button>
+                <button onclick="testConnection()" class="success">Test Connection</button>
+                <button onclick="getEngines()">Get TTS Engines</button>
+                <button onclick="getStatus()">Get Status</button>
+                <button onclick="getLogs()">Get Logs</button>
+                <button onclick="clearLogs()" class="danger">Clear Logs</button>
             </div>
 
             <div class="loading" id="loading">
-                <p>🔄 Generating avatar... This may take a few minutes.</p>
+                <p>Generating avatar... This may take a few minutes.</p>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
@@ -878,8 +878,8 @@
                 </video>
                 <div class="debug-info" id="videoInfo"></div>
                 <div class="controls">
-                    <button onclick="downloadVideo()" class="success">📥 Download Video</button>
-                    <button onclick="shareVideo()" class="success">🔗 Share Video</button>
+                    <button onclick="downloadVideo()" class="success">Download Video</button>
+                    <button onclick="shareVideo()" class="success">Share Video</button>
                 </div>
             </div>
 
@@ -888,11 +888,11 @@
 
         <!-- Server Connection -->
         <div class="section">
-            <h2>🌐 Server Connection</h2>
+            <h2>Server Connection</h2>
             <div class="controls">
-                <button onclick="getServerInfo()">📡 Get Server Info</button>
-                <button onclick="pingAllServers()">🏃 Ping All Servers</button>
-                <button onclick="benchmarkServers()" class="success">⚡ Benchmark Servers</button>
+                <button onclick="getServerInfo()">Get Server Info</button>
+                <button onclick="pingAllServers()">Ping All Servers</button>
+                <button onclick="benchmarkServers()" class="success">Benchmark Servers</button>
             </div>
             <div class="status-grid" id="serverInfo">
                 <div class="status-item">Click "Get Server Info" to see which avatar server is being used...</div>
@@ -901,11 +901,11 @@
 
         <!-- System Status -->
         <div class="section">
-            <h2>📊 System Status</h2>
+            <h2>System Status</h2>
             <div class="controls">
-                <button onclick="refreshStatus()">🔄 Refresh Status</button>
-                <button onclick="getDetailedStatus()">📋 Detailed Status</button>
-                <button onclick="exportStatus()" class="success">💾 Export Status</button>
+                <button onclick="refreshStatus()">Refresh Status</button>
+                <button onclick="getDetailedStatus()">Detailed Status</button>
+                <button onclick="exportStatus()" class="success">Export Status</button>
             </div>
             <div class="status-grid" id="statusGrid">
                 <div class="status-item">Loading status...</div>
@@ -914,13 +914,13 @@
 
         <!-- Debug Logs -->
         <div class="section">
-            <h2>📜 Debug Logs</h2>
+            <h2>Debug Logs</h2>
             <div class="controls">
-                <button onclick="refreshLogs()">🔄 Refresh Logs</button>
-                <button onclick="clearDebugLogs()" class="danger">🗑️ Clear Debug Logs</button>
-                <button onclick="downloadLogs()">📥 Download Logs</button>
-                <button onclick="copyLogsToClipboard()">📋 Copy to Clipboard</button>
-                <button onclick="filterLogs()">🔍 Filter Logs</button>
+                <button onclick="refreshLogs()">Refresh Logs</button>
+                <button onclick="clearDebugLogs()" class="danger">Clear Debug Logs</button>
+                <button onclick="downloadLogs()">Download Logs</button>
+                <button onclick="copyLogsToClipboard()">Copy to Clipboard</button>
+                <button onclick="filterLogs()">Filter Logs</button>
             </div>
             <div class="controls">
                 <label for="logLevel">Log Level:</label>
