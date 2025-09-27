@@ -41,6 +41,9 @@ ALLOWED_OPTIONS = {
         "prompt": "Hello, this is a streaming test.",
         "image": "/app/faces/2.jpg",
 
+
+
+
         # TTS options (streamlined for streaming)
         "tts_engine": "espeak",
         "tts_options": {},  # Dict for engine-specific options
@@ -63,12 +66,17 @@ ALLOWED_OPTIONS = {
         "enable_websocket": False,  # Enable WebSocket mode
         "max_concurrent": 3,  # Max concurrent streams per client
 
+
+
         # SadTalker-specific video options
         "timeout": 1200,
         "enhancer": None,
         "split_chunks": False,
         "chunk_length": 10,
         "fps": 15,
+        "still": True,
+        "preprocess": "crop",  # crop | none | resize
+        "resolution": "256",
 
 
 
@@ -91,7 +99,7 @@ VALIDATION_RULES = {
     "codec": ["h264_high", "h264_medium", "h264_fast", "h265_high", "webm_high", "webm_fast"],
     "quality": ["high", "medium", "fast"],
     "tts_engine": ["espeak", "festival", "pico", "flite", "edge", "elevenlabs", "openai", "coqui"],
-    "frame_rate": [15, 20, 24, 25, 30, 60],
+    "frame_rate": [12, 15, 20, 24, 25, 30, 60],
     "mode": ["simple", "sadtalker"],
     "preprocess": ["crop", "none", "resize"],
 }
