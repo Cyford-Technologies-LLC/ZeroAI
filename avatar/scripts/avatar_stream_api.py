@@ -96,11 +96,18 @@ class StreamingAvatarGenerator(TTSProcessor):
                                 tts_options: Dict = None, codec: str = 'h264_fast',
                                 quality: str = 'medium', frame_rate: int = 30,
                                 mode: str = 'auto', timeout: int = 300, enhancer: str = None,
-                                split_chunks: bool = True, chunk_length: float = 10.0) -> Generator[bytes, None, None]:
+                                split_chunks: bool = True, chunk_length: float = 10.0,
+                                delivery_mode: str = 'url') -> Generator[bytes, None, None]:
         """
-        Generate video chunks and return video URLs for progressive playback
+        Generate video chunks and return video URLs or base64 data for progressive playback
+
+        Args:
+            delivery_mode: 'url' (default) or 'base64' - how to deliver video chunks
         """
-        logger.info(f"Starting chunked stream - Mode: {mode}, FPS: {frame_rate}")
+        import base64
+        import shutil
+
+        logger.info(f"Starting chunked stream - Mode: {mode}, FPS: {frame_rate}, Delivery: {delivery_mode}")
 
         try:
             self.is_streaming = True
@@ -112,7 +119,8 @@ class StreamingAvatarGenerator(TTSProcessor):
             init_info = {
                 'status': 'starting',
                 'total_chunks': len(sentences),
-                'mode': mode
+                'mode': mode,
+                'delivery_mode': delivery_mode
             }
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(init_info)}\r\n".encode()
 
@@ -135,7 +143,10 @@ class StreamingAvatarGenerator(TTSProcessor):
                 try:
                     # Create unique chunk video path
                     timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-                    chunk_video_path = f"/app/static/chunk_{i}_{timestamp}.mp4"
+                    chunk_filename = f"chunk_{i}_{timestamp}.mp4"
+
+                    # Always generate to temp location first
+                    temp_video_path = f"/tmp/{chunk_filename}"
 
                     # Save the numpy array as a temporary image file for SadTalker
                     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_image:
@@ -149,7 +160,7 @@ class StreamingAvatarGenerator(TTSProcessor):
                         try:
                             success = generate_sadtalker_video(
                                 audio_path,
-                                chunk_video_path,
+                                temp_video_path,
                                 "",
                                 codec,
                                 quality,
@@ -168,7 +179,7 @@ class StreamingAvatarGenerator(TTSProcessor):
                             if os.path.exists('/app/SadTalker'):
                                 success = generate_sadtalker_video(
                                     audio_path,
-                                    chunk_video_path,
+                                    temp_video_path,
                                     "",
                                     codec,
                                     quality,
@@ -185,19 +196,41 @@ class StreamingAvatarGenerator(TTSProcessor):
 
                     # If SadTalker failed or mode is simple, generate simple video
                     if not success:
-                        generate_talking_face(temp_image_path, audio_path, chunk_video_path, codec, quality)
-                        success = os.path.exists(chunk_video_path)
+                        generate_talking_face(temp_image_path, audio_path, temp_video_path, codec, quality)
+                        success = os.path.exists(temp_video_path)
 
-                    if success and os.path.exists(chunk_video_path):
-                        # Send chunk URL immediately when ready
+                    if success and os.path.exists(temp_video_path):
+                        # Prepare chunk info
                         chunk_info = {
                             "chunk_id": i,
-                            "video_url": f"/static/chunk_{i}_{timestamp}.mp4",
                             "duration": duration,
                             "ready": True,
                             "sentence": sentence,
                             "mode": mode
                         }
+
+                        # Handle delivery mode
+                        if delivery_mode == 'base64':
+                            # Read and encode the video
+                            with open(temp_video_path, 'rb') as video_file:
+                                video_data = video_file.read()
+                                video_base64 = base64.b64encode(video_data).decode('utf-8')
+                            chunk_info["video_data"] = f"data:video/mp4;base64,{video_base64}"
+
+                            # Clean up temp file immediately after encoding
+                            if os.path.exists(temp_video_path):
+                                os.unlink(temp_video_path)
+                        else:
+                            # Use URL mode (need to copy to static folder)
+                            static_path = f"/app/static/{chunk_filename}"
+                            shutil.copy(temp_video_path, static_path)
+                            chunk_info["video_url"] = f"/static/{chunk_filename}"
+
+                            # Clean up temp file after copying
+                            if os.path.exists(temp_video_path):
+                                os.unlink(temp_video_path)
+
+                        # Send chunk info
                         yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(chunk_info)}\r\n".encode()
                     else:
                         logger.error(f"Failed to generate chunk {i}")
@@ -215,7 +248,8 @@ class StreamingAvatarGenerator(TTSProcessor):
             completion_info = {
                 'status': 'completed',
                 'total_chunks': len(sentences),
-                'mode': mode
+                'mode': mode,
+                'delivery_mode': delivery_mode
             }
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(completion_info)}\r\n".encode()
 

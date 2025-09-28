@@ -131,12 +131,14 @@ def stream_avatar():
         frame_rate = options["frame_rate"]
         buffer_size = options["buffer_size"]
 
-        # ADD THIS LINE - get mode from options or default to auto
+        # ADD THESE LINES - get mode and delivery_mode from options
         mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
+        delivery_mode = options.get("delivery_mode", "url")  # 'url' or 'base64'
 
         logger.info(f"=== AVATAR STREAMING START ===")
         logger.info(f"Mode: {streaming_mode}/{mode}, Prompt: {prompt[:50]}...")
         logger.info(f"Chunk duration: {chunk_duration}s, Frame rate: {frame_rate} fps")
+        logger.info(f"Delivery mode: {delivery_mode}")
 
         # Initialize streaming generator
         streaming_generator = StreamingAvatarGenerator(
@@ -158,7 +160,7 @@ def stream_avatar():
             "chunk_length": options.get("chunk_length", 10)
         }
 
-        # Generate stream based on mode - ADD mode parameter to your existing calls
+        # Generate stream based on mode - ADD delivery_mode parameter
         if streaming_mode == "chunked":
             stream_generator = streaming_generator.generate_chunked_stream(
                 prompt=prompt,
@@ -169,7 +171,8 @@ def stream_avatar():
                 codec=codec,
                 quality=quality,
                 frame_rate=frame_rate,
-                mode=mode,  # ADD THIS
+                mode=mode,
+                delivery_mode=delivery_mode,  # ADD THIS
                 **sadtalker_options,
             )
         elif streaming_mode == "realtime":
@@ -182,7 +185,7 @@ def stream_avatar():
                 quality=quality,
                 frame_rate=frame_rate,
                 buffer_size=buffer_size,
-                mode=mode,  # ADD THIS
+                mode=mode,
                 **sadtalker_options,
             )
         else:

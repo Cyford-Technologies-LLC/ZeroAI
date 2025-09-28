@@ -299,6 +299,8 @@ class AvatarManager
             'streaming_mode' => $streamingMode
         ];
 
+
+
         // Core parameters
         $coreParams = [
             'tts_engine', 'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
