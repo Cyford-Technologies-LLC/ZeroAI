@@ -42,9 +42,11 @@ else
     for file in avatar/scripts/*; do
       docker cp "$file" zeroai_avatar:/app/
     done
+
+    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
     # shellcheck disable=SC2046
     truncate -s 0 $(docker inspect --format='{{.LogPath}}' avatar)
-    docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
+
 
 fi
 
