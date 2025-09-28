@@ -5,7 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     NUMBA_CACHE_DIR='/tmp/numba_cache' \
-    MPLCONFIGDIR=/tmp/matplotlib
+    MPLCONFIGDIR=/tmp/matplotlib \
+    GFPGAN_CACHE_DIR=/tmp/gfpgan_cache
 
 
 WORKDIR /app
@@ -43,6 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create directories and user early (rarely change - cache friendly)
 RUN mkdir -p /app/faces \
+    /tmp/gfpgan \
     /app/static \
     /app/scripts \
     /app/logs \
