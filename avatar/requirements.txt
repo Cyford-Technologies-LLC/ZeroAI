@@ -38,3 +38,6 @@ imageio==2.31.1
 imageio-ffmpeg==0.4.8
 numpy
 psutil
+gevent
+gevent-websocket
+waitress

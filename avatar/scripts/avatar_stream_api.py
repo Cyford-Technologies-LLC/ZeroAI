@@ -100,9 +100,6 @@ class StreamingAvatarGenerator(TTSProcessor):
                                 delivery_mode: str = 'url') -> Generator[bytes, None, None]:
         """
         Generate video chunks and return video URLs or base64 data for progressive playback
-
-        Args:
-            delivery_mode: 'url' (default) or 'base64' - how to deliver video chunks
         """
         import base64
         import shutil
@@ -115,14 +112,19 @@ class StreamingAvatarGenerator(TTSProcessor):
             # Split prompt into sentences for chunking
             sentences = self._split_into_sentences(prompt)
 
-            # Send initial info
+            # Send initial info with immediate flush
             init_info = {
                 'status': 'starting',
                 'total_chunks': len(sentences),
                 'mode': mode,
                 'delivery_mode': delivery_mode
             }
-            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(init_info)}\r\n".encode()
+
+            # Send initial frame with explicit flush
+            init_json = json.dumps(init_info)
+            chunk_data = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(init_json)}\r\n\r\n{init_json}\r\n"
+            yield chunk_data.encode()
+            yield b''  # Force flush
 
             for i, sentence in enumerate(sentences):
                 if not self.is_streaming:
@@ -130,224 +132,155 @@ class StreamingAvatarGenerator(TTSProcessor):
 
                 logger.info(f"Processing chunk {i + 1}/{len(sentences)}: {sentence[:30]}...")
 
-                # Generate TTS for this chunk
-                audio_bytes = tts_processor._call_tts_service(sentence, tts_engine, tts_options)
-                if not audio_bytes:
-                    continue
-
-                # Process audio
-                duration, audio_path = tts_processor._process_audio_chunk(audio_bytes)
-                if not audio_path:
-                    continue
+                # Generate audio for this chunk
+                audio_duration = 0
+                audio_path = None
 
                 try:
-                    # Create unique chunk video path
-                    timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-                    chunk_filename = f"chunk_{i}_{timestamp}.mp4"
-
-                    # Always generate to temp location first
-                    temp_video_path = f"/tmp/{chunk_filename}"
-
-                    # Save the numpy array as a temporary image file for SadTalker
-                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_image:
-                        temp_image_path = temp_image.name
-                        cv2.imwrite(temp_image_path, source_image)
-
-                    success = False
-
-                    # Generate video based on mode
-                    if mode == 'sadtalker':
-                        try:
-                            success = generate_sadtalker_video(
-                                audio_path,
-                                temp_video_path,
-                                "",
-                                codec,
-                                quality,
-                                timeout=timeout,
-                                enhancer=enhancer,
-                                split_chunks=False,  # We're already chunking
-                                chunk_length=chunk_length,
-                                source_image=temp_image_path
-                            )
-                        except Exception as e:
-                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
-
-                    elif mode == 'auto':
-                        # Try SadTalker first, fallback to simple
-                        try:
-                            if os.path.exists('/app/SadTalker'):
-                                success = generate_sadtalker_video(
-                                    audio_path,
-                                    temp_video_path,
-                                    "",
-                                    codec,
-                                    quality,
-                                    timeout=timeout,
-                                    enhancer=enhancer,
-                                    split_chunks=False,
-                                    chunk_length=chunk_length,
-                                    source_image=temp_image_path
-                                )
-                            else:
-                                logger.info("SadTalker not found, using simple mode")
-                        except Exception as e:
-                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
-
-                    # If SadTalker failed or mode is simple, generate simple video
-                    if not success:
-                        generate_talking_face(temp_image_path, audio_path, temp_video_path, codec, quality)
-                        success = os.path.exists(temp_video_path)
-
-                    if success and os.path.exists(temp_video_path):
-                        # Prepare chunk info
-                        chunk_info = {
-                            "chunk_id": i,
-                            "duration": duration,
-                            "ready": True,
-                            "sentence": sentence,
-                            "mode": mode
-                        }
-
-                        # Handle delivery mode
-                        if delivery_mode == 'base64':
-                            # Read and encode the video
-                            with open(temp_video_path, 'rb') as video_file:
-                                video_data = video_file.read()
-                                video_base64 = base64.b64encode(video_data).decode('utf-8')
-                            chunk_info["video_data"] = f"data:video/mp4;base64,{video_base64}"
-
-                            # Clean up temp file immediately after encoding
-                            if os.path.exists(temp_video_path):
-                                os.unlink(temp_video_path)
-                        else:
-                            # Use URL mode (need to copy to static folder)
-                            static_path = f"/app/static/{chunk_filename}"
-                            shutil.copy(temp_video_path, static_path)
-                            chunk_info["video_url"] = f"/static/{chunk_filename}"
-
-                            # Clean up temp file after copying
-                            if os.path.exists(temp_video_path):
-                                os.unlink(temp_video_path)
-
-                        # Send chunk info
-                        yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(chunk_info)}\r\n".encode()
+                    if tts_engine == 'edge':
+                        audio_path = self._generate_edge_tts_chunk(sentence, i, tts_options or {})
                     else:
-                        logger.error(f"Failed to generate chunk {i}")
+                        audio_path = self._generate_espeak_chunk(sentence, i, tts_options or {})
 
-                    # Cleanup temp image
-                    if os.path.exists(temp_image_path):
-                        os.unlink(temp_image_path)
-
-                finally:
-                    # Cleanup audio file
                     if audio_path and os.path.exists(audio_path):
-                        os.unlink(audio_path)
+                        from pydub import AudioSegment
+                        audio = AudioSegment.from_file(audio_path)
+                        audio_duration = len(audio) / 1000.0
+                        logger.info(f"Audio duration: {audio_duration:.2f}s")
 
-            # Stream completion marker
-            completion_info = {
-                'status': 'completed',
-                'total_chunks': len(sentences),
-                'mode': mode,
-                'delivery_mode': delivery_mode
-            }
-            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(completion_info)}\r\n".encode()
-
-        except Exception as e:
-            logger.error(f"Chunked streaming error: {e}")
-            error_info = {'status': 'error', 'message': str(e), 'mode': mode}
-            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(error_info)}\r\n".encode()
-
-        finally:
-            self.is_streaming = False
-            logger.info("Chunked stream completed")
-
-    def generate_realtime_stream(self, prompt: str, source_image: np.ndarray,
-                                 tts_engine: str = 'espeak', tts_options: Dict = None,
-                                 codec: str = 'h264_fast', quality: str = 'medium',
-                                 frame_rate: int = 30, buffer_size: int = 5,
-                                 mode: str = 'auto', timeout: int = 300, enhancer: str = None,
-                                 split_chunks: bool = True, chunk_length: float = 10.0) -> Generator[bytes, None, None]:
-        """
-        Generate video stream in real-time.
-        Frames are generated and sent as fast as possible.
-        """
-        logger.info(f"Starting realtime stream - FPS: {frame_rate}, Buffer: {buffer_size}, Mode: {mode}")
-        logger.info(f"Starting chunked stream - Mode: {mode}, FPS: {frame_rate}, Delivery: {delivery_mode}")
-        logger.info(f"Received delivery_mode parameter: {delivery_mode}")
-
-        # Prepare SadTalker options from your existing parameters
-        sadtalker_options = {
-            'timeout': timeout,
-            'enhancer': enhancer,
-            'split_chunks': split_chunks,
-            'chunk_length': chunk_length
-        }
-
-        try:
-            self.is_streaming = True
-
-            # Start audio generation in background
-            audio_future = self.executor.submit(self._generate_audio_realtime,
-                                                prompt, tts_engine, tts_options)
-
-            # Start frame generation with enhanced mode support
-            frame_future = self.executor.submit(self._generate_frames_realtime,
-                                                source_image, frame_rate, buffer_size, mode, sadtalker_options)
-
-            # Stream initialization
-            init_info = {'status': 'streaming', 'mode': f'realtime/{mode}', 'fps': frame_rate}
-            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(init_info)}\r\n".encode()
-
-            frame_count = 0
-            start_time = time.time()
-
-            while self.is_streaming:
-                try:
-                    # Get next frame from queue (with timeout)
-                    frame_bytes = self.frame_queue.get(timeout=1.0)
-
-                    if frame_bytes is None:  # Sentinel value to stop
-                        break
-
-                    # Stream frame
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-
-                    frame_count += 1
-
-                    # Adaptive frame rate control
-                    elapsed = time.time() - start_time
-                    expected_frames = elapsed * frame_rate
-
-                    if frame_count > expected_frames + buffer_size:
-                        time.sleep(0.01)  # Slight delay to prevent overwhelming
-
-                except queue.Empty:
-                    # No frames available, send keepalive
-                    keepalive = {'status': 'buffering', 'frame_count': frame_count, 'mode': mode}
-                    yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(keepalive)}\r\n".encode()
+                except Exception as e:
+                    logger.error(f"Audio generation failed for chunk {i}: {e}")
+                    # Send error frame
+                    error_info = {
+                        "chunk_id": i,
+                        "error": f"Audio generation failed: {str(e)}",
+                        "ready": False
+                    }
+                    error_json = json.dumps(error_info)
+                    error_frame = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(error_json)}\r\n\r\n{error_json}\r\n"
+                    yield error_frame.encode()
+                    yield b''  # Force flush
                     continue
 
-            # Wait for background tasks to complete
-            try:
-                audio_future.result(timeout=5.0)
-                frame_future.result(timeout=5.0)
-            except Exception as e:
-                logger.warning(f"Background task completion warning: {e}")
+                # Generate video for this chunk
+                chunk_filename = f"chunk_{i}_{int(time.time())}.mp4"
+                temp_video_path = f"/tmp/{chunk_filename}"
 
-            # Stream completion
-            completion_info = {'status': 'completed', 'total_frames': frame_count, 'mode': mode}
-            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(completion_info)}\r\n".encode()
+                success = False
+                duration = 0
+
+                if audio_path and os.path.exists(audio_path):
+                    try:
+                        # Save source image temporarily
+                        temp_source = f'/tmp/source_{i}.png'
+                        cv2.imwrite(temp_source, cv2.cvtColor(source_image, cv2.COLOR_RGB2BGR))
+
+                        # Generate video
+                        result = self.generator.test(
+                            source_image=temp_source,
+                            driven_audio=audio_path,
+                            result_dir='/app/static/sadtalker_output'
+                        )
+
+                        if result and os.path.exists(result):
+                            shutil.move(result, temp_video_path)
+
+                            # Get duration
+                            cap = cv2.VideoCapture(temp_video_path)
+                            fps = cap.get(cv2.CAP_PROP_FPS) or 25
+                            frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+                            duration = frame_count / fps if fps > 0 else audio_duration
+                            cap.release()
+
+                            success = True
+
+                        # Cleanup temp files
+                        if os.path.exists(temp_source):
+                            os.unlink(temp_source)
+                        if audio_path and os.path.exists(audio_path):
+                            os.unlink(audio_path)
+
+                    except Exception as e:
+                        logger.error(f"Video generation error for chunk {i}: {e}")
+
+                # Prepare and send chunk response
+                if success and os.path.exists(temp_video_path):
+                    chunk_info = {
+                        "chunk_id": i,
+                        "duration": duration,
+                        "ready": True,
+                        "sentence": sentence,
+                        "mode": mode
+                    }
+
+                    if delivery_mode == 'base64':
+                        # Read and encode video as base64
+                        with open(temp_video_path, 'rb') as video_file:
+                            video_data = video_file.read()
+                            video_base64 = base64.b64encode(video_data).decode('utf-8')
+                        chunk_info["video_data"] = f"data:video/mp4;base64,{video_base64}"
+
+                        # Clean up temp file
+                        if os.path.exists(temp_video_path):
+                            os.unlink(temp_video_path)
+                    else:
+                        # Copy to static directory for URL access
+                        static_path = f"/app/static/{chunk_filename}"
+                        shutil.copy(temp_video_path, static_path)
+                        chunk_info["video_url"] = f"/static/{chunk_filename}"
+
+                        # Clean up temp file
+                        if os.path.exists(temp_video_path):
+                            os.unlink(temp_video_path)
+
+                    # Send chunk with explicit content length and immediate flush
+                    chunk_json = json.dumps(chunk_info)
+                    chunk_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(chunk_json)}\r\n\r\n{chunk_json}\r\n"
+                    yield chunk_response.encode()
+                    yield b''  # FORCE FLUSH - this ensures immediate delivery
+
+                    logger.info(f"✅ Chunk {i} sent and flushed immediately - Duration: {duration:.2f}s")
+
+                else:
+                    # Send failure notification
+                    fail_info = {
+                        "chunk_id": i,
+                        "ready": False,
+                        "error": "Failed to generate video"
+                    }
+                    fail_json = json.dumps(fail_info)
+                    fail_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(fail_json)}\r\n\r\n{fail_json}\r\n"
+                    yield fail_response.encode()
+                    yield b''  # Force flush
+
+            # Send completion frame
+            complete_info = {
+                'status': 'complete',
+                'total_chunks': len(sentences),
+                'mode': mode
+            }
+            complete_json = json.dumps(complete_info)
+            complete_frame = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(complete_json)}\r\n\r\n{complete_json}\r\n"
+            yield complete_frame.encode()
+            yield b''  # Final flush
+
+            # Final boundary
+            yield b"--frame--\r\n"
+
+            logger.info("✅ Chunked stream completed successfully")
 
         except Exception as e:
-            logger.error(f"Realtime streaming error: {e}")
-            error_info = {'status': 'error', 'message': str(e), 'mode': mode}
-            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(error_info)}\r\n".encode()
+            logger.error(f"Stream generation failed: {e}")
+            error_info = {"error": str(e), "status": "failed"}
+            error_json = json.dumps(error_info)
+            error_frame = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(error_json)}\r\n\r\n{error_json}\r\n"
+            yield error_frame.encode()
+            yield b"--frame--\r\n"
 
         finally:
             self.is_streaming = False
-            logger.info("Realtime stream completed")
+
+
 
     def _generate_audio_realtime(self, prompt: str, tts_engine: str, tts_options: Dict):
         """Generate audio in real-time and put in queue"""
@@ -482,6 +415,7 @@ class StreamingAvatarGenerator(TTSProcessor):
                     # Encode frame for streaming
                     _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                     yield buffer.tobytes()
+                    yield
 
                 cap.release()
 

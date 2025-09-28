@@ -192,10 +192,18 @@ def stream_avatar():
         else:
             return jsonify({"error": f"Invalid streaming mode: {streaming_mode}"}), 400
 
-        return Response(
+        # CHANGE ONLY THIS PART - ADD direct_passthrough and headers
+        response = Response(
             stream_generator,
-            mimetype='multipart/x-mixed-replace; boundary=frame'
+            mimetype='multipart/x-mixed-replace; boundary=frame',
+            direct_passthrough=True  # ADD THIS LINE
         )
+
+        # ADD THESE HEADERS
+        response.headers['X-Accel-Buffering'] = 'no'
+        response.headers['Cache-Control'] = 'no-cache'
+
+        return response
 
     except Exception as e:
         logger.error("Streaming error: %s\n%s", e, traceback.format_exc())
@@ -395,17 +403,88 @@ def test_mp4():
 # APPLICATION STARTUP
 # ============================================================================
 
+# if __name__ == '__main__':
+#     logger.info("Avatar Endpoints API starting...")
+#
+#     try:
+#         from gevent import pywsgi
+#         from geventwebsocket.handler import WebSocketHandler
+#
+#         app.debug = False
+#         server = pywsgi.WSGIServer(("0.0.0.0", 7860), app, handler_class=WebSocketHandler)
+#         logger.info("Server starting on http://0.0.0.0:7860")
+#         server.serve_forever()
+#     except ImportError:
+#         logger.warning("Gevent not available, using standard Flask server")
+#         app.run(host='0.0.0.0', port=7860, debug=False)
+
+
+
 if __name__ == '__main__':
     logger.info("Avatar Endpoints API starting...")
 
+    # Try to use gevent for better streaming support
     try:
         from gevent import pywsgi
         from geventwebsocket.handler import WebSocketHandler
 
+        logger.info("Starting with gevent WSGI server for optimal streaming...")
+
+
+        class StreamingWSGIServer(pywsgi.WSGIServer):
+            """Custom WSGI server with streaming support"""
+
+            def __init__(self, *args, **kwargs):
+                kwargs['log'] = logger
+                super().__init__(*args, **kwargs)
+
+
         app.debug = False
-        server = pywsgi.WSGIServer(("0.0.0.0", 7860), app, handler_class=WebSocketHandler)
-        logger.info("Server starting on http://0.0.0.0:7860")
+        server = StreamingWSGIServer(
+            ("0.0.0.0", 7860),
+            app,
+            log=logger
+        )
+
+        logger.info("✅ Server starting on http://0.0.0.0:7860 with streaming support")
         server.serve_forever()
+
     except ImportError:
-        logger.warning("Gevent not available, using standard Flask server")
-        app.run(host='0.0.0.0', port=7860, debug=False)
+        logger.warning("Gevent not available, trying alternative streaming methods...")
+
+        # Try waitress as second option
+        try:
+            from waitress import serve
+
+            logger.info("Starting with Waitress server...")
+            serve(
+                app,
+                host='0.0.0.0',
+                port=7860,
+                threads=4,
+                channel_timeout=120,
+                cleanup_interval=10,
+                connection_limit=100,
+                asyncore_use_poll=True,
+                map=None,
+                ident='Avatar-API-Server',
+                backlog=128,
+                recv_bytes=8192,
+                send_bytes=1048576,  # 1MB send buffer for video streaming
+                outbuf_overflow=1048576 * 10,  # 10MB overflow for large chunks
+                outbuf_high_watermark=1048576 * 2,  # 2MB high watermark
+            )
+
+        except ImportError:
+            logger.warning("Waitress not available, using Flask development server")
+            logger.warning("⚠️ For production streaming, install gevent: pip install gevent gevent-websocket")
+
+            # Fallback to Flask development server with threading
+            app.run(
+                host='0.0.0.0',
+                port=7860,
+                debug=False,
+                threaded=True,
+                use_reloader=False,
+                use_debugger=False
+            )
