@@ -1901,168 +1901,137 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 }
 
 // Updated processFrame function to handle video chunk URLs
-        // Around line 1892 in your file, enhance the processFrame function:
 async function processFrame(frameData, chunks, currentChunk, videoFrames, videoChunks) {
-            const frameString = new TextDecoder('utf-8').decode(frameData);
+    const frameString = new TextDecoder('utf-8').decode(frameData);
 
-            // ADD: Log raw frame data for debugging
-            debugLog('Raw frame received', {
-                frameLength: frameData.length,
-                framePreview: frameString.substring(0, 200) // First 200 chars
-            });
+    // Parse headers
+    const headerEnd = frameString.indexOf('\r\n\r\n');
+    if (headerEnd === -1) return;
 
-            // Parse headers
-            const headerEnd = frameString.indexOf('\r\n\r\n');
-            if (headerEnd === -1) {
-                debugLog('No header end found in frame'); // ADD this
-                return;
+    const headers = frameString.substring(0, headerEnd);
+    const contentStart = headerEnd + 4;
+
+    // Extract content type
+    const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
+    const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'unknown';
+
+    debugLog('Frame processed', {
+        headersLength: headers.length,
+        contentLength: frameData.length - contentStart,
+        contentType: contentType
+    });
+
+    if (contentType === 'application/json') {
+        // Parse JSON metadata
+        const jsonData = frameString.substring(contentStart).trim();
+        try {
+            const data = JSON.parse(jsonData);
+            debugLog('Chunk metadata received', data);
+
+            // Handle video chunk URLs from chunked streaming
+            if (data.video_url && data.ready) {
+                videoChunks.push({
+                    id: data.chunk_id,
+                    url: data.video_url,
+                    duration: data.duration,
+                    sentence: data.sentence,
+                    mode: data.mode
+                });
+                debugLog('Video chunk URL received', {
+                    chunkId: data.chunk_id,
+                    url: data.video_url,
+                    duration: data.duration
+                });
             }
 
-            const headers = frameString.substring(0, headerEnd);
-            const contentStart = headerEnd + 4;
-
-            // Extract content type
-            const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
-            const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'unknown';
-
-            debugLog('Frame processed', {
-                headersLength: headers.length,
-                contentLength: frameData.length - contentStart,
-                contentType: contentType,
-                headers: headers // ADD: Log full headers
-            });
-
-            if (contentType === 'application/json' || contentType.includes('json')) { // ENHANCED check
-                // Parse JSON metadata
-                const jsonData = frameString.substring(contentStart).trim();
-
-                // ADD: Remove any potential trailing data
-                const jsonEndIndex = jsonData.lastIndexOf('}');
-                const cleanJsonData = jsonEndIndex > 0 ? jsonData.substring(0, jsonEndIndex + 1) : jsonData;
-
-                try {
-                    const data = JSON.parse(cleanJsonData); // Use cleaned data
-                    debugLog('Chunk metadata received', data);
-
-                    // Handle video chunk URLs from chunked streaming
-                    if (data.video_url && data.ready) {
-                        videoChunks.push({
-                            id: data.chunk_id || videoChunks.length, // Fallback ID
-                            url: data.video_url,
-                            duration: data.duration || 2, // Default duration
-                            sentence: data.sentence || '',
-                            mode: data.mode
-                        });
-                        debugLog('Video chunk URL received', {
-                            chunkId: data.chunk_id,
-                            url: data.video_url,
-                            duration: data.duration
-                        });
-                    } else if (data.video_url) { // Even if not "ready", store it
-                        debugLog('Video URL found but not ready', data);
-                    }
-
-                    chunks.push(data);
-                } catch (parseError) {
-                    debugLog('JSON parse error', {
-                        error: parseError.message,
-                        data: cleanJsonData,
-                        originalData: jsonData
-                    });
-                }
-            } else if (contentType === 'image/jpeg' || contentType.includes('jpeg')) { // ENHANCED
-                // Handle JPEG frame data from realtime streaming
-                const frameDataSlice = frameData.slice(contentStart);
-                videoFrames.push(frameDataSlice);
-
-                debugLog('JPEG frame received', {
-                    chunkId: currentChunk ? currentChunk.id : 'unknown',
-                    dataSize: frameDataSlice.length
-                });
-            } else if (contentType.includes('video')) { // ADD: Handle video content type
-                debugLog('Video content received', {
-                    contentType: contentType,
-                    dataSize: frameData.length - contentStart
-                });
-                // Store as potential video frame
-                const videoData = frameData.slice(contentStart);
-                videoFrames.push(videoData);
-            }
+            chunks.push(data);
+        } catch (parseError) {
+            debugLog('JSON parse error', { error: parseError.message, data: jsonData });
         }
+    } else if (contentType === 'image/jpeg') {
+        // Handle JPEG frame data from realtime streaming
+        const frameDataSlice = frameData.slice(contentStart);
+        videoFrames.push(frameDataSlice);
 
+        debugLog('JPEG frame received', {
+            chunkId: currentChunk ? currentChunk.id : 'unknown',
+            dataSize: frameDataSlice.length
+        });
+    }
+}
 
 // Function to play video chunks sequentially
 async function playVideoChunksSequentially(video, videoChunks) {
-        if (!video || videoChunks.length === 0) return;
+    if (!video || videoChunks.length === 0) return;
 
-        // Sort chunks by ID to ensure correct order
-        videoChunks.sort((a, b) => a.id - b.id);
+    // Sort chunks by ID to ensure correct order
+    videoChunks.sort((a, b) => a.id - b.id);
 
-        // Hide any existing canvas
-        const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
-        if (existingCanvas) {
-            existingCanvas.style.display = 'none';
+    // Hide any existing canvas
+    const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
+    if (existingCanvas) {
+        existingCanvas.style.display = 'none';
+    }
+
+    video.style.display = 'block';
+
+    let currentChunkIndex = 0;
+    let totalDuration = 0;
+
+    const playNextChunk = () => {
+        if (currentChunkIndex >= videoChunks.length) {
+            debugLog('All video chunks played');
+            showNotification('Video playback complete!', 'success');
+            return;
         }
 
-        video.style.display = 'block';
+        const chunk = videoChunks[currentChunkIndex];
+        debugLog('Playing video chunk', {
+            chunkId: chunk.id,
+            url: chunk.url,
+            duration: chunk.duration
+        });
 
-        let currentChunkIndex = 0;
-        let totalDuration = 0;
+        // Update video source
+        video.src = chunk.url;
 
-        const playNextChunk = () => {
-            if (currentChunkIndex >= videoChunks.length) {
-                debugLog('All video chunks played');
-                showNotification('Video playback complete!', 'success');
-                return;
-            }
-
-            const chunk = videoChunks[currentChunkIndex];
-            debugLog('Playing video chunk', {
-                chunkId: chunk.id,
-                url: chunk.url,
-                duration: chunk.duration
-            });
-
-            // Update video source
-            video.src = chunk.url;
-
-            // Play current chunk
-            video.play().then(() => {
-                showNotification(`Playing chunk ${chunk.id + 1}/${videoChunks.length}: "${chunk.sentence.substring(0, 30)}..."`, 'info');
-            }).catch(error => {
-                debugLog('Video play error', { error: error.message, chunkId: chunk.id });
-                showNotification(`Error playing chunk ${chunk.id + 1}`, 'error');
-                // Try next chunk
-                currentChunkIndex++;
-                setTimeout(playNextChunk, 500);
-            });
-
-            totalDuration += chunk.duration || 0;
+        // Play current chunk
+        video.play().then(() => {
+            showNotification(`Playing chunk ${chunk.id + 1}/${videoChunks.length}: "${chunk.sentence.substring(0, 30)}..."`, 'info');
+        }).catch(error => {
+            debugLog('Video play error', { error: error.message, chunkId: chunk.id });
+            showNotification(`Error playing chunk ${chunk.id + 1}`, 'error');
+            // Try next chunk
             currentChunkIndex++;
-        };
+            setTimeout(playNextChunk, 500);
+        });
 
-        // Set up event listener for when video ends
-        const onVideoEnded = () => {
-            debugLog('Video chunk ended', { chunkIndex: currentChunkIndex - 1 });
+        totalDuration += chunk.duration || 0;
+        currentChunkIndex++;
+    };
 
-            // Small delay before playing next chunk
-            setTimeout(playNextChunk, 100);
-        };
+    // Set up event listener for when video ends
+    const onVideoEnded = () => {
+        debugLog('Video chunk ended', { chunkIndex: currentChunkIndex - 1 });
 
-        video.addEventListener('ended', onVideoEnded);
+        // Small delay before playing next chunk
+        setTimeout(playNextChunk, 100);
+    };
 
-        // Clean up event listener when all chunks are done
-        const originalChunkCount = videoChunks.length;
-        const checkCompletion = setInterval(() => {
-            if (currentChunkIndex >= originalChunkCount) {
-                video.removeEventListener('ended', onVideoEnded);
-                clearInterval(checkCompletion);
-            }
-        }, 500);
+    video.addEventListener('ended', onVideoEnded);
 
-        // Start playing first chunk
-        playNextChunk();
-    }
+    // Clean up event listener when all chunks are done
+    const originalChunkCount = videoChunks.length;
+    const checkCompletion = setInterval(() => {
+        if (currentChunkIndex >= originalChunkCount) {
+            video.removeEventListener('ended', onVideoEnded);
+            clearInterval(checkCompletion);
+        }
+    }, 500);
+
+    // Start playing first chunk
+    playNextChunk();
+}
 
 // Function to create JPEG animation (extracted from original function)
 function createJpegAnimation(video, videoFrames) {
@@ -2217,6 +2186,69 @@ function createJpegAnimation(video, videoFrames) {
         canvasSize: `${canvas.width}x${canvas.height}`
     });
 }
+async function processFrame(frameData, chunks, currentChunk, videoFrames) {
+                try {
+                    const frameString = new TextDecoder('latin1').decode(frameData);
+                    const headerEndIndex = frameString.indexOf('\r\n\r\n');
+
+                    if (headerEndIndex === -1) {
+                        // No complete headers found
+                        return;
+                    }
+
+                    const headers = frameString.substring(0, headerEndIndex);
+                    const contentStart = headerEndIndex + 4;
+                    const contentData = frameData.slice(contentStart);
+
+                    debugLog('Frame processed', {
+                        headersLength: headers.length,
+                        contentLength: contentData.length,
+                        contentType: headers.match(/Content-Type:\s*([^\r\n]+)/i)?.[1] || 'unknown'
+                    });
+
+                    if (headers.includes('application/json')) {
+                        // Parse chunk metadata
+                        const contentText = new TextDecoder('utf-8').decode(contentData);
+                        const chunkData = JSON.parse(contentText);
+                        currentChunk = chunkData;
+                        chunks.push(chunkData);
+
+                        debugLog('Chunk metadata received', chunkData);
+                        updateProgress(
+                            70 + (chunkData.chunk_id / (chunkData.total_chunks || 1)) * 20,
+                            `Processing chunk ${chunkData.chunk_id + 1}/${chunkData.total_chunks || 1}: "${chunkData.sentence}"`
+                        );
+
+                    } else if (headers.includes('video/mp4') || headers.includes('application/octet-stream')) {
+                        // Handle video data
+                        debugLog('Video frame received', {
+                            chunkId: currentChunk?.chunk_id || 'unknown',
+                            dataSize: contentData.length,
+                            headers: headers.substring(0, 100)
+                        });
+
+                        if (contentData.length > 1000) { // Only consider substantial video data
+                            videoFrames.push(contentData);
+                        }
+                    } else if (headers.includes('image/jpeg') || headers.includes('image/jpg')) {
+                        // Handle JPEG frame data - convert to video
+                        debugLog('JPEG frame received', {
+                            chunkId: currentChunk?.chunk_id || 'unknown',
+                            dataSize: contentData.length
+                        });
+
+                        if (contentData.length > 1000) { // Only consider substantial image data
+                            videoFrames.push(contentData);
+                        }
+                    }
+                } catch (parseError) {
+                    debugLog('Frame parsing error', {
+                        error: parseError.message,
+                        frameSize: frameData.length
+                    });
+                }
+            }
+
 
         // Video Management
         function downloadVideo() {
