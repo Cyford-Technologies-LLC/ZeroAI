@@ -65,8 +65,10 @@ if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'demo') {
                     <label class="form-label">Model <span id="model-source-indicator"></span></label>
                     <select id="claude-model" class="form-select form-select-sm">
                         <option value="claude-opus-4-1-20250805">Opus 4.1</option>
-                        <option value="claude-3-5-sonnet-20241022" selected>Sonnet 3.5</option>
-                        <option value="claude-3-opus-20240229">Opus 3</option>
+                        <option value="claude-opus-4-20250514" selected>Claude Opus 4</option>
+                        <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                        <option value="claude-3-7-sonnet-20250219">Claude Sonnet 3.7</option>
+                        <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022</option>
                     </select>
                 </div>
                 <div class="col-md-2">
