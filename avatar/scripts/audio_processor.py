@@ -10,8 +10,7 @@ import requests
 import subprocess
 import os
 import tempfile
-from typing import Dict, Optional, Tuple
-
+from typing import Dict, Optional, TupleList
 from utility import clean_text
 
 # Third-party imports (install with: pip install pydub)
