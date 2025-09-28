@@ -1771,272 +1771,421 @@
             }
         }
 
-        // Streaming response handler function
-        async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
-            const reader = response.body.getReader();
-            let buffer = new Uint8Array();
-            let chunks = [];
-            let currentChunk = null;
-            let videoFrames = [];
+// Enhanced streaming response handler function
+async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
+    const reader = response.body.getReader();
+    let buffer = new Uint8Array();
+    let chunks = [];
+    let currentChunk = null;
+    let videoFrames = [];
+    let videoChunks = []; // Add support for video chunk URLs
 
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-                    // Append new data to buffer
-                    const newBuffer = new Uint8Array(buffer.length + value.length);
-                    newBuffer.set(buffer);
-                    newBuffer.set(value, buffer.length);
-                    buffer = newBuffer;
+            // Append new data to buffer
+            const newBuffer = new Uint8Array(buffer.length + value.length);
+            newBuffer.set(buffer);
+            newBuffer.set(value, buffer.length);
+            buffer = newBuffer;
 
-                    // Convert to string for boundary detection
-                    const bufferString = new TextDecoder('latin1').decode(buffer);
+            // Convert to string for boundary detection
+            const bufferString = new TextDecoder('latin1').decode(buffer);
 
-                    // Look for multipart boundaries
-                    const boundaryPattern = /--frame\r?\n/g;
-                    let lastBoundaryEnd = 0;
-                    let match;
+            // Look for multipart boundaries
+            const boundaryPattern = /--frame\r?\n/g;
+            let lastBoundaryEnd = 0;
+            let match;
 
-                    while ((match = boundaryPattern.exec(bufferString)) !== null) {
-                        const frameStart = lastBoundaryEnd;
-                        const frameEnd = match.index;
+            while ((match = boundaryPattern.exec(bufferString)) !== null) {
+                const frameStart = lastBoundaryEnd;
+                const frameEnd = match.index;
 
-                        if (frameStart < frameEnd) {
-                            const frameData = buffer.slice(frameStart, frameEnd);
-                            await processFrame(frameData, chunks, currentChunk, videoFrames);
-                        }
-
-                        lastBoundaryEnd = boundaryPattern.lastIndex;
-                    }
-
-                    // Keep remaining data in buffer
-                    if (lastBoundaryEnd > 0) {
-                        buffer = buffer.slice(lastBoundaryEnd);
-                    }
+                if (frameStart < frameEnd) {
+                    const frameData = buffer.slice(frameStart, frameEnd);
+                    await processFrame(frameData, chunks, currentChunk, videoFrames, videoChunks);
                 }
 
-                // Process any remaining data
-                if (buffer.length > 0) {
-                    await processFrame(buffer, chunks, currentChunk, videoFrames);
-                }
-
-                // Combine video frames into final video
-                if (videoFrames.length > 0) {
-                    debugLog('Combining video frames', { frameCount: videoFrames.length });
-
-                    // Check if we received JPEG frames (streaming) or video data (complete)
-                    const lastFrame = videoFrames[videoFrames.length - 1];
-                    const frameHeader = new Uint8Array(lastFrame.slice(0, 10));
-                    const isJpeg = frameHeader[0] === 0xFF && frameHeader[1] === 0xD8;
-
-                    if (isJpeg && videoFrames.length > 10) {
-                        // JPEG frames from streaming - create animated display
-                        debugLog('Processing JPEG frames for animation', {
-                            frameCount: videoFrames.length,
-                            totalChunks: chunks.length
-                        });
-
-                        if (video) {
-                            // Hide the video element and create a canvas animation
-                            video.style.display = 'none';
-
-                            // Create canvas for JPEG frame animation
-                            let canvas = video.parentNode.querySelector('.jpeg-animation-canvas');
-                            if (!canvas) {
-                                canvas = document.createElement('canvas');
-                                canvas.className = 'jpeg-animation-canvas';
-                                canvas.style.maxWidth = '100%';
-                                canvas.style.height = 'auto';
-                                canvas.style.border = '2px solid #555';
-                                canvas.style.borderRadius = '8px';
-                                canvas.style.cursor = 'pointer';
-                                video.parentNode.insertBefore(canvas, video);
-                            }
-
-                            // Set up canvas animation
-                            const ctx = canvas.getContext('2d');
-                            let currentFrameIndex = 0;
-                            let animationPlaying = false;
-                            let animationInterval;
-
-                            // Load first frame to set canvas size
-                            const firstImg = new Image();
-                            firstImg.onload = function() {
-                                canvas.width = firstImg.width;
-                                canvas.height = firstImg.height;
-                                ctx.drawImage(firstImg, 0, 0);
-
-                                // Add play button overlay
-                                drawPlayButton(ctx, canvas.width, canvas.height);
-
-                                debugLog('Canvas initialized', {
-                                    width: canvas.width,
-                                    height: canvas.height,
-                                    totalFrames: videoFrames.length
-                                });
-                            };
-
-                            // Function to draw play button
-                            function drawPlayButton(context, width, height) {
-                                const centerX = width / 2;
-                                const centerY = height / 2;
-                                const radius = Math.min(width, height) * 0.08;
-
-                                // Draw semi-transparent background
-                                context.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                                context.beginPath();
-                                context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                                context.fill();
-
-                                // Draw play triangle
-                                context.fillStyle = 'white';
-                                context.beginPath();
-                                context.moveTo(centerX - radius * 0.3, centerY - radius * 0.4);
-                                context.lineTo(centerX + radius * 0.4, centerY);
-                                context.lineTo(centerX - radius * 0.3, centerY + radius * 0.4);
-                                context.closePath();
-                                context.fill();
-                            }
-
-                            // Set up click handler for play/pause
-                            canvas.onclick = function(event) {
-                                debugLog('Canvas clicked', {
-                                    animationPlaying: animationPlaying,
-                                    frameCount: videoFrames.length
-                                });
-
-                                if (animationPlaying) {
-                                    // Pause animation
-                                    clearInterval(animationInterval);
-                                    animationPlaying = false;
-
-                                    // Show play button again
-                                    drawPlayButton(ctx, canvas.width, canvas.height);
-                                    debugLog('Animation paused');
-                                    showNotification('Animation paused', 'info');
-                                } else {
-                                    // Start animation
-                                    if (videoFrames.length === 0) {
-                                        showNotification('No frames to animate', 'error');
-                                        return;
-                                    }
-
-                                    animationPlaying = true;
-                                    currentFrameIndex = 0;
-                                    const fps = 15; // Animation FPS
-                                    const frameDuration = 1000 / fps;
-
-                                    debugLog('Starting animation', {
-                                        fps: fps,
-                                        totalFrames: videoFrames.length,
-                                        frameDuration: frameDuration
-                                    });
-
-                                    showNotification('Animation started - Click to pause', 'success');
-
-                                    animationInterval = setInterval(() => {
-                                        try {
-                                            if (currentFrameIndex >= videoFrames.length) {
-                                                currentFrameIndex = 0; // Loop back to start
-                                            }
-
-                                            const frameData = videoFrames[currentFrameIndex];
-                                            const frameBlob = new Blob([frameData], { type: 'image/jpeg' });
-                                            const frameUrl = URL.createObjectURL(frameBlob);
-
-                                            const frameImg = new Image();
-                                            frameImg.onload = function() {
-                                                if (animationPlaying) { // Check if still playing
-                                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                                    ctx.drawImage(frameImg, 0, 0);
-                                                }
-                                                URL.revokeObjectURL(frameUrl);
-                                            };
-                                            frameImg.onerror = function() {
-                                                debugLog('Frame load error', { frameIndex: currentFrameIndex });
-                                            };
-                                            frameImg.src = frameUrl;
-
-                                            currentFrameIndex++;
-                                        } catch (error) {
-                                            debugLog('Animation frame error', { error: error.message });
-                                        }
-                                    }, frameDuration);
-                                }
-                            };
-
-                            // Add hover effect
-                            canvas.onmouseover = function() {
-                                canvas.style.opacity = '0.9';
-                                canvas.style.cursor = 'pointer';
-                            };
-                            canvas.onmouseout = function() {
-                                canvas.style.opacity = '1.0';
-                            };
-
-                            // Create first frame blob URL
-                            const firstFrameBlob = new Blob([videoFrames[0]], { type: 'image/jpeg' });
-                            const firstFrameUrl = URL.createObjectURL(firstFrameBlob);
-                            firstImg.src = firstFrameUrl;
-
-                            debugLog('JPEG animation canvas created', {
-                                frameCount: videoFrames.length,
-                                canvasSize: `${canvas.width}x${canvas.height}`
-                            });
-                        }
-                    } else {
-                        // Regular video data - treat as MP4
-                        const videoBlob = new Blob([lastFrame], { type: 'video/mp4' });
-                        const videoUrl = URL.createObjectURL(videoBlob);
-
-                        if (video) {
-                            video.src = videoUrl;
-                            video.style.display = 'block';
-
-                            // Remove any existing canvas
-                            const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
-                            if (existingCanvas) {
-                                existingCanvas.remove();
-                            }
-
-                            debugLog('Video source set', {
-                                blobSize: videoBlob.size,
-                                frameCount: videoFrames.length
-                            });
-                        }
-                    }
-                } else {
-                    debugLog('No video frames to display');
-                    showNotification('No video frames received in stream', 'warning');
-                }
-
-                // Update video info for streaming
-                if (videoInfo) {
-                    videoInfo.innerHTML = `
-                        <strong>Streaming Complete!</strong><br>
-                        Mode: Streaming (${payload.stream_mode})<br>
-                        Engine: ${payload.tts_engine}<br>
-                        Voice: ${payload.tts_voice}<br>
-                        Chunks: ${chunks.length}<br>
-                        Video Frames: ${videoFrames.length}<br>
-                        Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
-                        Stream Time: ${(duration / 1000).toFixed(1)}s<br>
-                        Parameters: ${Object.keys(payload).length} options used
-                    `;
-                }
-
-                debugLog('Streaming completed', {
-                    totalChunks: chunks.length,
-                    videoFrames: videoFrames.length,
-                    streamDuration: duration
-                });
-
-            } catch (streamError) {
-                debugLog('Streaming error', { error: streamError.message });
-                throw streamError;
+                lastBoundaryEnd = boundaryPattern.lastIndex;
             }
 
+            // Keep remaining data in buffer
+            if (lastBoundaryEnd > 0) {
+                buffer = buffer.slice(lastBoundaryEnd);
+            }
+        }
+
+        // Process any remaining data
+        if (buffer.length > 0) {
+            await processFrame(buffer, chunks, currentChunk, videoFrames, videoChunks);
+        }
+
+        // Handle different response types
+        if (videoChunks.length > 0) {
+            // Chunked video URLs - play sequentially
+            debugLog('Playing video chunks sequentially', { chunkCount: videoChunks.length });
+            await playVideoChunksSequentially(video, videoChunks);
+
+        } else if (videoFrames.length > 0) {
+            // JPEG frames or complete video
+            debugLog('Combining video frames', { frameCount: videoFrames.length });
+
+            const lastFrame = videoFrames[videoFrames.length - 1];
+            const frameHeader = new Uint8Array(lastFrame.slice(0, 10));
+            const isJpeg = frameHeader[0] === 0xFF && frameHeader[1] === 0xD8;
+
+            if (isJpeg && videoFrames.length > 10) {
+                // JPEG frames from realtime streaming - create animated display
+                debugLog('Processing JPEG frames for animation', {
+                    frameCount: videoFrames.length,
+                    totalChunks: chunks.length
+                });
+
+                createJpegAnimation(video, videoFrames);
+
+            } else {
+                // Regular video data - treat as MP4
+                const videoBlob = new Blob([lastFrame], { type: 'video/mp4' });
+                const videoUrl = URL.createObjectURL(videoBlob);
+
+                if (video) {
+                    video.src = videoUrl;
+                    video.style.display = 'block';
+
+                    // Remove any existing canvas
+                    const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
+                    if (existingCanvas) {
+                        existingCanvas.remove();
+                    }
+
+                    debugLog('Video source set', {
+                        blobSize: videoBlob.size,
+                        frameCount: videoFrames.length
+                    });
+                }
+            }
+        } else {
+            debugLog('No video content to display');
+            showNotification('No video content received in stream', 'warning');
+        }
+
+        // Update video info for streaming
+        if (videoInfo) {
+            videoInfo.innerHTML = `
+                <strong>Streaming Complete!</strong><br>
+                Mode: Streaming (${payload.stream_mode})<br>
+                Engine: ${payload.tts_engine}<br>
+                Voice: ${payload.tts_voice}<br>
+                Chunks: ${chunks.length}<br>
+                Video Frames: ${videoFrames.length}<br>
+                Video Chunks: ${videoChunks.length}<br>
+                Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
+                Stream Time: ${(duration / 1000).toFixed(1)}s<br>
+                Parameters: ${Object.keys(payload).length} options used
+            `;
+        }
+
+        debugLog('Streaming completed', {
+            totalChunks: chunks.length,
+            videoFrames: videoFrames.length,
+            videoChunks: videoChunks.length,
+            streamDuration: duration
+        });
+
+    } catch (streamError) {
+        debugLog('Streaming error', { error: streamError.message });
+        throw streamError;
+    }
+}
+
+// Updated processFrame function to handle video chunk URLs
+async function processFrame(frameData, chunks, currentChunk, videoFrames, videoChunks) {
+    const frameString = new TextDecoder('utf-8').decode(frameData);
+
+    // Parse headers
+    const headerEnd = frameString.indexOf('\r\n\r\n');
+    if (headerEnd === -1) return;
+
+    const headers = frameString.substring(0, headerEnd);
+    const contentStart = headerEnd + 4;
+
+    // Extract content type
+    const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
+    const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'unknown';
+
+    debugLog('Frame processed', {
+        headersLength: headers.length,
+        contentLength: frameData.length - contentStart,
+        contentType: contentType
+    });
+
+    if (contentType === 'application/json') {
+        // Parse JSON metadata
+        const jsonData = frameString.substring(contentStart).trim();
+        try {
+            const data = JSON.parse(jsonData);
+            debugLog('Chunk metadata received', data);
+
+            // Handle video chunk URLs from chunked streaming
+            if (data.video_url && data.ready) {
+                videoChunks.push({
+                    id: data.chunk_id,
+                    url: data.video_url,
+                    duration: data.duration,
+                    sentence: data.sentence,
+                    mode: data.mode
+                });
+                debugLog('Video chunk URL received', {
+                    chunkId: data.chunk_id,
+                    url: data.video_url,
+                    duration: data.duration
+                });
+            }
+
+            chunks.push(data);
+        } catch (parseError) {
+            debugLog('JSON parse error', { error: parseError.message, data: jsonData });
+        }
+    } else if (contentType === 'image/jpeg') {
+        // Handle JPEG frame data from realtime streaming
+        const frameDataSlice = frameData.slice(contentStart);
+        videoFrames.push(frameDataSlice);
+
+        debugLog('JPEG frame received', {
+            chunkId: currentChunk ? currentChunk.id : 'unknown',
+            dataSize: frameDataSlice.length
+        });
+    }
+}
+
+// Function to play video chunks sequentially
+async function playVideoChunksSequentially(video, videoChunks) {
+    if (!video || videoChunks.length === 0) return;
+
+    // Sort chunks by ID to ensure correct order
+    videoChunks.sort((a, b) => a.id - b.id);
+
+    // Hide any existing canvas
+    const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
+    if (existingCanvas) {
+        existingCanvas.style.display = 'none';
+    }
+
+    video.style.display = 'block';
+
+    let currentChunkIndex = 0;
+    let totalDuration = 0;
+
+    const playNextChunk = () => {
+        if (currentChunkIndex >= videoChunks.length) {
+            debugLog('All video chunks played');
+            showNotification('Video playback complete!', 'success');
+            return;
+        }
+
+        const chunk = videoChunks[currentChunkIndex];
+        debugLog('Playing video chunk', {
+            chunkId: chunk.id,
+            url: chunk.url,
+            duration: chunk.duration
+        });
+
+        // Update video source
+        video.src = chunk.url;
+
+        // Play current chunk
+        video.play().then(() => {
+            showNotification(`Playing chunk ${chunk.id + 1}/${videoChunks.length}: "${chunk.sentence.substring(0, 30)}..."`, 'info');
+        }).catch(error => {
+            debugLog('Video play error', { error: error.message, chunkId: chunk.id });
+            showNotification(`Error playing chunk ${chunk.id + 1}`, 'error');
+            // Try next chunk
+            currentChunkIndex++;
+            setTimeout(playNextChunk, 500);
+        });
+
+        totalDuration += chunk.duration || 0;
+        currentChunkIndex++;
+    };
+
+    // Set up event listener for when video ends
+    const onVideoEnded = () => {
+        debugLog('Video chunk ended', { chunkIndex: currentChunkIndex - 1 });
+
+        // Small delay before playing next chunk
+        setTimeout(playNextChunk, 100);
+    };
+
+    video.addEventListener('ended', onVideoEnded);
+
+    // Clean up event listener when all chunks are done
+    const originalChunkCount = videoChunks.length;
+    const checkCompletion = setInterval(() => {
+        if (currentChunkIndex >= originalChunkCount) {
+            video.removeEventListener('ended', onVideoEnded);
+            clearInterval(checkCompletion);
+        }
+    }, 500);
+
+    // Start playing first chunk
+    playNextChunk();
+}
+
+// Function to create JPEG animation (extracted from original function)
+function createJpegAnimation(video, videoFrames) {
+    if (!video) return;
+
+    // Hide the video element and create a canvas animation
+    video.style.display = 'none';
+
+    // Create canvas for JPEG frame animation
+    let canvas = video.parentNode.querySelector('.jpeg-animation-canvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.className = 'jpeg-animation-canvas';
+        canvas.style.maxWidth = '100%';
+        canvas.style.height = 'auto';
+        canvas.style.border = '2px solid #555';
+        canvas.style.borderRadius = '8px';
+        canvas.style.cursor = 'pointer';
+        video.parentNode.insertBefore(canvas, video);
+    }
+
+    canvas.style.display = 'block';
+
+    // Set up canvas animation
+    const ctx = canvas.getContext('2d');
+    let currentFrameIndex = 0;
+    let animationPlaying = false;
+    let animationInterval;
+
+    // Load first frame to set canvas size
+    const firstImg = new Image();
+    firstImg.onload = function() {
+        canvas.width = firstImg.width;
+        canvas.height = firstImg.height;
+        ctx.drawImage(firstImg, 0, 0);
+
+        // Add play button overlay
+        drawPlayButton(ctx, canvas.width, canvas.height);
+
+        debugLog('Canvas initialized', {
+            width: canvas.width,
+            height: canvas.height,
+            totalFrames: videoFrames.length
+        });
+    };
+
+    // Function to draw play button
+    function drawPlayButton(context, width, height) {
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = Math.min(width, height) * 0.08;
+
+        // Draw semi-transparent background
+        context.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        context.beginPath();
+        context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        context.fill();
+
+        // Draw play triangle
+        context.fillStyle = 'white';
+        context.beginPath();
+        context.moveTo(centerX - radius * 0.3, centerY - radius * 0.4);
+        context.lineTo(centerX + radius * 0.4, centerY);
+        context.lineTo(centerX - radius * 0.3, centerY + radius * 0.4);
+        context.closePath();
+        context.fill();
+    }
+
+    // Set up click handler for play/pause
+    canvas.onclick = function(event) {
+        debugLog('Canvas clicked', {
+            animationPlaying: animationPlaying,
+            frameCount: videoFrames.length
+        });
+
+        if (animationPlaying) {
+            // Pause animation
+            clearInterval(animationInterval);
+            animationPlaying = false;
+
+            // Show play button again
+            drawPlayButton(ctx, canvas.width, canvas.height);
+            debugLog('Animation paused');
+            showNotification('Animation paused', 'info');
+        } else {
+            // Start animation
+            if (videoFrames.length === 0) {
+                showNotification('No frames to animate', 'error');
+                return;
+            }
+
+            animationPlaying = true;
+            currentFrameIndex = 0;
+            const fps = 15; // Animation FPS
+            const frameDuration = 1000 / fps;
+
+            debugLog('Starting animation', {
+                fps: fps,
+                totalFrames: videoFrames.length,
+                frameDuration: frameDuration
+            });
+
+            showNotification('Animation started - Click to pause', 'success');
+
+            animationInterval = setInterval(() => {
+                try {
+                    if (currentFrameIndex >= videoFrames.length) {
+                        currentFrameIndex = 0; // Loop back to start
+                    }
+
+                    const frameData = videoFrames[currentFrameIndex];
+                    const frameBlob = new Blob([frameData], { type: 'image/jpeg' });
+                    const frameUrl = URL.createObjectURL(frameBlob);
+
+                    const frameImg = new Image();
+                    frameImg.onload = function() {
+                        if (animationPlaying) { // Check if still playing
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(frameImg, 0, 0);
+                        }
+                        URL.revokeObjectURL(frameUrl);
+                    };
+                    frameImg.onerror = function() {
+                        debugLog('Frame load error', { frameIndex: currentFrameIndex });
+                    };
+                    frameImg.src = frameUrl;
+
+                    currentFrameIndex++;
+                } catch (error) {
+                    debugLog('Animation frame error', { error: error.message });
+                }
+            }, frameDuration);
+        }
+    };
+
+    // Add hover effect
+    canvas.onmouseover = function() {
+        canvas.style.opacity = '0.9';
+        canvas.style.cursor = 'pointer';
+    };
+    canvas.onmouseout = function() {
+        canvas.style.opacity = '1.0';
+    };
+
+    // Create first frame blob URL
+    const firstFrameBlob = new Blob([videoFrames[0]], { type: 'image/jpeg' });
+    const firstFrameUrl = URL.createObjectURL(firstFrameBlob);
+    firstImg.src = firstFrameUrl;
+
+    debugLog('JPEG animation canvas created', {
+        frameCount: videoFrames.length,
+        canvasSize: `${canvas.width}x${canvas.height}`
+    });
+}
             async function processFrame(frameData, chunks, currentChunk, videoFrames) {
                 try {
                     const frameString = new TextDecoder('latin1').decode(frameData);
