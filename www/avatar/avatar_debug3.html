@@ -2186,69 +2186,6 @@ function createJpegAnimation(video, videoFrames) {
         canvasSize: `${canvas.width}x${canvas.height}`
     });
 }
-            async function processFrame(frameData, chunks, currentChunk, videoFrames) {
-                try {
-                    const frameString = new TextDecoder('latin1').decode(frameData);
-                    const headerEndIndex = frameString.indexOf('\r\n\r\n');
-
-                    if (headerEndIndex === -1) {
-                        // No complete headers found
-                        return;
-                    }
-
-                    const headers = frameString.substring(0, headerEndIndex);
-                    const contentStart = headerEndIndex + 4;
-                    const contentData = frameData.slice(contentStart);
-
-                    debugLog('Frame processed', {
-                        headersLength: headers.length,
-                        contentLength: contentData.length,
-                        contentType: headers.match(/Content-Type:\s*([^\r\n]+)/i)?.[1] || 'unknown'
-                    });
-
-                    if (headers.includes('application/json')) {
-                        // Parse chunk metadata
-                        const contentText = new TextDecoder('utf-8').decode(contentData);
-                        const chunkData = JSON.parse(contentText);
-                        currentChunk = chunkData;
-                        chunks.push(chunkData);
-
-                        debugLog('Chunk metadata received', chunkData);
-                        updateProgress(
-                            70 + (chunkData.chunk_id / (chunkData.total_chunks || 1)) * 20,
-                            `Processing chunk ${chunkData.chunk_id + 1}/${chunkData.total_chunks || 1}: "${chunkData.sentence}"`
-                        );
-
-                    } else if (headers.includes('video/mp4') || headers.includes('application/octet-stream')) {
-                        // Handle video data
-                        debugLog('Video frame received', {
-                            chunkId: currentChunk?.chunk_id || 'unknown',
-                            dataSize: contentData.length,
-                            headers: headers.substring(0, 100)
-                        });
-
-                        if (contentData.length > 1000) { // Only consider substantial video data
-                            videoFrames.push(contentData);
-                        }
-                    } else if (headers.includes('image/jpeg') || headers.includes('image/jpg')) {
-                        // Handle JPEG frame data - convert to video
-                        debugLog('JPEG frame received', {
-                            chunkId: currentChunk?.chunk_id || 'unknown',
-                            dataSize: contentData.length
-                        });
-
-                        if (contentData.length > 1000) { // Only consider substantial image data
-                            videoFrames.push(contentData);
-                        }
-                    }
-                } catch (parseError) {
-                    debugLog('Frame parsing error', {
-                        error: parseError.message,
-                        frameSize: frameData.length
-                    });
-                }
-            }
-
 
         // Video Management
         function downloadVideo() {
