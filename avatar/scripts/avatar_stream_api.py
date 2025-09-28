@@ -18,9 +18,10 @@ from flask_socketio import SocketIO, emit
 import wave
 
 # Core functionality imports (your separated modules)
-from audio_processor import call_tts_service_with_options, normalize_audio, TTSProcessor
+from audio_processor import call_tts_service_with_options, normalize_audio, TTSProcessor, _generate_edge_tts_chunk , _generate_espeak_chunk
+
 from video_processor import convert_video_with_codec, get_mimetype_for_codec, concat_videos
-from sadtalker_generator import generate_sadtalker_video
+
 from simple_face_generator import generate_talking_face
 from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
 
@@ -138,9 +139,9 @@ class StreamingAvatarGenerator(TTSProcessor):
 
                 try:
                     if tts_engine == 'edge':
-                        audio_path = self._generate_edge_tts_chunk(sentence, i, tts_options or {})
+                        audio_path = _generate_edge_tts_chunk(sentence, i, tts_options or {})
                     else:
-                        audio_path = self._generate_espeak_chunk(sentence, i, tts_options or {})
+                        audio_path = _generate_espeak_chunk(sentence, i, tts_options or {})
 
                     if audio_path and os.path.exists(audio_path):
                         from pydub import AudioSegment
