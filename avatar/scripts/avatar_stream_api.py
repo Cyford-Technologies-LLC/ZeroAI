@@ -124,7 +124,8 @@ class StreamingAvatarGenerator(TTSProcessor):
                     # ADD THESE:
                     still=options.get('still', True),
                     preprocess=options.get('preprocess', 'crop'),
-                    resolution=options.get('resolution', '256')
+                    resolution=options.get('resolution', '256'),
+                    fps=frame_rate  # ADD THIS LINE
                 )
 
                 if not success:
