@@ -6,7 +6,7 @@ import tempfile
 import traceback
 import json
 import subprocess
-from datetime import datetime
+from datetime import datetime, time
 
 # Flask imports
 from flask import Flask, request, jsonify, send_file, Response
@@ -27,6 +27,12 @@ try:
 except ImportError:
     print("Warning: Streaming components not available")
     STREAMING_AVAILABLE = False
+
+from audio2face_integration import (
+    generate_audio2face_avatar,
+    check_audio2face_requirements,
+    Audio2FaceGenerator
+)
 
 # Import options handling
 try:
@@ -353,26 +359,43 @@ def debug_status():
         return jsonify({'error': str(e)})
 
 
+# Update your existing health endpoint to include Audio2Face status
 @app.route('/health')
 def health():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'ok',
-        'tts_ready': bool(TTS_API_URL),
-        'models': 'TTS + MediaPipe + SadTalker',
-        'modes': ['simple', 'sadtalker'],
-        'streaming_modes': ['chunked', 'realtime'] if STREAMING_AVAILABLE else [],
-        'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
-        'default_codec': DEFAULT_CODEC,
-        'websocket_enabled': STREAMING_AVAILABLE,
-        'endpoints': [
-            '/generate (POST) - Generate complete avatar video',
-            '/stream (POST) - HTTP streaming endpoint',
-            '/stream/ws - WebSocket streaming',
-            '/debug/status - System status',
-            '/health - This endpoint'
-        ]
-    })
+    """Health check endpoint - UPDATED to include Audio2Face"""
+    try:
+        # Check Audio2Face status
+        a2f_status = check_audio2face_requirements()
+
+        return jsonify({
+            'status': 'ok',
+            'tts_ready': bool(TTS_API_URL),
+            'models': 'TTS + MediaPipe + SadTalker + Audio2Face',
+            'modes': ['simple', 'sadtalker', 'audio2face'],  # Added audio2face
+            'streaming_modes': ['chunked', 'realtime'] if STREAMING_AVAILABLE else [],
+            'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
+            'default_codec': DEFAULT_CODEC,
+            'websocket_enabled': STREAMING_AVAILABLE,
+            'audio2face': {
+                'available': a2f_status['requirements_met'],
+                'server_reachable': a2f_status['server_reachable'],
+                'characters_count': len(a2f_status['characters_available'])
+            },
+            'endpoints': [
+                '/generate (POST) - Generate complete avatar video',
+                '/generate/audio2face (POST) - Generate with Audio2Face',  # NEW
+                '/stream (POST) - HTTP streaming endpoint',
+                '/stream/ws - WebSocket streaming',
+                '/audio2face/status - Audio2Face status check',  # NEW
+                '/audio2face/characters - List A2F characters',  # NEW
+                '/audio2face/test - Test A2F generation',  # NEW
+                '/debug/status - System status',
+                '/health - This endpoint'
+            ]
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/test-mp4')
@@ -417,6 +440,198 @@ def test_mp4():
 #     except ImportError:
 #         logger.warning("Gevent not available, using standard Flask server")
 #         app.run(host='0.0.0.0', port=7860, debug=False)
+
+# Add this to your avatar_endpoints.py file
+
+
+
+# ============================================================================
+# AUDIO2FACE ENDPOINTS - Add these to your existing avatar_endpoints.py
+# ============================================================================
+
+@app.route('/generate/audio2face', methods=['POST'])
+def generate_audio2face_avatar_endpoint():
+    """
+    Generate talking avatar video using NVIDIA Audio2Face
+
+    Required:
+    - prompt: Text to speak
+
+    Optional:
+    - character_path: A2F character to use (will use default if not specified)
+    - tts_engine: TTS engine ('espeak', 'edge', etc.) - defaults to 'espeak'
+    - tts_options: TTS options (voice, rate, pitch, language)
+    - a2f_server_url: Audio2Face server URL (defaults to localhost:8011)
+    """
+    try:
+        data = request.json or {}
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        # Extract parameters
+        prompt = clean_text(data.get("prompt", ""))
+        if not prompt:
+            return jsonify({"error": "Prompt is required"}), 400
+
+        character_path = data.get("character_path")
+        tts_engine = data.get("tts_engine", "espeak")
+        a2f_server_url = data.get("a2f_server_url", "http://localhost:8011")
+
+        # Handle TTS options
+        tts_options = {}
+        for key in ["voice", "rate", "pitch", "language"]:
+            if key in data:
+                tts_options[key] = data[key]
+
+        logger.info(f"=== AUDIO2FACE GENERATION START ===")
+        logger.info(f"Prompt: {prompt[:50]}...")
+        logger.info(f"Character: {character_path}")
+        logger.info(f"TTS Engine: {tts_engine}, Options: {tts_options}")
+        logger.info(f"A2F Server: {a2f_server_url}")
+
+        # Generate output path
+        timestamp = int(time.time())
+        output_filename = f"audio2face_avatar_{timestamp}.mp4"
+        output_path = f"/app/static/{output_filename}"
+
+        # Generate avatar using Audio2Face
+        success = generate_audio2face_avatar(
+            prompt=prompt,
+            source_image="",  # A2F uses its own character models
+            output_path=output_path,
+            tts_engine=tts_engine,
+            tts_options=tts_options,
+            character_path=character_path,
+            a2f_server_url=a2f_server_url
+        )
+
+        if success and os.path.exists(output_path):
+            logger.info(f"✅ Audio2Face generation completed: {output_filename}")
+            return send_file(output_path, mimetype='video/mp4', as_attachment=False)
+        else:
+            return jsonify({
+                "error": "Audio2Face generation failed",
+                "suggestion": "Check Audio2Face server status and character availability"
+            }), 500
+
+    except Exception as e:
+        logger.error("Audio2Face generation error: %s\n%s", e, traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/audio2face/status')
+def audio2face_status():
+    """Check Audio2Face integration status and requirements"""
+    try:
+        status = check_audio2face_requirements()
+
+        return jsonify({
+            'timestamp': str(datetime.now()),
+            'audio2face_integration': status,
+            'server_url': 'http://localhost:8011',
+            'usage': {
+                'endpoint': '/generate/audio2face',
+                'method': 'POST',
+                'required_params': ['prompt'],
+                'optional_params': ['character_path', 'tts_engine', 'tts_options', 'a2f_server_url']
+            },
+            'setup_instructions': [
+                "1. Install NVIDIA Audio2Face from Omniverse",
+                "2. Start Audio2Face with headless mode enabled",
+                "3. Load a character model in Audio2Face",
+                "4. Verify server is running on localhost:8011"
+            ]
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/audio2face/characters')
+def list_audio2face_characters():
+    """List available characters in Audio2Face"""
+    try:
+        a2f_server_url = request.args.get('server_url', 'http://localhost:8011')
+
+        a2f = Audio2FaceGenerator(a2f_server_url)
+
+        if not a2f.is_connected:
+            return jsonify({
+                "error": "Audio2Face server not accessible",
+                "server_url": a2f_server_url,
+                "suggestion": "Make sure Audio2Face is running with headless mode enabled"
+            }), 503
+
+        characters = a2f.list_available_characters()
+
+        return jsonify({
+            'server_url': a2f_server_url,
+            'characters': characters,
+            'count': len(characters),
+            'current_character': a2f.current_character
+        })
+
+    except Exception as e:
+        logger.error(f"Error listing Audio2Face characters: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/audio2face/test', methods=['POST'])
+def test_audio2face_generation():
+    """Test Audio2Face generation with a simple prompt"""
+    try:
+        data = request.json or {}
+        test_prompt = data.get("prompt", "Hello, this is a test of Audio2Face integration.")
+        character_path = data.get("character_path")
+        a2f_server_url = data.get("a2f_server_url", "http://localhost:8011")
+
+        logger.info(f"Testing Audio2Face with prompt: {test_prompt[:30]}...")
+
+        # Check if Audio2Face is available
+        status = check_audio2face_requirements()
+        if not status['requirements_met']:
+            return jsonify({
+                "error": "Audio2Face requirements not met",
+                "status": status,
+                "issues": status['issues']
+            }), 503
+
+        # Generate test video
+        timestamp = int(time.time())
+        output_filename = f"audio2face_test_{timestamp}.mp4"
+        output_path = f"/app/static/{output_filename}"
+
+        success = generate_audio2face_avatar(
+            prompt=test_prompt,
+            source_image="",
+            output_path=output_path,
+            tts_engine="espeak",
+            tts_options={},
+            character_path=character_path,
+            a2f_server_url=a2f_server_url
+        )
+
+        if success and os.path.exists(output_path):
+            file_size = os.path.getsize(output_path)
+            return jsonify({
+                "success": True,
+                "message": "Audio2Face test completed successfully",
+                "video_url": f"/static/{output_filename}",
+                "file_size": file_size,
+                "character_used": character_path,
+                "prompt": test_prompt
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Test generation failed",
+                "suggestion": "Check Audio2Face server logs for details"
+            }), 500
+
+    except Exception as e:
+        logger.error(f"Audio2Face test error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 
 
