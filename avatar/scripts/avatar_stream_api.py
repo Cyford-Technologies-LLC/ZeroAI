@@ -273,6 +273,8 @@ class StreamingAvatarGenerator(TTSProcessor):
         Frames are generated and sent as fast as possible.
         """
         logger.info(f"Starting realtime stream - FPS: {frame_rate}, Buffer: {buffer_size}, Mode: {mode}")
+        logger.info(f"Starting chunked stream - Mode: {mode}, FPS: {frame_rate}, Delivery: {delivery_mode}")
+        logger.info(f"Received delivery_mode parameter: {delivery_mode}")
 
         # Prepare SadTalker options from your existing parameters
         sadtalker_options = {

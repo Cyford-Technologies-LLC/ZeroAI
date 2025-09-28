@@ -99,10 +99,9 @@ def handle_exception(e):
 # STREAMING ENDPOINTS
 # ============================================================================
 
-@app.route('/stream', methods=['POST'])
 # Simple modification to your existing /stream endpoint in avatar_endpoints.py
 
-@app.route('/stream', methods=['POST'])
+
 @app.route('/stream', methods=['POST'])
 def stream_avatar():
     """Stream talking avatar video in real-time - now with SadTalker support"""
@@ -134,7 +133,8 @@ def stream_avatar():
 
         # ADD THESE LINES - get mode and delivery_mode from options
         mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
-        delivery_mode = options.get("delivery_mode", "url")  # 'url' or 'base64'
+        delivery_mode = options.get("delivery_mode", "base64")  # 'url' or 'base64'
+        logger.info(f"Delivery mode requested: {delivery_mode}")
 
         logger.info(f"=== AVATAR STREAMING START ===")
         logger.info(f"Mode: {streaming_mode}/{mode}, Prompt: {prompt[:50]}...")

@@ -57,6 +57,8 @@ ALLOWED_OPTIONS = {
         "chunk_duration": 3.0,  # Seconds per chunk
         "max_duration": 300.0,  # Maximum total duration (5 min)
 
+        "delivery_mode": "url",  # url | base64
+
         # Realtime mode settings
         "buffer_size": 5,  # Frames to buffer ahead
         "low_latency": False,  # Optimize for minimal delay
@@ -102,6 +104,7 @@ VALIDATION_RULES = {
     "frame_rate": [12, 15, 20, 24, 25, 30, 60],
     "mode": ["simple", "sadtalker"],
     "preprocess": ["crop", "none", "resize"],
+    "delivery_mode": ["url", "base64"],
 }
 
 # TTS Engine specific voice mappings
