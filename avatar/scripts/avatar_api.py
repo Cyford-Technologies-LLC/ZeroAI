@@ -103,6 +103,7 @@ def handle_exception(e):
 # Simple modification to your existing /stream endpoint in avatar_endpoints.py
 
 @app.route('/stream', methods=['POST'])
+@app.route('/stream', methods=['POST'])
 def stream_avatar():
     """Stream talking avatar video in real-time - now with SadTalker support"""
     if not STREAMING_AVAILABLE:
