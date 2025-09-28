@@ -680,6 +680,13 @@
                             <input type="checkbox" id="hardwareAccel">
                             <label for="hardwareAccel" style="min-width: auto;">Hardware Acceleration</label>
                         </div>
+                        <div class="control-group">
+                            <label for="deliveryMode">Delivery Mode:</label>
+                            <select id="deliveryMode">
+                                <option value="base64" selected>Base64 (Direct)</option>
+                                <option value="url">URL (File-based)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1597,6 +1604,7 @@
 
                 // Streaming options
                 chunk_duration: parseFloat(getElementValue('chunkDuration', '3')),
+                delivery_mode: getElementValue('deliveryMode', 'base64'),
                 buffer_size: parseInt(getElementValue('bufferSize', '5')),
                 low_latency: getElementChecked('lowLatency'),
                 adaptive_quality: getElementChecked('adaptiveQuality'),
@@ -1831,27 +1839,48 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                                         debugLog('Chunk metadata received', data);
 
                                         // Handle video chunk URLs - THIS IS THE KEY FIX
-                                        if (data.video_url && data.ready) {
-                                            const chunkUrl = data.video_url;
-                                            // Convert relative URL to absolute URL
-                                            const absoluteUrl = chunkUrl.startsWith('/')
-                                                ? window.location.origin + chunkUrl
-                                                : chunkUrl;
+                                        // Handle video chunk URLs or base64 data
+                                        if (data.ready && (data.video_url || data.video_data)) {
+                                            if (data.video_data) {
+                                                // Handle base64 video data
+                                                videoChunks.push({
+                                                    id: data.chunk_id || videoChunks.length,
+                                                    data: data.video_data, // This is the base64 data URL
+                                                    duration: data.duration || 2,
+                                                    sentence: data.sentence || '',
+                                                    mode: data.mode,
+                                                    isBase64: true
+                                                });
 
-                                            videoChunks.push({
-                                                id: data.chunk_id || videoChunks.length,
-                                                url: absoluteUrl,
-                                                duration: data.duration || 2,
-                                                sentence: data.sentence || '',
-                                                mode: data.mode
-                                            });
+                                                debugLog('Video chunk base64 added', {
+                                                    chunkId: data.chunk_id,
+                                                    dataLength: data.video_data.length,
+                                                    duration: data.duration,
+                                                    total: videoChunks.length
+                                                });
+                                            } else if (data.video_url) {
+                                                // Handle URL-based video
+                                                const chunkUrl = data.video_url;
+                                                const absoluteUrl = chunkUrl.startsWith('/')
+                                                    ? window.location.origin + chunkUrl
+                                                    : chunkUrl;
 
-                                            debugLog('Video chunk URL added', {
-                                                chunkId: data.chunk_id,
-                                                url: absoluteUrl,
-                                                duration: data.duration,
-                                                total: videoChunks.length
-                                            });
+                                                videoChunks.push({
+                                                    id: data.chunk_id || videoChunks.length,
+                                                    url: absoluteUrl,
+                                                    duration: data.duration || 2,
+                                                    sentence: data.sentence || '',
+                                                    mode: data.mode,
+                                                    isBase64: false
+                                                });
+
+                                                debugLog('Video chunk URL added', {
+                                                    chunkId: data.chunk_id,
+                                                    url: absoluteUrl,
+                                                    duration: data.duration,
+                                                    total: videoChunks.length
+                                                });
+                                            }
                                         }
 
                                         chunks.push(data);
@@ -2062,12 +2091,22 @@ async function playVideoChunksSequentially(video, videoChunks) {
         const chunk = videoChunks[currentChunkIndex];
         debugLog('Playing video chunk', {
             chunkId: chunk.id,
+            source: chunk.isBase64 ? 'base64' : 'url',
             url: chunk.url,
             duration: chunk.duration
         });
 
         // Update video source
-        video.src = chunk.url;
+        if (chunk.isBase64 && chunk.data) {
+            video.src = chunk.data; // data:video/mp4;base64,...
+        } else if (chunk.url) {
+            video.src = chunk.url;
+        } else {
+            debugLog('No video source for chunk', { chunkId: chunk.id });
+            currentChunkIndex++;
+            setTimeout(playNextChunk, 100);
+            return;
+        }
 
         // Play current chunk
         video.play().then(() => {
