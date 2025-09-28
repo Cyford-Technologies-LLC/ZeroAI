@@ -45,11 +45,16 @@ RUN mkdir -p /app/faces \
     /app/scripts \
     /app/logs \
     /tmp/streaming_cache \
+    /tmp/torch_cache \
+    /tmp/facexlib_cache \
+    tmp/gfpgan_cache \
+    /tmp/huggingface_cache \
+    /tmp/.cache \
     /home/avataruser/.config \
     && groupadd -r avataruser \
-    && useradd -r -g avataruser avataruser
-
-
+    && useradd -r -g avataruser avataruser \
+    chmod -R 777 /tmp/  /home/avataruser/\
+    chown -R avataruser:avataruser /tmp/ /home/avataruser/
 
 # Copy only requirements first (change occasionally - cache friendly)
 COPY requirements.txt .

@@ -71,6 +71,34 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+
+
+
+# Force model downloads to use /tmp
+os.environ['TORCH_HOME'] = '/tmp/torch_cache'
+os.environ['FACEXLIB_CACHE_DIR'] = '/tmp/facexlib_cache'
+os.environ['GFPGAN_CACHE_DIR'] = '/tmp/gfpgan_cache'
+os.environ['HF_HOME'] = '/tmp/huggingface_cache'
+
+# Create directories if they don't exist
+cache_dirs = ['/tmp/torch_cache', '/tmp/facexlib_cache', '/tmp/gfpgan_cache', '/tmp/huggingface_cache']
+for cache_dir in cache_dirs:
+    try:
+        os.makedirs(cache_dir, exist_ok=True)
+        os.chmod(cache_dir, 0o777)
+    except Exception as e:
+        print(f"Warning: Could not create {cache_dir}: {e}")
+
+
+
+
+
+
+
+
+
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
