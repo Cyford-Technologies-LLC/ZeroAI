@@ -281,7 +281,7 @@ function sendMessage() {
 //     container.scrollTop = container.scrollHeight;
 // }
 
-<<<<<<< Updated upstream
+
 // Enhanced message display with proper code handling
 
 
@@ -339,7 +339,8 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-=======
+
+
 
 // Enhanced message display with proper code handling
 function addMessageToChat(sender, message) {
@@ -386,12 +387,9 @@ function addMessageToChat(sender, message) {
 
 
 
-<<<<<<< Updated upstream
 
 
 
-=======
->>>>>>> Stashed changes
 function insertCommand(command) {
     const input = document.getElementById('user-input');
     input.value += command;
