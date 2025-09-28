@@ -19,7 +19,7 @@ import wave
 
 # Core functionality imports (your separated modules)
 from audio_processor import call_tts_service_with_options, normalize_audio, TTSProcessor
-from video_processor import convert_video_with_codec, get_mimetype_for_codec
+from video_processor import convert_video_with_codec, get_mimetype_for_codec, concat_videos
 from sadtalker_generator import generate_sadtalker_video
 from simple_face_generator import generate_talking_face
 from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
@@ -91,127 +91,6 @@ class StreamingAvatarGenerator(TTSProcessor):
 
         logger.info("StreamingAvatarGenerator cleanup completed")
 
-    def _generate_sadtalker_frames_for_streaming(self, source_image: np.ndarray, audio_path: str,
-                                                 duration: float, frame_rate: int = 30,
-                                                 sadtalker_options: Dict = None) -> Generator[bytes, None, None]:
-        """Generate SadTalker frames optimized for streaming"""
-        try:
-            if sadtalker_options is None:
-                sadtalker_options = {}
-
-            # Save the numpy array as a temporary image file for SadTalker
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_image:
-                temp_image_path = temp_image.name
-                cv2.imwrite(temp_image_path, source_image)
-
-            # Create temporary video with SadTalker
-            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
-                temp_video_path = temp_video.name
-
-            try:
-                # Generate SadTalker video using your existing function - exact same call as in full video
-                success = generate_sadtalker_video(
-                    audio_path,
-                    temp_video_path,
-                    "",
-                    'h264_fast',
-                    'medium',
-                    timeout=sadtalker_options.get('timeout', 300),
-                    enhancer=sadtalker_options.get('enhancer', None),
-                    split_chunks=sadtalker_options.get('split_chunks', True),
-                    chunk_length=int(sadtalker_options.get('chunk_length', duration)),
-                    source_image=temp_image_path,
-                    # ADD THESE:
-                    still=options.get('still', True),
-                    preprocess=options.get('preprocess', 'crop'),
-                    resolution=options.get('resolution', '256'),
-                    fps=frame_rate  # ADD THIS LINE
-                )
-
-                if not success:
-                    raise ValueError("SadTalker generation failed")
-
-                # Extract frames from generated video and stream them
-                cap = cv2.VideoCapture(temp_video_path)
-
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-
-                    # Encode frame for streaming
-                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                    yield buffer.tobytes()
-
-                cap.release()
-
-            finally:
-                # Cleanup temp files
-                if os.path.exists(temp_video_path):
-                    os.unlink(temp_video_path)
-                if os.path.exists(temp_image_path):
-                    os.unlink(temp_image_path)
-
-        except Exception as e:
-            logger.error(f"SadTalker streaming error: {e}")
-            # Fallback to simple face animation
-            logger.info("Falling back to simple face animation")
-            yield from self._generate_face_frames(source_image, duration, frame_rate)
-
-    def _generate_face_frames(self, source_image: np.ndarray, duration: float,
-                              frame_rate: int = 30) -> Generator[bytes, None, None]:
-        """Generate animated face frames based on audio duration"""
-        total_frames = int(duration * frame_rate)
-        height, width = source_image.shape[:2]
-
-        # Detect face for animation
-        import mediapipe as mp
-        mp_face_detection = mp.solutions.face_detection
-
-        with mp_face_detection.FaceDetection(model_selection=0,
-                                             min_detection_confidence=0.5) as face_detection:
-            results = face_detection.process(cv2.cvtColor(source_image, cv2.COLOR_BGR2RGB))
-
-            if results.detections:
-                detection = results.detections[0]
-                bbox = detection.location_data.relative_bounding_box
-                x = int(bbox.xmin * width)
-                y = int(bbox.ymin * height)
-                w = int(bbox.width * width)
-                h = int(bbox.height * height)
-            else:
-                # Default face area if no detection
-                x, y, w, h = width // 4, height // 4, width // 2, height // 2
-
-        for frame_idx in range(total_frames):
-            frame = source_image.copy()
-
-            # Animate mouth based on time
-            time_factor = frame_idx / frame_rate
-            mouth_intensity = (
-                    0.6 * abs(np.sin(time_factor * 8)) +
-                    0.3 * abs(np.sin(time_factor * 15)) +
-                    0.1 * abs(np.sin(time_factor * 25))
-            )
-
-            # Draw animated mouth in face region
-            face_region = frame[y:y + h, x:x + w]
-            if face_region.size > 0:
-                mouth_y_rel = int(h * 0.7)
-                mouth_x_rel = int(w * 0.5)
-                mouth_w = max(1, int(w * 0.15))
-                mouth_h = max(1, int(5 + mouth_intensity * 15))
-
-                if mouth_y_rel < h and mouth_x_rel < w:
-                    cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel),
-                                (mouth_w, mouth_h), 0, 0, 180, (120, 80, 80), -1)
-
-                frame[y:y + h, x:x + w] = face_region
-
-            # Encode frame as JPEG for streaming
-            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            yield buffer.tobytes()
-
     def generate_chunked_stream(self, prompt: str, source_image: np.ndarray,
                                 chunk_duration: float = 3.0, tts_engine: str = 'espeak',
                                 tts_options: Dict = None, codec: str = 'h264_fast',
@@ -219,25 +98,23 @@ class StreamingAvatarGenerator(TTSProcessor):
                                 mode: str = 'auto', timeout: int = 300, enhancer: str = None,
                                 split_chunks: bool = True, chunk_length: float = 10.0) -> Generator[bytes, None, None]:
         """
-        Generate video stream in pre-processed chunks.
-        Each chunk is fully rendered before streaming begins.
-        Now supports SadTalker with all your existing options.
+        Generate video chunks and return video URLs for progressive playback
         """
-        logger.info(f"Starting chunked stream - Duration: {chunk_duration}s, FPS: {frame_rate}, Mode: {mode}")
-
-        # Prepare SadTalker options from your existing parameters
-        sadtalker_options = {
-            'timeout': timeout,
-            'enhancer': enhancer,
-            'split_chunks': split_chunks,
-            'chunk_length': chunk_length
-        }
+        logger.info(f"Starting chunked stream - Mode: {mode}, FPS: {frame_rate}")
 
         try:
             self.is_streaming = True
 
             # Split prompt into sentences for chunking
             sentences = self._split_into_sentences(prompt)
+
+            # Send initial info
+            init_info = {
+                'status': 'starting',
+                'total_chunks': len(sentences),
+                'mode': mode
+            }
+            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(init_info)}\r\n".encode()
 
             for i, sentence in enumerate(sentences):
                 if not self.is_streaming:
@@ -256,75 +133,78 @@ class StreamingAvatarGenerator(TTSProcessor):
                     continue
 
                 try:
-                    # Stream chunk header with audio data
-                    chunk_info = {
-                        'chunk_id': i,
-                        'duration': duration,
-                        'sentence': sentence,
-                        'total_chunks': len(sentences),
-                        'mode': mode,
-                        'audio_path': audio_path  # Include audio path for client to fetch separately
-                    }
+                    # Create unique chunk video path
+                    timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+                    chunk_video_path = f"/app/static/chunk_{i}_{timestamp}.mp4"
 
-                    yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(chunk_info)}\r\n".encode()
+                    # Save the numpy array as a temporary image file for SadTalker
+                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_image:
+                        temp_image_path = temp_image.name
+                        cv2.imwrite(temp_image_path, source_image)
 
-                    # Also stream the audio data as base64
-                    try:
-                        with open(audio_path, 'rb') as audio_file:
-                            audio_data = audio_file.read()
-                            import base64
-                            audio_b64 = base64.b64encode(audio_data).decode()
-                            audio_info = {
-                                'type': 'audio',
-                                'chunk_id': i,
-                                'data': audio_b64,
-                                'format': 'wav'
-                            }
-                            yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(audio_info)}\r\n".encode()
-                    except Exception as audio_err:
-                        logger.warning(f"Failed to stream audio for chunk {i}: {audio_err}")
+                    success = False
 
-                    # Generate video frames based on mode
+                    # Generate video based on mode
                     if mode == 'sadtalker':
                         try:
-                            frame_generator = self._generate_sadtalker_frames_for_streaming(
-                                source_image, audio_path, duration, frame_rate, sadtalker_options
+                            success = generate_sadtalker_video(
+                                audio_path,
+                                chunk_video_path,
+                                "",
+                                codec,
+                                quality,
+                                timeout=timeout,
+                                enhancer=enhancer,
+                                split_chunks=False,  # We're already chunking
+                                chunk_length=chunk_length,
+                                source_image=temp_image_path
                             )
                         except Exception as e:
                             logger.warning(f"SadTalker failed: {e}, falling back to simple")
-                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+
                     elif mode == 'auto':
-                        # For streaming AI secretary, prioritize speed - use simple unless specifically requested
-                        # Only use SadTalker for longer sentences where quality matters more
-                        if len(sentence) > 100 and os.path.exists('/app/SadTalker'):
-                            try:
-                                frame_generator = self._generate_sadtalker_frames_for_streaming(
-                                    source_image, audio_path, duration, frame_rate, sadtalker_options
+                        # Try SadTalker first, fallback to simple
+                        try:
+                            if os.path.exists('/app/SadTalker'):
+                                success = generate_sadtalker_video(
+                                    audio_path,
+                                    chunk_video_path,
+                                    "",
+                                    codec,
+                                    quality,
+                                    timeout=timeout,
+                                    enhancer=enhancer,
+                                    split_chunks=False,
+                                    chunk_length=chunk_length,
+                                    source_image=temp_image_path
                                 )
-                            except Exception as e:
-                                logger.warning(f"SadTalker failed: {e}, falling back to simple")
-                                frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-                        else:
-                            # Use fast simple mode for short sentences and real-time interaction
-                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-                    else:  # mode == 'simple' or anything else
-                        frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                            else:
+                                logger.info("SadTalker not found, using simple mode")
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
 
-                    # FIXED: Stream frames immediately as each one is ready, don't wait for all
-                    frame_count = 0
-                    for frame_bytes in frame_generator:
-                        if not self.is_streaming:
-                            break
+                    # If SadTalker failed or mode is simple, generate simple video
+                    if not success:
+                        generate_talking_face(temp_image_path, audio_path, chunk_video_path, codec, quality)
+                        success = os.path.exists(chunk_video_path)
 
-                        # Stream frame immediately
-                        yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                    if success and os.path.exists(chunk_video_path):
+                        # Send chunk URL immediately when ready
+                        chunk_info = {
+                            "chunk_id": i,
+                            "video_url": f"/static/chunk_{i}_{timestamp}.mp4",
+                            "duration": duration,
+                            "ready": True,
+                            "sentence": sentence,
+                            "mode": mode
+                        }
+                        yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(chunk_info)}\r\n".encode()
+                    else:
+                        logger.error(f"Failed to generate chunk {i}")
 
-                        frame_count += 1
-                        # Control frame rate - but don't block too long
-                        time.sleep(max(0.001, 1.0 / frame_rate))  # Minimum 1ms, max frame rate delay
-
-                    logger.info(f"Streamed {frame_count} frames for chunk {i + 1}")
+                    # Cleanup temp image
+                    if os.path.exists(temp_image_path):
+                        os.unlink(temp_image_path)
 
                 finally:
                     # Cleanup audio file
@@ -332,7 +212,11 @@ class StreamingAvatarGenerator(TTSProcessor):
                         os.unlink(audio_path)
 
             # Stream completion marker
-            completion_info = {'status': 'completed', 'total_chunks': len(sentences), 'mode': mode}
+            completion_info = {
+                'status': 'completed',
+                'total_chunks': len(sentences),
+                'mode': mode
+            }
             yield f"--frame\r\nContent-Type: application/json\r\n\r\n{json.dumps(completion_info)}\r\n".encode()
 
         except Exception as e:
@@ -353,7 +237,6 @@ class StreamingAvatarGenerator(TTSProcessor):
         """
         Generate video stream in real-time.
         Frames are generated and sent as fast as possible.
-        Now supports SadTalker with all your existing options.
         """
         logger.info(f"Starting realtime stream - FPS: {frame_rate}, Buffer: {buffer_size}, Mode: {mode}")
 
@@ -452,7 +335,7 @@ class StreamingAvatarGenerator(TTSProcessor):
 
     def _generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, buffer_size: int,
                                   mode: str = 'auto', sadtalker_options: Dict = None):
-        """Generate frames in real-time and put in queue with SadTalker support - FIXED VERSION"""
+        """Generate frames in real-time and put in queue with SadTalker support"""
         try:
             while self.is_streaming:
                 try:
@@ -463,7 +346,7 @@ class StreamingAvatarGenerator(TTSProcessor):
 
                     duration, audio_path = audio_item
 
-                    # Generate frames for this audio chunk based on mode and IMMEDIATELY stream them
+                    # Generate frames for this audio chunk based on mode
                     if mode == 'sadtalker':
                         try:
                             frame_generator = self._generate_sadtalker_frames_for_streaming(
@@ -487,7 +370,7 @@ class StreamingAvatarGenerator(TTSProcessor):
                     else:  # mode == 'simple' or anything else
                         frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
 
-                    # CRITICAL FIX: Stream frames immediately as they're generated
+                    # Stream frames immediately as they're generated
                     frame_count = 0
                     for frame_bytes in frame_generator:
                         if not self.is_streaming:
@@ -516,6 +399,122 @@ class StreamingAvatarGenerator(TTSProcessor):
             logger.error(f"Frame generation error: {e}")
         finally:
             self.frame_queue.put(None)  # Sentinel
+
+    def _generate_sadtalker_frames_for_streaming(self, source_image: np.ndarray, audio_path: str,
+                                                 duration: float, frame_rate: int = 30,
+                                                 sadtalker_options: Dict = None) -> Generator[bytes, None, None]:
+        """Generate SadTalker frames optimized for streaming"""
+        try:
+            if sadtalker_options is None:
+                sadtalker_options = {}
+
+            # Save the numpy array as a temporary image file for SadTalker
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_image:
+                temp_image_path = temp_image.name
+                cv2.imwrite(temp_image_path, source_image)
+
+            # Create temporary video with SadTalker
+            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
+                temp_video_path = temp_video.name
+
+            try:
+                # Generate SadTalker video using your existing function
+                success = generate_sadtalker_video(
+                    audio_path,
+                    temp_video_path,
+                    "",
+                    'h264_fast',
+                    'medium',
+                    timeout=sadtalker_options.get('timeout', 300),
+                    enhancer=sadtalker_options.get('enhancer', None),
+                    split_chunks=sadtalker_options.get('split_chunks', True),
+                    chunk_length=int(sadtalker_options.get('chunk_length', duration)),
+                    source_image=temp_image_path
+                )
+
+                if not success:
+                    raise ValueError("SadTalker generation failed")
+
+                # Extract frames from generated video and stream them
+                cap = cv2.VideoCapture(temp_video_path)
+
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+
+                    # Encode frame for streaming
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    yield buffer.tobytes()
+
+                cap.release()
+
+            finally:
+                # Cleanup temp files
+                if os.path.exists(temp_video_path):
+                    os.unlink(temp_video_path)
+                if os.path.exists(temp_image_path):
+                    os.unlink(temp_image_path)
+
+        except Exception as e:
+            logger.error(f"SadTalker streaming error: {e}")
+            # Fallback to simple face animation
+            logger.info("Falling back to simple face animation")
+            yield from self._generate_face_frames(source_image, duration, frame_rate)
+
+    def _generate_face_frames(self, source_image: np.ndarray, duration: float,
+                              frame_rate: int = 30) -> Generator[bytes, None, None]:
+        """Generate animated face frames based on audio duration"""
+        total_frames = int(duration * frame_rate)
+        height, width = source_image.shape[:2]
+
+        # Detect face for animation
+        import mediapipe as mp
+        mp_face_detection = mp.solutions.face_detection
+
+        with mp_face_detection.FaceDetection(model_selection=0,
+                                             min_detection_confidence=0.5) as face_detection:
+            results = face_detection.process(cv2.cvtColor(source_image, cv2.COLOR_BGR2RGB))
+
+            if results.detections:
+                detection = results.detections[0]
+                bbox = detection.location_data.relative_bounding_box
+                x = int(bbox.xmin * width)
+                y = int(bbox.ymin * height)
+                w = int(bbox.width * width)
+                h = int(bbox.height * height)
+            else:
+                # Default face area if no detection
+                x, y, w, h = width // 4, height // 4, width // 2, height // 2
+
+        for frame_idx in range(total_frames):
+            frame = source_image.copy()
+
+            # Animate mouth based on time
+            time_factor = frame_idx / frame_rate
+            mouth_intensity = (
+                    0.6 * abs(np.sin(time_factor * 8)) +
+                    0.3 * abs(np.sin(time_factor * 15)) +
+                    0.1 * abs(np.sin(time_factor * 25))
+            )
+
+            # Draw animated mouth in face region
+            face_region = frame[y:y + h, x:x + w]
+            if face_region.size > 0:
+                mouth_y_rel = int(h * 0.7)
+                mouth_x_rel = int(w * 0.5)
+                mouth_w = max(1, int(w * 0.15))
+                mouth_h = max(1, int(5 + mouth_intensity * 15))
+
+                if mouth_y_rel < h and mouth_x_rel < w:
+                    cv2.ellipse(face_region, (mouth_x_rel, mouth_y_rel),
+                                (mouth_w, mouth_h), 0, 0, 180, (120, 80, 80), -1)
+
+                frame[y:y + h, x:x + w] = face_region
+
+            # Encode frame as JPEG for streaming
+            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            yield buffer.tobytes()
 
     def _split_into_sentences(self, text: str) -> list:
         """Split text into sentences for chunked processing"""
@@ -602,8 +601,8 @@ def init_websocket(app):
                                 json_start = chunk.find(b'\r\n\r\n') + 4
                                 json_data = chunk[json_start:chunk.rfind(b'\r\n')]
                                 try:
-                                    data = json.loads(json_data.decode())
-                                    socketio.emit('stream_info', data, room=request.sid)
+                                    parsed_data = json.loads(json_data.decode())
+                                    socketio.emit('stream_info', parsed_data, room=request.sid)
                                 except:
                                     pass
                             elif b'Content-Type: image/jpeg' in chunk:
@@ -638,7 +637,6 @@ def init_websocket(app):
     def handle_stop_stream():
         """Stop current streaming"""
         logger.info(f"Stopping stream for {request.sid}")
-        # This would need to be connected to the specific generator instance
         emit('stream_stopped', {})
 
 
