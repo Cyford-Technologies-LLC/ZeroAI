@@ -299,11 +299,17 @@ class AvatarManager
             'streaming_mode' => $streamingMode
         ];
 
+        // Add delivery mode if specified
+        if (isset($options['delivery_mode'])) {
+            $payload['delivery_mode'] = $options['delivery_mode'];
+        }
+
 
 
         // Core parameters
         $coreParams = [
             'tts_engine', 'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
+            'delivery_mode',  // ADD THIS LINE
             'image', 'codec', 'quality', 'fps'
         ];
 
@@ -557,6 +563,7 @@ class AvatarManager
         // Add all the parameter mappings
         $allParams = [
             'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
+            'delivery_mode',  // ADD THIS LINE
             'sample_rate', 'audio_format', 'image', 'still', 'preprocess', 'resolution',
             'face_detection', 'face_confidence', 'auto_resize', 'fps', 'bitrate',
             'keyframe_interval', 'hardware_accel', 'stream_mode', 'chunk_duration',

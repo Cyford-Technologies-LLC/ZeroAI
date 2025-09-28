@@ -129,6 +129,11 @@
                     $options['stream_mode'] = $input['stream_mode'];
                     error_log('Stream mode detected: ' . $input['stream_mode']);
                 }
+                // Add delivery mode support
+                if (isset($input['delivery_mode'])) {
+                    $options['delivery_mode'] = $input['delivery_mode'];
+                    error_log('Delivery mode detected: ' . $input['delivery_mode']);
+                }
                 if (isset($input['chunk_duration'])) {
                     $options['chunk_duration'] = floatval($input['chunk_duration']);
                 }
@@ -228,7 +233,14 @@
                     if ($result['type'] === 'streaming') {
                         // JSON chunk information
                         header('Content-Type: application/json');
-                        echo json_encode($result['data']);
+                        // Check if we need to handle base64 data
+                        if (isset($result['data']) && is_array($result['data'])) {
+                            // For chunked responses with base64
+                            echo json_encode($result['data']);
+                        } else {
+                            echo json_encode($result);
+                        }
+
                         exit;
 
                     } elseif ($result['type'] === 'streaming_multipart') {
