@@ -520,44 +520,39 @@ class AvatarManager
      */
     private function callAvatarService($prompt, $mode, $options = [])
     {
-        $codec = $options['codec'] ?? 'h264_fast';
-        $quality = $options['quality'] ?? 'high';
+        // Detect streaming mode
+        $streamMode = $options['stream_mode'] ?? 'complete';
+        $isStreaming = ($streamMode !== 'complete');
 
-
-
-            // Detect streaming mode
-    $streamMode = $options['stream_mode'] ?? 'complete';
-    $isStreaming = ($streamMode !== 'complete');
-
-
-    if ($isStreaming) {
-        // Use streaming endpoint
-        $url = $this->avatarServiceUrl . '/stream';
-        $this->logger->info('Using streaming endpoint', [
-            'stream_mode' => $streamMode,
-            'url' => $url
-        ]);
-    } else {
-        // Use regular generation endpoint
-        $codec = $options['codec'] ?? 'h264_fast';
-        $quality = $options['quality'] ?? 'high';
-        $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
-        $this->logger->info('Using generation endpoint', [
-            'mode' => $mode,
-            'url' => $url
-        ]);
-    }
+        if ($isStreaming) {
+            // Use streaming endpoint
+            $url = $this->avatarServiceUrl . '/stream';
+            $this->logger->info('Using streaming endpoint', [
+                'stream_mode' => $streamMode,
+                'url' => $url
+            ]);
+        } else {
+            // Use regular generation endpoint
+            $codec = $options['codec'] ?? 'h264_fast';
+            $quality = $options['quality'] ?? 'high';
+            $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
+            $this->logger->info('Using generation endpoint', [
+                'mode' => $mode,
+                'url' => $url
+            ]);
+        }
 
         // Build comprehensive payload with ALL parameters
         $payload = [
             'prompt' => $prompt,
             'tts_engine' => $options['tts_engine'] ?? 'espeak'
         ];
+
         if ($isStreaming) {
-              $payload['streaming_mode'] = $streamMode; // Map stream_mode to streaming_mode
+            $payload['streaming_mode'] = $streamMode; // Map stream_mode to streaming_mode
         }
 
-        // Add all the parameter mappings from the previous enhanced version
+        // Add all the parameter mappings
         $allParams = [
             'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
             'sample_rate', 'audio_format', 'image', 'still', 'preprocess', 'resolution',
@@ -583,6 +578,8 @@ class AvatarManager
             'url' => $url,
             'parameter_count' => count($payload),
             'mode' => $mode,
+            'streaming' => $isStreaming,
+            'stream_mode' => $streamMode,
             'data_length' => strlen($data)
         ]);
 
@@ -617,6 +614,53 @@ class AvatarManager
             throw new \Exception('Empty response from avatar service');
         }
 
+        // Handle streaming responses differently based on content type
+        if ($isStreaming) {
+            $this->logger->info('Processing streaming response', [
+                'content_type' => $contentType,
+                'size' => strlen($result),
+                'stream_mode' => $streamMode
+            ]);
+
+            // Check if it's JSON response (chunk info)
+            if (strpos($contentType, 'application/json') !== false) {
+                $streamData = json_decode($result, true);
+
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return [
+                        'type' => 'streaming',
+                        'mode' => $streamMode,
+                        'data' => $streamData,
+                        'chunks' => $streamData['chunks'] ?? [],
+                        'urls' => $streamData['urls'] ?? [],
+                        'content_type' => 'application/json',
+                        'size' => strlen($result)
+                    ];
+                }
+            }
+
+            // Check if it's multipart (JPEG frames or chunked video)
+            if (strpos($contentType, 'multipart') !== false) {
+                return [
+                    'type' => 'streaming_multipart',
+                    'mode' => $streamMode,
+                    'data' => $result,
+                    'content_type' => $contentType,
+                    'size' => strlen($result)
+                ];
+            }
+
+            // Otherwise return as streaming raw
+            return [
+                'type' => 'streaming_raw',
+                'mode' => $streamMode,
+                'data' => $result,
+                'content_type' => $contentType,
+                'size' => strlen($result)
+            ];
+        }
+
+        // Regular non-streaming response (existing working code)
         return [
             'data' => $result,
             'content_type' => $contentType,
