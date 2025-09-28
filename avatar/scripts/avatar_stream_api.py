@@ -26,6 +26,8 @@ from simple_face_generator import generate_talking_face
 from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
 
 import logging
+import time
+
 
 logger = logging.getLogger(__name__)
 

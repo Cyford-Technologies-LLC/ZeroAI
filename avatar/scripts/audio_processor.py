@@ -150,7 +150,7 @@ class TTSProcessor:
             return 0.0, None
 
 
-def _generate_edge_tts_chunk(self, text: str, chunk_id: int, options: Dict) -> str:
+def _generate_edge_tts_chunk(text: str, chunk_id: int, options: Dict) -> str:
     """Generate audio using Edge TTS for a chunk"""
     import asyncio
     import edge_tts
@@ -202,7 +202,7 @@ def _generate_edge_tts_chunk(self, text: str, chunk_id: int, options: Dict) -> s
         return self._generate_espeak_chunk(text, chunk_id, options)
 
 
-def _generate_espeak_chunk(self, text: str, chunk_id: int, options: Dict) -> str:
+def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
     """Generate audio using espeak for a chunk"""
     import subprocess
 
@@ -231,7 +231,7 @@ def _generate_espeak_chunk(self, text: str, chunk_id: int, options: Dict) -> str
         return None
 
 
-def _split_into_sentences(self, text: str) -> List[str]:
+def _split_into_sentences(text: str) -> List[str]:
     """Split text into sentences for chunking"""
     import re
 
