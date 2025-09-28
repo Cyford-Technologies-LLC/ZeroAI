@@ -376,12 +376,12 @@ def health():
             'codecs': ['h264_high', 'h264_medium', 'h264_fast', 'h265_high', 'webm_high', 'webm_fast'],
             'default_codec': DEFAULT_CODEC,
             'websocket_enabled': STREAMING_AVAILABLE,
-            'audio2face': {
-                'available': a2f_status['requirements_met'],
-                'server_reachable': a2f_status['server_reachable'],
-                'characters_count': len(a2f_status['characters_available'])
-            },
-            'endpoints': [
+            # 'audio2face': {
+            #     'available': a2f_status['requirements_met'],
+            #     'server_reachable': a2f_status['server_reachable'],
+            #     'characters_count': len(a2f_status['characters_available'])
+            # },
+             'endpoints': [
                 '/generate (POST) - Generate complete avatar video',
                 '/generate/audio2face (POST) - Generate with Audio2Face',  # NEW
                 '/stream (POST) - HTTP streaming endpoint',
@@ -390,7 +390,7 @@ def health():
                 '/audio2face/characters - List A2F characters',  # NEW
                 '/audio2face/test - Test A2F generation',  # NEW
                 '/debug/status - System status',
-                '/health - This endpoint'
+                # '/health - This endpoint'
             ]
         })
 
