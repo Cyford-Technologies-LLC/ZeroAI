@@ -39,12 +39,11 @@ waitress>=2.1.2
 # Audio/Video processing
 pydub>=0.25.1
 moviepy==1.0.3
+edge-tts>=6.1.0
+
 
 # Core utilities
 numpy>=1.24.0,<2.0.0  # <- Fixed: Avoid numpy 2.0 conflicts
 psutil>=5.9.0
 Pillow>=10.0.0  # <- Added: Often needed for image processing
 
-espeak
-espeak-data
-edge-tts
