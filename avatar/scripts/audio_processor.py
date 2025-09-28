@@ -154,34 +154,58 @@ class TTSProcessor:
             return 0.0, None
 
 
-def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
-    """Generate audio using espeak for a chunk"""
-    import subprocess
+def _generate_edge_tts_chunk(text: str, chunk_id: int, options: Dict) -> str:
+    """Generate audio using Edge TTS for a chunk"""
+    import asyncio
+    import edge_tts
+
+    async def generate_audio():
+        voice = options.get('voice', 'en-US-AriaNeural')
+        rate = options.get('speed', 0)
+        pitch = options.get('pitch', 0)
+
+        # Format rate and pitch for edge-tts
+        rate_str = f"+{rate}%" if rate >= 0 else f"{rate}%"
+        pitch_str = f"+{pitch}Hz" if pitch >= 0 else f"{pitch}Hz"
+
+        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.mp3"
+
+        communicate = edge_tts.Communicate(
+            text,
+            voice,
+            rate=rate_str,
+            pitch=pitch_str
+        )
+
+        await communicate.save(output_path)
+
+        # Convert to WAV for SadTalker compatibility
+        from pydub import AudioSegment
+        audio = AudioSegment.from_mp3(output_path)
+        wav_path = output_path.replace('.mp3', '.wav')
+        audio.export(wav_path, format='wav')
+
+        # Clean up MP3
+        if os.path.exists(output_path):
+            os.unlink(output_path)
+
+        return wav_path
 
     try:
-        speed = options.get('speed', 175)
-        pitch = options.get('pitch', 50)
-        voice = options.get('voice', 'en')
+        # Run the async function
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(generate_audio())
+        loop.close()
 
-        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.wav"
-
-        cmd = [
-            'espeak',
-            '-v', voice,
-            '-s', str(speed),
-            '-p', str(pitch),
-            '-w', output_path,
-            text
-        ]
-
-        subprocess.run(cmd, check=True, capture_output=True)
-
-        return output_path
+        return result
 
     except Exception as e:
-        logger.error(f"Espeak generation failed: {e}")
+        logger.error(f"Edge TTS generation failed: {e}")
         return None
-def _generate_edge_tts_chunk(text: str, chunk_id: int, options: Dict) -> str:
+
+
+def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
     """Generate audio using espeak for a chunk"""
     import subprocess
 
