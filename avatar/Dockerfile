@@ -53,8 +53,8 @@ RUN mkdir -p /app/faces \
     /home/avataruser/.config \
     && groupadd -r avataruser \
     && useradd -r -g avataruser avataruser \
-    chmod -R 777 /tmp/  /home/avataruser/\
-    chown -R avataruser:avataruser /tmp/ /home/avataruser/
+    && chmod -R 777 /tmp/  /home/avataruser/\
+    && chown -R avataruser:avataruser /tmp/ /home/avataruser/
 
 # Copy only requirements first (change occasionally - cache friendly)
 COPY requirements.txt .
