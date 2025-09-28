@@ -1,43 +1,46 @@
 # Recommended PyTorch installation for GPU
+--extra-index-url https://download.pytorch.org/whl/cu121
 torch==2.1.2+cu121
 torchvision==0.16.2+cu121
-torchaudio==2.1.2
---extra-index-url https://download.pytorch.org/whl/cu121
+torchaudio==2.1.2+cu121  # <- Fixed: Added +cu121
 
-# Audio processing (missing - causes your error)
-librosa
-numba
-soundfile
+# Audio processing
+librosa>=0.10.0
+numba>=0.57.0
+soundfile>=0.12.0
 
-# SadTalker specific dependencies (missing)
-face-alignment
-yacs
-scipy
-scikit-image
-dlib
-resampy
+# SadTalker specific dependencies
+face-alignment>=1.3.5
+yacs>=0.1.8
+scipy>=1.10.0
+scikit-image>=0.20.0
+dlib>=19.24.0
+resampy>=0.4.2
 
-# Other dependencies
-numpy
-opencv-python-headless
+# Computer vision and image processing
+opencv-python-headless>=4.8.0
+mediapipe>=0.10.0
+imageio==2.31.1
+imageio-ffmpeg==0.4.8
 
-flask
-flask-cors
+# Web framework
+flask>=2.3.0
+flask-cors>=4.0.0
 flask-socketio>=5.3.0
 
-requests
+# Networking and async
+requests>=2.31.0
 python-socketio>=5.8.0
 websockets>=11.0
 gevent>=22.10.0
 gevent-websocket>=0.10.1
+waitress>=2.1.2
 
-mediapipe
-pydub
+# Audio/Video processing
+pydub>=0.25.1
 moviepy==1.0.3
-imageio==2.31.1
-imageio-ffmpeg==0.4.8
-numpy
-psutil
-gevent
-gevent-websocket
-waitress
+
+# Core utilities
+numpy>=1.24.0,<2.0.0  # <- Fixed: Avoid numpy 2.0 conflicts
+psutil>=5.9.0
+Pillow>=10.0.0  # <- Added: Often needed for image processing
