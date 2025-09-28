@@ -47,25 +47,38 @@ class StreamingAvatarGenerator(TTSProcessor):
     - SadTalker integration with fallback to simple face animation
     """
 
-    def __init__(self, tts_api_url: str, ref_image_path: str, device: str = "cpu"):
+    def __init__(self, tts_api_url: str, ref_image_path: str = None, device: str = 'cuda'):
+        """Initialize streaming avatar generator"""
         self.tts_api_url = tts_api_url
-        self.ref_image_path = ref_image_path
+        self.ref_image_path = ref_image_path or '/app/faces/2.jpg'
         self.device = device
-
-        # Streaming state
         self.is_streaming = False
-        self.frame_queue = queue.Queue(maxsize=100)
-        self.audio_queue = queue.Queue(maxsize=50)
 
-        # Threading
-        self.executor = ThreadPoolExecutor(max_workers=4)
-        self.cleanup_threads = []
+        # Initialize SadTalker generator
+        try:
+            import sys
+            sys.path.append('/app/SadTalker')
+            from inference import SadTalker
 
-        # Caching for performance
-        self.face_cache = {}
-        self.audio_cache = {}
+            # Initialize SadTalker with proper checkpoint paths
+            checkpoint_dir = '/app/SadTalker/checkpoints'
+            config_dir = '/app/SadTalker/src/config'
+
+            self.generator = SadTalker(
+                checkpoint_dir=checkpoint_dir,
+                config_dir=config_dir,
+                lazy_load=True
+            )
+            logger.info("✅ SadTalker generator initialized")
+
+        except Exception as e:
+            logger.warning(f"SadTalker initialization failed: {e}")
+            self.generator = None
 
         logger.info(f"StreamingAvatarGenerator initialized - Device: {device}")
+
+
+
 
     def cleanup(self):
         """Clean up resources and stop all threads"""
