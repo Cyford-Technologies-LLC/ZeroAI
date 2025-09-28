@@ -182,33 +182,29 @@ def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
         logger.error(f"Espeak generation failed: {e}")
         return None
 
-def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
-    """Generate audio using espeak for a chunk"""
-    import subprocess
+def _generate_edge_tts_chunk(text: str) -> List[str]:
+    """Split text into sentences for chunking"""
+    import re
 
-    try:
-        speed = options.get('speed', 175)
-        pitch = options.get('pitch', 50)
-        voice = options.get('voice', 'en')
+    # Simple sentence splitting
+    sentences = re.split(r'(?<=[.!?])\s+', text)
 
-        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.wav"
+    # Filter out empty sentences
+    sentences = [s.strip() for s in sentences if s.strip()]
 
-        cmd = [
-            'espeak',
-            '-v', voice,
-            '-s', str(speed),
-            '-p', str(pitch),
-            '-w', output_path,
-            text
-        ]
+    # If no sentences found, split by length
+    if not sentences:
+        words = text.split()
+        chunk_size = max(10, len(words) // 3)  # At least 10 words per chunk
+        sentences = []
 
-        subprocess.run(cmd, check=True, capture_output=True)
+        for i in range(0, len(words), chunk_size):
+            chunk = ' '.join(words[i:i + chunk_size])
+            if chunk:
+                sentences.append(chunk)
 
-        return output_path
+    return sentences or [text]  # Return full text if no splitting possible
 
-    except Exception as e:
-        logger.error(f"Espeak generation failed: {e}")
-        return None
 
 def _split_into_sentences(text: str) -> List[str]:
     """Split text into sentences for chunking"""
@@ -234,28 +230,7 @@ def _split_into_sentences(text: str) -> List[str]:
     return sentences or [text]  # Return full text if no splitting possible
 
 
-def _generate_edge_tts_chunk(text: str) -> List[str]:
-    """Split text into sentences for chunking"""
-    import re
 
-    # Simple sentence splitting
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-
-    # Filter out empty sentences
-    sentences = [s.strip() for s in sentences if s.strip()]
-
-    # If no sentences found, split by length
-    if not sentences:
-        words = text.split()
-        chunk_size = max(10, len(words) // 3)  # At least 10 words per chunk
-        sentences = []
-
-        for i in range(0, len(words), chunk_size):
-            chunk = ' '.join(words[i:i + chunk_size])
-            if chunk:
-                sentences.append(chunk)
-
-    return sentences or [text]  # Return full text if no splitting possible
 
 # Example usage
 if __name__ == "__main__":
