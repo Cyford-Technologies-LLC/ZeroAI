@@ -23,6 +23,10 @@ from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memo
 try:
     from avatar_stream_api import StreamingAvatarGenerator, init_websocket
 
+    print("🔍 StreamingAvatarGenerator Import Details:")
+    print(f"Module Path: {StreamingAvatarGenerator.__module__}")
+    print(f"Module File: {StreamingAvatarGenerator.__module__}")
+
     STREAMING_AVAILABLE = True
 except ImportError:
     print("Warning: Streaming components not available")
