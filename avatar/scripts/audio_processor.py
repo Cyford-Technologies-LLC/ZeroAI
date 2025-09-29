@@ -190,6 +190,43 @@ def generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, bu
         finally:
             self.frame_queue.put(None)  # Sentinel
 
+
+# In audio_processor.py, add these functions:
+
+def generate_audio_for_streaming(text: str, chunk_id: int, tts_engine: str, tts_options: Dict) -> tuple:
+    """Generate audio for streaming - returns (audio_path, duration)"""
+    try:
+        if tts_engine == 'edge':
+            audio_path = _generate_edge_tts_chunk(text, chunk_id, tts_options)
+        else:
+            audio_path = _generate_espeak_chunk(text, chunk_id, tts_options)
+
+        if audio_path and os.path.exists(audio_path):
+            from pydub import AudioSegment
+            audio = AudioSegment.from_file(audio_path)
+            duration = len(audio) / 1000.0
+            return audio_path, duration
+        else:
+            return None, 0
+    except Exception as e:
+        logger.error(f"Audio generation failed: {e}")
+        return None, 0
+
+
+def split_by_duration(self, text: str, target_duration: float) -> List[str]:
+    """Split text by estimated duration (words per second)"""
+    words_per_second = 2.5  # Average speaking rate
+    words_per_chunk = max(1, int(target_duration * words_per_second))
+
+    words = text.split()
+    chunks = []
+
+    for i in range(0, len(words), words_per_chunk):
+        chunk_words = words[i:i + words_per_chunk]
+        chunks.append(' '.join(chunk_words))
+
+    return chunks if chunks else [text]
+
 class TTSProcessor:
     """TTS Processor class for the class methods"""
 
@@ -322,7 +359,7 @@ def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
 
 
 
-def _split_into_sentences(text: str) -> List[str]:
+def split_into_sentences(text: str) -> List[str]:
     """Split text into sentences for chunking"""
     import re
 

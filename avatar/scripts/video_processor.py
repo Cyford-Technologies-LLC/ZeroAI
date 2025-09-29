@@ -8,6 +8,8 @@ import subprocess
 import os
 import logging
 
+from avatar.scripts.sadtalker_generator import generate_sadtalker_video
+
 # Setup logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -185,9 +187,66 @@ def generate_video_with_options(text: str, chunk_id: int, source_image, audio_pa
             return False
 
 
+def generate_video_for_streaming(text: str, chunk_id: int, source_image, audio_path: str,
+                                 output_path: str, options: Dict, audio_duration: float) -> tuple:
+    """Generate video for streaming - returns (success, duration)"""
+    try:
+        import cv2
+        import subprocess
+        import glob
+        import shutil
 
+        # Save source image
+        temp_source = f'/tmp/source_{chunk_id}.png'
+        cv2.imwrite(temp_source, cv2.cvtColor(source_image, cv2.COLOR_RGB2BGR))
 
+        mode = options.get("mode", "simple")
+        success = False
 
+        if mode == 'sadtalker':
+            # SadTalker
+            cmd = [
+                'python', '/app/SadTalker/inference.py',
+                '--driven_audio', audio_path,
+                '--source_image', temp_source,
+                '--result_dir', f'/app/static/sadtalker_output/chunk_{chunk_id}_{int(time.time())}',
+                '--still',
+                '--preprocess', options.get('preprocess', 'crop')
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+            if result.returncode == 0:
+                pattern = f'/app/static/sadtalker_output/chunk_{chunk_id}_*/**/*.mp4'
+                videos = glob.glob(pattern, recursive=True)
+                if videos:
+                    latest_video = max(videos, key=os.path.getmtime)
+                    shutil.copy(latest_video, output_path)
+                    success = True
+
+        elif mode == 'simple':
+            # Simple Face
+            from simple_avatar import create_animated_face
+            result = create_animated_face(
+                image_path=temp_source,
+                audio_path=audio_path,
+                output_path=output_path,
+                codec=options.get('codec', 'h264_fast'),
+                quality=options.get('quality', 'medium'),
+                use_face_detection=options.get('face_detection', True)
+            )
+            if result and result.get('success'):
+                success = True
+
+        # Cleanup
+        if os.path.exists(temp_source):
+            os.unlink(temp_source)
+
+        return success, audio_duration if success else 0
+
+    except Exception as e:
+        logger.error(f"Video generation failed: {e}")
+        return False, 0
 
 
 def generate_sadtalker_frames_for_streaming(self, source_image: np.ndarray, audio_path: str,
@@ -219,7 +278,8 @@ def generate_sadtalker_frames_for_streaming(self, source_image: np.ndarray, audi
                     enhancer=sadtalker_options.get('enhancer', None),
                     split_chunks=sadtalker_options.get('split_chunks', True),
                     chunk_length=int(sadtalker_options.get('chunk_length', duration)),
-                    source_image=temp_image_path
+                    source_image=temp_image_path,
+                    frame_rate=25
                 )
 
                 if not success:

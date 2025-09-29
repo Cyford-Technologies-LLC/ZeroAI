@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                              timeout=1200, enhancer=None, split_chunks=False,
-                             chunk_length=10, source_image="/app/faces/2.jpg"):
+                             chunk_length=10, source_image="/app/faces/2.jpg" , frame_rate=25):
     """Run SadTalker with optional chunking"""
     if not os.path.exists("/app/SadTalker"):
         logger.warning("SadTalker not found")
@@ -51,7 +51,8 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                     "--driven_audio", chunk_path,
                     "--source_image", source_image,
                     "--result_dir", chunk_result_dir,
-                    "--still", "--preprocess", "crop"
+                    "--still", "--preprocess", "crop",
+                    '--fps', str(frame_rate),
                 ]
                 if enhancer:
                     cmd += ["--enhancer", enhancer]
