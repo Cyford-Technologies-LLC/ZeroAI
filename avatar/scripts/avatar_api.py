@@ -266,6 +266,8 @@ def stream_avatar():
         # ADD THESE HEADERS
         response.headers['X-Accel-Buffering'] = 'no'
         response.headers['Cache-Control'] = 'no-cache'
+        response.headers['Connection'] = 'keep-alive'  # Add this
+        response.headers['Transfer-Encoding'] = 'chunked'  # Add this
 
         return response
 
