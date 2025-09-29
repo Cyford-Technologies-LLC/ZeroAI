@@ -776,9 +776,19 @@ class AvatarManager
 //        $result = curl_exec($ch);
 
         if ($isStreaming) {
+            error_log("STREAMING DEBUG:");
+            $result = curl_exec($ch);
+            error_log("Curl Results: " . $result);
+
+
             $this->streamBuffer = ''; // Clear buffer before streaming
             curl_exec($ch); // Execute but data goes to callback
             $result = $this->streamBuffer; // Use collected buffer data
+
+            error_log("STREAMING DEBUG:");
+            error_log("Stream buffer length: " . strlen($this->streamBuffer));
+            error_log("Result length: " . strlen($result));
+            error_log("Buffer preview: " . substr($this->streamBuffer, 0, 200));
         } else {
             $result = curl_exec($ch); // Normal execution for non-streaming
         }
