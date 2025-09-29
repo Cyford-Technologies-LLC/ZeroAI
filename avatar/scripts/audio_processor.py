@@ -3,40 +3,41 @@
 Audio TTS Functions with Required Imports
 """
 
-import unicodedata
-import wave
+import asyncio
 import logging
+import numpy as np
+import os
+import queue
+import re
 import requests
 import subprocess
-import os
 import tempfile
+import time
+import unicodedata
+import wave
 from typing import Dict, Optional, Tuple, List
 from utility import clean_text
-import time  # Add this - missing 'time'
-import os    # Add this if not already present
-from typing import List, Dict  # Add this - missing 'List' and 'Dict'
-import logging
 
-# Third-party imports (install with: pip install pydub)
+# Third-party imports
 try:
     from pydub import AudioSegment
+    import edge_tts
 
     PYDUB_AVAILABLE = True
-except ImportError:
+    EDGE_TTS_AVAILABLE = True
+except ImportError as e:
     PYDUB_AVAILABLE = False
-    print("Warning: pydub not available. Install with: pip install pydub")
+    EDGE_TTS_AVAILABLE = False
+    print(f"Warning: Missing dependencies: {e}")
 
 # Setup logger
 logger = logging.getLogger(__name__)
 
-# Configuration - update with your TTS API URL
-
+# Configuration
 TTS_API_URL = os.getenv('TTS_API_URL', 'http://tts:5000/synthesize')
 
 
-
-
-def get_audio_duration(audio_path):
+def get_audio_duration(audio_path: str) -> float:
     """Get audio duration in seconds"""
     try:
         with wave.open(audio_path, 'rb') as wf:
@@ -49,7 +50,8 @@ def get_audio_duration(audio_path):
         return 0.0
 
 
-def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_options=None):
+def call_tts_service_with_options(text: str, file_path: str, tts_engine: str = 'espeak',
+                                  tts_options: Dict = None) -> bool:
     """Call TTS service with options"""
     try:
         payload = {'text': text, 'engine': tts_engine}
@@ -68,7 +70,7 @@ def call_tts_service_with_options(text, file_path, tts_engine='espeak', tts_opti
         return False
 
 
-def normalize_audio(audio_path):
+def normalize_audio(audio_path: str) -> str:
     """Normalize audio format"""
     fixed_path = audio_path.replace('.wav', '_fixed.wav')
     cmd = ["ffmpeg", "-y", "-i", audio_path, "-ac", "1", "-ar", "16000",
@@ -81,7 +83,7 @@ def normalize_audio(audio_path):
         return audio_path
 
 
-def split_audio(audio_path, chunk_length_s=10):
+def split_audio(audio_path: str, chunk_length_s: int = 10) -> List[str]:
     """Split audio into chunks"""
     try:
         if not PYDUB_AVAILABLE:
@@ -103,97 +105,9 @@ def split_audio(audio_path, chunk_length_s=10):
         logger.error(f"Audio splitting failed: {e}")
         return [audio_path]
 
-def generate_audio_realtime(self,prompt: str, tts_engine: str, tts_options: Dict):
-        """Generate audio in real-time and put in queue"""
-        try:
-            sentences = self._split_into_sentences(prompt)
 
-            for sentence in sentences:
-                if not self.is_streaming:
-                    break
-
-                audio_bytes = tts_processor._call_tts_service(sentence, tts_engine, tts_options)
-                if audio_bytes:
-                    duration, audio_path = tts_processor._process_audio_chunk(audio_bytes)
-                    if audio_path:
-                        self.audio_queue.put((duration, audio_path))
-
-        except Exception as e:
-            logger.error(f"Audio generation error: {e}")
-        finally:
-            self.audio_queue.put(None)  # Sentinel
-
-def generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, buffer_size: int,
-                                  mode: str = 'auto', sadtalker_options: Dict = None):
-        """Generate frames in real-time and put in queue with SadTalker support"""
-        try:
-            while self.is_streaming:
-                try:
-                    # Get audio chunk
-                    audio_item = self.audio_queue.get(timeout=1.0)
-                    if audio_item is None:  # Sentinel
-                        break
-
-                    duration, audio_path = audio_item
-
-                    # Generate frames for this audio chunk based on mode
-                    if mode == 'sadtalker':
-                        try:
-                            frame_generator = self._generate_sadtalker_frames_for_streaming(
-                                source_image, audio_path, duration, frame_rate, sadtalker_options
-                            )
-                        except Exception as e:
-                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
-                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-                    elif mode == 'auto':
-                        # Try SadTalker first, fallback to simple
-                        try:
-                            if os.path.exists('/app/SadTalker'):
-                                frame_generator = self._generate_sadtalker_frames_for_streaming(
-                                    source_image, audio_path, duration, frame_rate, sadtalker_options
-                                )
-                            else:
-                                frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-                        except Exception as e:
-                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
-                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-                    else:  # mode == 'simple' or anything else
-                        frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
-
-                    # Stream frames immediately as they're generated
-                    frame_count = 0
-                    for frame_bytes in frame_generator:
-                        if not self.is_streaming:
-                            break
-
-                        # Add to queue with backpressure control
-                        try:
-                            self.frame_queue.put(frame_bytes, timeout=0.1)
-                            frame_count += 1
-                        except queue.Full:
-                            # Drop frame if queue is full (prevents memory issues)
-                            logger.debug("Frame queue full, dropping frame")
-
-                    logger.info(f"Streamed {frame_count} frames for {duration:.2f}s audio chunk")
-
-                    # Cleanup audio file
-                    if audio_path and os.path.exists(audio_path):
-                        os.unlink(audio_path)
-
-                except queue.Empty:
-                    # No audio available, wait a bit
-                    time.sleep(0.1)
-                    continue
-
-        except Exception as e:
-            logger.error(f"Frame generation error: {e}")
-        finally:
-            self.frame_queue.put(None)  # Sentinel
-
-
-# In audio_processor.py, add these functions:
-
-def generate_audio_for_streaming(text: str, chunk_id: int, tts_engine: str, tts_options: Dict) -> tuple:
+def generate_audio_for_streaming(text: str, chunk_id: int, tts_engine: str,
+                                 tts_options: Dict) -> Tuple[Optional[str], float]:
     """Generate audio for streaming - returns (audio_path, duration)"""
     try:
         if tts_engine == 'edge':
@@ -202,9 +116,12 @@ def generate_audio_for_streaming(text: str, chunk_id: int, tts_engine: str, tts_
             audio_path = _generate_espeak_chunk(text, chunk_id, tts_options)
 
         if audio_path and os.path.exists(audio_path):
-            from pydub import AudioSegment
-            audio = AudioSegment.from_file(audio_path)
-            duration = len(audio) / 1000.0
+            if PYDUB_AVAILABLE:
+                audio = AudioSegment.from_file(audio_path)
+                duration = len(audio) / 1000.0
+            else:
+                duration = get_audio_duration(audio_path)
+            logger.info(f"Audio generated: {duration:.2f}s using {tts_engine}")
             return audio_path, duration
         else:
             return None, 0
@@ -213,7 +130,7 @@ def generate_audio_for_streaming(text: str, chunk_id: int, tts_engine: str, tts_
         return None, 0
 
 
-def split_by_duration(self, text: str, target_duration: float) -> List[str]:
+def split_by_duration(text: str, target_duration: float) -> List[str]:
     """Split text by estimated duration (words per second)"""
     words_per_second = 2.5  # Average speaking rate
     words_per_chunk = max(1, int(target_duration * words_per_second))
@@ -227,10 +144,113 @@ def split_by_duration(self, text: str, target_duration: float) -> List[str]:
 
     return chunks if chunks else [text]
 
-class TTSProcessor:
-    """TTS Processor class for the class methods"""
 
-    def __init__(self, tts_api_url=None):
+def _split_into_sentences(text: str) -> List[str]:
+    """Split text into sentences for chunking"""
+    # Simple sentence splitting
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+
+    # Filter out empty sentences
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    # If no sentences found, split by length
+    if not sentences:
+        words = text.split()
+        chunk_size = max(10, len(words) // 3)  # At least 10 words per chunk
+        sentences = []
+
+        for i in range(0, len(words), chunk_size):
+            chunk = ' '.join(words[i:i + chunk_size])
+            if chunk:
+                sentences.append(chunk)
+
+    return sentences or [text]  # Return full text if no splitting possible
+
+
+def _generate_edge_tts_chunk(text: str, chunk_id: int, options: Dict) -> Optional[str]:
+    """Generate audio using Edge TTS for a chunk"""
+    if not EDGE_TTS_AVAILABLE:
+        logger.error("edge-tts not available. Install with: pip install edge-tts")
+        return None
+
+    async def generate_audio():
+        voice = options.get('voice', 'en-US-AriaNeural')
+        rate = options.get('speed', 0)
+        pitch = options.get('pitch', 0)
+
+        # Format rate and pitch for edge-tts
+        rate_str = f"+{rate}%" if rate >= 0 else f"{rate}%"
+        pitch_str = f"+{pitch}Hz" if pitch >= 0 else f"{pitch}Hz"
+
+        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.mp3"
+
+        communicate = edge_tts.Communicate(
+            text,
+            voice,
+            rate=rate_str,
+            pitch=pitch_str
+        )
+
+        await communicate.save(output_path)
+
+        # Convert to WAV for SadTalker compatibility
+        if PYDUB_AVAILABLE:
+            audio = AudioSegment.from_mp3(output_path)
+            wav_path = output_path.replace('.mp3', '.wav')
+            audio.export(wav_path, format='wav')
+
+            # Clean up MP3
+            if os.path.exists(output_path):
+                os.unlink(output_path)
+
+            return wav_path
+        else:
+            return output_path
+
+    try:
+        # Run the async function
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(generate_audio())
+        loop.close()
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Edge TTS generation failed: {e}")
+        return None
+
+
+def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> Optional[str]:
+    """Generate audio using espeak for a chunk"""
+    try:
+        speed = options.get('speed', 175)
+        pitch = options.get('pitch', 50)
+        voice = options.get('voice', 'en')
+
+        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.wav"
+
+        cmd = [
+            'espeak',
+            '-v', voice,
+            '-s', str(speed),
+            '-p', str(pitch),
+            '-w', output_path,
+            text
+        ]
+
+        subprocess.run(cmd, check=True, capture_output=True)
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Espeak generation failed: {e}")
+        return None
+
+
+class TTSProcessor:
+    """TTS Processor class for streaming operations"""
+
+    def __init__(self, tts_api_url: str = None):
         self.tts_api_url = tts_api_url or TTS_API_URL
 
     def _call_tts_service(self, text: str, tts_engine: str = 'espeak',
@@ -251,7 +271,7 @@ class TTSProcessor:
             logger.error(f"TTS call failed: {e}")
             return None
 
-    def _process_audio_chunk(self, audio_bytes: bytes) -> Tuple[float, str]:
+    def _process_audio_chunk(self, audio_bytes: bytes) -> Tuple[float, Optional[str]]:
         """Process audio bytes and return duration and temp file path"""
         try:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
@@ -277,120 +297,14 @@ class TTSProcessor:
             return 0.0, None
 
 
-def _generate_edge_tts_chunk(text: str, chunk_id: int, options: Dict) -> str:
-    """Generate audio using Edge TTS for a chunk"""
-    import asyncio
-    import edge_tts
-
-    async def generate_audio():
-        voice = options.get('voice', 'en-US-AriaNeural')
-        rate = options.get('speed', 0)
-        pitch = options.get('pitch', 0)
-
-        # Format rate and pitch for edge-tts
-        rate_str = f"+{rate}%" if rate >= 0 else f"{rate}%"
-        pitch_str = f"+{pitch}Hz" if pitch >= 0 else f"{pitch}Hz"
-
-        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.mp3"
-
-        communicate = edge_tts.Communicate(
-            text,
-            voice,
-            rate=rate_str,
-            pitch=pitch_str
-        )
-
-        await communicate.save(output_path)
-
-        # Convert to WAV for SadTalker compatibility
-        from pydub import AudioSegment
-        audio = AudioSegment.from_mp3(output_path)
-        wav_path = output_path.replace('.mp3', '.wav')
-        audio.export(wav_path, format='wav')
-
-        # Clean up MP3
-        if os.path.exists(output_path):
-            os.unlink(output_path)
-
-        return wav_path
-
-    try:
-        # Run the async function
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(generate_audio())
-        loop.close()
-
-        return result
-
-    except Exception as e:
-        logger.error(f"Edge TTS generation failed: {e}")
-        return None
-
-
-def _generate_espeak_chunk(text: str, chunk_id: int, options: Dict) -> str:
-    """Generate audio using espeak for a chunk"""
-    import subprocess
-
-    try:
-        speed = options.get('speed', 175)
-        pitch = options.get('pitch', 50)
-        voice = options.get('voice', 'en')
-
-        output_path = f"/tmp/chunk_{chunk_id}_{int(time.time())}.wav"
-
-        cmd = [
-            'espeak',
-            '-v', voice,
-            '-s', str(speed),
-            '-p', str(pitch),
-            '-w', output_path,
-            text
-        ]
-
-        subprocess.run(cmd, check=True, capture_output=True)
-
-        return output_path
-
-    except Exception as e:
-        logger.error(f"Espeak generation failed: {e}")
-        return None
-
-
-
-
-def split_into_sentences(text: str) -> List[str]:
-    """Split text into sentences for chunking"""
-    import re
-
-    # Simple sentence splitting
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-
-    # Filter out empty sentences
-    sentences = [s.strip() for s in sentences if s.strip()]
-
-    # If no sentences found, split by length
-    if not sentences:
-        words = text.split()
-        chunk_size = max(10, len(words) // 3)  # At least 10 words per chunk
-        sentences = []
-
-        for i in range(0, len(words), chunk_size):
-            chunk = ' '.join(words[i:i + chunk_size])
-            if chunk:
-                sentences.append(chunk)
-
-    return sentences or [text]  # Return full text if no splitting possible
-
-
-
-
 # Example usage
 if __name__ == "__main__":
-    # Test the functions
     print("Audio TTS functions loaded successfully")
 
-    # Test text cleaning
-    test_text = "  Hello    world!  \n\t  "
-    cleaned = clean_text(test_text)
-    print(f"Cleaned text: '{cleaned}'")
+    # Test text splitting
+    test_text = "Hello world! This is a test. How are you today?"
+    sentences = _split_into_sentences(test_text)
+    print(f"Sentences: {sentences}")
+
+    duration_chunks = split_by_duration(test_text, 3.0)
+    print(f"Duration chunks: {duration_chunks}")
