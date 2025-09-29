@@ -158,21 +158,42 @@ def stream_avatar():
         # Sanitize options
         options = sanitize_options("stream_avatar", data)
 
+
+        # Sanitize options
+        options = sanitize_options("generate_avatar", data)
+
         # Extract parameters
-        streaming_mode = options["streaming_mode"]
         prompt = clean_text(options["prompt"])
         source_image_input = options["image"]
         tts_engine = options["tts_engine"]
+
+        # Handle TTS options
+        tts_options = {}
+        for key in ["voice", "rate", "pitch", "language"]:
+            if key in options:
+                tts_options[key] = options[key]
+
+        # Get mode from URL args or data
+        mode = request.args.get('mode', options.get('mode', 'simple'))
+        codec = request.args.get('codec', options.get('codec', DEFAULT_CODEC))
+        quality = request.args.get('quality', options.get('quality', 'high'))
+
+
+        # Extract parameters
+        streaming_mode = options["streaming_mode"]
+        # prompt = clean_text(options["prompt"])
+        # source_image_input = options["image"]
+        # tts_engine = options["tts_engine"]
         tts_options = options["tts_options"]
-        codec = options["codec"]
-        quality = options["quality"]
+        # codec = options["codec"]
+        # quality = options["quality"]
         chunk_duration = options["chunk_duration"]
         frame_rate = options["frame_rate"]
         buffer_size = options["buffer_size"]
 
         # ADD THESE LINES - get mode and delivery_mode from options
         # mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
-        mode = data.get("mode", options.get("mode", "auto"))
+        # mode = data.get("mode", options.get("mode", "auto"))
         logger.info(f"Original mode from payload: {data.get('mode')}")
         logger.info(f"Mode after processing: {mode}")
 
