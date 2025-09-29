@@ -195,58 +195,47 @@ def generate_video_for_streaming(text: str, chunk_id: int, source_image, audio_p
                                  output_path: str, options: Dict, audio_duration: float) -> tuple:
     """Generate video for streaming - returns (success, duration)"""
     try:
-        # Save source image
-        temp_source = f'/tmp/source_{chunk_id}.png'
-        cv2.imwrite(temp_source, cv2.cvtColor(source_image, cv2.COLOR_RGB2BGR))
+        # Import MediaPipe for face detection
+        import mediapipe as mp
+        mp_face_detection = mp.solutions.face_detection
 
-        mode = options.get("mode", "simple")
-        success = False
+        # Convert source_image to numpy array if it's not already
+        if not isinstance(source_image, np.ndarray):
+            source_image = cv2.imread(source_image)
+            source_image = cv2.cvtColor(source_image, cv2.COLOR_BGR2RGB)
 
-        if mode == 'sadtalker':
-            # SadTalker generation
-            cmd = [
-                'python', '/app/SadTalker/inference.py',
-                '--driven_audio', audio_path,
-                '--source_image', temp_source,
-                '--result_dir', f'/app/static/sadtalker_output/chunk_{chunk_id}_{int(time.time())}',
-                '--still',
-                '--preprocess', options.get('preprocess', 'crop'),
-                '--fps', str(options.get('frame_rate', 25))  # Add FPS control
-            ]
+        # Detect face
+        with mp_face_detection.FaceDetection(
+            model_selection=0, min_detection_confidence=0.5
+        ) as face_detection:
+            results = face_detection.process(source_image)
 
-            # Add optional SadTalker parameters
-            if options.get('use_enhancer'):
-                cmd.extend(['--enhancer', 'gfpgan'])
+            # Use first detection or default to whole image
+            if results.detections:
+                detection = results.detections[0]
+            else:
+                height, width = source_image.shape[:2]
+                detection = type('Detection', (), {
+                    'location_data': type('LocationData', (), {
+                        'relative_bounding_box': type('BBox', (), {
+                            'xmin': 0, 'ymin': 0,
+                            'width': 1, 'height': 1
+                        })()
+                    })()
+                })
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-
-            if result.returncode == 0:
-                pattern = f'/app/static/sadtalker_output/chunk_{chunk_id}_*/**/*.mp4'
-                videos = glob.glob(pattern, recursive=True)
-                if videos:
-                    latest_video = max(videos, key=os.path.getmtime)
-                    shutil.copy(latest_video, output_path)
-                    success = True
-
-        elif mode == 'simple':
-            # Simple Face generation
-            result = create_animated_face(
-                image_path=temp_source,
+        # Create animated face
+        try:
+            create_animated_face(
+                img=source_image,
+                detection=detection,
                 audio_path=audio_path,
-                output_path=output_path,
-                codec=options.get('codec', 'h264_fast'),
-                quality=options.get('quality', 'medium'),
-                use_face_detection=options.get('face_detection', True),
-                frame_rate=options.get('frame_rate', 25)  # Add frame rate option
+                output_path=output_path
             )
-            if result and result.get('success'):
-                success = True
-
-        # Cleanup
-        if os.path.exists(temp_source):
-            os.unlink(temp_source)
-
-        return success, audio_duration if success else 0
+            return True, audio_duration
+        except Exception as e:
+            logger.error(f"Animated face generation failed: {e}")
+            return False, 0
 
     except Exception as e:
         logger.error(f"Video generation failed: {e}")
