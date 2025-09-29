@@ -181,7 +181,7 @@ def stream_avatar():
         # prompt = clean_text(options["prompt"])
         # source_image_input = options["image"]
         # tts_engine = options["tts_engine"]
-        tts_options =request.args.get('streaming_mode', options.get('streaming_mode', 'chunked'))
+        # tts_options =request.args.get('streaming_mode', options.get('streaming_mode', 'chunked'))
         codec = request.args.get('codec', options.get('codec', 'mpeg'))
         quality = request.args.get('quality', options.get('quality', 'good'))
         chunk_duration = request.args.get('tts_options', options.get('tts_options', 1))
