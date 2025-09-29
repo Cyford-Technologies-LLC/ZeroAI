@@ -171,7 +171,11 @@ def stream_avatar():
         buffer_size = options["buffer_size"]
 
         # ADD THESE LINES - get mode and delivery_mode from options
-        mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
+        # mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
+        mode = data.get("mode", options.get("mode", "auto"))
+        logger.info(f"Original mode from payload: {data.get('mode')}")
+        logger.info(f"Mode after processing: {mode}")
+
         delivery_mode = options.get("delivery_mode", "base64")  # 'url' or 'base64'
         logger.info(f"Delivery mode requested: {delivery_mode}")
 
