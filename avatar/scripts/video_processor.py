@@ -20,6 +20,18 @@ from typing import Dict, Generator, List
 from sadtalker_generator import generate_sadtalker_video
 from simple_face_generator import create_animated_face
 
+
+import mediapipe as mp
+import logging
+
+
+logger = logging.getLogger(__name__)
+import logging
+from typing import Dict, Tuple
+
+logger = logging.getLogger(__name__)
+
+
 # Setup logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
