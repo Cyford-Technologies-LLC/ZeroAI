@@ -2081,103 +2081,70 @@ async function playVideoChunksSequentially(video, videoChunks) {
     let currentChunkIndex = 0;
     let totalDuration = 0;
 
-    // Create a media source for streaming
-    const mediaSource = new MediaSource();
-    video.src = URL.createObjectURL(mediaSource);
+    const playNextChunk = () => {
+        if (currentChunkIndex >= videoChunks.length) {
+            debugLog('All video chunks played');
+            showNotification('Video playback complete!', 'success');
+            return;
+        }
 
-    // Track chunk loading state
-    const loadedChunks = new Set();
-
-    mediaSource.addEventListener('sourceopen', async () => {
-        const sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
-
-        const playNextChunk = async () => {
-            if (currentChunkIndex >= videoChunks.length) {
-                mediaSource.endOfStream();
-                debugLog('All video chunks played');
-                showNotification('Video playback complete!', 'success');
-                return;
-            }
-
-            const chunk = videoChunks[currentChunkIndex];
-            debugLog('Processing video chunk', {
-                chunkId: chunk.id,
-                source: chunk.isBase64 ? 'base64' : 'url',
-                duration: chunk.duration
-            });
-
-            try {
-                let chunkData;
-
-                // Handle base64 data
-                if (chunk.isBase64 && chunk.data) {
-                    // Remove data URL prefix
-                    const base64Data = chunk.data.split(',')[1];
-                    chunkData = atob(base64Data);
-                }
-                // Handle URL-based chunks
-                else if (chunk.url) {
-                    const response = await fetch(chunk.url);
-                    chunkData = await response.arrayBuffer();
-                }
-
-                if (chunkData) {
-                    // Convert to Uint8Array if needed
-                    const uint8Data = new Uint8Array(chunkData);
-
-                    // Append chunk to media source
-                    if (!sourceBuffer.updating) {
-                        sourceBuffer.appendBuffer(uint8Data);
-                        loadedChunks.add(chunk.id);
-
-                        // Auto-play if not already playing
-                        if (video.paused) {
-                            video.play().catch(e => {
-                                debugLog('Autoplay error', { error: e.message });
-                            });
-                        }
-                    }
-                }
-
-                totalDuration += chunk.duration || 0;
-                currentChunkIndex++;
-
-            } catch (error) {
-                debugLog('Chunk processing error', {
-                    chunkId: chunk.id,
-                    error: error.message
-                });
-                currentChunkIndex++;
-            }
-        };
-
-        // Initial chunk loading
-        await playNextChunk();
-
-        // Set up event listeners for chunk progression
-        sourceBuffer.addEventListener('updateend', async () => {
-            await playNextChunk();
+        const chunk = videoChunks[currentChunkIndex];
+        debugLog('Playing video chunk', {
+            chunkId: chunk.id,
+            source: chunk.isBase64 ? 'base64' : 'url',
+            url: chunk.url,
+            duration: chunk.duration
         });
-    });
 
-    // Debugging and error handling
-    video.addEventListener('error', (e) => {
-        debugLog('Video playback error', {
-            error: video.error,
-            currentChunk: currentChunkIndex
-        });
-    });
+        // Update video source
+        if (chunk.isBase64 && chunk.data) {
+            video.src = chunk.data; // data:video/mp4;base64,...
+        } else if (chunk.url) {
+            video.src = chunk.url;
+        } else {
+            debugLog('No video source for chunk', { chunkId: chunk.id });
+            currentChunkIndex++;
+            setTimeout(playNextChunk, 100);
+            return;
+        }
 
-    // Optional: Progress tracking
-    const progressTracker = setInterval(() => {
-        debugLog('Chunk Playback Progress', {
-            loadedChunks: Array.from(loadedChunks),
-            currentChunk: currentChunkIndex,
-            totalChunks: videoChunks.length
+        // Play current chunk
+        video.play().then(() => {
+            showNotification(`Playing chunk ${chunk.id + 1}/${videoChunks.length}: "${chunk.sentence.substring(0, 30)}..."`, 'info');
+        }).catch(error => {
+            debugLog('Video play error', { error: error.message, chunkId: chunk.id });
+            showNotification(`Error playing chunk ${chunk.id + 1}`, 'error');
+            // Try next chunk
+            currentChunkIndex++;
+            setTimeout(playNextChunk, 500);
         });
-    }, 5000);
+
+        totalDuration += chunk.duration || 0;
+        currentChunkIndex++;
+    };
+
+    // Set up event listener for when video ends
+    const onVideoEnded = () => {
+        debugLog('Video chunk ended', { chunkIndex: currentChunkIndex - 1 });
+
+        // Small delay before playing next chunk
+        setTimeout(playNextChunk, 100);
+    };
+
+    video.addEventListener('ended', onVideoEnded);
+
+    // Clean up event listener when all chunks are done
+    const originalChunkCount = videoChunks.length;
+    const checkCompletion = setInterval(() => {
+        if (currentChunkIndex >= originalChunkCount) {
+            video.removeEventListener('ended', onVideoEnded);
+            clearInterval(checkCompletion);
+        }
+    }, 500);
+
+    // Start playing first chunk
+    playNextChunk();
 }
-
 
 // Function to create JPEG animation (extracted from original function)
 function createJpegAnimation(video, videoFrames) {
