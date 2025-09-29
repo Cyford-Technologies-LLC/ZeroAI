@@ -21,8 +21,8 @@ from typing import Dict, Generator
 
 
 # Existing imports...
-from avatar.scripts.sadtalker_generator import generate_sadtalker_video
-from simple_avatar import create_animated_face
+from sadtalker_generator import generate_sadtalker_video
+from simple_face_generator import create_animated_face
 
 
 # Setup logging

@@ -5,7 +5,7 @@ Audio TTS Functions with Required Imports
 
 import asyncio
 import logging
-import numpy as np
+
 import os
 import queue
 import re
