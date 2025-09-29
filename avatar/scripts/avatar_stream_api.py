@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 # Import your existing processors
 from audio_processor import _generate_edge_tts_chunk, _generate_espeak_chunk, split_into_sentences , split_by_duration
 from video_processor import encode_video_for_delivery, convert_video_with_codec, get_mimetype_for_codec
-
+from sadtalker_generator import generate_sadtalker_video
+from simple_face_generator import generate_talking_face
 
 
 class StreamingAvatarGenerator:
@@ -43,6 +44,7 @@ class StreamingAvatarGenerator:
         logger.info(f"Starting chunked stream - Mode: {mode}, Delivery: {delivery_mode}")
         logger.info(f"Options: TTS={tts_engine}, Codec={codec}, Quality={quality}")
 
+
         try:
             self.is_streaming = True
 
@@ -56,7 +58,7 @@ class StreamingAvatarGenerator:
 
             if split_chunks:
                 # Use audio processor sentence splitting
-                chunks = _split_into_sentences(prompt)
+                chunks = split_into_sentences(prompt)
             else:
                 # Use audio processor duration-based splitting
                 chunks = self._split_by_duration_words(prompt, chunk_duration)
@@ -104,40 +106,88 @@ class StreamingAvatarGenerator:
                 chunk_filename = f"chunk_{i}_{int(time.time())}.mp4"
                 temp_video_path = f"/tmp/{chunk_filename}"
 
-                video_success, duration = generate_video_for_streaming(
-                    chunk_text, i, source_image, audio_path, temp_video_path, options, audio_duration
-                )
-
-                if video_success:
-                    chunk_info = {
-                        "chunk_id": i,
-                        "duration": duration,
-                        "ready": True,
-                        "sentence": chunk_text,
-                        "mode": mode,
-                        "tts_engine": tts_engine,
-                        "codec": codec,
-                        "frame_rate": frame_rate
+                if mode == "auto":
+                    # Intelligent mode selection logic
+                    if "sadtalker" in options or options.get("use_sadtalker", False):
+                        mode = "sadtalker"
+                        logger.info("🤖 Auto-detected SadTalker mode")
+                    else:
+                        mode = "simple"
+                        logger.info("🖼️ Auto-selected Simple Face mode")
+                elif mode == "sadtalker":
+                    source_image_input = options["image"]
+                    video_path = temp_video_path
+                    sadtalker_options = {
+                        "timeout": options.get("timeout", 1200),
+                        "enhancer": options.get("enhancer", None),
+                        "split_chunks": options.get("split_chunks", False),
+                        "chunk_length": options.get("chunk_length", 10)
                     }
+                    logger.info("=== ATTEMPTING SADTALKER MODE ===")
+                    success = generate_sadtalker_video(
+                        audio_path,
+                        video_path,
+                        prompt,
+                        codec,
+                        quality,
+                        **sadtalker_options,
+                        source_image=source_image_input
+                    )
+                    if success:
+                        chunk_info = {
+                            "chunk_id": i,
+                            "ready": True,
+                            "sentence": chunk_text,
+                            "mode": mode,
+                            "tts_engine": tts_engine,
+                            "codec": codec,
+                            "frame_rate": frame_rate
+                        }
+                        # Use video processor for delivery
+                        delivery_info = encode_video_for_delivery(temp_video_path, delivery_mode, chunk_filename)
+                        chunk_info.update(delivery_info)
+                    else:
+                        # Send failure
+                        fail_info = {"chunk_id": i, "ready": False, "error": "Video generation failed"}
+                        fail_json = json.dumps(fail_info)
+                        fail_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(fail_json)}\r\n\r\n{fail_json}\r\n"
+                        yield fail_response.encode()
+                        yield b''
+                else:
+                    logger.info("🖼️ Auto-selected Simple Face mode")
+                    video_success, duration = generate_video_for_streaming(
+                        chunk_text, i, source_image, audio_path, temp_video_path, options, audio_duration
+                    )
+                    if video_success:
+                        chunk_info = {
+                            "chunk_id": i,
+                            "duration": duration,
+                            "ready": True,
+                            "sentence": chunk_text,
+                            "mode": mode,
+                            "tts_engine": tts_engine,
+                            "codec": codec,
+                            "frame_rate": frame_rate
+                        }
+                        # Use video processor for delivery
+                        delivery_info = encode_video_for_delivery(temp_video_path, delivery_mode, chunk_filename)
+                        chunk_info.update(delivery_info)
+                        # Send chunk with flush
+                        chunk_json = json.dumps(chunk_info)
+                        chunk_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(chunk_json)}\r\n\r\n{chunk_json}\r\n"
+                        yield chunk_response.encode()
+                        yield b''  # Force flush
+                    else:
+                        # Send failure
+                        fail_info = {"chunk_id": i, "ready": False, "error": "Video generation failed"}
+                        fail_json = json.dumps(fail_info)
+                        fail_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(fail_json)}\r\n\r\n{fail_json}\r\n"
+                        yield fail_response.encode()
+                        yield b'' #
 
-                    # Use video processor for delivery
-                    delivery_info = encode_video_for_delivery(temp_video_path, delivery_mode, chunk_filename)
-                    chunk_info.update(delivery_info)
-
-                    # Send chunk with flush
-                    chunk_json = json.dumps(chunk_info)
-                    chunk_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(chunk_json)}\r\n\r\n{chunk_json}\r\n"
-                    yield chunk_response.encode()
-                    yield b''  # Force flush
 
                     logger.info(f"✅ Chunk {i} sent - Duration: {duration:.2f}s, Mode: {mode}")
-                else:
-                    # Send failure
-                    fail_info = {"chunk_id": i, "ready": False, "error": "Video generation failed"}
-                    fail_json = json.dumps(fail_info)
-                    fail_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(fail_json)}\r\n\r\n{fail_json}\r\n"
-                    yield fail_response.encode()
-                    yield b''
+
 
                 # Cleanup audio file
                 if audio_path and os.path.exists(audio_path):
@@ -168,6 +218,23 @@ class StreamingAvatarGenerator:
 
         finally:
             self.is_streaming = False
+
+
+
+
+
+
+
+
+
+    def _delivery(self, temp_video_path, delivery_mode, chunk_filename , chunk_info):
+        delivery_info = encode_video_for_delivery(temp_video_path, delivery_mode, chunk_filename)
+        chunk_info.update(delivery_info)
+        chunk_json = json.dumps(chunk_info)
+        chunk_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(chunk_json)}\r\n\r\n{chunk_json}\r\n"
+        yield chunk_response.encode()
+        yield b''  # Force flush
+
 
     def _split_by_duration_words(self, text: str, target_duration: float) -> List[str]:
         """Split text by estimated duration using word count"""
