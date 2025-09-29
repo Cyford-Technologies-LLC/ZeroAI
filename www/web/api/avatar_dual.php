@@ -212,7 +212,13 @@
                 if (isset($input['peer'])) {
                     $options['peer'] = $input['peer'];
                 }
+                if (isset($result['type']) && str_starts_with($result['type'], 'streaming')) {
+                    error_log('Streaming response detected: ' . $result['type']);
+                    error_log('Content type: ' . ($result['content_type'] ?? 'unknown'));
+                    error_log('Data size: ' . (isset($result['data']) ? strlen($result['data']) : 'unknown'));
 
+                    // Rest of existing streaming code...
+                }
                 error_log("Generating avatar - Mode: $mode, Stream Mode: " . ($options['stream_mode'] ?? 'complete'));
                 error_log("Complete options extracted (" . count($options) . " parameters): " . json_encode($options, JSON_PRETTY_PRINT));
 
