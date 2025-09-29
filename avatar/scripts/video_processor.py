@@ -4,11 +4,8 @@ Video Support Functions
 Complete implementation with all required imports
 """
 
-import subprocess
-import os
-import logging
 import base64
-# import cv2
+import cv2
 import glob
 import logging
 import numpy as np
@@ -17,20 +14,17 @@ import shutil
 import subprocess
 import tempfile
 import time
-from typing import Dict, Generator
+from typing import Dict, Generator, List
 
-
-# Existing imports...
+# Import only the functions you actually need
 from sadtalker_generator import generate_sadtalker_video
 from simple_face_generator import create_animated_face
-
 
 # Setup logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
-def concat_videos(video_list, output_path):
+def concat_videos(video_list: List[str], output_path: str) -> str:
     """Concatenate video files using ffmpeg"""
     try:
         list_file = "/tmp/concat_list.txt"
