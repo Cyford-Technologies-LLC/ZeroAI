@@ -949,106 +949,76 @@
     <!-- Notification Container -->
     <div id="notification" class="notification"></div>
 
-    <script>
-        let debugMode = true;
-        let currentMode = 'simple';
-        let currentImageData = null;
-        let selectedPeer = null;
-        let generationInProgress = false;
+    <!-- CORRECT LOADING ORDER FOR YOUR PROJECT -->
+    <script src="../assets/frontend/js/avatar/config.js"></script>
 
-        // TTS Engine configurations
-        const TTS_ENGINES = {
-            espeak: {
-                name: 'eSpeak (Free)',
-                voices: [
-                    { value: 'en', label: 'English (Default)' },
-                    { value: 'en+f3', label: 'English Female 3' },
-                    { value: 'en+f4', label: 'English Female 4' },
-                    { value: 'en+m3', label: 'English Male 3' },
-                    { value: 'en+m4', label: 'English Male 4' },
-                    { value: 'en+f5', label: 'English Female 5' },
-                    { value: 'en+m5', label: 'English Male 5' }
-                ],
-                speedRange: [80, 400],
-                pitchRange: [0, 99]
-            },
-            edge: {
-                name: 'Microsoft Edge TTS',
-                voices: [
-                    { value: 'en-US-AriaNeural', label: 'Aria (Female)' },
-                    { value: 'en-US-JennyNeural', label: 'Jenny (Female)' },
-                    { value: 'en-US-GuyNeural', label: 'Guy (Male)' },
-                    { value: 'en-US-DavisNeural', label: 'Davis (Male)' },
-                    { value: 'en-US-JaneNeural', label: 'Jane (Female)' },
-                    { value: 'en-US-JasonNeural', label: 'Jason (Male)' },
-                    { value: 'en-US-SaraNeural', label: 'Sara (Female)' },
-                    { value: 'en-US-TonyNeural', label: 'Tony (Male)' }
-                ],
-                speedRange: [50, 300],
-                pitchRange: [-50, 50]
-            },
-            elevenlabs: {
-                name: 'ElevenLabs (Premium)',
-                voices: [
-                    { value: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel (Female)' },
-                    { value: 'AZnzlk1XvdvUeBnXmlld', label: 'Domi (Female)' },
-                    { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella (Female)' },
-                    { value: 'ErXwobaYiN019PkySvjV', label: 'Antoni (Male)' },
-                    { value: 'MF3mGyEYCl7XYWbV9V6O', label: 'Elli (Female)' },
-                    { value: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh (Male)' },
-                    { value: 'VR6AewLTigWG4xSOukaG', label: 'Arnold (Male)' },
-                    { value: 'pNInz6obpgDQGcFmaJgB', label: 'Adam (Male)' }
-                ],
-                speedRange: [50, 200],
-                pitchRange: [-100, 100]
-            },
-            openai: {
-                name: 'OpenAI TTS',
-                voices: [
-                    { value: 'alloy', label: 'Alloy (Neutral)' },
-                    { value: 'echo', label: 'Echo (Male)' },
-                    { value: 'fable', label: 'Fable (British Male)' },
-                    { value: 'onyx', label: 'Onyx (Male)' },
-                    { value: 'nova', label: 'Nova (Female)' },
-                    { value: 'shimmer', label: 'Shimmer (Female)' }
-                ],
-                speedRange: [25, 400],
-                pitchRange: [0, 0]
-            },
-            coqui: {
-                name: 'Coqui TTS',
-                voices: [
-                    { value: 'female', label: 'Female (Default)' },
-                    { value: 'male', label: 'Male (Default)' },
-                    { value: 'female_emotional', label: 'Female (Emotional)' },
-                    { value: 'male_emotional', label: 'Male (Emotional)' }
-                ],
-                speedRange: [50, 200],
-                pitchRange: [-50, 50]
-            }
-        };
+    <!-- 1. UTILITIES FIRST - No dependencies -->
+    <script src="../assets/frontend/js/avatar/Utility.js"></script>
 
-        let avatarStreamProcessor = null;
-
-
-
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeDebugConsole);
-        }
-        else {
-            initializeDebugConsole();
-        }
-    </script>
-    <script src="../assets/frontend/js/avatar/avatar.js"></script>
+    <!-- 2. CORE CLASSES - Depend on utilities -->
     <script src="../assets/frontend/js/avatar/AvatarStreamProcessor.js"></script>
+    <script src="../assets/frontend/js/avatar/StreamingDiagnostics.js"></script>
+
+    <!-- 3. STREAMING FUNCTIONALITY - Depends on classes -->
+    <script src="../assets/frontend/js/avatar/streaming.js"></script>
+
+    <!-- 4. UI COMPONENTS - Depend on core functionality -->
+    <script src="../assets/frontend/js/avatar/tab.js"></script>
     <script src="../assets/frontend/js/avatar/console.js"></script>
     <script src="../assets/frontend/js/avatar/logs.js"></script>
     <script src="../assets/frontend/js/avatar/peers.js"></script>
-    <script src="../assets/frontend/js/avatar/streaming.js"></script>
-    <script src="../assets/frontend/js/avatar/StreamingDiagnostics.js"></script>
-    <script src="../assets/frontend/js/avatar/tab.js"></script>
-    <script src="../assets/frontend/js/avatar/Utility.js"></script>
+
+    <!-- 5. MAIN APPLICATION - Depends on everything else -->
+    <script src="../assets/frontend/js/avatar/avatar.js"></script>
+
+    <!-- 6. INITIALIZATION SCRIPT - Add this at the bottom -->
+    <script>
+        // Safe initialization wrapper
+        (function() {
+            function safeInitialize() {
+                // Check if all required functions exist
+                const requiredFunctions = ['initializeDebugConsole', 'debugLog', 'showNotification'];
+                const missingFunctions = requiredFunctions.filter(fn => typeof window[fn] !== 'function');
+
+                if (missingFunctions.length > 0) {
+                    console.error('Missing functions:', missingFunctions);
+                    setTimeout(safeInitialize, 100); // Retry after 100ms
+                    return;
+                }
+
+                // All functions available, initialize
+                try {
+                    if (typeof initializeDebugConsole === 'function') {
+                        initializeDebugConsole();
+                        console.log('✅ Avatar debug console initialized successfully');
+                    } else {
+                        console.error('❌ initializeDebugConsole function not found');
+                    }
+                } catch (error) {
+                    console.error('❌ Initialization error:', error);
+                }
+            }
+
+            // Wait for DOM and then initialize
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', safeInitialize);
+            } else {
+                safeInitialize();
+            }
+        })();
+
+        // Also add error handling for global errors
+        window.addEventListener('error', function(event) {
+            console.error('Global error:', event.error);
+            if (typeof debugLog === 'function') {
+                debugLog('Global error', {
+                    message: event.error?.message || 'Unknown error',
+                    filename: event.filename,
+                    line: event.lineno
+                });
+            }
+        });
+    </script>
 
 
 
