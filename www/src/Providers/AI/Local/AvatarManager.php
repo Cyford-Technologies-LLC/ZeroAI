@@ -819,6 +819,8 @@ class AvatarManager
             if (strpos($contentType, 'application/json') !== false) {
                 $streamData = json_decode($result, true);
 
+
+
                 if (json_last_error() === JSON_ERROR_NONE) {
                     return [
                         'type' => 'streaming',
@@ -852,7 +854,31 @@ class AvatarManager
         ];
     }
 
+    private function handleStreamData($curl, $data) {
+        // Log the streaming data as it arrives
+        $this->logger->info('Stream data received', [
+            'data_length' => strlen($data),
+            'contains_video_data' => strpos($data, 'video_data') !== false,
+            'contains_base64' => strpos($data, 'base64') !== false,
+            'first_100_chars' => substr($data, 0, 100)
+        ]);
 
+        // Process the streaming chunk
+        $this->processStreamChunk($data);
+
+        return strlen($data);
+    }
+
+    private function handleStreamProgress($resource, $download_size, $downloaded, $upload_size, $uploaded) {
+        if ($download_size > 0) {
+            $progress = ($downloaded / $download_size) * 100;
+            $this->logger->debug("Streaming progress: {$progress}%", [
+                'downloaded' => $downloaded,
+                'total' => $download_size
+            ]);
+        }
+        return 0;
+    }
 
     // ... (keep all the existing utility methods: setPeer, getCurrentPeer, getAvailablePeers,
     //      getStatus, getLogs, testConnection, getPhpErrors, clearPhpErrors)
@@ -973,21 +999,6 @@ public function setPeer($peerIp = null)
     }
 
 
-    // NEW: CURL callback methods
-    private function handleStreamData($curl, $data) {
-        // Process incoming stream data
-        $this->processStreamChunk($data);
-        return strlen($data);
-    }
-
-    private function handleStreamProgress($resource, $download_size, $downloaded, $upload_size, $uploaded) {
-        // Optional: Track streaming progress
-        if ($download_size > 0) {
-            $progress = ($downloaded / $download_size) * 100;
-            $this->logger->debug("Streaming progress: {$progress}%");
-        }
-        return 0;
-    }
 
 // NEW: Parse multipart streaming response
     private function parseMultipartStream($result) {
