@@ -13,6 +13,10 @@ class AvatarManager
     private $peerManager;
     private $localAvatarUrl;
 
+    private $streamBuffer = '';
+    private $streamChunks = [];
+    private $currentChunkIndex = 0;
+
     public function __construct($debugMode = true)
     {
         $this->logger = Logger::getInstance();
@@ -769,7 +773,17 @@ class AvatarManager
             curl_setopt($ch, CURLOPT_BUFFERSIZE, 512); // Process in smaller chunks
         }
 
-        $result = curl_exec($ch);
+//        $result = curl_exec($ch);
+
+        if ($isStreaming) {
+            $this->streamBuffer = ''; // Clear buffer before streaming
+            curl_exec($ch); // Execute but data goes to callback
+            $result = $this->streamBuffer; // Use collected buffer data
+        } else {
+            $result = curl_exec($ch); // Normal execution for non-streaming
+        }
+
+
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         $error = curl_error($ch);
@@ -868,6 +882,8 @@ class AvatarManager
 
         return strlen($data);
     }
+
+
 
     private function handleStreamProgress($resource, $download_size, $downloaded, $upload_size, $uploaded) {
         if ($download_size > 0) {
