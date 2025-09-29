@@ -423,7 +423,7 @@ def health():
     """Health check endpoint - UPDATED to include Audio2Face"""
     try:
         # Check Audio2Face status
-        a2f_status = check_audio2face_requirements()
+        # a2f_status = check_audio2face_requirements()
 
         return jsonify({
             'status': 'ok',
