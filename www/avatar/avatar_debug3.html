@@ -1028,6 +1028,64 @@
             }
         };
 
+
+        class AvatarStreamProcessor {
+            constructor() {
+                this.videoChunks = [];
+                this.isStreamComplete = false;
+            }
+
+            processChunk(chunk) {
+                this.videoChunks.push(chunk);
+                this.updateVideoPlayback();
+            }
+
+            updateVideoPlayback() {
+                const videoElement = document.getElementById('avatarVideo');
+                if (!videoElement || this.videoChunks.length === 0) return;
+
+                try {
+                    const validChunks = this.videoChunks.filter(chunk => chunk.data);
+                    if (validChunks.length === 0) return;
+
+                    const combinedBlobs = validChunks.map(chunk => this.base64ToBlob(chunk.data)).filter(blob => blob);
+                    if (combinedBlobs.length === 0) return;
+
+                    const combinedBlob = new Blob(combinedBlobs, { type: 'video/mp4' });
+                    videoElement.src = URL.createObjectURL(combinedBlob);
+
+                    if (videoElement.paused) {
+                        videoElement.play().catch(e => console.log('Autoplay prevented'));
+                    }
+                } catch (error) {
+                    console.log('Progressive playback error:', error);
+                }
+            }
+
+            base64ToBlob(base64Data) {
+                try {
+                    const base64String = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+                    const byteCharacters = atob(base64String);
+                    const byteNumbers = new Array(byteCharacters.length);
+
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+
+                    return new Blob([new Uint8Array(byteNumbers)], { type: 'video/mp4' });
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            onStreamComplete() {
+                this.isStreamComplete = true;
+                debugLog('Stream processing complete', { chunkCount: this.videoChunks.length });
+            }
+        }
+
+        let avatarStreamProcessor = null;
+
         // Utility Functions
         function debugLog(message, data = null) {
             const timestamp = new Date().toISOString();
