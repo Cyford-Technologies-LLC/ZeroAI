@@ -8,7 +8,7 @@ import subprocess
 import os
 import logging
 import base64
-import cv2
+# import cv2
 import glob
 import logging
 import numpy as np
