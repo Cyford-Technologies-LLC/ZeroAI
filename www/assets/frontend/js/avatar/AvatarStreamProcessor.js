@@ -32,7 +32,7 @@ class AvatarStreamProcessor {
         // For first chunk or when switching chunks
         if (this.chunkCount === 0 || this.shouldSwitchChunk()) {
             console.log(
-🎬 Playing chunk ${chunkData.id} NOW!
+`🎬 Playing chunk ${chunkData.id} NOW!`
         );
             this.videoElement.src = chunkData.data;
             this.videoElement.play().catch(e => {
