@@ -950,28 +950,16 @@
 
     <div id="notification" class="notification"></div>
 
-    <!-- CORRECT LOADING ORDER FOR YOUR PROJECT -->
+    <!-- 1. CONFIGURATION AND CONSTANTS FIRST -->
     <script src="../assets/frontend/js/avatar/config.js"></script>
-    <script src="../assets/frontend/js/avatar/tab.js"></script>
-    <!-- 1. UTILITIES FIRST - No dependencies -->
     <script src="../assets/frontend/js/avatar/Utility.js"></script>
-
-
-
-    <!-- 2. CORE CLASSES - Depend on utilities -->
-    <script src="../assets/frontend/js/avatar/AvatarStreamProcessor.js"></script>
     <script src="../assets/frontend/js/avatar/StreamingDiagnostics.js"></script>
-
-    <!-- 3. STREAMING FUNCTIONALITY - Depends on classes -->
+    <script src="../assets/frontend/js/avatar/AvatarStreamProcessor.js"></script>
+    <script src="../assets/frontend/js/avatar/tab.js"></script>
     <script src="../assets/frontend/js/avatar/streaming.js"></script>
-
-    <!-- 4. UI COMPONENTS - Depend on core functionality -->
-
     <script src="../assets/frontend/js/avatar/console.js"></script>
     <script src="../assets/frontend/js/avatar/logs.js"></script>
     <script src="../assets/frontend/js/avatar/peers.js"></script>
-
-    <!-- 5. MAIN APPLICATION - Depends on everything else -->
     <script src="../assets/frontend/js/avatar/avatar.js"></script>
 
     <!-- 6. INITIALIZATION SCRIPT - Add this at the bottom -->
