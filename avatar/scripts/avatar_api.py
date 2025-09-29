@@ -155,9 +155,6 @@ def stream_avatar():
         if not is_valid:
             return jsonify({"error": error_msg}), 400
 
-        # Sanitize options
-        options = sanitize_options("stream_avatar", data)
-
 
         # Sanitize options
         options = sanitize_options("generate_avatar", data)
@@ -180,16 +177,16 @@ def stream_avatar():
 
 
         # Extract parameters
-        streaming_mode = options["streaming_mode"]
+        streaming_mode = request.args.get('streaming_mode', options.get('streaming_mode', 'chunked'))
         # prompt = clean_text(options["prompt"])
         # source_image_input = options["image"]
         # tts_engine = options["tts_engine"]
         tts_options = options["tts_options"]
         # codec = options["codec"]
         # quality = options["quality"]
-        chunk_duration = options["chunk_duration"]
-        frame_rate = options["frame_rate"]
-        buffer_size = options["buffer_size"]
+        chunk_duration = request.args.get('chunk_duration', options.get('chunk_duration', 1))
+        frame_rate = request.args.get('frame_rate', options.get('frame_rate', 15))
+        buffer_size = request.args.get('buffer_size', options.get('buffer_size', 5))
 
         # ADD THESE LINES - get mode and delivery_mode from options
         # mode = options.get("mode", "auto")  # 'simple', 'sadtalker', or 'auto'
