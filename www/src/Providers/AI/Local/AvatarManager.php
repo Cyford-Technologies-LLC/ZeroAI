@@ -879,16 +879,20 @@ class AvatarManager
     }
 
     private function handleStreamData($curl, $data) {
-        // Log the streaming data as it arrives
+        $this->streamBuffer .= $data;
+
+        // Don't look for video_data/base64 in every chunk - just collect the data
         $this->logger->info('Stream data received', [
             'data_length' => strlen($data),
-            'contains_video_data' => strpos($data, 'video_data') !== false,
-            'contains_base64' => strpos($data, 'base64') !== false,
-            'first_100_chars' => substr($data, 0, 100)
+            'total_buffer_size' => strlen($this->streamBuffer),
+            'first_50_chars' => substr($data, 0, 50)
         ]);
 
-        // Process the streaming chunk
-        $this->processStreamChunk($data);
+        // Process complete chunks when we detect boundaries
+        if (strpos($data, '--frame') !== false) {
+            $this->logger->info('Frame boundary detected - processing chunk');
+            $this->processStreamChunk($this->streamBuffer);
+        }
 
         return strlen($data);
     }
