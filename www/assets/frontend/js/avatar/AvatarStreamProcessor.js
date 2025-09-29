@@ -18,36 +18,43 @@ class AvatarStreamProcessor {
     }
 
     // Main entry point - called for each chunk
-    processChunk(chunkData) {
-        console.log(`[StreamProcessor] Chunk ${chunkData.id} received at ${new Date().toISOString()}`);
+    async processChunk(chunkData) {
+        console.log(
+            [StreamProcessor] Chunk ${chunkData.id} received
+    );
 
-        // Only process each chunk once
-        if (this.processedChunks.has(chunkData.id)) {
-            console.log(`[StreamProcessor] Chunk ${chunkData.id} already processed, skipping`);
-            return;
+        // PLAY IMMEDIATELY - Don't wait!
+        if (chunkData.id === 0 || !this.videoElement) {
+            this.videoElement = document.getElementById('avatarVideo');
+            document.getElementById('result').style.display = 'block';
         }
 
+        // For first chunk or when switching chunks
+        if (this.chunkCount === 0 || this.shouldSwitchChunk()) {
+            console.log(
+🎬 Playing chunk ${chunkData.id} NOW!
+        );
+            this.videoElement.src = chunkData.data;
+            this.videoElement.play().catch(e => {
+                console.log('Click to play');
+            });
+        }
+
+        // Track this chunk
         this.processedChunks.add(chunkData.id);
         this.chunkCount++;
 
-        // Get video element
-        if (!this.videoElement) {
-            this.videoElement = document.getElementById('avatarVideo');
-            if (!this.videoElement) {
-                console.error('[StreamProcessor] Video element not found!');
-                return;
-            }
-        }
-
-        // Add to pending queue
+        // Store for later combining if needed
         this.pendingChunks.push(chunkData);
+    }
 
-        // Start processing immediately
-        if (!this.streamStarted) {
-            this.startStreaming();
-        } else {
-            this.processNextChunk();
+    shouldSwitchChunk() {
+        // Switch to next chunk when current is almost done
+        if (this.videoElement && this.videoElement.duration) {
+            const timeLeft = this.videoElement.duration - this.videoElement.currentTime;
+            return timeLeft < 0.5; // Switch 0.5 seconds before end
         }
+        return true;
     }
 
     async startStreaming() {
