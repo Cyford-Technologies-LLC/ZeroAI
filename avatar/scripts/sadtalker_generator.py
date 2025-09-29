@@ -10,7 +10,7 @@ import logging
 import glob
 import shutil
 from audio_processor import get_audio_duration, split_audio
-from video_processor import concat_videos
+# from video_processor import concat_videos
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -70,11 +70,11 @@ def generate_sadtalker_video(audio_path, video_path, prompt, codec, quality,
                     logger.error(f"No video found for chunk {idx}")
                     return False
 
-            # Concatenate chunks
-            if len(video_parts) > 1:
-                concat_videos(video_parts, video_path)
-            else:
-                shutil.copy(video_parts[0], video_path)
+            # # Concatenate chunks
+            # if len(video_parts) > 1:
+            #     concat_videos(video_parts, video_path)
+            # else:
+            #     shutil.copy(video_parts[0], video_path)
 
             # Cleanup chunks
             for idx in range(len(chunks)):
