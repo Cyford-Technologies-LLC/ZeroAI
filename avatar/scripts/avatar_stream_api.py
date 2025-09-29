@@ -115,7 +115,9 @@ class StreamingAvatarGenerator:
                         mode = "simple"
                         logger.info("🖼️ Auto-selected Simple Face mode")
                 elif mode == "sadtalker":
+                    logger.info("=== ATTEMPTING SADTALKER MODE ===")
                     source_image_input = options["image"]
+                    source_image_input = '/app/faces/2.jpg'
                     video_path = temp_video_path
                     sadtalker_options = {
                         "timeout": options.get("timeout", 1200),
@@ -123,7 +125,7 @@ class StreamingAvatarGenerator:
                         "split_chunks": options.get("split_chunks", False),
                         "chunk_length": options.get("chunk_length", 10)
                     }
-                    logger.info("=== ATTEMPTING SADTALKER MODE ===")
+
                     success = generate_sadtalker_video(
                         audio_path,
                         video_path,
