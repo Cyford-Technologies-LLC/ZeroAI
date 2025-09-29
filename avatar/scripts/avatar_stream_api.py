@@ -17,6 +17,9 @@ from flask import request, jsonify
 from flask_socketio import SocketIO, emit
 import wave
 
+
+
+
 # Core functionality imports (your separated modules)
 from audio_processor import call_tts_service_with_options, normalize_audio, TTSProcessor, _generate_edge_tts_chunk , _generate_espeak_chunk
 from video_processor import convert_video_with_codec, get_mimetype_for_codec, concat_videos
@@ -33,6 +36,42 @@ logger = logging.getLogger(__name__)
 
 tts_processor = TTSProcessor()
 
+# Import options handling
+try:
+    from avatar_options import (
+        sanitize_options,
+        validate_streaming_request,
+        get_streaming_preset,
+        STREAMING_PRESETS,
+        VALIDATION_RULES,
+        get_endpoint_info
+    )
+except ImportError as e:
+    # Fallback for missing functions
+    from avatar_options import sanitize_options
+
+
+    def validate_streaming_request(data):
+        return True, ""
+
+
+    def get_streaming_preset(name):
+        return {}
+
+
+    STREAMING_PRESETS = {}
+    VALIDATION_RULES = {}
+
+
+    def get_endpoint_info(endpoint):
+        return {"endpoint": endpoint, "options": {}}
+
+
+    print(f"Warning: Some streaming functions not available: {e}")
+
+
+
+
 
 class StreamingAvatarGenerator(TTSProcessor):
     """
@@ -47,12 +86,14 @@ class StreamingAvatarGenerator(TTSProcessor):
     - SadTalker integration with fallback to simple face animation
     """
 
-    def __init__(self, tts_api_url: str, ref_image_path: str = None, device: str = 'cuda'):
+    def __init__(self, tts_api_url: str, ref_image_path: str = None, device: str = 'cuda' , data: Dict = None):
         """Initialize streaming avatar generator"""
         self.tts_api_url = tts_api_url
         self.ref_image_path = ref_image_path or '/app/faces/2.jpg'
         self.device = device
         self.is_streaming = False
+
+
 
         # Initialize SadTalker generator
         try:
@@ -107,7 +148,7 @@ class StreamingAvatarGenerator(TTSProcessor):
 
         logger.info("StreamingAvatarGenerator cleanup completed")
 
-    def generate_chunked_stream(self, prompt: str, source_image: np.ndarray,
+    def generate_chunked_stream(self, options: Dict , prompt: str, source_image: np.ndarray,
                                 chunk_duration: float = 3.0, tts_engine: str = 'espeak',
                                 tts_options: Dict = None, codec: str = 'h264_fast',
                                 quality: str = 'medium', frame_rate: int = 30,
@@ -192,11 +233,14 @@ class StreamingAvatarGenerator(TTSProcessor):
                         cv2.imwrite(temp_source, cv2.cvtColor(source_image, cv2.COLOR_RGB2BGR))
 
                         # Generate video
-                        result = self.generator.test(
-                            source_image=temp_source,
-                            driven_audio=audio_path,
-                            result_dir='/app/static/sadtalker_output'
-                        )
+                        # result = self.generator.test(
+                        #     source_image=temp_source,
+                        #     driven_audio=audio_path,
+                        #     result_dir='/app/static/sadtalker_output'
+                        # )
+
+
+
 
                         if result and os.path.exists(result):
                             shutil.move(result, temp_video_path)
@@ -298,7 +342,7 @@ class StreamingAvatarGenerator(TTSProcessor):
 
 
 
-    def _generate_audio_realtime(self, prompt: str, tts_engine: str, tts_options: Dict):
+    def _generate_audio_realtime(self,prompt: str, tts_engine: str, tts_options: Dict):
         """Generate audio in real-time and put in queue"""
         try:
             sentences = self._split_into_sentences(prompt)
@@ -632,3 +676,175 @@ def handle_websocket_stream():
         return jsonify({"error": "WebSocket not initialized"}), 500
 
     return jsonify({"message": "Use WebSocket connection on /stream/ws endpoint"})
+
+
+def generate_realtime_stream(self, options: Dict, prompt: str, source_image: np.ndarray,
+                             tts_engine: str = 'espeak', tts_options: Dict = None,
+                             codec: str = 'h264_fast', quality: str = 'medium',
+                             frame_rate: int = 30, buffer_size: int = 5, mode: str = 'auto',
+                             timeout: int = 300) -> Generator[bytes, None, None]:
+    """
+    Generate real-time avatar stream with buffering
+    """
+    logger.info(f"Starting realtime stream - Mode: {mode}, FPS: {frame_rate}, Buffer: {buffer_size}")
+
+    try:
+        self.is_streaming = True
+
+        # For realtime, we process the entire text at once but stream frames
+        logger.info(f"Processing realtime prompt: {prompt[:50]}...")
+
+        # Generate audio for entire prompt
+        audio_duration = 0
+        audio_path = None
+
+        try:
+            if tts_engine == 'edge':
+                audio_path = _generate_edge_tts_chunk(prompt, 0, tts_options or {})
+            else:
+                audio_path = _generate_espeak_chunk(prompt, 0, tts_options or {})
+
+            if audio_path and os.path.exists(audio_path):
+                from pydub import AudioSegment
+                audio = AudioSegment.from_file(audio_path)
+                audio_duration = len(audio) / 1000.0
+                logger.info(f"Total audio duration: {audio_duration:.2f}s")
+
+        except Exception as e:
+            logger.error(f"Audio generation failed: {e}")
+            return
+
+        # Generate complete video
+        video_filename = f"realtime_{int(time.time())}.mp4"
+        temp_video_path = f"/tmp/{video_filename}"
+
+        success = False
+
+        if audio_path and os.path.exists(audio_path):
+            try:
+                # Save source image temporarily
+                temp_source = f'/tmp/source_realtime.png'
+                cv2.imwrite(temp_source, cv2.cvtColor(source_image, cv2.COLOR_RGB2BGR))
+
+                # Use SadTalker subprocess (same as working /generate)
+                import subprocess
+                cmd = [
+                    'python', '/app/SadTalker/inference.py',
+                    '--driven_audio', audio_path,
+                    '--source_image', temp_source,
+                    '--result_dir', f'/app/static/sadtalker_output/realtime_{int(time.time())}',
+                    '--still',
+                    '--preprocess', options.get('preprocess', 'crop')
+                ]
+
+                if options.get('use_enhancer'):
+                    cmd.extend(['--enhancer', 'gfpgan'])
+
+                logger.info(f"Generating realtime video...")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+
+                if result.returncode == 0:
+                    # Find generated video
+                    import glob
+                    pattern = f'/app/static/sadtalker_output/realtime_*/**/*.mp4'
+                    videos = glob.glob(pattern, recursive=True)
+
+                    if videos:
+                        latest_video = max(videos, key=os.path.getmtime)
+                        shutil.copy(latest_video, temp_video_path)
+                        success = True
+                        logger.info(f"✅ Realtime video generated")
+
+                # Cleanup
+                if os.path.exists(temp_source):
+                    os.unlink(temp_source)
+                if audio_path and os.path.exists(audio_path):
+                    os.unlink(audio_path)
+
+            except Exception as e:
+                logger.error(f"Realtime video generation error: {e}")
+
+        # Stream the complete video in chunks
+        if success and os.path.exists(temp_video_path):
+            # Send initial info
+            init_info = {
+                'status': 'streaming',
+                'mode': 'realtime',
+                'total_duration': audio_duration,
+                'buffer_size': buffer_size
+            }
+
+            init_json = json.dumps(init_info)
+            chunk_data = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(init_json)}\r\n\r\n{init_json}\r\n"
+            yield chunk_data.encode()
+            yield b''  # Force flush
+
+            # Read and stream video data in chunks
+            with open(temp_video_path, 'rb') as video_file:
+                chunk_size = 64 * 1024  # 64KB chunks
+                chunk_id = 0
+
+                while True:
+                    video_chunk = video_file.read(chunk_size)
+                    if not video_chunk:
+                        break
+
+                    # Encode video chunk as base64
+                    import base64
+                    video_base64 = base64.b64encode(video_chunk).decode('utf-8')
+
+                    chunk_info = {
+                        "chunk_id": chunk_id,
+                        "data": video_base64,
+                        "size": len(video_chunk),
+                        "mode": "realtime",
+                        "final": False
+                    }
+
+                    chunk_json = json.dumps(chunk_info)
+                    chunk_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(chunk_json)}\r\n\r\n{chunk_json}\r\n"
+                    yield chunk_response.encode()
+                    yield b''  # Force flush
+
+                    chunk_id += 1
+
+                    # Optional: Add small delay for realtime feel
+                    import time
+                    time.sleep(0.1)
+
+            # Send completion frame
+            complete_info = {
+                'status': 'complete',
+                'total_chunks': chunk_id,
+                'mode': 'realtime'
+            }
+            complete_json = json.dumps(complete_info)
+            complete_frame = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(complete_json)}\r\n\r\n{complete_json}\r\n"
+            yield complete_frame.encode()
+            yield b''  # Final flush
+
+            # Cleanup
+            if os.path.exists(temp_video_path):
+                os.unlink(temp_video_path)
+        else:
+            # Send error
+            error_info = {"error": "Realtime video generation failed", "status": "failed"}
+            error_json = json.dumps(error_info)
+            error_frame = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(error_json)}\r\n\r\n{error_json}\r\n"
+            yield error_frame.encode()
+
+        # Final boundary
+        yield b"--frame--\r\n"
+
+        logger.info("✅ Realtime stream completed")
+
+    except Exception as e:
+        logger.error(f"Realtime stream generation failed: {e}")
+        error_info = {"error": str(e), "status": "failed"}
+        error_json = json.dumps(error_info)
+        error_frame = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(error_json)}\r\n\r\n{error_json}\r\n"
+        yield error_frame.encode()
+        yield b"--frame--\r\n"
+
+    finally:
+        self.is_streaming = False

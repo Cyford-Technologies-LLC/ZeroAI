@@ -180,6 +180,7 @@ def stream_avatar():
             tts_api_url=TTS_API_URL,
             ref_image_path=ref_image_path,
             device="cuda"
+
         )
 
         # Validate and preprocess image
@@ -198,6 +199,7 @@ def stream_avatar():
         # Generate stream based on mode - ADD delivery_mode parameter
         if streaming_mode == "chunked":
             stream_generator = streaming_generator.generate_chunked_stream(
+                options=options,
                 prompt=prompt,
                 source_image=img,
                 chunk_duration=chunk_duration,
@@ -212,6 +214,7 @@ def stream_avatar():
             )
         elif streaming_mode == "realtime":
             stream_generator = streaming_generator.generate_realtime_stream(
+                options=options,
                 prompt=prompt,
                 source_image=img,
                 tts_engine=tts_engine,
