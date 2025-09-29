@@ -1,4 +1,33 @@
 // Tab Management
+
+// TTS Engine Management
+function updateTTSOptions() {
+    const engine = document.getElementById('ttsEngine').value;
+    const voiceSelect = document.getElementById('ttsVoice');
+    const speedRange = document.getElementById('ttsSpeed');
+    const pitchRange = document.getElementById('ttsPitch');
+
+    if (TTS_ENGINES[engine] && voiceSelect && speedRange && pitchRange) {
+        const config = TTS_ENGINES[engine];
+
+        voiceSelect.innerHTML = config.voices
+            .map(v => `<option value="${v.value}">${v.label}</option>`)
+            .join('');
+
+        speedRange.min = config.speedRange[0];
+        speedRange.max = config.speedRange[1];
+        speedRange.value = Math.floor((config.speedRange[0] + config.speedRange[1]) / 2);
+        updateRangeDisplay('speed', speedRange.value);
+
+        pitchRange.min = config.pitchRange[0];
+        pitchRange.max = config.pitchRange[1];
+        pitchRange.value = 0;
+        updateRangeDisplay('pitch', pitchRange.value);
+
+        debugLog('TTS engine updated', { engine, voiceCount: config.voices.length });
+    }
+}
+
 function switchTab(tabName) {
     // Remove active class from all tabs and content
     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -31,33 +60,7 @@ function updateRangeDisplay(type, value) {
     }
 }
 
-// TTS Engine Management
-function updateTTSOptions() {
-    const engine = document.getElementById('ttsEngine').value;
-    const voiceSelect = document.getElementById('ttsVoice');
-    const speedRange = document.getElementById('ttsSpeed');
-    const pitchRange = document.getElementById('ttsPitch');
 
-    if (TTS_ENGINES[engine] && voiceSelect && speedRange && pitchRange) {
-        const config = TTS_ENGINES[engine];
-
-        voiceSelect.innerHTML = config.voices
-            .map(v => `<option value="${v.value}">${v.label}</option>`)
-            .join('');
-
-        speedRange.min = config.speedRange[0];
-        speedRange.max = config.speedRange[1];
-        speedRange.value = Math.floor((config.speedRange[0] + config.speedRange[1]) / 2);
-        updateRangeDisplay('speed', speedRange.value);
-
-        pitchRange.min = config.pitchRange[0];
-        pitchRange.max = config.pitchRange[1];
-        pitchRange.value = 0;
-        updateRangeDisplay('pitch', pitchRange.value);
-
-        debugLog('TTS engine updated', { engine, voiceCount: config.voices.length });
-    }
-}
 
 // Image Upload Management
 function handleImageUpload(event) {
