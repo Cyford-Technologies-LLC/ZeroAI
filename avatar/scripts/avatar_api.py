@@ -143,6 +143,7 @@ def handle_exception(e):
 @app.route('/stream', methods=['POST'])
 def stream_avatar():
     """Stream talking avatar video in real-time - now with SadTalker support"""
+    from avatar_stream_api import StreamingAvatarGenerator
     # if not STREAMING_AVAILABLE:
     #     return jsonify({"error": "Streaming not available"}), 503
 
