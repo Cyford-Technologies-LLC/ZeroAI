@@ -1031,19 +1031,45 @@ public function setPeer($peerIp = null)
         $chunks = [];
         $parts = explode('--frame', $result);
 
+        $this->logger->info('Parsing multipart stream', [
+            'total_parts' => count($parts)
+        ]);
+
         foreach ($parts as $index => $part) {
             if (empty(trim($part))) continue;
 
-            // Extract JSON data from each part
-            if (preg_match('/Content-Type: application\/json.*?\r?\n\r?\n(.*?)\r?\n/s', $part, $matches)) {
-                $chunkData = json_decode($matches[1], true);
+            // Look for Content-Length header and JSON data
+            if (preg_match('/Content-Length:\s*(\d+)\r?\n\r?\n(.+)/s', $part, $matches)) {
+                $contentLength = intval($matches[1]);
+                $jsonData = substr($matches[2], 0, $contentLength); // Extract exact JSON length
+
+                $this->logger->info("Extracting JSON from part $index", [
+                    'content_length' => $contentLength,
+                    'extracted_length' => strlen($jsonData),
+                    'json_preview' => substr($jsonData, 0, 100)
+                ]);
+
+                $chunkData = json_decode($jsonData, true);
+
                 if ($chunkData && isset($chunkData['video_data'])) {
                     $chunks[] = [
-                        'id' => $index,
+                        'id' => $chunkData['chunk_id'] ?? $index,
                         'data' => $chunkData['video_data'],
                         'duration' => $chunkData['duration'] ?? 0,
                         'ready' => $chunkData['ready'] ?? false
                     ];
+
+                    $this->logger->info("Successfully parsed chunk", [
+                        'chunk_id' => $chunkData['chunk_id'] ?? $index,
+                        'video_data_length' => strlen($chunkData['video_data']),
+                        'duration' => $chunkData['duration'] ?? 0
+                    ]);
+                } else {
+                    $this->logger->warning("Failed to parse chunk data", [
+                        'json_error' => json_last_error_msg(),
+                        'has_video_data' => isset($chunkData['video_data']),
+                        'chunk_keys' => $chunkData ? array_keys($chunkData) : []
+                    ]);
                 }
             }
         }
