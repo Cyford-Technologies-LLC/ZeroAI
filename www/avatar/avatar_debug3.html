@@ -1780,12 +1780,192 @@
         }
 
 // Enhanced streaming response handler function
-async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
+// async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
+//             const reader = response.body.getReader();
+//             let buffer = new Uint8Array();
+//             let chunks = [];
+//             let videoFrames = [];
+//             let videoChunks = []; // This needs to be in the right scope
+//
+//             try {
+//                 while (true) {
+//                     const { done, value } = await reader.read();
+//                     if (done) break;
+//
+//                     // Append new data to buffer
+//                     const newBuffer = new Uint8Array(buffer.length + value.length);
+//                     newBuffer.set(buffer);
+//                     newBuffer.set(value, buffer.length);
+//                     buffer = newBuffer;
+//
+//                     // Convert to string for boundary detection
+//                     const bufferString = new TextDecoder('latin1').decode(buffer);
+//
+//                     // Look for multipart boundaries
+//                     const boundaryPattern = /--frame\r?\n/g;
+//                     let lastBoundaryEnd = 0;
+//                     let match;
+//
+//                     while ((match = boundaryPattern.exec(bufferString)) !== null) {
+//                         const frameStart = lastBoundaryEnd;
+//                         const frameEnd = match.index;
+//
+//                         if (frameStart < frameEnd) {
+//                             const frameData = buffer.slice(frameStart, frameEnd);
+//
+//                             // Process frame and pass ALL arrays by reference
+//                             const frameString = new TextDecoder('utf-8').decode(frameData);
+//                             const headerEnd = frameString.indexOf('\r\n\r\n');
+//
+//                             if (headerEnd !== -1) {
+//                                 const headers = frameString.substring(0, headerEnd);
+//                                 const contentStart = headerEnd + 4;
+//                                 const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
+//                                 const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'unknown';
+//
+//                                 debugLog('Frame processed', {
+//                                     headersLength: headers.length,
+//                                     contentLength: frameData.length - contentStart,
+//                                     contentType: contentType
+//                                 });
+//
+//                                 if (contentType === 'application/json' || contentType.includes('json')) {
+//                                     const jsonData = frameString.substring(contentStart).trim();
+//                                     const jsonEndIndex = jsonData.lastIndexOf('}');
+//                                     const cleanJsonData = jsonEndIndex > 0 ? jsonData.substring(0, jsonEndIndex + 1) : jsonData;
+//
+//                                     try {
+//                                         const data = JSON.parse(cleanJsonData);
+//                                         debugLog('Chunk metadata received', data);
+//
+//                                         // Handle video chunk URLs - THIS IS THE KEY FIX
+//                                         // Handle video chunk URLs or base64 data
+//                                         if (data.ready && (data.video_url || data.video_data)) {
+//                                             if (data.video_data) {
+//                                                 // Handle base64 video data
+//                                                 videoChunks.push({
+//                                                     id: data.chunk_id || videoChunks.length,
+//                                                     data: data.video_data, // This is the base64 data URL
+//                                                     duration: data.duration || 2,
+//                                                     sentence: data.sentence || '',
+//                                                     mode: data.mode,
+//                                                     isBase64: true
+//                                                 });
+//
+//                                                 debugLog('Video chunk base64 added', {
+//                                                     chunkId: data.chunk_id,
+//                                                     dataLength: data.video_data.length,
+//                                                     duration: data.duration,
+//                                                     total: videoChunks.length
+//                                                 });
+//                                             } else if (data.video_url) {
+//                                                 // Handle URL-based video
+//                                                 const chunkUrl = data.video_url;
+//                                                 const absoluteUrl = chunkUrl.startsWith('/')
+//                                                     ? window.location.origin + chunkUrl
+//                                                     : chunkUrl;
+//
+//                                                 videoChunks.push({
+//                                                     id: data.chunk_id || videoChunks.length,
+//                                                     url: absoluteUrl,
+//                                                     duration: data.duration || 2,
+//                                                     sentence: data.sentence || '',
+//                                                     mode: data.mode,
+//                                                     isBase64: false
+//                                                 });
+//
+//                                                 debugLog('Video chunk URL added', {
+//                                                     chunkId: data.chunk_id,
+//                                                     url: absoluteUrl,
+//                                                     duration: data.duration,
+//                                                     total: videoChunks.length
+//                                                 });
+//                                             }
+//                                         }
+//
+//                                         chunks.push(data);
+//                                     } catch (parseError) {
+//                                         debugLog('JSON parse error', {
+//                                             error: parseError.message,
+//                                             data: cleanJsonData
+//                                         });
+//                                     }
+//                                 } else if (contentType === 'image/jpeg' || contentType.includes('jpeg')) {
+//                                     const frameDataSlice = frameData.slice(contentStart);
+//                                     videoFrames.push(frameDataSlice);
+//                                     debugLog('JPEG frame received', {
+//                                         dataSize: frameDataSlice.length
+//                                     });
+//                                 }
+//                             }
+//                         }
+//
+//                         lastBoundaryEnd = boundaryPattern.lastIndex;
+//                     }
+//
+//                     // Keep remaining data in buffer
+//                     if (lastBoundaryEnd > 0) {
+//                         buffer = buffer.slice(lastBoundaryEnd);
+//                     }
+//                 }
+//
+//                 // Process any remaining data
+//                 if (buffer.length > 0) {
+//                     // Process final buffer if needed
+//                 }
+//
+//                 // Handle different response types
+//                 debugLog('Stream processing complete', {
+//                     videoChunks: videoChunks.length,
+//                     videoFrames: videoFrames.length,
+//                     chunks: chunks.length
+//                 });
+//
+//                 if (videoChunks.length > 0) {
+//                     // Play video chunks sequentially
+//                     debugLog('Playing video chunks sequentially', { chunkCount: videoChunks.length });
+//                     await playVideoChunksSequentially(video, videoChunks);
+//                 } else if (videoFrames.length > 0) {
+//                     // Handle JPEG frames
+//                     debugLog('Processing JPEG frames', { frameCount: videoFrames.length });
+//                     createJpegAnimation(video, videoFrames);
+//                 } else {
+//                     debugLog('No video content to display');
+//                     showNotification('No video content received in stream', 'warning');
+//                 }
+//
+//                 // Update video info
+//                 if (videoInfo) {
+//                     videoInfo.innerHTML = `
+//                 <strong>Streaming Complete!</strong><br>
+//                 Mode: Streaming (${payload.stream_mode})<br>
+//                 Engine: ${payload.tts_engine}<br>
+//                 Voice: ${payload.tts_voice}<br>
+//                 Chunks: ${chunks.length}<br>
+//                 Video Frames: ${videoFrames.length}<br>
+//                 Video Chunks: ${videoChunks.length}<br>
+//                 Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
+//                 Stream Time: ${(duration / 1000).toFixed(1)}s<br>
+//                 Parameters: ${Object.keys(payload).length} options used
+//             `;
+//                 }
+//
+//             } catch (streamError) {
+//                 debugLog('Streaming error', { error: streamError.message });
+//                 throw streamError;
+//             }
+//         }
+
+        // Enhanced streaming response handler function
+        async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
             const reader = response.body.getReader();
             let buffer = new Uint8Array();
             let chunks = [];
             let videoFrames = [];
-            let videoChunks = []; // This needs to be in the right scope
+            let videoChunks = []; // For existing functionality
+
+            // Initialize the new stream processor
+            avatarStreamProcessor = new AvatarStreamProcessor();
 
             try {
                 while (true) {
@@ -1838,25 +2018,32 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                                         const data = JSON.parse(cleanJsonData);
                                         debugLog('Chunk metadata received', data);
 
-                                        // Handle video chunk URLs - THIS IS THE KEY FIX
-                                        // Handle video chunk URLs or base64 data
+                                        // Handle video chunk data for BOTH systems
                                         if (data.ready && (data.video_url || data.video_data)) {
+                                            const chunkData = {
+                                                id: data.chunk_id || videoChunks.length,
+                                                duration: data.duration || 2,
+                                                sentence: data.sentence || '',
+                                                mode: data.mode
+                                            };
+
                                             if (data.video_data) {
                                                 // Handle base64 video data
-                                                videoChunks.push({
-                                                    id: data.chunk_id || videoChunks.length,
-                                                    data: data.video_data, // This is the base64 data URL
-                                                    duration: data.duration || 2,
-                                                    sentence: data.sentence || '',
-                                                    mode: data.mode,
-                                                    isBase64: true
+                                                chunkData.data = data.video_data;
+                                                chunkData.isBase64 = true;
+
+                                                // Process with NEW stream processor for incremental playback
+                                                avatarStreamProcessor.processChunk({
+                                                    id: chunkData.id,
+                                                    data: data.video_data,
+                                                    duration: data.duration
                                                 });
 
                                                 debugLog('Video chunk base64 added', {
                                                     chunkId: data.chunk_id,
                                                     dataLength: data.video_data.length,
                                                     duration: data.duration,
-                                                    total: videoChunks.length
+                                                    total: videoChunks.length + 1
                                                 });
                                             } else if (data.video_url) {
                                                 // Handle URL-based video
@@ -1865,26 +2052,24 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                                                     ? window.location.origin + chunkUrl
                                                     : chunkUrl;
 
-                                                videoChunks.push({
-                                                    id: data.chunk_id || videoChunks.length,
-                                                    url: absoluteUrl,
-                                                    duration: data.duration || 2,
-                                                    sentence: data.sentence || '',
-                                                    mode: data.mode,
-                                                    isBase64: false
-                                                });
+                                                chunkData.url = absoluteUrl;
+                                                chunkData.isBase64 = false;
 
                                                 debugLog('Video chunk URL added', {
                                                     chunkId: data.chunk_id,
                                                     url: absoluteUrl,
                                                     duration: data.duration,
-                                                    total: videoChunks.length
+                                                    total: videoChunks.length + 1
                                                 });
                                             }
+
+                                            // Add to existing system
+                                            videoChunks.push(chunkData);
                                         }
 
                                         chunks.push(data);
-                                    } catch (parseError) {
+                                    }
+                                    catch (parseError) {
                                         debugLog('JSON parse error', {
                                             error: parseError.message,
                                             data: cleanJsonData
@@ -1909,10 +2094,8 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                     }
                 }
 
-                // Process any remaining data
-                if (buffer.length > 0) {
-                    // Process final buffer if needed
-                }
+                // Complete the stream processing
+                avatarStreamProcessor.onStreamComplete();
 
                 // Handle different response types
                 debugLog('Stream processing complete', {
@@ -1922,9 +2105,17 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                 });
 
                 if (videoChunks.length > 0) {
-                    // Play video chunks sequentially
+                    // For fallback compatibility, still try sequential playback if incremental fails
                     debugLog('Playing video chunks sequentially', { chunkCount: videoChunks.length });
-                    await playVideoChunksSequentially(video, videoChunks);
+
+                    // Give incremental playback a moment to work, then fallback if needed
+                    setTimeout(async () => {
+                        if (!video.src || video.paused) {
+                            debugLog('Falling back to sequential playback');
+                            await playVideoChunksSequentially(video, videoChunks);
+                        }
+                    }, 2000);
+
                 } else if (videoFrames.length > 0) {
                     // Handle JPEG frames
                     debugLog('Processing JPEG frames', { frameCount: videoFrames.length });
@@ -1936,25 +2127,27 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 
                 // Update video info
                 if (videoInfo) {
-                    videoInfo.innerHTML = `
-                <strong>Streaming Complete!</strong><br>
-                Mode: Streaming (${payload.stream_mode})<br>
-                Engine: ${payload.tts_engine}<br>
-                Voice: ${payload.tts_voice}<br>
-                Chunks: ${chunks.length}<br>
-                Video Frames: ${videoFrames.length}<br>
-                Video Chunks: ${videoChunks.length}<br>
-                Total Duration: ${chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2)}s<br>
-                Stream Time: ${(duration / 1000).toFixed(1)}s<br>
-                Parameters: ${Object.keys(payload).length} options used
-            `;
+                    videoInfo.innerHTML =
+                        '<strong>Streaming Complete!</strong><br>' +
+                        'Mode: Streaming (' + payload.stream_mode + ')<br>' +
+                        'Engine: ' + payload.tts_engine + '<br>' +
+                        'Voice: ' + payload.tts_voice + '<br>' +
+                        'Chunks: ' + chunks.length + '<br>' +
+                        'Video Frames: ' + videoFrames.length + '<br>' +
+                        'Video Chunks: ' + videoChunks.length + '<br>' +
+                        'Total Duration: ' + chunks.reduce((sum, c) => sum + (c.duration || 0), 0).toFixed(2) + 's<br>' +
+                        'Stream Time: ' + (duration / 1000).toFixed(1) + 's<br>' +
+                        'Parameters: ' + Object.keys(payload).length + ' options used';
                 }
 
-            } catch (streamError) {
-                debugLog('Streaming error', { error: streamError.message });
-                throw streamError;
-            }
-        }
+                        } catch (streamError) {
+                        debugLog('Streaming error', { error: streamError.message });
+                        throw streamError;
+                    }
+                        }
+
+
+
 // Updated processFrame function to handle video chunk URLs
 
 
