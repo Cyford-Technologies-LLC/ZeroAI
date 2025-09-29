@@ -103,6 +103,92 @@ def split_audio(audio_path, chunk_length_s=10):
         logger.error(f"Audio splitting failed: {e}")
         return [audio_path]
 
+def generate_audio_realtime(self,prompt: str, tts_engine: str, tts_options: Dict):
+        """Generate audio in real-time and put in queue"""
+        try:
+            sentences = self._split_into_sentences(prompt)
+
+            for sentence in sentences:
+                if not self.is_streaming:
+                    break
+
+                audio_bytes = tts_processor._call_tts_service(sentence, tts_engine, tts_options)
+                if audio_bytes:
+                    duration, audio_path = tts_processor._process_audio_chunk(audio_bytes)
+                    if audio_path:
+                        self.audio_queue.put((duration, audio_path))
+
+        except Exception as e:
+            logger.error(f"Audio generation error: {e}")
+        finally:
+            self.audio_queue.put(None)  # Sentinel
+
+def generate_frames_realtime(self, source_image: np.ndarray, frame_rate: int, buffer_size: int,
+                                  mode: str = 'auto', sadtalker_options: Dict = None):
+        """Generate frames in real-time and put in queue with SadTalker support"""
+        try:
+            while self.is_streaming:
+                try:
+                    # Get audio chunk
+                    audio_item = self.audio_queue.get(timeout=1.0)
+                    if audio_item is None:  # Sentinel
+                        break
+
+                    duration, audio_path = audio_item
+
+                    # Generate frames for this audio chunk based on mode
+                    if mode == 'sadtalker':
+                        try:
+                            frame_generator = self._generate_sadtalker_frames_for_streaming(
+                                source_image, audio_path, duration, frame_rate, sadtalker_options
+                            )
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    elif mode == 'auto':
+                        # Try SadTalker first, fallback to simple
+                        try:
+                            if os.path.exists('/app/SadTalker'):
+                                frame_generator = self._generate_sadtalker_frames_for_streaming(
+                                    source_image, audio_path, duration, frame_rate, sadtalker_options
+                                )
+                            else:
+                                frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                        except Exception as e:
+                            logger.warning(f"SadTalker failed: {e}, falling back to simple")
+                            frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+                    else:  # mode == 'simple' or anything else
+                        frame_generator = self._generate_face_frames(source_image, duration, frame_rate)
+
+                    # Stream frames immediately as they're generated
+                    frame_count = 0
+                    for frame_bytes in frame_generator:
+                        if not self.is_streaming:
+                            break
+
+                        # Add to queue with backpressure control
+                        try:
+                            self.frame_queue.put(frame_bytes, timeout=0.1)
+                            frame_count += 1
+                        except queue.Full:
+                            # Drop frame if queue is full (prevents memory issues)
+                            logger.debug("Frame queue full, dropping frame")
+
+                    logger.info(f"Streamed {frame_count} frames for {duration:.2f}s audio chunk")
+
+                    # Cleanup audio file
+                    if audio_path and os.path.exists(audio_path):
+                        os.unlink(audio_path)
+
+                except queue.Empty:
+                    # No audio available, wait a bit
+                    time.sleep(0.1)
+                    continue
+
+        except Exception as e:
+            logger.error(f"Frame generation error: {e}")
+        finally:
+            self.frame_queue.put(None)  # Sentinel
 
 class TTSProcessor:
     """TTS Processor class for the class methods"""
