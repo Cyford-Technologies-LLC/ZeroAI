@@ -1,10 +1,11 @@
+// Fixed streaming.js - This version doesn't accumulate chunks
 async function handleStreamingResponse(response, video, videoInfo, payload, duration) {
     const reader = response.body.getReader();
     let buffer = new Uint8Array();
     let chunks = [];
-    let videoChunks = [];
+    // REMOVED: let videoChunks = []; // DON'T COLLECT CHUNKS!
 
-    // Create the new stream processor
+    // Create the stream processor
     const avatarStreamProcessor = new AvatarStreamProcessor();
 
     debugLog('Starting enhanced streaming response handler');
@@ -33,10 +34,10 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                 if (frameStart < frameEnd) {
                     const frameData = buffer.slice(frameStart, frameEnd);
 
-                    // Process frame
+                    // Process frame IMMEDIATELY
                     const result = await processStreamFrame(frameData, avatarStreamProcessor);
                     if (result) {
-                        chunks.push(result);
+                        chunks.push(result); // Keep metadata only
                     }
                 }
                 lastBoundaryEnd = boundaryPattern.lastIndex;
@@ -53,7 +54,7 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
 
         debugLog('Stream processing complete', {
             chunks: chunks.length,
-            videoChunks: avatarStreamProcessor.chunks.length
+            processedChunks: avatarStreamProcessor.chunks.length
         });
 
         // Update video info
@@ -63,8 +64,8 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
                 Mode: Streaming (${payload.stream_mode})<br>
                 Engine: ${payload.tts_engine}<br>
                 Voice: ${payload.tts_voice}<br>
-                Chunks: ${chunks.length}<br>
-                Video Chunks: ${avatarStreamProcessor.chunks.length}<br>
+                Metadata Chunks: ${chunks.length}<br>
+                Video Chunks Processed: ${avatarStreamProcessor.chunks.length}<br>
                 Stream Time: ${(duration / 1000).toFixed(1)}s<br>
                 Parameters: ${Object.keys(payload).length} options used
             `;
@@ -76,7 +77,7 @@ async function handleStreamingResponse(response, video, videoInfo, payload, dura
     }
 }
 
-// NEW helper function to process individual frames
+// Process individual frames - sends to processor IMMEDIATELY
 async function processStreamFrame(frameData, streamProcessor) {
     const frameString = new TextDecoder('utf-8').decode(frameData);
 
@@ -105,15 +106,16 @@ async function processStreamFrame(frameData, streamProcessor) {
         try {
             const data = JSON.parse(cleanJson);
 
-            // Process video chunk if available
+            // Process video chunk IMMEDIATELY if available
             if (data.ready && data.video_data) {
-                debugLog('Processing video chunk', {
+                debugLog('Processing video chunk for immediate playback', {
                     chunkId: data.chunk_id,
                     dataLength: data.video_data.length,
-                    duration: data.duration
+                    duration: data.duration,
+                    timestamp: new Date().toISOString()
                 });
 
-                // Process chunk immediately for streaming
+                // Send to processor IMMEDIATELY - don't accumulate!
                 await streamProcessor.processChunk({
                     id: data.chunk_id,
                     data: data.video_data,
@@ -121,7 +123,7 @@ async function processStreamFrame(frameData, streamProcessor) {
                 });
             }
 
-            return data;
+            return data; // Return metadata only
 
         } catch (error) {
             debugLog('JSON parse error', { error: error.message });
@@ -131,36 +133,40 @@ async function processStreamFrame(frameData, streamProcessor) {
     return null;
 }
 
+// DEPRECATED - Remove or comment out this function
+// It waits for all chunks which defeats streaming
+/*
+async function playVideoChunksSequentially(video, videoChunks) {
+    console.warn('playVideoChunksSequentially is DEPRECATED - chunks should play immediately');
+    // Function removed - chunks play as they arrive
+}
+*/
 
-async function processFrame(frameData, chunks, currentChunk, videoFrames, videoChunks) {
+// Alternative if you need backwards compatibility
+async function processFrame(frameData, chunks, currentChunk, videoFrames) {
+    // This function should NOT accumulate videoChunks
+    // Only process metadata and let AvatarStreamProcessor handle video
+
     const frameString = new TextDecoder('utf-8').decode(frameData);
-
-    // Parse headers
     const headerEnd = frameString.indexOf('\r\n\r\n');
+
     if (headerEnd === -1) {
         debugLog('No header end found in frame');
-        return;
+        return currentChunk;
     }
 
     const headers = frameString.substring(0, headerEnd);
     const contentStart = headerEnd + 4;
-
-    // Extract content type
     const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
     const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'unknown';
 
     debugLog('Frame processed', {
-        headersLength: headers.length,
-        contentLength: frameData.length - contentStart,
         contentType: contentType,
-        headers: headers
+        contentLength: frameData.length - contentStart
     });
 
-    if (contentType === 'application/json' || contentType.includes('json')) {
-        // Parse JSON metadata
+    if (contentType.includes('json')) {
         const jsonData = frameString.substring(contentStart).trim();
-
-        // Clean JSON data (remove any trailing data)
         const jsonEndIndex = jsonData.lastIndexOf('}');
         const cleanJsonData = jsonEndIndex > 0 ? jsonData.substring(0, jsonEndIndex + 1) : jsonData;
 
@@ -168,33 +174,11 @@ async function processFrame(frameData, chunks, currentChunk, videoFrames, videoC
             const data = JSON.parse(cleanJsonData);
             debugLog('Chunk metadata received', data);
 
-            // Handle video chunk URLs from chunked streaming
-            if (data.video_url && data.ready) {
-                // Convert relative URL to absolute URL
-                const chunkUrl = data.video_url;
-                const absoluteUrl = chunkUrl.startsWith('/')
-                    ? window.location.origin + chunkUrl
-                    : chunkUrl;
-
-                videoChunks.push({
-                    id: data.chunk_id || videoChunks.length,
-                    url: absoluteUrl,
-                    duration: data.duration || 2,
-                    sentence: data.sentence || '',
-                    mode: data.mode
-                });
-
-                debugLog('Video chunk URL received', {
-                    chunkId: data.chunk_id,
-                    url: absoluteUrl,
-                    duration: data.duration
-                });
-            }
-
+            // Store metadata only
             chunks.push(data);
             currentChunk = data;
 
-            // Update progress if we have chunk info
+            // Update progress
             if (data.chunk_id !== undefined && data.total_chunks) {
                 updateProgress(
                     70 + (data.chunk_id / data.total_chunks) * 20,
@@ -205,149 +189,30 @@ async function processFrame(frameData, chunks, currentChunk, videoFrames, videoC
         } catch (parseError) {
             debugLog('JSON parse error', {
                 error: parseError.message,
-                data: cleanJsonData,
-                originalData: jsonData
+                data: cleanJsonData
             });
         }
-    } else if (contentType.includes('video/mp4') || contentType.includes('application/octet-stream')) {
-        // Handle video binary data
-        const videoData = frameData.slice(contentStart);
-        debugLog('Video content received', {
-            contentType: contentType,
-            dataSize: videoData.length
-        });
-
-        if (videoData.length > 1000) { // Only substantial data
-            videoFrames.push(videoData);
-        }
-    } else if (contentType.includes('image/jpeg') || contentType.includes('jpeg')) {
-        // Handle JPEG frame data
+    } else if (contentType.includes('video/mp4') || contentType.includes('image/jpeg')) {
+        // For backwards compatibility with JPEG frames
         const frameDataSlice = frameData.slice(contentStart);
-        if (frameDataSlice.length > 1000) { // Only substantial data
+        if (frameDataSlice.length > 1000) {
             videoFrames.push(frameDataSlice);
-
-            debugLog('JPEG frame received', {
-                chunkId: currentChunk ? currentChunk.id : 'unknown',
-                dataSize: frameDataSlice.length
+            debugLog('Frame data stored for fallback', {
+                type: contentType,
+                size: frameDataSlice.length
             });
         }
     }
 
-    return currentChunk; // Return updated currentChunk
+    return currentChunk;
 }
 
-
-// Function to play video chunks sequentially
-async function playVideoChunksSequentially(video, videoChunks) {
-    if (!video || videoChunks.length === 0) return;
-
-    // Sort chunks by ID to ensure correct order
-    videoChunks.sort((a, b) => a.id - b.id);
-
-    // Hide any existing canvas
-    const existingCanvas = video.parentNode.querySelector('.jpeg-animation-canvas');
-    if (existingCanvas) {
-        existingCanvas.style.display = 'none';
-    }
-
-    video.style.display = 'block';
-
-    let currentChunkIndex = 0;
-    let totalDuration = 0;
-
-    // Create a media source for streaming
-    const mediaSource = new MediaSource();
-    video.src = URL.createObjectURL(mediaSource);
-
-    // Track chunk loading state
-    const loadedChunks = new Set();
-
-    mediaSource.addEventListener('sourceopen', async () => {
-        const sourceBuffer = mediaSource.addSourceBuffer('video/mp4');
-
-        const playNextChunk = async () => {
-            if (currentChunkIndex >= videoChunks.length) {
-                mediaSource.endOfStream();
-                debugLog('All video chunks played');
-                showNotification('Video playback complete!', 'success');
-                return;
-            }
-
-            const chunk = videoChunks[currentChunkIndex];
-            debugLog('Processing video chunk', {
-                chunkId: chunk.id,
-                source: chunk.isBase64 ? 'base64' : 'url',
-                duration: chunk.duration
-            });
-
-            try {
-                let chunkData;
-
-                // Handle base64 data
-                if (chunk.isBase64 && chunk.data) {
-                    // Remove data URL prefix
-                    const base64Data = chunk.data.split(',')[1];
-                    chunkData = atob(base64Data);
-                }
-                // Handle URL-based chunks
-                else if (chunk.url) {
-                    const response = await fetch(chunk.url);
-                    chunkData = await response.arrayBuffer();
-                }
-
-                if (chunkData) {
-                    // Convert to Uint8Array if needed
-                    const uint8Data = new Uint8Array(chunkData);
-
-                    // Append chunk to media source
-                    if (!sourceBuffer.updating) {
-                        sourceBuffer.appendBuffer(uint8Data);
-                        loadedChunks.add(chunk.id);
-
-                        // Auto-play if not already playing
-                        if (video.paused) {
-                            video.play().catch(e => {
-                                debugLog('Autoplay error', { error: e.message });
-                            });
-                        }
-                    }
-                }
-
-                totalDuration += chunk.duration || 0;
-                currentChunkIndex++;
-
-            } catch (error) {
-                debugLog('Chunk processing error', {
-                    chunkId: chunk.id,
-                    error: error.message
-                });
-                currentChunkIndex++;
-            }
-        };
-
-        // Initial chunk loading
-        await playNextChunk();
-
-        // Set up event listeners for chunk progression
-        sourceBuffer.addEventListener('updateend', async () => {
-            await playNextChunk();
-        });
-    });
-
-    // Debugging and error handling
-    video.addEventListener('error', (e) => {
-        debugLog('Video playback error', {
-            error: video.error,
-            currentChunk: currentChunkIndex
-        });
-    });
-
-    // Optional: Progress tracking
-    const progressTracker = setInterval(() => {
-        debugLog('Chunk Playback Progress', {
-            loadedChunks: Array.from(loadedChunks),
-            currentChunk: currentChunkIndex,
-            totalChunks: videoChunks.length
-        });
-    }, 5000);
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        handleStreamingResponse,
+        processStreamFrame
+    };
 }
+
+console.log('[streaming.js] Fixed version loaded - chunks play immediately');
