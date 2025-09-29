@@ -526,14 +526,172 @@ class AvatarManager
     /**
      * Enhanced callAvatarService with complete parameter support
      */
+//    private function callAvatarService($prompt, $mode, $options = [])
+//    {
+//        // Detect streaming mode
+//        $streamMode = $options['stream_mode'] ?? 'complete';
+//        $isStreaming = ($streamMode !== 'complete');
+//
+//        if ($isStreaming) {
+//            // Use streaming endpoint
+//            $url = $this->avatarServiceUrl . '/stream?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
+//            $this->logger->info('Using streaming endpoint', [
+//                'stream_mode' => $streamMode,
+//                'url' => $url
+//            ]);
+//        } else {
+//            // Use regular generation endpoint
+//            $codec = $options['codec'] ?? 'h264_fast';
+//            $quality = $options['quality'] ?? 'high';
+//            $url = $this->avatarServiceUrl . '/generate?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
+//            $this->logger->info('Using generation endpoint', [
+//                'mode' => $mode,
+//                'url' => $url
+//            ]);
+//        }
+//
+//        // Build comprehensive payload with ALL parameters
+//        $payload = [
+//            'prompt' => $prompt,
+//            'tts_engine' => $options['tts_engine'] ?? 'espeak'
+//        ];
+//
+//        if ($isStreaming) {
+//            $payload['streaming_mode'] = $streamMode; // Map stream_mode to streaming_mode
+//        }
+//
+//        // Add all the parameter mappings
+//        $allParams = [
+//            'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
+//            'delivery_mode',  // ADD THIS LINE
+//            'sample_rate', 'audio_format', 'image', 'still', 'preprocess', 'resolution',
+//            'face_detection', 'face_confidence', 'auto_resize', 'fps', 'bitrate',
+//            'keyframe_interval', 'hardware_accel', 'stream_mode', 'chunk_duration',
+//            'buffer_size', 'low_latency', 'adaptive_quality', 'timeout', 'enhancer',
+//            'split_chunks', 'chunk_length', 'overlap_duration', 'expression_scale',
+//            'use_3d_warping', 'use_eye_blink', 'use_head_pose', 'max_duration',
+//            'max_concurrent', 'memory_limit', 'enable_websocket', 'verbose_logging',
+//            'save_intermediates', 'profile_performance', 'beta_features',
+//            'ml_acceleration', 'worker_threads'
+//        ];
+//
+//        foreach ($allParams as $param) {
+//            if (isset($options[$param])) {
+//                $payload[$param] = $options[$param];
+//            }
+//        }
+//
+//        $data = json_encode($payload, JSON_UNESCAPED_SLASHES);
+//
+//        $this->logger->debug('Calling avatar service with complete parameters', [
+//            'url' => $url,
+//            'parameter_count' => count($payload),
+//            'mode' => $mode,
+//            'streaming' => $isStreaming,
+//            'stream_mode' => $streamMode,
+//            'data_length' => strlen($data)
+//        ]);
+//
+//        $ch = curl_init($url);
+//        curl_setopt($ch, CURLOPT_POST, 1);
+//        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+//        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+//            'Content-Type: application/json',
+//            'Content-Length: ' . strlen($data)
+//        ]);
+//        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+//        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+//
+//        $result = curl_exec($ch);
+//        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+//        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+//        $error = curl_error($ch);
+//        curl_close($ch);
+//
+//        if ($error) {
+//            throw new \Exception('Curl error: ' . $error);
+//        }
+//
+//        if ($httpCode !== 200) {
+//            $errorData = json_decode($result, true);
+//            $errorMessage = $errorData['error'] ?? 'HTTP error: ' . $httpCode;
+//            throw new \Exception($errorMessage);
+//        }
+//
+//        if (!$result) {
+//            throw new \Exception('Empty response from avatar service');
+//        }
+//
+//        // Handle streaming responses differently based on content type
+//        if ($isStreaming) {
+//            $this->logger->info('Processing streaming response', [
+//                'content_type' => $contentType,
+//                'size' => strlen($result),
+//                'stream_mode' => $streamMode
+//            ]);
+//
+//            // Check if it's JSON response (chunk info)
+//            if (strpos($contentType, 'application/json') !== false) {
+//                $streamData = json_decode($result, true);
+//
+//                if (json_last_error() === JSON_ERROR_NONE) {
+//                    return [
+//                        'type' => 'streaming',
+//                        'mode' => $streamMode,
+//                        'data' => $streamData,
+//                        'chunks' => $streamData['chunks'] ?? [],
+//                        'urls' => $streamData['urls'] ?? [],
+//                        'content_type' => 'application/json',
+//                        'size' => strlen($result)
+//                    ];
+//                }
+//            }
+//
+//            // Check if it's multipart (JPEG frames or chunked video)
+//            if (strpos($contentType, 'multipart') !== false) {
+//                return [
+//                    'type' => 'streaming_multipart',
+//                    'mode' => $streamMode,
+//                    'data' => $result,
+//                    'content_type' => $contentType,
+//                    'size' => strlen($result)
+//                ];
+//            }
+//
+//            // Otherwise return as streaming raw
+//            return [
+//                'type' => 'streaming_raw',
+//                'mode' => $streamMode,
+//                'data' => $result,
+//                'content_type' => $contentType,
+//                'size' => strlen($result)
+//            ];
+//        }
+//
+//        // Regular non-streaming response (existing working code)
+//        return [
+//            'data' => $result,
+//            'content_type' => $contentType,
+//            'size' => strlen($result)
+//        ];
+//    }
+
+
     private function callAvatarService($prompt, $mode, $options = [])
     {
         // Detect streaming mode
         $streamMode = $options['stream_mode'] ?? 'complete';
         $isStreaming = ($streamMode !== 'complete');
 
+        // Initialize streaming state
+        $this->streamChunks = [];
+        $this->currentChunkIndex = 0;
+
         if ($isStreaming) {
             // Use streaming endpoint
+            $codec = $options['codec'] ?? 'h264_fast';
+            $quality = $options['quality'] ?? 'high';
             $url = $this->avatarServiceUrl . '/stream?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
             $this->logger->info('Using streaming endpoint', [
                 'stream_mode' => $streamMode,
@@ -563,7 +721,7 @@ class AvatarManager
         // Add all the parameter mappings
         $allParams = [
             'tts_voice', 'tts_speed', 'tts_pitch', 'tts_language', 'tts_emotion',
-            'delivery_mode',  // ADD THIS LINE
+            'delivery_mode',
             'sample_rate', 'audio_format', 'image', 'still', 'preprocess', 'resolution',
             'face_detection', 'face_confidence', 'auto_resize', 'fps', 'bitrate',
             'keyframe_interval', 'hardware_accel', 'stream_mode', 'chunk_duration',
@@ -603,6 +761,14 @@ class AvatarManager
         curl_setopt($ch, CURLOPT_TIMEOUT, 300);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
 
+        // NEW: Add streaming-specific CURL options
+        if ($isStreaming) {
+            curl_setopt($ch, CURLOPT_WRITEFUNCTION, [$this, 'handleStreamData']);
+            curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+            curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, [$this, 'handleStreamProgress']);
+            curl_setopt($ch, CURLOPT_BUFFERSIZE, 512); // Process in smaller chunks
+        }
+
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
@@ -628,8 +794,26 @@ class AvatarManager
             $this->logger->info('Processing streaming response', [
                 'content_type' => $contentType,
                 'size' => strlen($result),
-                'stream_mode' => $streamMode
+                'stream_mode' => $streamMode,
+                'chunks_collected' => count($this->streamChunks)
             ]);
+
+            // Check if it's multipart (JPEG frames or chunked video)
+            if (strpos($contentType, 'multipart') !== false) {
+                // Parse multipart streaming response
+                $parsedChunks = $this->parseMultipartStream($result);
+
+                return [
+                    'type' => 'streaming_multipart',
+                    'mode' => $streamMode,
+                    'data' => $result,
+                    'chunks' => $parsedChunks,
+                    'incremental_chunks' => $this->streamChunks,
+                    'content_type' => $contentType,
+                    'size' => strlen($result),
+                    'final_video' => $this->combineVideoChunks($parsedChunks)
+                ];
+            }
 
             // Check if it's JSON response (chunk info)
             if (strpos($contentType, 'application/json') !== false) {
@@ -642,21 +826,11 @@ class AvatarManager
                         'data' => $streamData,
                         'chunks' => $streamData['chunks'] ?? [],
                         'urls' => $streamData['urls'] ?? [],
+                        'incremental_chunks' => $this->streamChunks,
                         'content_type' => 'application/json',
                         'size' => strlen($result)
                     ];
                 }
-            }
-
-            // Check if it's multipart (JPEG frames or chunked video)
-            if (strpos($contentType, 'multipart') !== false) {
-                return [
-                    'type' => 'streaming_multipart',
-                    'mode' => $streamMode,
-                    'data' => $result,
-                    'content_type' => $contentType,
-                    'size' => strlen($result)
-                ];
             }
 
             // Otherwise return as streaming raw
@@ -664,18 +838,21 @@ class AvatarManager
                 'type' => 'streaming_raw',
                 'mode' => $streamMode,
                 'data' => $result,
+                'incremental_chunks' => $this->streamChunks,
                 'content_type' => $contentType,
                 'size' => strlen($result)
             ];
         }
 
-        // Regular non-streaming response (existing working code)
+        // Regular non-streaming response (PRESERVED EXISTING CODE)
         return [
             'data' => $result,
             'content_type' => $contentType,
             'size' => strlen($result)
         ];
     }
+
+
 
     // ... (keep all the existing utility methods: setPeer, getCurrentPeer, getAvailablePeers,
     //      getStatus, getLogs, testConnection, getPhpErrors, clearPhpErrors)
@@ -793,6 +970,153 @@ public function setPeer($peerIp = null)
                 'score' => 0
             ]];
         }
+    }
+
+
+    // NEW: CURL callback methods
+    private function handleStreamData($curl, $data) {
+        // Process incoming stream data
+        $this->processStreamChunk($data);
+        return strlen($data);
+    }
+
+    private function handleStreamProgress($resource, $download_size, $downloaded, $upload_size, $uploaded) {
+        // Optional: Track streaming progress
+        if ($download_size > 0) {
+            $progress = ($downloaded / $download_size) * 100;
+            $this->logger->debug("Streaming progress: {$progress}%");
+        }
+        return 0;
+    }
+
+// NEW: Parse multipart streaming response
+    private function parseMultipartStream($result) {
+        $chunks = [];
+        $parts = explode('--frame', $result);
+
+        foreach ($parts as $index => $part) {
+            if (empty(trim($part))) continue;
+
+            // Extract JSON data from each part
+            if (preg_match('/Content-Type: application\/json.*?\r?\n\r?\n(.*?)\r?\n/s', $part, $matches)) {
+                $chunkData = json_decode($matches[1], true);
+                if ($chunkData && isset($chunkData['video_data'])) {
+                    $chunks[] = [
+                        'id' => $index,
+                        'data' => $chunkData['video_data'],
+                        'duration' => $chunkData['duration'] ?? 0,
+                        'ready' => $chunkData['ready'] ?? false
+                    ];
+                }
+            }
+        }
+
+        return $chunks;
+    }
+
+// UPDATED: Your existing processStreamChunk method
+    private function processStreamChunk($chunkData) {
+        // Parse chunk data (handle both raw and JSON data)
+        $chunk = null;
+
+        // Try to extract JSON from multipart data
+        if (strpos($chunkData, 'Content-Type: application/json') !== false) {
+            if (preg_match('/\r?\n\r?\n(\{.*?\})\r?\n/s', $chunkData, $matches)) {
+                $chunk = json_decode($matches[1], true);
+            }
+        } else {
+            // Direct JSON data
+            $chunk = json_decode($chunkData, true);
+        }
+
+        if ($chunk && isset($chunk['video_data'])) {
+            // Store chunk for progressive and final processing
+            $this->streamChunks[] = [
+                'id' => $this->currentChunkIndex++,
+                'data' => $chunk['video_data'],
+                'duration' => $chunk['duration'] ?? 0,
+                'ready' => $chunk['ready'] ?? false
+            ];
+
+            // Optional: Trigger frontend update
+            $this->broadcastChunkToFrontend($chunk);
+        }
+    }
+
+// UPDATED: Your existing broadcastChunkToFrontend method
+    private function broadcastChunkToFrontend($chunk) {
+        // WebSocket or Server-Sent Events implementation
+        // For now, just log the chunk arrival
+        $this->logger->info('Chunk ready for frontend', [
+            'chunk_id' => $chunk['chunk_id'] ?? 'unknown',
+            'duration' => $chunk['duration'] ?? 0,
+            'data_size' => strlen($chunk['video_data'] ?? '')
+        ]);
+
+        // TODO: Implement actual broadcasting (WebSocket/SSE)
+    }
+
+// UPDATED: Your existing combineVideoChunks method
+    private function combineVideoChunks($parsedChunks = null) {
+        // Use provided chunks or collected stream chunks
+        $chunks = $parsedChunks ?? $this->streamChunks;
+
+        if (empty($chunks)) {
+            return null;
+        }
+
+        // For base64 chunks, we need to decode and save them first
+        $tempFiles = [];
+        foreach ($chunks as $index => $chunk) {
+            if (isset($chunk['data']) && strpos($chunk['data'], 'data:video/mp4;base64,') === 0) {
+                // Decode base64 video data
+                $base64Data = substr($chunk['data'], strlen('data:video/mp4;base64,'));
+                $videoData = base64_decode($base64Data);
+
+                // Save to temporary file
+                $tempFile = tempnam(sys_get_temp_dir(), "chunk_{$index}_") . '.mp4';
+                file_put_contents($tempFile, $videoData);
+                $tempFiles[] = $tempFile;
+            }
+        }
+
+        if (empty($tempFiles)) {
+            return null;
+        }
+
+        // Create ffmpeg concat file
+        $tempChunkFile = tempnam(sys_get_temp_dir(), 'avatar_chunks_');
+        file_put_contents($tempChunkFile, implode("\n", array_map(function($file) {
+            return "file '{$file}'";
+        }, $tempFiles)));
+
+        $finalVideoPath = tempnam(sys_get_temp_dir(), 'combined_avatar_') . '.mp4';
+
+        // FFmpeg command to concatenate
+        $cmd = "ffmpeg -f concat -safe 0 -i {$tempChunkFile} -c copy {$finalVideoPath} 2>&1";
+        $output = [];
+        $returnVar = 0;
+        exec($cmd, $output, $returnVar);
+
+        // Cleanup temporary files
+        unlink($tempChunkFile);
+        foreach ($tempFiles as $tempFile) {
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+        }
+
+        if ($returnVar === 0 && file_exists($finalVideoPath)) {
+            return $finalVideoPath;
+        }
+
+        $this->logger->error('Video combination failed', [
+            'command' => $cmd,
+            'output' => implode("\n", $output),
+            'return_code' => $returnVar
+        ]);
+
+        return null;
     }
 
     public function getStatus()
