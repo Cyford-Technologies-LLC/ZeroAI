@@ -36,6 +36,9 @@ class StreamingAvatarGenerator:
                                 split_chunks: bool = True, chunk_length: float = 10.0,
                                 delivery_mode: str = 'base64') -> Generator[bytes, None, None]:
         """Generate chunked stream using existing processors"""
+        import json
+        import time
+        import os
 
         logger.info(f"Starting chunked stream - Mode: {mode}, Delivery: {delivery_mode}")
         logger.info(f"Options: TTS={tts_engine}, Codec={codec}, Quality={quality}")
@@ -43,23 +46,26 @@ class StreamingAvatarGenerator:
         try:
             self.is_streaming = True
 
+            # Import all splitting functions from audio processor
+            from audio_processor import _split_into_sentences, generate_audio_for_streaming
+            from video_processor import generate_video_for_streaming, encode_video_for_delivery
+
+            # Handle chunking options from audio processor
             split_chunks = options.get("split_chunks", False)
             chunk_length = options.get("chunk_length", 10)
 
             if split_chunks:
-                # Split by sentences
-                from audio_processor import _split_into_sentences
-                chunks = split_into_sentences(prompt)
+                # Use audio processor sentence splitting
+                chunks = _split_into_sentences(prompt)
             else:
-                # Split by duration/word count
-                chunks = split_by_duration(prompt, chunk_duration)
-
+                # Use audio processor duration-based splitting
+                chunks = self._split_by_duration_words(prompt, chunk_duration)
 
             # Send initial info
             init_info = {
                 'status': 'starting',
-                'total_chunks': len(chunks  ),
-                    'chunking_method': 'sentences' if split_chunks else 'duration',
+                'total_chunks': len(chunks),
+                'chunking_method': 'sentences' if split_chunks else 'duration',
                 'chunk_duration': chunk_duration,
                 'mode': mode,
                 'delivery_mode': delivery_mode,
@@ -78,10 +84,9 @@ class StreamingAvatarGenerator:
                 if not self.is_streaming:
                     break
 
-                logger.info(f"Processing chunk {i + 1}/{len(chunk_text)}: {chunk_text[:30]}...")
+                logger.info(f"Processing chunk {i + 1}/{len(chunks)}: {chunk_text[:30]}...")
 
-                # AUDIO: Use existing audio processor functions
-                from audio_processor import generate_audio_for_streaming
+                # AUDIO: Use audio processor function
                 audio_path, audio_duration = generate_audio_for_streaming(
                     chunk_text, i, tts_engine, tts_options or {}
                 )
@@ -95,13 +100,13 @@ class StreamingAvatarGenerator:
                     yield b''
                     continue
 
-                # VIDEO: Use existing video processor functions
+                # VIDEO: Use video processor function
                 chunk_filename = f"chunk_{i}_{int(time.time())}.mp4"
                 temp_video_path = f"/tmp/{chunk_filename}"
 
-                from video_processor import generate_video_for_streaming
-                video_success, duration = generate_video_for_streaming(chunk_text, i, source_image, audio_path,
-                                                                       temp_video_path, options, audio_duration)
+                video_success, duration = generate_video_for_streaming(
+                    chunk_text, i, source_image, audio_path, temp_video_path, options, audio_duration
+                )
 
                 if video_success:
                     chunk_info = {
@@ -111,10 +116,11 @@ class StreamingAvatarGenerator:
                         "sentence": chunk_text,
                         "mode": mode,
                         "tts_engine": tts_engine,
-                        "codec": codec
+                        "codec": codec,
+                        "frame_rate": frame_rate
                     }
 
-                    # Use existing video processor for delivery
+                    # Use video processor for delivery
                     delivery_info = encode_video_for_delivery(temp_video_path, delivery_mode, chunk_filename)
                     chunk_info.update(delivery_info)
 
@@ -140,7 +146,7 @@ class StreamingAvatarGenerator:
             # Send completion
             complete_info = {
                 'status': 'complete',
-                'total_chunks': len(chunk_texts),
+                'total_chunks': len(chunks),
                 'mode': mode,
                 'delivery_mode': delivery_mode
             }
@@ -162,6 +168,20 @@ class StreamingAvatarGenerator:
 
         finally:
             self.is_streaming = False
+
+    def _split_by_duration_words(self, text: str, target_duration: float) -> List[str]:
+        """Split text by estimated duration using word count"""
+        words_per_second = 2.5  # Average speaking rate
+        words_per_chunk = max(1, int(target_duration * words_per_second))
+
+        words = text.split()
+        chunks = []
+
+        for i in range(0, len(words), words_per_chunk):
+            chunk_words = words[i:i + words_per_chunk]
+            chunks.append(' '.join(chunk_words))
+
+        return chunks if chunks else [text]
 
     def generate_realtime_stream(self, options: Dict, prompt: str, source_image: np.ndarray,
                                  tts_engine: str = 'espeak', tts_options: Dict = None,
