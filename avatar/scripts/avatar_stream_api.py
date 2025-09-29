@@ -148,6 +148,11 @@ class StreamingAvatarGenerator:
                         # Use video processor for delivery
                         delivery_info = encode_video_for_delivery(temp_video_path, delivery_mode, chunk_filename)
                         chunk_info.update(delivery_info)
+                        # Send chunk with flush
+                        chunk_json = json.dumps(chunk_info)
+                        chunk_response = f"--frame\r\nContent-Type: application/json\r\nContent-Length: {len(chunk_json)}\r\n\r\n{chunk_json}\r\n"
+                        yield chunk_response.encode()
+                        yield b''  # Force flush
                     else:
                         # Send failure
                         fail_info = {"chunk_id": i, "ready": False, "error": "Video generation failed"}
