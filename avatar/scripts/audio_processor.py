@@ -145,7 +145,7 @@ def split_by_duration(text: str, target_duration: float) -> List[str]:
     return chunks if chunks else [text]
 
 
-def _split_into_sentences(text: str) -> List[str]:
+def split_into_sentences(text: str) -> List[str]:
     """Split text into sentences for chunking"""
     # Simple sentence splitting
     sentences = re.split(r'(?<=[.!?])\s+', text)
@@ -303,7 +303,7 @@ if __name__ == "__main__":
 
     # Test text splitting
     test_text = "Hello world! This is a test. How are you today?"
-    sentences = _split_into_sentences(test_text)
+    sentences = split_into_sentences(test_text)
     print(f"Sentences: {sentences}")
 
     duration_chunks = split_by_duration(test_text, 3.0)
