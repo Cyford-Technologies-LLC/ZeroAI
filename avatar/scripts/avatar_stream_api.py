@@ -47,7 +47,7 @@ class StreamingAvatarGenerator:
             self.is_streaming = True
 
             # Import all splitting functions from audio processor
-            from audio_processor import _split_into_sentences, generate_audio_for_streaming
+            from audio_processor import split_into_sentences, generate_audio_for_streaming
             from video_processor import generate_video_for_streaming, encode_video_for_delivery
 
             # Handle chunking options from audio processor
