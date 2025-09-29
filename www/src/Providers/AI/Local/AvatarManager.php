@@ -534,7 +534,7 @@ class AvatarManager
 
         if ($isStreaming) {
             // Use streaming endpoint
-            $url = $this->avatarServiceUrl . '/stream';
+            $url = $this->avatarServiceUrl . '/stream?mode=' . $mode . '&codec=' . $codec . '&quality=' . $quality;
             $this->logger->info('Using streaming endpoint', [
                 'stream_mode' => $streamMode,
                 'url' => $url
