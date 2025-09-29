@@ -158,6 +158,70 @@ async function processStreamFrame(frameData, streamProcessor) {
     }
 }
 
+async function processStreamFrame(frameData, streamProcessor) {
+    try {
+        const frameString = new TextDecoder('utf-8').decode(frameData);
+        console.log('[DEBUG] Raw frame data preview:', frameString.substring(0, 200));
+
+        // Parse headers
+        const headerEnd = frameString.indexOf('\r\n\r\n');
+        if (headerEnd === -1) {
+            console.log('[DEBUG] No header end found');
+            return null;
+        }
+
+        const headers = frameString.substring(0, headerEnd);
+        const contentStart = headerEnd + 4;
+
+        // Get content type
+        const contentTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
+        const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'unknown';
+
+        console.log('[DEBUG] Frame content type:', contentType);
+        console.log('[DEBUG] Content preview:', frameString.substring(contentStart, contentStart + 100));
+
+        if (contentType.includes('json')) {
+            // Parse JSON metadata
+            const jsonData = frameString.substring(contentStart).trim();
+            const jsonEndIndex = jsonData.lastIndexOf('}');
+            const cleanJson = jsonEndIndex > 0 ? jsonData.substring(0, jsonEndIndex + 1) : jsonData;
+
+            console.log('[DEBUG] Attempting to parse JSON:', cleanJson);
+
+            try {
+                const data = JSON.parse(cleanJson);
+                console.log('[DEBUG] Parsed JSON data:', data);
+
+                // Process video chunk IMMEDIATELY if available
+                if (data.ready && data.video_data) {
+                    console.log('[DEBUG] 🎬 FOUND VIDEO DATA! Chunk:', data.chunk_id, 'Length:', data.video_data.length);
+
+                    // Send to processor IMMEDIATELY
+                    await streamProcessor.processChunk({
+                        id: data.chunk_id,
+                        data: data.video_data,
+                        duration: data.duration
+                    });
+                } else {
+                    console.log('[DEBUG] No video data in chunk. Ready:', data.ready, 'Has video_data:', !!data.video_data);
+                }
+
+                return data;
+
+            } catch (error) {
+                console.error('[DEBUG] JSON parse error:', error.message);
+                console.log('[DEBUG] Failed JSON:', cleanJson);
+            }
+        }
+
+        return null;
+    } catch (error) {
+        console.error('[DEBUG] Frame processing error:', error);
+        return null;
+    }
+}
+
+
 // Alternative processFrame for backwards compatibility
 async function processFrame(frameData, chunks, currentChunk, videoFrames) {
     try {
