@@ -181,10 +181,10 @@ def stream_avatar():
         # prompt = clean_text(options["prompt"])
         # source_image_input = options["image"]
         # tts_engine = options["tts_engine"]
-        tts_options = options["tts_options"]
+        tts_options =request.args.get('streaming_mode', options.get('streaming_mode', 'chunked'))
         # codec = options["codec"]
         # quality = options["quality"]
-        chunk_duration = request.args.get('chunk_duration', options.get('chunk_duration', 1))
+        chunk_duration = request.args.get('tts_options', options.get('tts_options', []))
         frame_rate = request.args.get('frame_rate', options.get('frame_rate', 15))
         buffer_size = request.args.get('buffer_size', options.get('buffer_size', 5))
 
