@@ -7,8 +7,23 @@ Complete implementation with all required imports
 import subprocess
 import os
 import logging
+import base64
+import cv2
+import glob
+import logging
+import numpy as np
+import os
+import shutil
+import subprocess
+import tempfile
+import time
+from typing import Dict, Generator
 
+
+# Existing imports...
 from avatar.scripts.sadtalker_generator import generate_sadtalker_video
+from simple_avatar import create_animated_face
+
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -125,21 +140,17 @@ def get_mimetype_for_codec(codec):
 
 
 def encode_video_for_delivery(video_path: str, delivery_mode: str, chunk_filename: str) -> Dict:
-    """Handle video encoding for delivery (base64 or URL) - matches /generate logic"""
-    import base64
-
+    """Handle video encoding for delivery (base64 or URL)"""
     delivery_info = {}
 
-    # HONOR delivery_mode EXACTLY like /generate endpoint
     if delivery_mode == 'base64':
-        # Encode as base64 (like your frontend expects)
         try:
             with open(video_path, 'rb') as video_file:
                 video_data = video_file.read()
                 video_base64 = base64.b64encode(video_data).decode('utf-8')
             delivery_info["video_data"] = f"data:video/mp4;base64,{video_base64}"
 
-            # Clean up temp file after encoding
+            # Clean up temp file
             if os.path.exists(video_path):
                 os.unlink(video_path)
 
@@ -150,13 +161,12 @@ def encode_video_for_delivery(video_path: str, delivery_mode: str, chunk_filenam
             delivery_info["error"] = "Base64 encoding failed"
 
     elif delivery_mode == 'url':
-        # Copy to static directory for URL access (like /generate does)
         try:
             static_path = f"/app/static/{chunk_filename}"
             shutil.copy(video_path, static_path)
             delivery_info["video_url"] = f"/static/{chunk_filename}"
 
-            # Clean up temp file after copying
+            # Clean up temp file
             if os.path.exists(video_path):
                 os.unlink(video_path)
 
@@ -191,11 +201,6 @@ def generate_video_for_streaming(text: str, chunk_id: int, source_image, audio_p
                                  output_path: str, options: Dict, audio_duration: float) -> tuple:
     """Generate video for streaming - returns (success, duration)"""
     try:
-        import cv2
-        import subprocess
-        import glob
-        import shutil
-
         # Save source image
         temp_source = f'/tmp/source_{chunk_id}.png'
         cv2.imwrite(temp_source, cv2.cvtColor(source_image, cv2.COLOR_RGB2BGR))
@@ -204,15 +209,20 @@ def generate_video_for_streaming(text: str, chunk_id: int, source_image, audio_p
         success = False
 
         if mode == 'sadtalker':
-            # SadTalker
+            # SadTalker generation
             cmd = [
                 'python', '/app/SadTalker/inference.py',
                 '--driven_audio', audio_path,
                 '--source_image', temp_source,
                 '--result_dir', f'/app/static/sadtalker_output/chunk_{chunk_id}_{int(time.time())}',
                 '--still',
-                '--preprocess', options.get('preprocess', 'crop')
+                '--preprocess', options.get('preprocess', 'crop'),
+                '--fps', str(options.get('frame_rate', 25))  # Add FPS control
             ]
+
+            # Add optional SadTalker parameters
+            if options.get('use_enhancer'):
+                cmd.extend(['--enhancer', 'gfpgan'])
 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
@@ -225,15 +235,15 @@ def generate_video_for_streaming(text: str, chunk_id: int, source_image, audio_p
                     success = True
 
         elif mode == 'simple':
-            # Simple Face
-            from simple_avatar import create_animated_face
+            # Simple Face generation
             result = create_animated_face(
                 image_path=temp_source,
                 audio_path=audio_path,
                 output_path=output_path,
                 codec=options.get('codec', 'h264_fast'),
                 quality=options.get('quality', 'medium'),
-                use_face_detection=options.get('face_detection', True)
+                use_face_detection=options.get('face_detection', True),
+                frame_rate=options.get('frame_rate', 25)  # Add frame rate option
             )
             if result and result.get('success'):
                 success = True
@@ -247,6 +257,7 @@ def generate_video_for_streaming(text: str, chunk_id: int, source_image, audio_p
     except Exception as e:
         logger.error(f"Video generation failed: {e}")
         return False, 0
+
 
 
 def generate_sadtalker_frames_for_streaming(self, source_image: np.ndarray, audio_path: str,
@@ -367,27 +378,6 @@ def generate_face_frames(self, source_image: np.ndarray, duration: float,
             _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             yield buffer.tobytes()
 
-def split_into_sentences(self, text: str) -> list:
-        """Split text into sentences for chunked processing"""
-        import re
-
-        # Simple sentence splitting
-        sentences = re.split(r'[.!?]+', text.strip())
-        sentences = [s.strip() for s in sentences if s.strip()]
-
-        # Ensure minimum length and split very long sentences
-        processed = []
-        for sentence in sentences:
-            if len(sentence) > 200:  # Split long sentences
-                words = sentence.split()
-                for i in range(0, len(words), 20):
-                    chunk = ' '.join(words[i:i + 20])
-                    if chunk:
-                        processed.append(chunk)
-            else:
-                processed.append(sentence)
-
-        return processed or [text]  # Fallback to original text
 
 
 
