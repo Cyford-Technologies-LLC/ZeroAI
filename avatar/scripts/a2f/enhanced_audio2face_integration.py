@@ -12,12 +12,12 @@ import traceback
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List
 from datetime import datetime
+from audio2face_options import Audio2FaceOptions, prepare_audio2face_request
 
 # Import your existing modules
 sys.path.append('..')
 from audio_processor import call_tts_service_with_options, normalize_audio
 from utility import clean_text
-from audio2face_options import Audio2FaceOptions, prepare_audio2face_request
 
 logger = logging.getLogger(__name__)
 
