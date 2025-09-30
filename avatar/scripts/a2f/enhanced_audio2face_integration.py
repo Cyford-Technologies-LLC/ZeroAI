@@ -10,7 +10,7 @@ import subprocess
 import logging
 import traceback
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 from datetime import datetime
 
 # Import your existing modules
