@@ -76,9 +76,8 @@ RUN mkdir -p /app/faces \
 
 # Copy only requirements first (change occasionally - cache friendly)
 COPY requirements.txt .
-# Create headless startup script
-COPY start_headless.py /app/start_headless.py
-COPY a2f_server.py /app/a2f_server.py
+
+
 
 
 # Install Python packages (change occasionally - cache friendly)
