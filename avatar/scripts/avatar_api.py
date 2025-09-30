@@ -1064,6 +1064,22 @@ def get_audio2face_capabilities():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Add this to your endpoint
+
+# Mock Audio2Face function
+def mock_audio2face_generate(prompt, output_path):
+    # Generate a simple test video or copy existing one
+    import subprocess
+    # Create a black video with text
+    cmd = [
+        'ffmpeg', '-f', 'lavfi', '-i', 'color=black:size=640x480:duration=5',
+        '-vf', f'drawtext=text=\"{prompt[:30]}\":fontcolor=white:fontsize=24:x=10:y=10',
+        '-y', output_path
+    ]
+    result = subprocess.run(cmd, capture_output=True)
+    return result.returncode == 0
+
+
 
 if __name__ == '__main__':
     logger.info("Avatar Endpoints API starting...")
