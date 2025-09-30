@@ -529,7 +529,7 @@ def generate_audio2face_avatar_endpoint():
     - character_path: A2F character to use (will use default if not specified)
     - tts_engine: TTS engine ('espeak', 'edge', etc.) - defaults to 'espeak'
     - tts_options: TTS options (voice, rate, pitch, language)
-    - a2f_server_url: Audio2Face server URL (defaults to localhost:8011)
+    - a2f_server_url: Audio2Face server URL (defaults to localhost:7860)
     """
     try:
         data = request.json or {}
@@ -543,7 +543,7 @@ def generate_audio2face_avatar_endpoint():
 
         character_path = data.get("character_path")
         tts_engine = data.get("tts_engine", "espeak")
-        a2f_server_url = data.get("a2f_server_url", "http://localhost:8011")
+        a2f_server_url = data.get("a2f_server_url", "http://localhost:7860")
 
         # Handle TTS options
         tts_options = {}
@@ -596,7 +596,7 @@ def audio2face_status():
         return jsonify({
             'timestamp': str(datetime.now()),
             'audio2face_integration': status,
-            'server_url': 'http://localhost:8011',
+            'server_url': 'http://localhost:7860',
             'usage': {
                 'endpoint': '/audio2face/generate',
                 'method': 'POST',
@@ -607,7 +607,7 @@ def audio2face_status():
                 "1. Install NVIDIA Audio2Face from Omniverse",
                 "2. Start Audio2Face with headless mode enabled",
                 "3. Load a character model in Audio2Face",
-                "4. Verify server is running on localhost:8011"
+                "4. Verify server is running on localhost:7860"
             ]
         })
 
@@ -619,7 +619,7 @@ def audio2face_status():
 def list_audio2face_characters():
     """List available characters in Audio2Face"""
     try:
-        a2f_server_url = request.args.get('server_url', 'http://localhost:8011')
+        a2f_server_url = request.args.get('server_url', 'http://localhost:7860')
 
         a2f = Audio2FaceGenerator(a2f_server_url)
 
@@ -651,7 +651,7 @@ def test_audio2face_generation():
         data = request.json or {}
         test_prompt = data.get("prompt", "Hello, this is a test of Audio2Face integration.")
         character_path = data.get("character_path")
-        a2f_server_url = data.get("a2f_server_url", "http://localhost:8011")
+        a2f_server_url = data.get("a2f_server_url", "http://localhost:7860")
 
         logger.info(f"Testing Audio2Face with prompt: {test_prompt[:30]}...")
 
@@ -917,7 +917,7 @@ def batch_audio2face_generation():
         base_options = prepared["a2f_options"]
 
         # Initialize generator
-        a2f_server_url = data.get("a2f_server_url", "http://localhost:8011")
+        a2f_server_url = data.get("a2f_server_url", "http://localhost:7860")
         a2f = EnhancedAudio2FaceGenerator(a2f_server_url)
 
         if not a2f.is_connected:
@@ -1026,7 +1026,7 @@ def list_audio2face_presets():
 def get_audio2face_capabilities():
     """Check server capabilities and available features"""
     try:
-        a2f_server_url = request.args.get('server_url', 'http://localhost:8011')
+        a2f_server_url = request.args.get('server_url', 'http://localhost:7860')
 
         # Check real A2F
         try:

@@ -125,7 +125,7 @@ def generate_audio2face_avatar_endpoint():
                 tts_engine=tts_engine,
                 tts_options=tts_options,
                 character_path=character_path,
-                a2f_server_url=data.get("a2f_server_url", "http://localhost:8011")
+                a2f_server_url=data.get("a2f_server_url", "http://localhost:7860")
             )
 
         if success and os.path.exists(output_path):
@@ -219,7 +219,7 @@ def list_audio2face_characters():
         # Try real Audio2Face first
         if not force_mock and AUDIO2FACE_REAL_AVAILABLE:
             try:
-                a2f_server_url = request.args.get('server_url', 'http://localhost:8011')
+                a2f_server_url = request.args.get('server_url', 'http://localhost:7860')
                 a2f = Audio2FaceGenerator(a2f_server_url)
 
                 if a2f.is_connected:

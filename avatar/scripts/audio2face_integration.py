@@ -25,12 +25,12 @@ class Audio2FaceGenerator:
     Uses NVIDIA's A2F REST API for facial animation generation.
     """
 
-    def __init__(self, a2f_server_url: str = "http://localhost:8011"):
+    def __init__(self, a2f_server_url: str = "http://localhost:7860"):
         """
         Initialize Audio2Face connection
 
         Args:
-            a2f_server_url: URL of Audio2Face headless server (default localhost:8011)
+            a2f_server_url: URL of Audio2Face headless server (default localhost:7860)
         """
         self.a2f_server_url = a2f_server_url.rstrip('/')
         self.session = requests.Session()
@@ -233,7 +233,7 @@ class Audio2FaceGenerator:
 def generate_audio2face_avatar(prompt: str, source_image: str, output_path: str,
                                tts_engine: str = 'espeak', tts_options: Dict = None,
                                character_path: str = None,
-                               a2f_server_url: str = "http://localhost:8011") -> bool:
+                               a2f_server_url: str = "http://localhost:7860") -> bool:
     """
     Complete pipeline: TTS -> Audio2Face -> Video
 

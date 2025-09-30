@@ -9,9 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     NUMBA_CACHE_DIR='/tmp/numba_cache' \
     MPLCONFIGDIR=/tmp/matplotlib \
     GFPGAN_CACHE_DIR=/tmp/gfpgan_cache \
-    A2F_PORT="8011" \
+    A2F_PORT="7860" \
     OMNIVERSE_CACHE="/var/cache/omniverse" \
-    SERVICE_USER="audio2face" \
+    SERVICE_USER="avataruser" \
     ACCEPT_EULA=Y \
     PRIVACY_CONSENT=Y \
     A2F_HEADLESS=1 \
@@ -68,7 +68,7 @@ RUN mkdir -p /app/faces \
     /home/avataruser/.config \
     /opt/audio2face \
     /var/lib/audio2face \
-    /var/log/audio2face
+    /var/log/audio2face \
     && groupadd -r avataruser \
     && useradd -r -g avataruser avataruser \
     && chmod -R 777 /tmp/  /home/avataruser/\
@@ -124,7 +124,9 @@ RUN if [ -f "/app/create_face.py" ]; then \
 COPY faces/ /app/faces/
 
 # Set ownership for static content
-RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/ /home/avataruser
+RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/ /home/avataruser     /opt/audio2face \
+    /var/lib/audio2face \
+    /var/log/audio2face \
 
 # Copy application code (changes most frequently - put LAST)
 COPY scripts/*.py /app/

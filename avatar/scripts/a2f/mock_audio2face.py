@@ -19,7 +19,7 @@ class MockAudio2FaceGenerator:
     Use this while setting up the real Audio2Face server.
     """
 
-    def __init__(self, a2f_server_url: str = "mock://localhost:8011"):
+    def __init__(self, a2f_server_url: str = "mock://localhost:7860"):
         self.a2f_server_url = a2f_server_url
         self.current_character = "MockCharacter_Female_01"
         self.is_connected = True

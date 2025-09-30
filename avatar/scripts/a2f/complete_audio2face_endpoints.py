@@ -226,7 +226,7 @@ def batch_audio2face_generation():
         base_options = prepared["a2f_options"]
 
         # Initialize generator
-        a2f_server_url = data.get("a2f_server_url", "http://localhost:8011")
+        a2f_server_url = data.get("a2f_server_url", "http://localhost:7860")
         a2f = EnhancedAudio2FaceGenerator(a2f_server_url)
 
         if not a2f.is_connected:
@@ -335,7 +335,7 @@ def list_audio2face_presets():
 def get_audio2face_capabilities():
     """Check server capabilities and available features"""
     try:
-        a2f_server_url = request.args.get('server_url', 'http://localhost:8011')
+        a2f_server_url = request.args.get('server_url', 'http://localhost:7860')
 
         # Check real A2F
         try:

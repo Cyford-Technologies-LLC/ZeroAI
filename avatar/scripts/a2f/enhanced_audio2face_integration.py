@@ -27,7 +27,7 @@ class EnhancedAudio2FaceGenerator:
     Enhanced Audio2Face integration with full parameter control
     """
 
-    def __init__(self, a2f_server_url: str = "http://localhost:8011"):
+    def __init__(self, a2f_server_url: str = "http://localhost:7860"):
         """
         Initialize Enhanced Audio2Face connection
 
@@ -328,7 +328,7 @@ def generate_enhanced_audio2face_avatar(
         tts_engine: str = 'espeak',
         tts_options: Dict = None,
         a2f_options: Dict = None,
-        a2f_server_url: str = "http://localhost:8011",
+        a2f_server_url: str = "http://localhost:7860",
         preset: str = None
 ) -> Tuple[bool, Dict[str, Any]]:
     """Your docstring here"""

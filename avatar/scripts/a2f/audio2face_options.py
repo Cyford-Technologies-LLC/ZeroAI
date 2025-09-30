@@ -313,7 +313,7 @@ def prepare_audio2face_request(user_data: Dict[str, Any]) -> Dict[str, Any]:
         "tts_engine": user_data.get("tts_engine", "espeak"),
         "tts_options": user_data.get("tts_options", {}),
         "force_mock": user_data.get("force_mock", False),
-        "a2f_server_url": user_data.get("a2f_server_url", "http://localhost:8011"),
+        "a2f_server_url": user_data.get("a2f_server_url", "http://localhost:444"),
         "a2f_options": sanitized,
         "validation_errors": error_msg if not is_valid else None
     }

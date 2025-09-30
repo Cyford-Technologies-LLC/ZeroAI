@@ -15,7 +15,7 @@ NC='\033[0m'
 A2F_INSTALL_DIR="/opt/audio2face"
 A2F_DATA_DIR="/var/lib/audio2face"
 A2F_LOG_DIR="/var/log/audio2face"
-A2F_PORT="8011"
+A2F_PORT="7860"
 OMNIVERSE_CACHE="/var/cache/omniverse"
 SERVICE_USER="audio2face"
 
@@ -113,7 +113,7 @@ COPY start_headless.py /app/start_headless.py
 COPY a2f_server.py /app/a2f_server.py
 
 # Expose ports
-EXPOSE 8011 8012
+EXPOSE 7860 8012
 
 # Set environment
 ENV ACCEPT_EULA=Y
@@ -280,7 +280,7 @@ def status():
         'mode': 'cli' if hasattr(a2f_server, 'cli_mode') else 'kit',
         'version': '2023.2.0',
         'gpu': os.environ.get('CUDA_VISIBLE_DEVICES', 'auto'),
-        'port': 8011
+        'port': 7860
     })
 
 @app.route('/generate', methods=['POST'])
@@ -363,8 +363,8 @@ def load_character():
         return jsonify({'error': 'Failed to load character'}), 500
 
 if __name__ == '__main__':
-    logger.info("Starting Audio2Face Headless Server on port 8011")
-    app.run(host='0.0.0.0', port=8011, debug=False)
+    logger.info("Starting Audio2Face Headless Server on port 7860")
+    app.run(host='0.0.0.0', port=7860, debug=False)
 EOFSERVER
 
     # Build Docker image
@@ -439,8 +439,8 @@ def characters():
     })
 
 if __name__ == '__main__':
-    print("Starting Mock Audio2Face Server on port 8011")
-    app.run(host='0.0.0.0', port=8011, debug=False)
+    print("Starting Mock Audio2Face Server on port 7860")
+    app.run(host='0.0.0.0', port=7860, debug=False)
 EOFMOCK
 
     chmod +x "$A2F_INSTALL_DIR/mock_a2f_server.py"
@@ -469,7 +469,7 @@ ExecStartPre=/usr/bin/docker rm audio2face-server || true
 ExecStart=/usr/bin/docker run --rm \\
     --name audio2face-server \\
     --gpus all \\
-    -p ${A2F_PORT}:8011 \\
+    -p ${A2F_PORT}:7860 \\
     -v ${A2F_DATA_DIR}:/data \\
     -v ${A2F_LOG_DIR}:/logs \\
     -e NVIDIA_VISIBLE_DEVICES=all \\
@@ -598,13 +598,13 @@ case "$1" in
         ;;
     status)
         systemctl status audio2face
-        curl -s http://localhost:8011/status | jq '.'
+        curl -s http://localhost:7860/status | jq '.'
         ;;
     logs)
         journalctl -u audio2face -f
         ;;
     test)
-        curl -X POST http://localhost:8011/generate \
+        curl -X POST http://localhost:7860/generate \
             -F "audio=@test.wav" \
             -F "character=default" \
             --output test_output.mp4
