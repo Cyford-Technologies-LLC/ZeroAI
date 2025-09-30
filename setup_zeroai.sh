@@ -116,7 +116,8 @@ elif [ "$CLEAN" = "prune" ]; then
     docker images | grep zeroai | awk '{print $3}' | xargs -r docker rmi -f
     docker images | grep "<none>" | awk '{print $3}' | xargs -r docker rmi -f
     echo "🧹 System-wide Docker prune..."
-    docker system prune -af
+    docker system prune -af --volumes
+    docker builder prune -a
     echo "✅ Full prune complete"
 fi
 
