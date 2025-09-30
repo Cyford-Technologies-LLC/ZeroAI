@@ -47,7 +47,7 @@ class EnhancedAudio2FaceGenerator:
     def _test_connection(self) -> bool:
         """Test if Audio2Face server is accessible"""
         try:
-            response = self.session.get(f"{self.a2f_server_url}/status", timeout=5)
+            response = self.session.get(f"{self.a2f_server_url}/audio2face/status", timeout=5)
             if response.status_code == 200:
                 self.is_connected = True
                 logger.info("✅ Enhanced Audio2Face server connected")
@@ -64,7 +64,7 @@ class EnhancedAudio2FaceGenerator:
             return {}
 
         try:
-            response = self.session.get(f"{self.a2f_server_url}/capabilities", timeout=5)
+            response = self.session.get(f"{self.a2f_server_url}/audio2face/capabilities", timeout=5)
             if response.status_code == 200:
                 self.server_capabilities = response.json()
                 logger.info(f"Server capabilities: {json.dumps(self.server_capabilities, indent=2)}")
@@ -113,7 +113,7 @@ class EnhancedAudio2FaceGenerator:
                 logger.info(f"Sending request with options: {json.dumps(data, indent=2)}")
 
                 response = self.session.post(
-                    f"{self.a2f_server_url}/generate/advanced",
+                    f"{self.a2f_server_url}/audio2face/generate/advanced",
                     files=files,
                     data=data,
                     timeout=600  # 10 minute timeout for complex generation
