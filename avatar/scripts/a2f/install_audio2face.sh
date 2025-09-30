@@ -567,11 +567,11 @@ test_installation() {
     sleep 3
 
     # Test status endpoint
-    if curl -s "http://localhost:${A2F_PORT}/status" > /dev/null 2>&1; then
+    if curl -s "http://localhost:${A2F_PORT}/audio2face/statu" > /dev/null 2>&1; then
         print_status "Audio2Face server responding on port $A2F_PORT"
 
         # Get detailed status
-        STATUS=$(curl -s "http://localhost:${A2F_PORT}/status")
+        STATUS=$(curl -s "http://localhost:${A2F_PORT}/audio2face/statu")
         echo "Server status: $STATUS"
     else
         print_error "Audio2Face server not responding"
@@ -598,7 +598,7 @@ case "$1" in
         ;;
     status)
         systemctl status audio2face
-        curl -s http://localhost:7860/status | jq '.'
+        curl -s http://localhost:7860/audio2face/statu | jq '.'
         ;;
     logs)
         journalctl -u audio2face -f
@@ -650,7 +650,7 @@ main() {
     echo "   audio2face-manager logs     - View logs"
     echo ""
     echo "🧪 Test the server:"
-    echo "   curl http://localhost:${A2F_PORT}/status"
+    echo "   curl http://localhost:${A2F_PORT}/audio2face/statu"
     echo ""
 
     if [ "$A2F_MODE" == "mock" ]; then
