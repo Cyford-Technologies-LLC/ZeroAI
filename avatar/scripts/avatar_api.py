@@ -6,7 +6,7 @@ import tempfile
 import traceback
 import json
 import subprocess
-from datetime import datetime, time
+from datetime import datetime
 
 # Flask imports
 from flask import Flask, request, jsonify, send_file, Response
