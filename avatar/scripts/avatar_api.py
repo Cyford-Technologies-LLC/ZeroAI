@@ -1,5 +1,5 @@
 # avatar/avatar_endpoints.py - Clean endpoints-only version
-
+import time
 import os
 import logging
 import tempfile
