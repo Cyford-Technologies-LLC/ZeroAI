@@ -1,5 +1,5 @@
-#FROM nvidia/cuda:12.1.0-base-ubuntu22.04
-FROM nvcr.io/nvidia/omniverse/audio2face:2023.2.0
+FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+#FROM nvcr.io/nvidia/omniverse/audio2face:2023.2.0
 
 
 # Set environment variables (rarely change - cache friendly)
