@@ -203,3 +203,28 @@ You'll know it's working when:
 4. **Headers indicate mode used** (real/mock)
 
 The integration preserves your existing avatar system while adding professional-grade facial animation capabilities. Start with mock mode to verify everything works, then upgrade to real Audio2Face when you're ready for maximum quality.
+
+
+
+
+
+
+# Test mock mode immediately (no A2F server needed)
+curl -X POST http://localhost:7860/audio2face/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Testing Audio2Face!", "force_mock": true}' \
+  --output test.mp4
+
+# Check status
+curl http://localhost:7860/audio2face/status
+
+# Get all options
+curl http://localhost:7860/audio2face/options
+
+
+
+
+
+
+
+
