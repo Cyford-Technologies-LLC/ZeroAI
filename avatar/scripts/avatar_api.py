@@ -20,7 +20,7 @@ from simple_face_generator import generate_talking_face
 from utility import clean_text, check_ffmpeg_available, get_disk_usage, get_memory_info, load_and_preprocess_image
 
 
-from a2f.audio2face_options import Audio2FaceOptions, prepare_audio2face_request
+# from a2f.audio2face_options import Audio2FaceOptions, prepare_audio2face_request
 from a2f.enhanced_audio2face_integration import (
     EnhancedAudio2FaceGenerator,
     generate_enhanced_audio2face_avatar
