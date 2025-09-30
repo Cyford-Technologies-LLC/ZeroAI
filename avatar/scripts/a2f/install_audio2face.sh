@@ -40,7 +40,7 @@ check_environment() {
         exit 1
     fi
 
-    if [ ! -f "audio_processor.py" ]; then
+    if [ ! -f "../audio_processor.py" ]; then
         print_error "audio_processor.py not found. This script needs your existing avatar system."
         exit 1
     fi
@@ -56,7 +56,7 @@ create_backup() {
     mkdir -p "$BACKUP_DIR"
 
     # Backup key files
-    for file in avatar_endpoints.py audio_processor.py; do
+    for file in avatar_endpoints.py  /app/audio_processor.py; do
         if [ -f "$file" ]; then
             cp "$file" "$BACKUP_DIR/"
             print_status "Backed up $file"
