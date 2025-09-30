@@ -123,9 +123,7 @@ RUN if [ -f "/app/create_face.py" ]; then \
 COPY faces/ /app/faces/
 
 # Set ownership for static content
-RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/ /home/avataruser     /opt/audio2face \
-    /var/lib/audio2face \
-    /var/log/audio2face \
+RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/ /home/avataruser
 
 # Copy application code (changes most frequently - put LAST)
 COPY scripts/*.py /app/
