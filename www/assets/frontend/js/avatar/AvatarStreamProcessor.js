@@ -19,9 +19,7 @@ class AvatarStreamProcessor {
 
     // Main entry point - called for each chunk
     async processChunk(chunkData) {
-        console.log(
-            [StreamProcessor] Chunk ${chunkData.id} received
-    );
+        console.log(`[StreamProcessor] Chunk ${chunkData.id} received` );
 
         // PLAY IMMEDIATELY - Don't wait!
         if (chunkData.id === 0 || !this.videoElement) {
