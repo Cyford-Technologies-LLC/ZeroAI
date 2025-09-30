@@ -1,0 +1,26 @@
+JS
+
+const p = window.avatarStreamProcessor;
+if (p && p.pendingChunks.length > 0 && !p.streamStarted) {
+    console.log('🚀 Forcing stream start!');
+    p.startStreaming();
+}, 2000);
+
+
+// Fixed monitoring code for YOUR AvatarStreamProcessor
+window.DEBUG_AVATAR = true;
+setInterval(() => {
+    const p = window.avatarStreamProcessor;
+    if (p) {
+        console.log('=== STREAM PROCESSOR STATUS ===');
+        console.log('Processed Chunks:', p.processedChunks?.size || 0);
+        console.log('Pending Chunks:', p.pendingChunks?.length || 0);
+        console.log('Chunk Count:', p.chunkCount || 0);
+        console.log('Is Processing:', p.isProcessing);
+        console.log('Stream Started:', p.streamStarted);
+        console.log('Video element:', p.videoElement?.src ? 'Has source' : 'No source');
+        if (p.pendingChunks && p.pendingChunks.length > 0) {
+            console.log('Next chunk ID:', p.pendingChunks[0].id);
+        }
+    }
+}, 2000);
