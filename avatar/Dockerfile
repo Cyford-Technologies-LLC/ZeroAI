@@ -57,6 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /app/faces \
     /tmp/gfpgan \
     /app/static \
+    /app/a2f \
     /app/scripts \
     /app/logs \
     /tmp/streaming_cache \
@@ -127,6 +128,7 @@ RUN chown -R avataruser:avataruser /app/faces /app/static /app/logs /tmp/ /home/
 
 # Copy application code (changes most frequently - put LAST)
 COPY scripts/*.py /app/
+COPY scripts/a2f/*.py /app/a2f
 
 # Final ownership and permissions (small operation)
 RUN chown -R avataruser:avataruser /app/*.py \
