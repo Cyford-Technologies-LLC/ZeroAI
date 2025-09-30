@@ -30,7 +30,7 @@ class StreamingAvatarGenerator:
         logger.info(f"StreamingAvatarGenerator initialized - Device: {device}")
 
     def generate_chunked_stream(self, options: Dict, prompt: str, source_image: np.ndarray,
-                                chunk_duration: float = 3.0, tts_engine: str = 'espeak',
+                                chunk_duration: float = 4.0, tts_engine: str = 'espeak',
                                 tts_options: Dict = None, codec: str = 'h264_fast',
                                 quality: str = 'medium', frame_rate: int = 30,
                                 mode: str = 'auto', timeout: int = 300, enhancer: str = None,
@@ -246,7 +246,7 @@ class StreamingAvatarGenerator:
     def _split_by_duration_words(self, text: str, target_duration: float) -> List[str]:
         """Split text by estimated duration using word count"""
         words_per_second = 2.5  # Average speaking rate
-        words_per_chunk = max(1, int(target_duration * words_per_second))
+        words_per_chunk = max(5, int(target_duration * words_per_second))
 
         words = text.split()
         chunks = []
