@@ -1,11 +1,13 @@
-flask
-requests
-openai
-TTS
-edge-tts
-asyncio
-pydub
-numpy
-torch
-torchaudio
-soundfile
+flask>=2.3.0
+requests>=2.31.0
+openai>=1.0.0
+TTS>=0.22.0
+edge-tts>=6.1.8
+pydub>=0.25.1
+numpy>=1.24.0
+soundfile>=0.12.1
+
+# PyTorch with CUDA support (for GPU acceleration)
+--extra-index-url https://download.pytorch.org/whl/cu121
+torch==2.1.2+cu121
+torchaudio==2.1.2+cu121
