@@ -44,7 +44,8 @@ else
 #    done
 
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
-    docker cp avatar/scripts zeroai_avatar:/app/
+    docker cp avatar/scripts zeroai_avatar:/app/a2f/
+    docker cp avatar/scripts/a2f/. zeroai_avatar:/app/a2f/
     # shellcheck disable=SC2046
     truncate -s 0 $(docker inspect --format='{{.LogPath}}' avatar)
 
