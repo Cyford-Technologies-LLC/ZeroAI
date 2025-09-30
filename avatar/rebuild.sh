@@ -39,10 +39,10 @@ elif $BUILD; then
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml build avatar
 else
     #  Simple restart
-    for file in avatar/scripts/*; do
-      docker cp "$file" zeroai_avatar:/app/
-    done
-
+#    for file in avatar/scripts/*; do
+#      docker cp "$file" zeroai_avatar:/app/
+#    done
+    docker cp avatar/scripts zeroai_avatar:/app/
     docker compose -f Docker-compose.yml -f docker-compose.gpu.override.yml restart avatar
     # shellcheck disable=SC2046
     truncate -s 0 $(docker inspect --format='{{.LogPath}}' avatar)
