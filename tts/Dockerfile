@@ -23,6 +23,15 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     espeak-ng espeak-ng-data \
+    python3.10 \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    cmake \
+    libopenblas-dev \
+    liblapack-dev \
+    libx11-dev \
+    libgtk-3-dev \
     cuda-toolkit-12-1 \
     && rm -rf /var/lib/apt/lists/*
 
