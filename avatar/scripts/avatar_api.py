@@ -788,7 +788,7 @@ def generate_audio2face_avatar_complete():
         # Generate based on mode
         if use_mock:
             # Use mock for testing
-            from mock_audio2face import generate_mock_audio2face_avatar
+            from a2f.mock_audio2face import generate_mock_audio2face_avatar
 
             character = a2f_options.get("character", {}).get("character_preset", "MockCharacter_Female_01")
             success = generate_mock_audio2face_avatar(
