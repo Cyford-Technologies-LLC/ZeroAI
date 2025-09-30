@@ -4,7 +4,7 @@ set -e  # Exit on any error
 echo "Installing SadTalker..."
 
 # Clone official SadTalker repository
-cd /app
+cd /app/
 git clone https://github.com/OpenTalker/SadTalker.git
 cd SadTalker
 
