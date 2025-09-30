@@ -1,4 +1,6 @@
-FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+#FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+FROM nvcr.io/nvidia/omniverse/audio2face:2023.2.0
+
 
 # Set environment variables (rarely change - cache friendly)
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -6,7 +8,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DEBIAN_FRONTEND=noninteractive \
     NUMBA_CACHE_DIR='/tmp/numba_cache' \
     MPLCONFIGDIR=/tmp/matplotlib \
-    GFPGAN_CACHE_DIR=/tmp/gfpgan_cache
+    GFPGAN_CACHE_DIR=/tmp/gfpgan_cache \
+    A2F_PORT="8011" \
+    OMNIVERSE_CACHE="/var/cache/omniverse" \
+    SERVICE_USER="audio2face" \
+    ACCEPT_EULA=Y \
+    PRIVACY_CONSENT=Y \
+    A2F_HEADLESS=1 \
+    CUDA_VISIBLE_DEVICES=0
+
 
 
 WORKDIR /app
@@ -31,6 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-libav \
+    libgomp1 \
     ffmpeg \
     git \
     wget \
@@ -55,6 +66,9 @@ RUN mkdir -p /app/faces \
     /tmp/huggingface_cache \
     /tmp/.cache \
     /home/avataruser/.config \
+    /opt/audio2face \
+    /var/lib/audio2face \
+    /var/log/audio2face
     && groupadd -r avataruser \
     && useradd -r -g avataruser avataruser \
     && chmod -R 777 /tmp/  /home/avataruser/\
@@ -62,6 +76,10 @@ RUN mkdir -p /app/faces \
 
 # Copy only requirements first (change occasionally - cache friendly)
 COPY requirements.txt .
+# Create headless startup script
+COPY start_headless.py /app/start_headless.py
+COPY a2f_server.py /app/a2f_server.py
+
 
 # Install Python packages (change occasionally - cache friendly)
 RUN pip install --no-cache-dir --upgrade pip \
@@ -127,5 +145,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 RUN chown -R avataruser:avataruser /tmp/ /home/avataruser/
 
 
-EXPOSE 7860
+EXPOSE 7860 8011 8012
 CMD ["python3", "avatar_api.py"]

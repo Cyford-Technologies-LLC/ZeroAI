@@ -1,1000 +1,666 @@
 #!/bin/bash
-# install_audio2face.sh - Complete Audio2Face integration installer
+# install_audio2face_server.sh - Complete Audio2Face server installation with headless service
 
 set -e
 
-echo "=== AUDIO2FACE INTEGRATION INSTALLER ==="
-echo "This script will set up Audio2Face integration for your avatar system."
-echo
-
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+# Configuration
+A2F_INSTALL_DIR="/opt/audio2face"
+A2F_DATA_DIR="/var/lib/audio2face"
+A2F_LOG_DIR="/var/log/audio2face"
+A2F_PORT="8011"
+OMNIVERSE_CACHE="/var/cache/omniverse"
+SERVICE_USER="audio2face"
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
+# Functions
+print_status() { echo -e "${GREEN}[✓]${NC} $1"; }
+print_error() { echo -e "${RED}[✗]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
+print_step() { echo -e "${BLUE}[→]${NC} $1"; }
+print_info() { echo -e "${CYAN}[i]${NC} $1"; }
 
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# Header
+clear
+echo "============================================"
+echo "   NVIDIA AUDIO2FACE SERVER INSTALLATION"
+echo "============================================"
+echo ""
 
-print_step() {
-    echo -e "${BLUE}[STEP]${NC} $1"
-}
+# Check prerequisites
+check_prerequisites() {
+    print_step "Checking prerequisites..."
 
-# Check if we're in the right directory
-check_environment() {
-    print_step "Checking environment..."
-
-    if [ ! -f "avatar_endpoints.py" ]; then
-        print_error "avatar_endpoints.py not found. Please run this script from your avatar project directory."
+    # Check if running as root
+    if [[ $EUID -ne 0 ]]; then
+        print_error "This script must be run as root (use sudo)"
         exit 1
     fi
 
-    if [ ! -f "../audio_processor.py" ]; then
-        print_error "audio_processor.py not found. This script needs your existing avatar system."
+    # Check GPU
+    if ! command -v nvidia-smi &> /dev/null; then
+        print_error "NVIDIA GPU driver not found. Audio2Face requires NVIDIA GPU."
+        print_info "Install NVIDIA drivers first: sudo apt install nvidia-driver-525"
         exit 1
     fi
 
-    print_status "Environment check passed"
-}
-
-# Create backup
-create_backup() {
-    print_step "Creating backup..."
-
-    BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
-    mkdir -p "$BACKUP_DIR"
-
-    # Backup key files
-    for file in avatar_endpoints.py  /app/audio_processor.py; do
-        if [ -f "$file" ]; then
-            cp "$file" "$BACKUP_DIR/"
-            print_status "Backed up $file"
-        fi
-    done
-
-    print_status "Backup created in $BACKUP_DIR"
-}
-
-# Install Python dependencies
-install_dependencies() {
-    print_step "Installing Python dependencies..."
-
-    # Check if pip is available
-    if ! command -v pip &> /dev/null; then
-        print_error "pip not found. Please install pip first."
-        exit 1
+    # Check GPU memory
+    GPU_MEM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1)
+    if [ "$GPU_MEM" -lt 8000 ]; then
+        print_warning "GPU has less than 8GB VRAM. Audio2Face may have performance issues."
+    else
+        print_status "GPU check passed (${GPU_MEM}MB VRAM)"
     fi
 
-    # Install required packages
-    pip install requests
+    # Check Docker
+    if ! command -v docker &> /dev/null; then
+        print_warning "Docker not found. Installing Docker..."
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+        rm get-docker.sh
+    fi
 
-    print_status "Dependencies installed"
+    print_status "Prerequisites check complete"
 }
 
-# Download integration files
-download_files() {
-    print_step "Installing Audio2Face integration files..."
+# Install Audio2Face Headless Server
+install_audio2face_server() {
+    print_step "Installing Audio2Face Headless Server..."
 
-    # Create the audio2face_integration.py file
-    cat > audio2face_integration.py << 'EOF'
-# audio2face_integration.py - Simple A2F integration for your existing avatar system
+    # Create directories
+    mkdir -p "$A2F_INSTALL_DIR"
+    mkdir -p "$A2F_DATA_DIR"
+    mkdir -p "$A2F_LOG_DIR"
+    mkdir -p "$OMNIVERSE_CACHE"
+
+    # Create service user
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        useradd -r -s /bin/false -d "$A2F_DATA_DIR" "$SERVICE_USER"
+        print_status "Created service user: $SERVICE_USER"
+    fi
+
+    # Option 1: Docker-based Audio2Face (Recommended)
+    print_info "Setting up Docker-based Audio2Face server..."
+
+    # Create Audio2Face Docker container
+    cat > "$A2F_INSTALL_DIR/Dockerfile" << 'EOFDOCKER'
+FROM nvcr.io/nvidia/omniverse/audio2face:2023.2.0
+
+# Install headless dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-dev \
+    libgomp1 \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python requirements
+RUN pip3 install \
+    flask \
+    flask-cors \
+    requests \
+    numpy \
+    pillow
+
+# Create headless startup script
+COPY start_headless.py /app/start_headless.py
+COPY a2f_server.py /app/a2f_server.py
+
+# Expose ports
+EXPOSE 8011 8012
+
+# Set environment
+ENV ACCEPT_EULA=Y
+ENV PRIVACY_CONSENT=Y
+ENV A2F_HEADLESS=1
+ENV CUDA_VISIBLE_DEVICES=0
+
+WORKDIR /app
+
+CMD ["python3", "/app/a2f_server.py"]
+EOFDOCKER
+
+    # Create Audio2Face headless server Python script
+    cat > "$A2F_INSTALL_DIR/a2f_server.py" << 'EOFSERVER'
+#!/usr/bin/env python3
+"""
+Audio2Face Headless Server
+Provides REST API for facial animation generation
+"""
 
 import os
-import time
+import sys
 import json
-import requests
-import tempfile
-import subprocess
-import logging
-from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
-
-# Your existing imports
-from audio_processor import call_tts_service_with_options, normalize_audio
-from utility import clean_text
-
-logger = logging.getLogger(__name__)
-
-class Audio2FaceGenerator:
-    """
-    Simple Audio2Face integration that works with your existing TTS system.
-    Uses NVIDIA's A2F REST API for facial animation generation.
-    """
-
-    def __init__(self, a2f_server_url: str = "http://localhost:8011"):
-        """
-        Initialize Audio2Face connection
-
-        Args:
-            a2f_server_url: URL of Audio2Face headless server (default localhost:8011)
-        """
-        self.a2f_server_url = a2f_server_url.rstrip('/')
-        self.session = requests.Session()
-        self.current_character = None
-        self.is_connected = False
-
-        # Test connection
-        self._test_connection()
-
-    def _test_connection(self) -> bool:
-        """Test if Audio2Face server is accessible"""
-        try:
-            response = self.session.get(f"{self.a2f_server_url}/status", timeout=5)
-            if response.status_code == 200:
-                self.is_connected = True
-                logger.info("✅ Audio2Face server connected successfully")
-                return True
-        except Exception as e:
-            logger.warning(f"⚠️ Audio2Face server not accessible: {e}")
-            logger.warning("Make sure Audio2Face is running with headless mode enabled")
-
-        self.is_connected = False
-        return False
-
-    def load_character(self, character_path: str) -> bool:
-        """
-        Load a character model into Audio2Face
-
-        Args:
-            character_path: Path to USD character file or character name in A2F
-
-        Returns:
-            bool: Success status
-        """
-        try:
-            if not self.is_connected:
-                logger.error("Audio2Face not connected")
-                return False
-
-            payload = {
-                "character_path": character_path
-            }
-
-            response = self.session.post(
-                f"{self.a2f_server_url}/character/load",
-                json=payload,
-                timeout=30
-            )
-
-            if response.status_code == 200:
-                self.current_character = character_path
-                logger.info(f"✅ Character loaded: {character_path}")
-                return True
-            else:
-                logger.error(f"Failed to load character: {response.text}")
-                return False
-
-        except Exception as e:
-            logger.error(f"Character loading error: {e}")
-            return False
-
-    def generate_facial_animation(self, audio_path: str, output_path: str,
-                                character_path: Optional[str] = None) -> bool:
-        """
-        Generate facial animation from audio using Audio2Face
-
-        Args:
-            audio_path: Path to input audio file (WAV format)
-            output_path: Path for output video file
-            character_path: Optional character to use (if not already loaded)
-
-        Returns:
-            bool: Success status
-        """
-        try:
-            if not self.is_connected:
-                logger.error("Audio2Face not connected")
-                return False
-
-            # Load character if specified
-            if character_path and character_path != self.current_character:
-                if not self.load_character(character_path):
-                    return False
-
-            # Ensure we have a character loaded
-            if not self.current_character:
-                logger.error("No character loaded in Audio2Face")
-                return False
-
-            # Convert audio to format A2F expects if needed
-            processed_audio_path = self._prepare_audio(audio_path)
-
-            # Send audio for processing
-            with open(processed_audio_path, 'rb') as audio_file:
-                files = {'audio': audio_file}
-                data = {
-                    'character': self.current_character,
-                    'output_format': 'mp4',
-                    'fps': 30
-                }
-
-                response = self.session.post(
-                    f"{self.a2f_server_url}/generate",
-                    files=files,
-                    data=data,
-                    timeout=300  # 5 minute timeout for generation
-                )
-
-            if response.status_code == 200:
-                # Save the generated video
-                with open(output_path, 'wb') as output_file:
-                    output_file.write(response.content)
-
-                logger.info(f"✅ Audio2Face generation completed: {output_path}")
-                return True
-            else:
-                logger.error(f"Audio2Face generation failed: {response.text}")
-                return False
-
-        except Exception as e:
-            logger.error(f"Audio2Face generation error: {e}")
-            return False
-        finally:
-            # Cleanup processed audio if it's different from original
-            if 'processed_audio_path' in locals() and processed_audio_path != audio_path:
-                try:
-                    os.unlink(processed_audio_path)
-                except:
-                    pass
-
-    def _prepare_audio(self, audio_path: str) -> str:
-        """
-        Prepare audio file for Audio2Face (ensure correct format)
-
-        Args:
-            audio_path: Path to input audio
-
-        Returns:
-            str: Path to prepared audio file
-        """
-        try:
-            # Check if audio is already in the right format
-            result = subprocess.run([
-                'ffprobe', '-v', 'quiet', '-print_format', 'json',
-                '-show_format', '-show_streams', audio_path
-            ], capture_output=True, text=True)
-
-            if result.returncode == 0:
-                info = json.loads(result.stdout)
-                audio_stream = next((s for s in info['streams'] if s['codec_type'] == 'audio'), None)
-
-                if (audio_stream and
-                    audio_stream.get('codec_name') == 'pcm_s16le' and
-                    audio_stream.get('sample_rate') == '22050'):
-                    # Audio is already in correct format
-                    return audio_path
-
-            # Convert audio to A2F preferred format
-            output_path = audio_path.replace('.wav', '_a2f.wav')
-
-            cmd = [
-                'ffmpeg', '-i', audio_path,
-                '-ar', '22050',           # Sample rate
-                '-ac', '1',               # Mono
-                '-c:a', 'pcm_s16le',      # 16-bit PCM
-                '-y', output_path
-            ]
-
-            result = subprocess.run(cmd, capture_output=True, text=True)
-
-            if result.returncode == 0 and os.path.exists(output_path):
-                return output_path
-            else:
-                logger.warning(f"Audio conversion failed, using original: {result.stderr}")
-                return audio_path
-
-        except Exception as e:
-            logger.warning(f"Audio preparation error: {e}, using original")
-            return audio_path
-
-    def list_available_characters(self) -> list:
-        """Get list of available characters from Audio2Face"""
-        try:
-            if not self.is_connected:
-                return []
-
-            response = self.session.get(f"{self.a2f_server_url}/characters")
-
-            if response.status_code == 200:
-                return response.json().get('characters', [])
-            else:
-                logger.error(f"Failed to get characters list: {response.text}")
-                return []
-
-        except Exception as e:
-            logger.error(f"Error getting characters list: {e}")
-            return []
-
-
-def generate_audio2face_avatar(prompt: str, source_image: str, output_path: str,
-                             tts_engine: str = 'espeak', tts_options: Dict = None,
-                             character_path: str = None,
-                             a2f_server_url: str = "http://localhost:8011") -> bool:
-    """
-    Complete pipeline: TTS -> Audio2Face -> Video
-
-    Args:
-        prompt: Text to speak
-        source_image: Path to source image or character reference
-        output_path: Path for output video
-        tts_engine: TTS engine to use ('espeak', 'edge', etc.)
-        tts_options: TTS options (voice, rate, etc.)
-        character_path: Audio2Face character to use
-        a2f_server_url: Audio2Face server URL
-
-    Returns:
-        bool: Success status
-    """
-    try:
-        logger.info(f"=== AUDIO2FACE GENERATION START ===")
-        logger.info(f"Prompt: {prompt[:50]}...")
-        logger.info(f"Character: {character_path}")
-
-        # Initialize Audio2Face
-        a2f = Audio2FaceGenerator(a2f_server_url)
-
-        if not a2f.is_connected:
-            logger.error("Cannot connect to Audio2Face server")
-            return False
-
-        # Generate TTS audio using your existing system
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
-            audio_path = audio_file.name
-
-        # Clean text and generate TTS
-        clean_prompt = clean_text(prompt)
-        if not call_tts_service_with_options(clean_prompt, audio_path, tts_engine, tts_options or {}):
-            logger.error("TTS generation failed")
-            return False
-
-        # Normalize audio
-        audio_path = normalize_audio(audio_path)
-
-        # Set default character if none provided
-        if not character_path:
-            # Try to find available characters
-            characters = a2f.list_available_characters()
-            if characters:
-                character_path = characters[0]
-                logger.info(f"Using default character: {character_path}")
-            else:
-                logger.error("No characters available in Audio2Face")
-                return False
-
-        # Generate facial animation
-        success = a2f.generate_facial_animation(
-            audio_path=audio_path,
-            output_path=output_path,
-            character_path=character_path
-        )
-
-        if success:
-            logger.info(f"✅ Audio2Face video generated successfully: {output_path}")
-        else:
-            logger.error("Audio2Face generation failed")
-
-        return success
-
-    except Exception as e:
-        logger.error(f"Audio2Face pipeline error: {e}")
-        return False
-    finally:
-        # Cleanup temporary audio files
-        try:
-            if 'audio_path' in locals() and os.path.exists(audio_path):
-                os.unlink(audio_path)
-            if 'audio_path' in locals():
-                normalized_path = audio_path.replace('.wav', '_fixed.wav')
-                if os.path.exists(normalized_path):
-                    os.unlink(normalized_path)
-        except:
-            pass
-
-
-def check_audio2face_requirements() -> Dict[str, Any]:
-    """
-    Check if Audio2Face integration requirements are met
-
-    Returns:
-        Dict with status information
-    """
-    status = {
-        'audio2face_available': False,
-        'server_reachable': False,
-        'characters_available': [],
-        'requirements_met': False,
-        'issues': []
-    }
-
-    try:
-        # Test Audio2Face connection
-        a2f = Audio2FaceGenerator()
-
-        if a2f.is_connected:
-            status['audio2face_available'] = True
-            status['server_reachable'] = True
-
-            # Get available characters
-            characters = a2f.list_available_characters()
-            status['characters_available'] = characters
-
-            if characters:
-                status['requirements_met'] = True
-            else:
-                status['issues'].append("No characters loaded in Audio2Face")
-        else:
-            status['issues'].append("Audio2Face server not reachable")
-
-    except Exception as e:
-        status['issues'].append(f"Audio2Face check failed: {str(e)}")
-
-    # Check other requirements
-    try:
-        subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
-    except:
-        status['issues'].append("FFmpeg not available")
-
-    return status
-EOF
-
-    print_status "Created audio2face_integration.py"
-
-    # Create the mock Audio2Face file
-    cat > mock_audio2face.py << 'EOF'
-# mock_audio2face.py - Test Audio2Face integration without actual A2F server
-
-import os
 import time
+import logging
 import tempfile
 import subprocess
-import logging
 from pathlib import Path
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 
-from audio_processor import call_tts_service_with_options, normalize_audio
-from utility import clean_text
-
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-class MockAudio2FaceGenerator:
-    """
-    Mock Audio2Face that creates placeholder videos for testing integration.
-    Use this while setting up the real Audio2Face server.
-    """
+app = Flask(__name__)
+CORS(app)
 
-    def __init__(self, a2f_server_url: str = "mock://localhost:8011"):
-        self.a2f_server_url = a2f_server_url
-        self.current_character = "MockCharacter_Female_01"
-        self.is_connected = True
-        logger.info("🔄 Mock Audio2Face initialized (for testing)")
+# Audio2Face Kit application path (adjust based on installation)
+A2F_APP_PATH = os.environ.get('A2F_APP_PATH', '/opt/nvidia/omniverse/audio2face')
+A2F_USD_PATH = os.environ.get('A2F_USD_PATH', '/var/lib/audio2face/stages')
 
-    def load_character(self, character_path: str) -> bool:
-        """Mock character loading"""
-        self.current_character = character_path
-        logger.info(f"🔄 Mock: Character loaded: {character_path}")
-        return True
+class Audio2FaceServer:
+    """Audio2Face headless server implementation"""
 
-    def generate_facial_animation(self, audio_path: str, output_path: str,
-                                character_path: str = None) -> bool:
-        """
-        Generate a mock video with audio for testing.
-        Creates a simple animated placeholder while preserving your audio.
-        """
+    def __init__(self):
+        self.kit_app = None
+        self.current_stage = None
+        self.characters = {}
+        self.initialize()
+
+    def initialize(self):
+        """Initialize Audio2Face Kit application"""
         try:
-            if character_path:
-                self.current_character = character_path
+            # Import Omniverse Kit
+            sys.path.append(f"{A2F_APP_PATH}/kit/python")
+            import omni.kit.app
 
-            logger.info(f"🔄 Mock Audio2Face generating video for character: {self.current_character}")
+            # Start Kit application in headless mode
+            self.kit_app = omni.kit.app.get_app()
 
-            # Get audio duration for video length
-            result = subprocess.run([
-                'ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
-                '-of', 'csv=p=0', audio_path
-            ], capture_output=True, text=True)
+            # Load Audio2Face extension
+            manager = self.kit_app.get_extension_manager()
+            manager.set_extension_enabled("omni.audio2face", True)
+            manager.set_extension_enabled("omni.audio2face.headless", True)
 
-            duration = float(result.stdout.strip()) if result.returncode == 0 else 3.0
+            logger.info("Audio2Face Kit application initialized")
 
-            # Create a simple animated video with your audio
-            # This simulates what Audio2Face would do but with basic animation
-            cmd = [
-                'ffmpeg', '-y',
-
-                # Video: Create animated talking head placeholder
-                '-f', 'lavfi', '-i', f'testsrc2=size=512x512:rate=30:duration={duration}',
-                '-f', 'lavfi', '-i', f'sine=frequency=440:duration={duration}',  # Dummy audio to sync
-
-                # Your actual audio
-                '-i', audio_path,
-
-                # Video filters for mock "talking" animation
-                '-filter_complex', '''[0:v]
-                    drawtext=text='MOCK AUDIO2FACE':x=10:y=10:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.8,
-                    drawtext=text='Character\\: ''' + self.current_character.replace(':', '\\:') + '''':x=10:y=50:fontsize=16:fontcolor=yellow:box=1:boxcolor=black@0.8,
-                    drawtext=text='Audio2Face Simulation':x=10:y=480:fontsize=20:fontcolor=green:box=1:boxcolor=black@0.8,
-                    drawbox=x=150:y=150:w=200:h=250:color=lightblue@0.3:t=5,
-                    drawtext=text='👤':x=230:y=250:fontsize=80,
-                    scale=512:512[v]''',
-
-                # Map the real audio
-                '-map', '[v]', '-map', '2:a',
-
-                # Encoding settings
-                '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                '-c:a', 'aac', '-b:a', '128k',
-                '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart',
-
-                output_path
-            ]
-
-            result = subprocess.run(cmd, capture_output=True, text=True)
-
-            if result.returncode == 0 and os.path.exists(output_path):
-                logger.info(f"✅ Mock Audio2Face video created: {output_path}")
-                return True
-            else:
-                logger.error(f"Mock video creation failed: {result.stderr}")
-                return False
+            # Load default character
+            self.load_default_character()
 
         except Exception as e:
-            logger.error(f"Mock Audio2Face error: {e}")
-            return False
+            logger.error(f"Failed to initialize Audio2Face: {e}")
+            # Fallback to command-line mode
+            self.use_cli_mode()
 
-    def list_available_characters(self) -> list:
-        """Return mock character list"""
-        return [
-            "MockCharacter_Female_01",
-            "MockCharacter_Male_01",
-            "MockCharacter_Female_02",
-            "TestCharacter_Realistic"
-        ]
+    def use_cli_mode(self):
+        """Fallback to command-line Audio2Face"""
+        logger.info("Using Audio2Face CLI mode")
+        self.cli_mode = True
 
+    def load_default_character(self):
+        """Load default character model"""
+        try:
+            default_char = f"{A2F_USD_PATH}/default_character.usd"
+            if os.path.exists(default_char):
+                self.load_character(default_char)
+            else:
+                logger.warning("Default character not found")
+        except Exception as e:
+            logger.error(f"Failed to load default character: {e}")
 
-def generate_mock_audio2face_avatar(prompt: str, source_image: str, output_path: str,
-                                   tts_engine: str = 'espeak', tts_options: dict = None,
-                                   character_path: str = None) -> bool:
-    """
-    Generate mock Audio2Face avatar for testing integration
-    """
+    def load_character(self, usd_path):
+        """Load character from USD file"""
+        if self.kit_app:
+            import omni.usd
+            stage = omni.usd.get_context().get_stage()
+            stage.Load(usd_path)
+            self.current_stage = stage
+            return True
+        return False
+
+    def generate_animation(self, audio_path, options=None):
+        """Generate facial animation from audio"""
+        try:
+            if options is None:
+                options = {}
+
+            output_path = options.get('output_path', '/tmp/a2f_output.mp4')
+
+            if self.cli_mode:
+                # Use command-line interface
+                cmd = [
+                    f"{A2F_APP_PATH}/audio2face_headless",
+                    "--input", audio_path,
+                    "--output", output_path,
+                    "--character", options.get('character', 'default'),
+                    "--quality", options.get('quality', 'high'),
+                    "--fps", str(options.get('fps', 30))
+                ]
+
+                # Add emotion parameters if specified
+                if 'emotion' in options:
+                    cmd.extend(["--emotion", options['emotion']])
+
+                result = subprocess.run(cmd, capture_output=True, text=True)
+
+                if result.returncode == 0:
+                    return output_path
+                else:
+                    logger.error(f"A2F CLI error: {result.stderr}")
+                    return None
+            else:
+                # Use Kit API
+                import omni.audio2face
+
+                # Process through Audio2Face
+                processor = omni.audio2face.get_processor()
+                processor.set_audio(audio_path)
+                processor.set_options(options)
+                processor.process()
+
+                # Export animation
+                exporter = omni.audio2face.get_exporter()
+                exporter.export_video(output_path, fps=options.get('fps', 30))
+
+                return output_path
+
+        except Exception as e:
+            logger.error(f"Animation generation failed: {e}")
+            return None
+
+# Initialize server
+a2f_server = Audio2FaceServer()
+
+@app.route('/status')
+def status():
+    """Check server status"""
+    return jsonify({
+        'status': 'running',
+        'mode': 'cli' if hasattr(a2f_server, 'cli_mode') else 'kit',
+        'version': '2023.2.0',
+        'gpu': os.environ.get('CUDA_VISIBLE_DEVICES', 'auto'),
+        'port': 8011
+    })
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    """Generate facial animation from audio"""
     try:
-        logger.info(f"🔄 Mock Audio2Face Generation: {prompt[:50]}...")
+        # Get audio file
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
 
-        # Use mock generator
-        mock_a2f = MockAudio2FaceGenerator()
+        audio_file = request.files['audio']
 
-        # Generate TTS audio using existing system
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
-            audio_path = audio_file.name
+        # Save audio temporarily
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+            audio_file.save(tmp.name)
+            audio_path = tmp.name
 
-        clean_prompt = clean_text(prompt)
-        if not call_tts_service_with_options(clean_prompt, audio_path, tts_engine, tts_options or {}):
-            logger.error("TTS generation failed")
-            return False
+        # Get options from form data
+        options = {
+            'character': request.form.get('character', 'default'),
+            'fps': int(request.form.get('fps', 30)),
+            'quality': request.form.get('quality', 'high'),
+            'emotion': request.form.get('emotion_type', 'neutral'),
+            'emotion_intensity': float(request.form.get('emotion_intensity', 0.5))
+        }
 
-        # Normalize audio
-        audio_path = normalize_audio(audio_path)
+        # Generate animation
+        output_path = a2f_server.generate_animation(audio_path, options)
 
-        # Generate mock video
-        success = mock_a2f.generate_facial_animation(
-            audio_path=audio_path,
-            output_path=output_path,
-            character_path=character_path or "MockCharacter_Female_01"
-        )
-
-        return success
+        if output_path and os.path.exists(output_path):
+            return send_file(output_path, mimetype='video/mp4')
+        else:
+            return jsonify({'error': 'Generation failed'}), 500
 
     except Exception as e:
-        logger.error(f"Mock Audio2Face error: {e}")
-        return False
+        logger.error(f"Generate endpoint error: {e}")
+        return jsonify({'error': str(e)}), 500
     finally:
         # Cleanup
-        try:
-            if 'audio_path' in locals() and os.path.exists(audio_path):
+        if 'audio_path' in locals():
+            try:
                 os.unlink(audio_path)
-        except:
-            pass
-EOF
-
-    print_status "Created mock_audio2face.py"
-}
-
-# Patch avatar_endpoints.py
-patch_endpoints() {
-    print_step "Patching avatar_endpoints.py..."
-
-    # Create a patch file that adds Audio2Face endpoints
-    cat > audio2face_endpoints_patch.py << 'EOF'
-# Add this code to your avatar_endpoints.py file after your existing imports
-
-import time
-import traceback
-
-# Import both real and mock Audio2Face
-try:
-    from audio2face_integration import (
-        generate_audio2face_avatar,
-        check_audio2face_requirements,
-        Audio2FaceGenerator
-    )
-    AUDIO2FACE_REAL_AVAILABLE = True
-except ImportError:
-    AUDIO2FACE_REAL_AVAILABLE = False
-
-try:
-    from mock_audio2face import (
-        generate_mock_audio2face_avatar,
-        MockAudio2FaceGenerator
-    )
-    AUDIO2FACE_MOCK_AVAILABLE = True
-except ImportError:
-    AUDIO2FACE_MOCK_AVAILABLE = False
-
-# ============================================================================
-# AUDIO2FACE ENDPOINTS - Add these to your existing Flask app
-# ============================================================================
-
-@app.route('/generate/audio2face', methods=['POST'])
-def generate_audio2face_avatar_endpoint():
-    """Generate talking avatar video using NVIDIA Audio2Face (real or mock)."""
-    try:
-        data = request.json or {}
-        if not data:
-            return jsonify({"error": "No JSON data provided"}), 400
-
-        # Extract parameters
-        prompt = clean_text(data.get("prompt", ""))
-        if not prompt:
-            return jsonify({"error": "Prompt is required"}), 400
-
-        character_path = data.get("character_path")
-        tts_engine = data.get("tts_engine", "espeak")
-        force_mock = data.get("force_mock", False)
-
-        # Handle TTS options
-        tts_options = {}
-        for key in ["voice", "rate", "pitch", "language"]:
-            if key in data:
-                tts_options[key] = data[key]
-
-        # Determine which Audio2Face to use
-        use_mock = force_mock
-        mode_info = {"type": "unknown", "reason": ""}
-
-        if not use_mock and AUDIO2FACE_REAL_AVAILABLE:
-            try:
-                status = check_audio2face_requirements()
-                if status['requirements_met']:
-                    use_mock = False
-                    mode_info = {"type": "real", "reason": "Audio2Face server available"}
-                else:
-                    use_mock = True
-                    mode_info = {"type": "mock", "reason": "Audio2Face server not ready"}
             except:
-                use_mock = True
-                mode_info = {"type": "mock", "reason": "Audio2Face check failed"}
-        else:
-            use_mock = True
-            if force_mock:
-                mode_info = {"type": "mock", "reason": "Forced mock mode"}
-            elif not AUDIO2FACE_REAL_AVAILABLE:
-                mode_info = {"type": "mock", "reason": "Real Audio2Face not installed"}
+                pass
 
-        logger.info(f"=== AUDIO2FACE GENERATION START ===")
-        logger.info(f"Mode: {mode_info['type']} ({mode_info['reason']})")
-        logger.info(f"Prompt: {prompt[:50]}...")
+@app.route('/characters')
+def list_characters():
+    """List available characters"""
+    characters = []
 
-        # Generate output path
-        timestamp = int(time.time())
-        mode_prefix = "mock_" if use_mock else "real_"
-        output_filename = f"audio2face_{mode_prefix}{timestamp}.mp4"
-        output_path = f"/app/static/{output_filename}"
+    # Check USD directory for characters
+    usd_dir = Path(A2F_USD_PATH)
+    if usd_dir.exists():
+        for usd_file in usd_dir.glob("*.usd"):
+            characters.append(usd_file.stem)
 
-        # Generate avatar
-        if use_mock:
-            if not AUDIO2FACE_MOCK_AVAILABLE:
-                return jsonify({
-                    "error": "Neither real nor mock Audio2Face available"
-                }), 503
+    # Add default characters
+    default_chars = ['james', 'claire', 'mark', 'allison']
+    characters.extend(default_chars)
 
-            success = generate_mock_audio2face_avatar(
-                prompt=prompt,
-                source_image="",
-                output_path=output_path,
-                tts_engine=tts_engine,
-                tts_options=tts_options,
-                character_path=character_path
-            )
-        else:
-            success = generate_audio2face_avatar(
-                prompt=prompt,
-                source_image="",
-                output_path=output_path,
-                tts_engine=tts_engine,
-                tts_options=tts_options,
-                character_path=character_path,
-                a2f_server_url=data.get("a2f_server_url", "http://localhost:8011")
-            )
+    return jsonify({
+        'characters': list(set(characters)),
+        'current': 'default'
+    })
 
-        if success and os.path.exists(output_path):
-            logger.info(f"✅ Audio2Face generation completed: {output_filename}")
+@app.route('/character/load', methods=['POST'])
+def load_character():
+    """Load a specific character"""
+    data = request.get_json()
+    character_path = data.get('character_path')
 
-            response = send_file(output_path, mimetype='video/mp4', as_attachment=False)
-            response.headers['X-Audio2Face-Mode'] = mode_info['type']
-            response.headers['X-Audio2Face-Reason'] = mode_info['reason']
+    if not character_path:
+        return jsonify({'error': 'No character path provided'}), 400
 
-            return response
-        else:
-            return jsonify({
-                "error": f"Audio2Face generation failed ({mode_info['type']} mode)"
-            }), 500
+    success = a2f_server.load_character(character_path)
 
-    except Exception as e:
-        logger.error("Audio2Face generation error: %s\n%s", e, traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/audio2face/status')
-def audio2face_status():
-    """Check Audio2Face integration status"""
-    try:
-        status = {
-            'timestamp': str(datetime.now()),
-            'real_audio2face': {'available': False, 'status': {}},
-            'mock_audio2face': {'available': AUDIO2FACE_MOCK_AVAILABLE},
-            'recommended_mode': 'unknown'
-        }
-
-        if AUDIO2FACE_REAL_AVAILABLE:
-            try:
-                real_status = check_audio2face_requirements()
-                status['real_audio2face'] = {
-                    'available': True,
-                    'status': real_status
-                }
-
-                if real_status['requirements_met']:
-                    status['recommended_mode'] = 'real'
-                else:
-                    status['recommended_mode'] = 'mock'
-            except Exception as e:
-                status['real_audio2face'] = {
-                    'available': False,
-                    'error': str(e)
-                }
-                status['recommended_mode'] = 'mock'
-        else:
-            status['recommended_mode'] = 'mock' if AUDIO2FACE_MOCK_AVAILABLE else 'none'
-
-        return jsonify(status)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/audio2face/characters')
-def list_audio2face_characters():
-    """List available characters from real or mock Audio2Face"""
-    try:
-        force_mock = request.args.get('force_mock', 'false').lower() == 'true'
-
-        result = {
-            'characters': [],
-            'mode': 'unknown',
-                                    'source': 'none'
-        }
-
-        # Try real Audio2Face first
-        if not force_mock and AUDIO2FACE_REAL_AVAILABLE:
-            try:
-                a2f_server_url = request.args.get('server_url', 'http://localhost:8011')
-                a2f = Audio2FaceGenerator(a2f_server_url)
-
-                if a2f.is_connected:
-                    characters = a2f.list_available_characters()
-                    result = {
-                        'characters': characters,
-                        'count': len(characters),
-                        'mode': 'real',
-                        'source': a2f_server_url,
-                        'current_character': a2f.current_character
-                    }
-                    return jsonify(result)
-            except Exception as e:
-                logger.warning(f"Real Audio2Face failed: {e}")
-
-        # Fallback to mock
-        if AUDIO2FACE_MOCK_AVAILABLE:
-            mock_a2f = MockAudio2FaceGenerator()
-            characters = mock_a2f.list_available_characters()
-            result = {
-                'characters': characters,
-                'count': len(characters),
-                'mode': 'mock',
-                'source': 'mock_audio2face',
-                'current_character': mock_a2f.current_character
-            }
-        else:
-            result['error'] = 'No Audio2Face implementation available'
-
-        return jsonify(result)
-
-    except Exception as e:
-        logger.error(f"Error listing characters: {e}")
-        return jsonify({'error': str(e)}), 500
-
-EOF
-
-    print_status "Created endpoint patch file"
-    print_warning "You'll need to manually add the endpoints to your avatar_endpoints.py file"
-    print_warning "See audio2face_endpoints_patch.py for the code to add"
-}
-
-# Create test script
-create_test_script() {
-    print_step "Creating test script..."
-
-    cat > test_audio2face.py << 'EOF'
-#!/usr/bin/env python3
-# test_audio2face.py - Quick test script
-
-import requests
-import json
-import time
-
-def test_integration():
-    print("Testing Audio2Face Integration...")
-
-    # Test status
-    print("\n1. Checking status...")
-    response = requests.get("http://localhost:7860/audio2face/status")
-    if response.status_code == 200:
-        status = response.json()
-        print(f"   Recommended mode: {status.get('recommended_mode')}")
-
-    # Test characters
-    print("\n2. Listing characters...")
-    response = requests.get("http://localhost:7860/audio2face/characters")
-    if response.status_code == 200:
-        chars = response.json()
-        print(f"   Mode: {chars.get('mode')}")
-        print(f"   Characters: {chars.get('characters', [])}")
-
-    # Test generation
-    print("\n3. Testing generation (mock mode)...")
-    response = requests.post("http://localhost:7860/generate/audio2face", json={
-        "prompt": "Hello! This is a test of Audio2Face integration.",
-        "force_mock": True,
-        "tts_engine": "espeak"
-    }, stream=True)
-
-    if response.status_code == 200:
-        with open(f"test_audio2face_{int(time.time())}.mp4", "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        print("   Success! Video saved.")
+    if success:
+        return jsonify({'status': 'loaded', 'character': character_path})
     else:
-        print(f"   Failed: {response.status_code}")
+        return jsonify({'error': 'Failed to load character'}), 500
 
-if __name__ == "__main__":
-    test_integration()
-EOF
+if __name__ == '__main__':
+    logger.info("Starting Audio2Face Headless Server on port 8011")
+    app.run(host='0.0.0.0', port=8011, debug=False)
+EOFSERVER
 
-    chmod +x test_audio2face.py
-    print_status "Created test_audio2face.py"
+    # Build Docker image
+    print_info "Building Audio2Face Docker image..."
+    cd "$A2F_INSTALL_DIR"
+
+    # Note: This uses a placeholder image. In production, you'd need the actual NVIDIA Audio2Face image
+    docker build -t audio2face-server:latest . 2>/dev/null || {
+        print_warning "Cannot pull official Audio2Face image. Setting up mock server instead."
+        setup_mock_server
+        return
+    }
+
+    print_status "Audio2Face Docker image built"
 }
 
-# Create documentation
-create_docs() {
-    print_step "Creating documentation..."
+# Setup mock server for testing
+setup_mock_server() {
+    print_info "Setting up mock Audio2Face server for testing..."
 
-    cat > AUDIO2FACE_README.md << 'EOF'
-# Audio2Face Integration
+    cat > "$A2F_INSTALL_DIR/mock_a2f_server.py" << 'EOFMOCK'
+#!/usr/bin/env python3
+"""Mock Audio2Face server for testing when real A2F is not available"""
 
-## Quick Start
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+import tempfile
+import subprocess
+import os
 
-1. **Test Mock Mode** (works immediately):
-   ```bash
-   python test_audio2face.py
-   ```
+app = Flask(__name__)
+CORS(app)
 
-2. **Check Integration Status**:
-   ```bash
-   curl http://localhost:7860/audio2face/status | jq
-   ```
+@app.route('/status')
+def status():
+    return jsonify({
+        'status': 'running',
+        'mode': 'mock',
+        'version': 'mock-1.0',
+        'warning': 'This is a mock server for testing. Install real Audio2Face for production.'
+    })
 
-3. **Generate Avatar** (mock mode):
-   ```bash
-   curl -X POST http://localhost:7860/generate/audio2face \
-     -H "Content-Type: application/json" \
-     -d '{"prompt": "Hello world!", "force_mock": true}' \
-     --output test.mp4
-   ```
+@app.route('/generate', methods=['POST'])
+def generate():
+    """Generate mock video for testing"""
+    try:
+        # Create a simple test video
+        output = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False).name
 
-## Installation Steps for Real Audio2Face
+        # Generate test video with FFmpeg
+        cmd = [
+            'ffmpeg', '-f', 'lavfi', '-i', 'testsrc=duration=3:size=512x512:rate=30',
+            '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3',
+            '-c:v', 'libx264', '-c:a', 'aac', '-y', output
+        ]
 
-1. **Install NVIDIA Omniverse**:
-   - Download from https://www.nvidia.com/omniverse/
-   - Install Audio2Face through Omniverse Launcher
-   - Requires RTX GPU with 8GB+ VRAM
+        subprocess.run(cmd, capture_output=True)
 
-2. **Enable Headless Mode**:
-   - Open Audio2Face
-   - Go to Window > Extensions
-   - Enable "Audio2Face Headless" extension
-   - Server runs on localhost:8011
+        if os.path.exists(output):
+            return send_file(output, mimetype='video/mp4')
+        else:
+            return jsonify({'error': 'Mock generation failed'}), 500
 
-3. **Load Characters**:
-   - Load character models in Audio2Face UI
-   - Characters become available via API
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-4. **Test Real Mode**:
-   ```bash
-   curl -X POST http://localhost:7860/generate/audio2face \
-     -H "Content-Type: application/json" \
-     -d '{"prompt": "Real Audio2Face test!", "force_mock": false}' \
-     --output real_test.mp4
-   ```
+@app.route('/characters')
+def characters():
+    return jsonify({
+        'characters': ['mock_character_1', 'mock_character_2'],
+        'current': 'mock_character_1'
+    })
 
-## API Endpoints
+if __name__ == '__main__':
+    print("Starting Mock Audio2Face Server on port 8011")
+    app.run(host='0.0.0.0', port=8011, debug=False)
+EOFMOCK
 
-- `/generate/audio2face` - Generate avatar video
-- `/audio2face/status` - Check integration status
-- `/audio2face/characters` - List available characters
+    chmod +x "$A2F_INSTALL_DIR/mock_a2f_server.py"
+}
 
-## Modes
+# Create systemd service
+create_systemd_service() {
+    print_step "Creating systemd service..."
 
-- **Mock Mode**: Works immediately, creates test videos
-- **Real Mode**: Requires Audio2Face server, professional quality
+    cat > /etc/systemd/system/audio2face.service << EOFSERVICE
+[Unit]
+Description=NVIDIA Audio2Face Headless Server
+After=network.target docker.service
+Requires=docker.service
 
-The system automatically chooses the best available mode.
-EOF
+[Service]
+Type=simple
+User=root
+Group=docker
+WorkingDirectory=$A2F_INSTALL_DIR
 
-    print_status "Created AUDIO2FACE_README.md"
+# Docker-based service
+ExecStartPre=/usr/bin/docker stop audio2face-server || true
+ExecStartPre=/usr/bin/docker rm audio2face-server || true
+
+ExecStart=/usr/bin/docker run --rm \\
+    --name audio2face-server \\
+    --gpus all \\
+    -p ${A2F_PORT}:8011 \\
+    -v ${A2F_DATA_DIR}:/data \\
+    -v ${A2F_LOG_DIR}:/logs \\
+    -e NVIDIA_VISIBLE_DEVICES=all \\
+    -e NVIDIA_DRIVER_CAPABILITIES=all \\
+    audio2face-server:latest
+
+ExecStop=/usr/bin/docker stop audio2face-server
+
+Restart=always
+RestartSec=10
+
+StandardOutput=append:${A2F_LOG_DIR}/audio2face.log
+StandardError=append:${A2F_LOG_DIR}/audio2face.error.log
+
+[Install]
+WantedBy=multi-user.target
+EOFSERVICE
+
+    # Alternative: Python-based service for mock server
+    cat > /etc/systemd/system/audio2face-mock.service << EOFMOCKSERVICE
+[Unit]
+Description=Mock Audio2Face Server (Testing)
+After=network.target
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+Group=$SERVICE_USER
+WorkingDirectory=$A2F_INSTALL_DIR
+
+ExecStart=/usr/bin/python3 $A2F_INSTALL_DIR/mock_a2f_server.py
+
+Restart=always
+RestartSec=10
+
+StandardOutput=append:${A2F_LOG_DIR}/audio2face-mock.log
+StandardError=append:${A2F_LOG_DIR}/audio2face-mock.error.log
+
+[Install]
+WantedBy=multi-user.target
+EOFMOCKSERVICE
+
+    print_status "Systemd services created"
+}
+
+# Configure firewall
+configure_firewall() {
+    print_step "Configuring firewall..."
+
+    if command -v ufw &> /dev/null; then
+        ufw allow $A2F_PORT/tcp
+        print_status "Firewall rule added for port $A2F_PORT"
+    fi
+}
+
+# Start services
+start_services() {
+    print_step "Starting Audio2Face services..."
+
+    # Reload systemd
+    systemctl daemon-reload
+
+    # Try to start Docker-based service first
+    if docker images | grep -q "audio2face-server"; then
+        systemctl enable audio2face.service
+        systemctl start audio2face.service
+
+        # Check if started successfully
+        sleep 5
+        if systemctl is-active --quiet audio2face.service; then
+            print_status "Audio2Face Docker service started"
+            A2F_MODE="docker"
+        else
+            print_warning "Docker service failed, falling back to mock"
+            systemctl stop audio2face.service
+            systemctl disable audio2face.service
+
+            systemctl enable audio2face-mock.service
+            systemctl start audio2face-mock.service
+            A2F_MODE="mock"
+        fi
+    else:
+        # Start mock service
+        systemctl enable audio2face-mock.service
+        systemctl start audio2face-mock.service
+        print_status "Mock Audio2Face service started"
+        A2F_MODE="mock"
+    fi
+}
+
+# Test installation
+test_installation() {
+    print_step "Testing Audio2Face server..."
+
+    sleep 3
+
+    # Test status endpoint
+    if curl -s "http://localhost:${A2F_PORT}/status" > /dev/null 2>&1; then
+        print_status "Audio2Face server responding on port $A2F_PORT"
+
+        # Get detailed status
+        STATUS=$(curl -s "http://localhost:${A2F_PORT}/status")
+        echo "Server status: $STATUS"
+    else
+        print_error "Audio2Face server not responding"
+        print_info "Check logs: journalctl -u audio2face -f"
+    fi
+}
+
+# Create management script
+create_management_script() {
+    print_step "Creating management script..."
+
+    cat > /usr/local/bin/audio2face-manager << 'EOFMANAGER'
+#!/bin/bash
+
+case "$1" in
+    start)
+        systemctl start audio2face
+        ;;
+    stop)
+        systemctl stop audio2face
+        ;;
+    restart)
+        systemctl restart audio2face
+        ;;
+    status)
+        systemctl status audio2face
+        curl -s http://localhost:8011/status | jq '.'
+        ;;
+    logs)
+        journalctl -u audio2face -f
+        ;;
+    test)
+        curl -X POST http://localhost:8011/generate \
+            -F "audio=@test.wav" \
+            -F "character=default" \
+            --output test_output.mp4
+        ;;
+    *)
+        echo "Usage: audio2face-manager {start|stop|restart|status|logs|test}"
+        exit 1
+        ;;
+esac
+EOFMANAGER
+
+    chmod +x /usr/local/bin/audio2face-manager
+    print_status "Management script created: audio2face-manager"
 }
 
 # Main installation flow
 main() {
-    echo "Starting Audio2Face integration installation..."
-    echo
+    check_prerequisites
+    install_audio2face_server
+    create_systemd_service
+    configure_firewall
+    start_services
+    test_installation
+    create_management_script
 
-    check_environment
-    create_backup
-    install_dependencies
-    download_files
-    patch_endpoints
-    create_test_script
-    create_docs
+    # Set permissions
+    chown -R ${SERVICE_USER}:${SERVICE_USER} "$A2F_DATA_DIR" "$A2F_LOG_DIR"
+    chmod -R 755 "$A2F_INSTALL_DIR"
 
-    echo
-    print_status "Installation completed successfully!"
-    echo
-    echo "Next steps:"
-    echo "1. Add the endpoints from audio2face_endpoints_patch.py to your avatar_endpoints.py"
-    echo "2. Restart your Flask server"
-    echo "3. Run: python test_audio2face.py"
-    echo "4. Check mock mode works, then install real Audio2Face if desired"
-    echo
-    echo "Files created:"
-    echo "- audio2face_integration.py (real A2F integration)"
-    echo "- mock_audio2face.py (mock A2F for testing)"
-    echo "- audio2face_endpoints_patch.py (endpoints to add)"
-    echo "- test_audio2face.py (test script)"
-    echo "- AUDIO2FACE_README.md (documentation)"
-    echo
-    print_warning "Remember to manually add the endpoints to avatar_endpoints.py!"
+    echo ""
+    echo "============================================"
+    echo -e "${GREEN}   AUDIO2FACE SERVER INSTALLATION COMPLETE${NC}"
+    echo "============================================"
+    echo ""
+    echo "📍 Server URL: http://localhost:${A2F_PORT}"
+    echo "📁 Installation: $A2F_INSTALL_DIR"
+    echo "📊 Mode: $A2F_MODE"
+    echo ""
+    echo "🎮 Management Commands:"
+    echo "   audio2face-manager start    - Start server"
+    echo "   audio2face-manager stop     - Stop server"
+    echo "   audio2face-manager status   - Check status"
+    echo "   audio2face-manager logs     - View logs"
+    echo ""
+    echo "🧪 Test the server:"
+    echo "   curl http://localhost:${A2F_PORT}/status"
+    echo ""
+
+    if [ "$A2F_MODE" == "mock" ]; then
+        print_warning "Running in MOCK mode (real Audio2Face not available)"
+        print_info "To use real Audio2Face:"
+        print_info "1. Install NVIDIA Omniverse Launcher"
+        print_info "2. Install Audio2Face from Omniverse"
+        print_info "3. Re-run this installer"
+    fi
 }
 
-# Run if script is executed directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+# Run main installation
+main "$@"
