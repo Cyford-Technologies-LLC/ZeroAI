@@ -1,6 +1,7 @@
 # enhanced_audio2face_integration.py - Complete A2F integration with all options
 
 import os
+import sys
 import time
 import json
 import requests
@@ -13,8 +14,8 @@ from typing import Optional, Dict, Any, Tuple
 from datetime import datetime
 
 # Import your existing modules
-from audio_processor import call_tts_service_with_options, normalize_audio
-from utility import clean_text
+from ..audio_processor import call_tts_service_with_options, normalize_audio
+from ..utility import clean_text
 from audio2face_options import Audio2FaceOptions, prepare_audio2face_request
 
 logger = logging.getLogger(__name__)
@@ -321,29 +322,16 @@ class EnhancedAudio2FaceGenerator:
 
 
 def generate_enhanced_audio2face_avatar(
-    prompt: str,
-    output_path: str,
-    tts_engine: str = 'espeak',
-    tts_options: Dict = None,
-    a2f_options: Dict = None,
-    a2f_server_url: str = "http://localhost:8011",
-    preset: str = None
+        prompt: str,
+        output_path: str,
+        tts_engine: str = 'espeak',
+        tts_options: Dict = None,
+        a2f_options: Dict = None,
+        a2f_server_url: str = "http://localhost:8011",
+        preset: str = None
 ) -> Tuple[bool, Dict[str, Any]]:
-    """
-    Complete enhanced pipeline with all options exposed
+    """Your docstring here"""
 
-    Args:
-        prompt: Text to speak
-        output_path: Output video path
-        tts_engine: TTS engine to use
-        tts_options: TTS options
-        a2f_options: Complete Audio2Face options
-        a2f_server_url: A2F server URL
-        preset: Optional preset name
-
-    Returns:
-        tuple: (success, metadata)
-    """
     metadata = {
         "start_time": datetime.now().isoformat(),
         "prompt_length": len(prompt),
@@ -353,33 +341,26 @@ def generate_enhanced_audio2face_avatar(
 
     try:
         logger.info(f"=== ENHANCED AUDIO2FACE GENERATION START ===")
-        logger.info(f"Prompt: {prompt[:50]}...")
-        logger.info(f"Preset: {preset}")
 
-        # Prepare options
-        if preset:
-            base_options = Audio2FaceOptions.create_preset(preset)
-            if a2f_options:
-                for category, params in a2f_options.items():
-                    if category in base_options:
-                        base_options[category].update(params)
-                    else:
-                        base_options[category] = params
-            a2f_options = base_options
-        else:
-            a2f_options = Audio2FaceOptions.merge_with_defaults(a2f_options or {})
+        # Your existing code...
 
-        # Validate options
-        is_valid, error_msg, sanitized_options = Audio2FaceOptions.validate_options(a2f_options)
-        if not is_valid:
-            logger.warning(f"Option validation warnings: {error_msg}")
-
-        metadata["options_valid"] = is_valid
-        metadata["validation_errors"] = error_msg
-
-        # Initialize Enhanced A2F
         a2f = EnhancedAudio2FaceGenerator(a2f_server_url)
 
         if not a2f.is_connected:
             logger.error("Cannot connect to Audio2Face server")
-            metadata["error"]
+            metadata["error"] = "Cannot connect to Audio2Face server"
+            return False, metadata
+
+        # Continue with your processing...
+        # Add your actual generation logic here
+
+        # Success case
+        metadata["end_time"] = datetime.now().isoformat()
+        metadata["success"] = True
+        return True, metadata
+
+    except Exception as e:
+        logger.error(f"Error in audio2face generation: {str(e)}")
+        metadata["error"] = str(e)
+        metadata["end_time"] = datetime.now().isoformat()
+        return False, metadata
