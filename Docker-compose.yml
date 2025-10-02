@@ -103,10 +103,13 @@ services:
           memory: 4G
 
   avatar:
-    build: ./avatar
+    build:
+      context: avatar
+      dockerfile: Dockerfile
     container_name: zeroai_avatar
     ports:
       - "0.0.0.0:444:7860"
+      -
     volumes:
       - ./SadTalker:/app/SadTalker  # Mount SadTalker repo instead of baking into image
       - ./avatar_models:/app/checkpoints    # Persist model weights
